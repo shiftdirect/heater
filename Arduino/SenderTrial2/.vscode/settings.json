@@ -1,0 +1,6 @@
+{
+    "sketch": "SenderTrial2.ino",
+    "port": "COM4",
+    "board": "arduino:sam:arduino_due_x_dbg",
+    "output": "c:\\Users\\ray\\AppData\\Local\\Arduino\\"
+  }
