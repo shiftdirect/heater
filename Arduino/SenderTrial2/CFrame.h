@@ -1,33 +1,35 @@
+#ifndef _CFRAME_H_
+#define _CFRAME_H_
 
 class CFrame {
 public:
   union {
     unsigned char Data[24];
     struct {
-      unsigned char Byte0;              // always 0x76
-      unsigned char Len;                // always 0x16 == 22
-      unsigned char Command;            // transient commands: 00: NOP, 0xa0 START, 0x05: STOP
-      unsigned char ActualTemperature;  // 1degC / digit
-      unsigned char DesiredTemperature; // 1degC / digit
-      unsigned char MinPumpFreq;        // 0.1Hz/digit
-      unsigned char MaxPumpFreq;        // 0.1Hz/digit
-      unsigned char MinFanRPM_MSB;      // 16 bit - big endian MSB
-      unsigned char MinFanRPM_LSB;      // 16 bit - big endian LSB : 1 RPM / digit
-      unsigned char MaxFanRPM_MSB;      // 16 bit - big endian MSB
-      unsigned char MaxFanRPM_LSB;      // 16 bit - big endian LSB : 1 RPM / digit
-      unsigned char OperatingVoltage;   // 120, 240 : 0.1V/digit
-      unsigned char FanSensor;          // SN-1 or SN-2
-      unsigned char OperatingMode;      // 0x32:Thermostat, 0xCD:Fixed
-      unsigned char MinTemperature;     // Minimum settable temperature
-      unsigned char MaxTemperature;     // Maximum settable temperature
-      unsigned char MinTempRise;        // temp rise to sense running OK
-      unsigned char Prime;              // 00: normal, 0x5A: fuel prime
-      unsigned char Unknown1_MSB;       // always 0x01
-      unsigned char Unknown1_LSB;       // always 0x2c  "300 secs = max run without burn detected"?
-      unsigned char Unknown2_MSB;       // always 0x0d
-      unsigned char Unknown2_LSB;       // always 0xac  "3500 ?"
-      unsigned char CRC_MSB;
-      unsigned char CRC_LSB;
+      unsigned char Byte0;              //  [0] always 0x76
+      unsigned char Len;                //  [1] always 0x16 == 22
+      unsigned char Command;            //  [2] transient commands: 00: NOP, 0xa0 START, 0x05: STOP
+      unsigned char ActualTemperature;  //  [3] 1degC / digit
+      unsigned char DesiredTemperature; //  [4] 1degC / digit
+      unsigned char MinPumpFreq;        //  [5] 0.1Hz/digit
+      unsigned char MaxPumpFreq;        //  [6] 0.1Hz/digit
+      unsigned char MinFanRPM_MSB;      //  [7] 16 bit - big endian MSB
+      unsigned char MinFanRPM_LSB;      //  [8] 16 bit - big endian LSB : 1 RPM / digit
+      unsigned char MaxFanRPM_MSB;      //  [9] 16 bit - big endian MSB
+      unsigned char MaxFanRPM_LSB;      // [10] 16 bit - big endian LSB : 1 RPM / digit
+      unsigned char OperatingVoltage;   // [11] 120, 240 : 0.1V/digit
+      unsigned char FanSensor;          // [12] SN-1 or SN-2
+      unsigned char OperatingMode;      // [13] 0x32:Thermostat, 0xCD:Fixed
+      unsigned char MinTemperature;     // [14] Minimum settable temperature
+      unsigned char MaxTemperature;     // [15] Maximum settable temperature
+      unsigned char MinTempRise;        // [16] temp rise to sense running OK
+      unsigned char Prime;              // [17] 00: normal, 0x5A: fuel prime
+      unsigned char Unknown1_MSB;       // [18] always 0x01
+      unsigned char Unknown1_LSB;       // [19] always 0x2c  "300 secs = max run without burn detected"?
+      unsigned char Unknown2_MSB;       // [20] always 0x0d
+      unsigned char Unknown2_LSB;       // [21] always 0xac  "3500 ?"
+      unsigned char CRC_MSB;            // [22]
+      unsigned char CRC_LSB;            // [23]
     } Tx;
     struct {
       unsigned char Byte0;              // always 0x76
@@ -97,7 +99,7 @@ public:
   CFrame(int TxMode) { Init(TxMode); };
   void Init(int Txmode);
   // CRC handlers
-  unsigned short CalcCRC();  // calculate and set the CRC upon first 22 bytes
+  unsigned short CalcCRC(int len);  // calculate and set the CRC upon first 22 bytes
   void setCRC();             // calculate and set the CRC in the buffer
   void setCRC(unsigned short CRC);  // set  the CRC in the buffer
   unsigned short getCRC();   // extract CRC value from buffer
@@ -124,5 +126,8 @@ public:
   short getTemperature_GlowPin();   // temperature of glow pin
   short getTemperature_HeatExchg(); // temperature of heat exchanger
   short getTemperature_Inlet();     // temperature near inlet
+
+  CFrame& operator=(CFrame& rhs);
 };
 
+#endif

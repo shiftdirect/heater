@@ -2,12 +2,12 @@
 #include "CFrame.h"
 
 unsigned short 
-CFrame::CalcCRC() 
+CFrame::CalcCRC(int len) 
 {
   // calculate a CRC-16/MODBUS checksum using the first 22 bytes of the data array
   unsigned short  wCRCWord = 0xFFFF;
 
-  int wLength = 22;
+  int wLength = len;
   unsigned char* pData = Data;
    while (wLength--)
    {
@@ -22,7 +22,7 @@ CFrame::CalcCRC()
 void 
 CFrame::setCRC()
 {
-  setCRC(CalcCRC());
+  setCRC(CalcCRC(22));
 }
 
 void 
@@ -31,6 +31,14 @@ CFrame::setCRC(unsigned short CRC)
   Data[22] = (CRC >> 8) & 0xff;   // MSB of CRC in Data[22]
   Data[23] = (CRC >> 0) & 0xff;   // LSB of CRC in Data[23]
 }
+
+CFrame& 
+CFrame::operator=(CFrame& rhs)
+{
+  memcpy(Data, rhs.Data, 24);
+  return *this;
+}
+
 
 unsigned short
 CFrame::getCRC()
@@ -45,7 +53,7 @@ CFrame::getCRC()
 bool
 CFrame::verifyCRC()
 {
-  unsigned short CRC = CalcCRC();  // calculate CRC based on first 22 bytes
+  unsigned short CRC = CalcCRC(22);  // calculate CRC based on first 22 bytes
   return (getCRC() == CRC);        // does it match the stored values?
 }
 

@@ -42,24 +42,49 @@
 */
 
 #include "CFrame.h"
+#include "TxManage.h"
 
+void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr);
+
+class CommStates {
+  public:
+    enum eCS { 
+      Idle, CtrlRx, CtrlRpt, HtrRx1, HtrRpt1, SelfTx, HtrRx2, HtrRpt2 
+    };
+  CommStates() {
+    set(Idle);
+  }
+  void set(eCS eState) {
+    m_State = eState;
+    m_Count = 0;
+  }
+  bool is(eCS eState) {
+    return m_State == eState;
+  }
+  bool rxData(unsigned char* pData, unsigned char val, int limit = 24) {   // return true if buffer filled
+    pData[m_Count++] = val;
+    return m_Count == limit;
+  }
+private:
+  int m_State;
+  int m_Count;
+};
+
+const int TxEnbPin = 17;
+CommStates CommState;
 CFrame Controller(CFrame::TxMode);
 CFrame TxFrame(CFrame::TxMode);
+CTxManage TxManage(TxEnbPin, Serial1);
 CFrame Heater1;
 CFrame Heater2;
-const int TxEnbPin = 17;
 long lastRxTime;        // used to calculate inter character delay
 long TxEnbTime;       // used to reset TxEnb low
 bool bOnEvent = false;
 bool bOffEvent = false;
 
-void CheckTx();
-
 
 void setup() 
 {
-  pinMode(TxEnbPin, OUTPUT);
-  digitalWrite(TxEnbPin, LOW);
   // initialize listening serial port
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, special baud rate for Chinese heater controllers
@@ -72,196 +97,122 @@ void setup()
   // prepare for first long delay detection
   lastRxTime = millis();
 
+  TxManage.begin();
+
 }
 
 void loop() 
 {
-  static int count = 0;
-  static unsigned long lastTx = 0;
-  static bool bAllowTxSlot = false;
-  static int Stage = -1;
-  
-  char str[16];
-  
   unsigned long timenow = millis();
 
+  // check for test commands received from PC Over USB
   if(Serial.available()) {
     char rxval = Serial.read();
     if(rxval  == '+') {
-      bOnEvent = true;
+      TxManage.RequestOn();
     }
     if(rxval  == '-') {
-      bOffEvent = true;
+      TxManage.RequestOff();
     }
   }
 
-  if((Stage == 4) && (timenow - lastTx) > 10) {
-    TxEnbTime = timenow;
-    if(TxEnbTime == 0)
-      TxEnbTime++;
-    digitalWrite(TxEnbPin, HIGH);
+  if(CommState.is(CommStates::SelfTx)) {
+    // Interval where we should send data to the blue wire
+    lastRxTime = timenow;               // not expecting rx data, but we are pumping onto blue wire!
+    TxManage.Tick(timenow);             // keep trying to send our data 
+    if(!TxManage.isBusy()) {            // until completed
+      CommState.set(CommStates::HtrRx2);   // then await heater repsonse
+    }
   }
 
-  CheckTx();
-  // check serial data has gone quite for a while so we can trample in...
-  // calc elapsed time since last rxd byte to detect start of frame sequence
- /* unsigned long TxSlot = timenow - lastRxTime;
-    
-//  if(Slot > 50 && TxEnbTime == 0 && (bOnEvent || bOffEvent)) {
-  if(bAllowTxSlot && (TxSlot > 50) && (TxEnbTime == 0)) {
-    TxEnbTime = timenow;
-    if(TxEnbTime == 0)
-      TxEnbTime++;
-    digitalWrite(TxEnbPin, HIGH);
+
+  // calc elapsed time since last rxd byte to detect no other controller, or start of frame sequence
+  unsigned long RxTimeElapsed = timenow - lastRxTime;
+
+  // check for no rx traffic => no OEM controller
+  if(CommState.is(CommStates::Idle) && (RxTimeElapsed >= 970)) {
+    // have not seen any receive data for a second.
+    // OEM controller probably not connected. 
+    // Skip to SelfTx, sending our own settings.
+    CommState.set(CommStates::SelfTx);
+    bool bSelfParams = true;
+    TxManage.Send(timenow, bSelfParams);
   }
-*/
-  // read from port 1, the "Tx Data" (to heater), send to the serial monitor:
+
+  // precaution if 24 bytes were not received whilst expecting them
+  if(RxTimeElapsed > 50) {              
+    if( CommState.is(CommStates::CtrlRx) || 
+        CommState.is(CommStates::HtrRx1) || 
+        CommState.is(CommStates::HtrRx2) ) {
+
+      CommState.set(CommStates::Idle);
+    }
+  }
+
+  // read from port 1, the "blue wire" (to/from heater), store according to CommState
   if (Serial1.available()) {
   
-    // calc elapsed time since last rxd byte to detect start of frame sequence
-    unsigned long diff = timenow - lastRxTime;
     lastRxTime = timenow;
-    
-    if((Stage == -1) && (diff > 100)) {       // this indicates the start of a new frame sequence from the controller
-      Stage = 0;
-      count = 0;
+
+    if( CommState.is(CommStates::Idle) && (RxTimeElapsed > 100)) {       // this indicates the start of a new frame sequence from another controller
+      CommState.set(CommStates::CtrlRx);
     }
     
     int inByte = Serial1.read(); // read hex byte
 
-    if(Stage == 0) {
-      Controller.Data[count++] = inByte;
-      if(count == 24) {
-        Stage = 1;
+    if( CommState.is(CommStates::CtrlRx) ) {
+      if(CommState.rxData(Controller.Data, inByte) ) {
+        CommState.set(CommStates::CtrlRpt);
       }
     }
 
-    if(Stage == 2) {
-      Heater1.Data[count++] = inByte;
-      if(count == 24) {
-        Stage = 3;
+    else if( CommState.is(CommStates::HtrRx1) ) {
+      if( CommState.rxData(Heater1.Data, inByte) ) {
+        CommState.set(CommStates::HtrRpt1);
       }
     }
 
-    if(Stage == 6) {
-      Heater2.Data[count++] = inByte;
-      if(count == 24) {
-        Stage = 7;
+    else if( CommState.is(CommStates::HtrRx2) ) {
+      if( CommState.rxData(Heater2.Data, inByte) ) {
+        CommState.set(CommStates::HtrRpt2);
       }
-    }
+    }  
 
+  } // Serial1.available
+
+
+  if( CommState.is(CommStates::CtrlRpt) ) {  
+    // filled controller frame, report
+    SerialReport("Ctrl  ", Controller.Data, "  ");
+    CommState.set(CommStates::HtrRx1);
   }
+    
+  else if(CommState.is(CommStates::HtrRpt1) ) {
+    // received heater frame (after controller message), report
+    SerialReport("Htr1  ", Heater1.Data, "\r\n");
 
-  // dump to PC after capturing all 24 Rx bytes in a frame session
-  if(Stage == 1) {  // filled controller frame, dump
+    TxManage.Copy(Controller);  // replicate last obtained controller data
+    TxManage.Send(timenow, false);
+    CommState.set(CommStates::SelfTx);
+  }
+    
+  else if( CommState.is(CommStates::HtrRpt2) ) {
+    // received heater frame (after our control message), report
   
-    char str[16];
-    sprintf(str, "Ctrl  ", lastRxTime);
-    Serial.print(str);                 // print timestamp
-    for(int i=0; i<24; i++) {
-    
-      sprintf(str, "%02X ", Controller.Data[i]);  // make 2 dig hex values
-      Serial.print(str);               // and print     
-                          
-    }
-//    Serial.println();                  // newline and done
+    SerialReport("Htr2  ", Heater2.Data, "\r\n");
 
-    Stage = 2;
-    count = 0;
+    CommState.set(CommStates::Idle);
+  }
     
-  }  // Stage == 1
-
-  if(Stage == 3) {  // filled heater frame, dump
-  
-    char str[16];
-    sprintf(str, "  Htr1  ", lastRxTime);
-    Serial.print(str);                 // print timestamp
-    for(int i=0; i<24; i++) {
-    
-      sprintf(str, "%02X ", Heater1.Data[i]);  // make 2 dig hex values
-      Serial.print(str);               // and print     
-                          
-    }
-    Serial.println();                  // newline and done
-
-    Stage = 4;
-    count = 0;
-    lastTx = timenow;
-    
-  }  // Stage == 1
-
-  if(Stage == 7) {  // filled heater frame, dump
-  
-    char str[16];
-    sprintf(str, "  Htr2  ", lastRxTime);
-    Serial.print(str);                 // print timestamp
-    for(int i=0; i<24; i++) {
-    
-      sprintf(str, "%02X ", Heater2.Data[i]);  // make 2 dig hex values
-      Serial.print(str);               // and print     
-                          
-    }
-    Serial.println();                  // newline and done
-
-    Stage = -1;
-    count = 0;
-    
-  }  // Stage == 1
-
 }  // loop
- 
-void CheckTx()
+
+void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr)
 {
-  char str[16];
-  
-  if(TxEnbTime) {
-    long diff = timenow - TxEnbTime;
-    if(diff >= 12) {
-      TxEnbTime = 0;
-      digitalWrite(TxEnbPin, LOW);
-      Stage = 6;
-    }
+  Serial.print(hdr);                 // header
+  for(int i=0; i<24; i++) {
+    char str[16];
+    sprintf(str, "%02X ", pData[i]); // build 2 dig hex values
+    Serial.print(str);               // and print     
   }
-  
-  if((Stage == 4) && (timenow - lastTx) > 10) {
-
-    Stage = 5;
-
-    TxFrame.Tx.Byte0 = 0x78;
-    TxFrame.setTemperature_Desired(35);
-    TxFrame.setTemperature_Actual(22);
-    TxFrame.Tx.OperatingVoltage = 240;
-    TxFrame.setPump_Min(16);
-    TxFrame.setPump_Max(55);
-    TxFrame.setFan_Min(1680);
-    TxFrame.setFan_Max(4500);
-
-    if(bOnEvent) {
-      bOnEvent = false;
-      TxFrame.Tx.Command = 0xa0;
-    }
-    else if(bOffEvent) {
-      bOffEvent = false;
-      TxFrame.Tx.Command = 0x05;
-    }
-    else {
-      TxFrame.Tx.Command = 0x00;
-    }
-    
-    TxFrame.setCRC();
-    
-    // send to serial monitor using ASCII
-    Serial.print("Us    ");                       // and print ASCII data    
-    for(int i=0; i<24; i++) {
-      sprintf(str, "%02X ", TxFrame.Data[i]);  // make 2 dig hex ASCII values
-      Serial.print(str);                       // and print ASCII data    
-    }
-
-    // send to heater - using binary 
-    digitalWrite(TxEnbPin, HIGH);
-    for(int i=0; i<24; i++) {
-      Serial1.write(TxFrame.Data[i]);                  // write native binary values
-    }
-  }
-
+  Serial.print(ftr);                 // footer
 }
