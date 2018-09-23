@@ -5,12 +5,11 @@ extern void SerialReport(const char* hdr, const unsigned char* pData, const char
 
 CTxManage::CTxManage(int TxEnbPin, USARTClass& serial) : 
   m_Serial(serial),
-  m_Frame(CFrame::TxMode)
+  m_Frame(CFrame::CtrlMode)
 {
   m_bOnReq = false;
   m_bOffReq = false;
   m_bTxPending = false;
-  m_bSelf = true;
   m_nStartTime = 0;
   m_nTxEnbPin = TxEnbPin;
 }
@@ -33,31 +32,23 @@ CTxManage::RequestOff()
   m_bOffReq = true;
 }
 
-void 
-CTxManage::Copy(CFrame& ref)
+void
+CTxManage::Start(const CFrame& ref, unsigned long timenow, bool self)
 {
   m_Frame = ref;
-}
+  // 0x78 prevents the controller showing bum information when we parrot the OEM controller
+  // heater is happy either way, the OEM controller has set the max/min stuff already
+  m_Frame.Data[0] = self ? 0x76 : 0x78;  
 
-bool
-CTxManage::isBusy()
-{
-  return m_nStartTime != 0;
-}
-
-void
-CTxManage::Send(unsigned long timenow, bool self)
-{
   if(timenow == 0)
     timenow++;
 
   m_nStartTime = timenow;
-  m_bSelf = self;
   m_bTxPending = true;
 }
 
-void
-CTxManage::Tick(unsigned long timenow)
+bool
+CTxManage::CheckTx(unsigned long timenow)
 {
   if(m_nStartTime) {
 
@@ -78,38 +69,26 @@ CTxManage::Tick(unsigned long timenow)
       digitalWrite(m_nTxEnbPin, LOW);
     }
   }
+  return m_nStartTime == 0;
 }
 
 void
 CTxManage::_send()
 {
-  if(m_bSelf) {
-    m_Frame.Data[0] = 0x76;   // required for heater to use the max min information
-    m_Frame.Data[1] = 0x16;
-    m_Frame.setTemperature_Desired(35);
-    m_Frame.setTemperature_Actual(22);
-    m_Frame.Tx.OperatingVoltage = 120;
-    m_Frame.setPump_Min(16);
-    m_Frame.setPump_Max(55);
-    m_Frame.setFan_Min(1680);
-    m_Frame.setFan_Max(4500);
-  }
-  else {
-    m_Frame.Data[0] = 0x78;  // this prevents the controller trying to show bum information, heater uses controller max/min settings
-  }
-
+  // install on/off commands if required
   if(m_bOnReq) {
     m_bOnReq = false;
-    m_Frame.Tx.Command = 0xa0;
+    m_Frame.Controller.Command = 0xa0;
   }
   else if(m_bOffReq) {
     m_bOffReq = false;
-    m_Frame.Tx.Command = 0x05;
+    m_Frame.Controller.Command = 0x05;
   }
   else {
-    m_Frame.Tx.Command = 0x00;
+    m_Frame.Controller.Command = 0x00;
   }
     
+  // ensure CRC valid
   m_Frame.setCRC();
     
   // send to heater - using binary 
