@@ -5,7 +5,7 @@ extern void SerialReport(const char* hdr, const unsigned char* pData, const char
 
 CTxManage::CTxManage(int TxEnbPin, USARTClass& serial) : 
   m_Serial(serial),
-  m_Frame(CFrame::CtrlMode)
+  m_Frame(CProtocol::CtrlMode)
 {
   m_bOnReq = false;
   m_bOffReq = false;
@@ -33,7 +33,7 @@ CTxManage::RequestOff()
 }
 
 void
-CTxManage::Start(const CFrame& ref, unsigned long timenow, bool self)
+CTxManage::Start(const CProtocol& ref, unsigned long timenow, bool self)
 {
   m_Frame = ref;
   // 0x78 prevents the controller showing bum information when we parrot the OEM controller

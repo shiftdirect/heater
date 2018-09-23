@@ -2,7 +2,7 @@
 #include "Protocol.h"
 
 unsigned short 
-CFrame::CalcCRC(int len) 
+CProtocol::CalcCRC(int len) 
 {
   // calculate a CRC-16/MODBUS checksum using the first 22 bytes of the data array
   unsigned short  wCRCWord = 0xFFFF;
@@ -20,13 +20,13 @@ CFrame::CalcCRC(int len)
 }
 
 void 
-CFrame::setCRC()
+CProtocol::setCRC()
 {
   setCRC(CalcCRC(22));
 }
 
 void 
-CFrame::setCRC(unsigned short CRC)
+CProtocol::setCRC(unsigned short CRC)
 {
   Data[22] = (CRC >> 8) & 0xff;   // MSB of CRC in Data[22]
   Data[23] = (CRC >> 0) & 0xff;   // LSB of CRC in Data[23]
@@ -34,7 +34,7 @@ CFrame::setCRC(unsigned short CRC)
 
 
 unsigned short
-CFrame::getCRC()
+CProtocol::getCRC()
 {
   unsigned short CRC;
   CRC = Data[22];   // MSB of CRC in Data[22]
@@ -44,27 +44,27 @@ CFrame::getCRC()
 
 // return true for CRC match
 bool
-CFrame::verifyCRC()
+CProtocol::verifyCRC()
 {
   unsigned short CRC = CalcCRC(22);  // calculate CRC based on first 22 bytes
   return (getCRC() == CRC);        // does it match the stored values?
 }
 
-CFrame& 
-CFrame::operator=(const CFrame& rhs)
+CProtocol& 
+CProtocol::operator=(const CProtocol& rhs)
 {
   memcpy(Data, rhs.Data, 24);
   return *this;
 }
 
 int
-CFrame::getCommand()
+CProtocol::getCommand()
 {
   return Controller.Command;
 }
 
 void
-CFrame::setCommand(int cmd)
+CProtocol::setCommand(int cmd)
 {
   Controller.Command = cmd;
 }
@@ -74,7 +74,7 @@ CFrame::setCommand(int cmd)
   
 
 void 
-CFrame::setFan_Min(short Speed) 
+CProtocol::setFan_Min(short Speed) 
 {
   // Minimum speed set
   Controller.MinFanRPM_MSB = (Speed >> 8) & 0xff;
@@ -82,7 +82,7 @@ CFrame::setFan_Min(short Speed)
 }
 
 void 
-CFrame::setFan_Max(short Speed) 
+CProtocol::setFan_Max(short Speed) 
 {
   // Minimum speed set
   Controller.MaxFanRPM_MSB = (Speed >> 8) & 0xff;
@@ -90,7 +90,7 @@ CFrame::setFan_Max(short Speed)
 }
 
 short 
-CFrame::getFan_Min() 
+CProtocol::getFan_Min() 
 {
   short retval;
   // Minimum speed get
@@ -101,7 +101,7 @@ CFrame::getFan_Min()
 }
 
 short 
-CFrame::getFan_Max() 
+CProtocol::getFan_Max() 
 {
   short retval;
   // Maximum speed get
@@ -112,7 +112,7 @@ CFrame::getFan_Max()
 }
 
 short
-CFrame::getFan_Actual() 
+CProtocol::getFan_Actual() 
 {  
   // Rx side, actual
   short retval;
@@ -123,7 +123,7 @@ CFrame::getFan_Actual()
 }
 
 void 
-CFrame::setFan_Actual(short Speed)  // Heater side, actual
+CProtocol::setFan_Actual(short Speed)  // Heater side, actual
 {
   // actual speed set
   Heater.FanRPM_MSB = (Speed >> 8) & 0xff;
@@ -131,7 +131,7 @@ CFrame::setFan_Actual(short Speed)  // Heater side, actual
 }
 
 short 
-CFrame::getGlowPlug_Current()    // glow plug current
+CProtocol::getGlowPlug_Current()    // glow plug current
 {
   short retval;
   retval = Heater.GlowPlugCurrent_MSB;
@@ -141,14 +141,14 @@ CFrame::getGlowPlug_Current()    // glow plug current
 }
 
 void 
-CFrame::setGlowPlug_Current(short ampsx100)    // glow plug current
+CProtocol::setGlowPlug_Current(short ampsx100)    // glow plug current
 {
   Heater.GlowPlugCurrent_MSB = (ampsx100 >> 8) & 0xff;
   Heater.GlowPlugCurrent_LSB = (ampsx100 >> 0) & 0xff;
 }
 
 short 
-CFrame::getGlowPlug_Voltage()    // glow plug voltage
+CProtocol::getGlowPlug_Voltage()    // glow plug voltage
 {
   short retval;
   retval = Heater.GlowPlugVoltage_MSB;
@@ -159,14 +159,14 @@ CFrame::getGlowPlug_Voltage()    // glow plug voltage
 
 
 void 
-CFrame::setGlowPlug_Voltage(short voltsx10)    // glow plug voltage
+CProtocol::setGlowPlug_Voltage(short voltsx10)    // glow plug voltage
 {
   Heater.GlowPlugVoltage_MSB = (voltsx10 >> 8) & 0xff;
   Heater.GlowPlugVoltage_LSB = (voltsx10 >> 0) & 0xff;
 }
 
 short 
-CFrame::getTemperature_HeatExchg() // temperature of heat exchanger
+CProtocol::getTemperature_HeatExchg() // temperature of heat exchanger
 {
   short retval;
   retval = Heater.HeatExchgTemp_MSB;
@@ -176,14 +176,14 @@ CFrame::getTemperature_HeatExchg() // temperature of heat exchanger
 }
 
 void
-CFrame::setTemperature_HeatExchg(short degC) // temperature of heat exchanger
+CProtocol::setTemperature_HeatExchg(short degC) // temperature of heat exchanger
 {
   Heater.HeatExchgTemp_MSB = (degC >> 8) & 0xff;
   Heater.HeatExchgTemp_LSB = (degC >> 0) & 0xff;
 }
 
 short 
-CFrame::getFan_Voltage()     // temperature near inlet
+CProtocol::getFan_Voltage()     // temperature near inlet
 {
   short retval;
   retval = Heater.FanVoltage_MSB;
@@ -193,21 +193,21 @@ CFrame::getFan_Voltage()     // temperature near inlet
 }
 
 void
-CFrame::setFan_Voltage(short voltsx10)     // temperature near inlet
+CProtocol::setFan_Voltage(short voltsx10)     // temperature near inlet
 {
   Heater.FanVoltage_MSB = (voltsx10 >> 8) & 0xff;
   Heater.FanVoltage_LSB = (voltsx10 >> 0) & 0xff;
 }
 
 void
-CFrame::setVoltage_Supply(short voltsx10)
+CProtocol::setVoltage_Supply(short voltsx10)
 {
   Heater.SupplyV_MSB = (voltsx10 >> 8) & 0xff;
   Heater.SupplyV_LSB = (voltsx10 >> 0) & 0xff;
 }
 
 short
-CFrame::getVoltage_Supply()
+CProtocol::getVoltage_Supply()
 {
   short retval = 0;
   retval = Heater.SupplyV_MSB & 0xff;
@@ -216,7 +216,7 @@ CFrame::getVoltage_Supply()
 }
 
 void 
-CFrame::Init(int FrameMode)
+CProtocol::Init(int FrameMode)
 {
   if(FrameMode == CtrlMode) { 
     Controller.Byte0 = 0x76;

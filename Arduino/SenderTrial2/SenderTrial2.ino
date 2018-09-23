@@ -90,10 +90,10 @@ UARTClass& BlueTooth(Serial2);
 const int TxEnbPin = 20;
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, Serial1);
-CFrame Controller;     // most recent data packet received from OEM controller found on blue wire
-CFrame Heater1;        // data packet received from heater in response to OEM controller packet
-CFrame Heater2;        // data packet received from heater in response to our packet 
-CFrame SelfParams(CFrame::CtrlMode);  // holds our local parameters, used in case on no OEM controller
+CProtocol Controller;     // most recent data packet received from OEM controller found on blue wire
+CProtocol Heater1;        // data packet received from heater in response to OEM controller packet
+CProtocol Heater2;        // data packet received from heater in response to our packet 
+CProtocol SelfParams(CProtocol::CtrlMode);  // holds our local parameters, used in case on no OEM controller
 long lastRxTime;        // used to observe inter character delays
 
 

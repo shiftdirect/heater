@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "CFrame.h"
+#include "Protocol.h"
 
 class CTxManage
 {
@@ -11,13 +11,13 @@ public:
   CTxManage(int TxEnbPin, USARTClass& serial);
   void RequestOn();
   void RequestOff();
-  void Start(const CFrame& ref, unsigned long timenow, bool self);
+  void Start(const CProtocol& ref, unsigned long timenow, bool self);
   bool CheckTx(unsigned long timenow);
   void Report();
   void begin();
 
 private:
-  CFrame m_Frame;
+  CProtocol m_Frame;
   bool m_bOnReq;
   bool m_bOffReq;
   bool m_bTxPending;

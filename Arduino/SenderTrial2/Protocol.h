@@ -1,7 +1,8 @@
-#ifndef _CFRAME_H_
-#define _CFRAME_H_
-
-class CFrame {
+#ifndef _CPROTOCOL_H_
+#define _CPROTOCOL_H_
+/*"output": "c:\\Users\\ray\\AppData\\Local\\Arduino\\"
+  }*/
+class CProtocol {
 public:
   union {
     unsigned char Data[24];
@@ -96,8 +97,8 @@ public:
   };
 
 public:
-  CFrame() { Init(0); };
-  CFrame(int TxMode) { Init(TxMode); };
+  CProtocol() { Init(0); };
+  CProtocol(int TxMode) { Init(TxMode); };
   void Init(int Txmode);
   // CRC handlers
   unsigned short CalcCRC(int len);  // calculate and set the CRC upon len bytes
@@ -151,7 +152,7 @@ public:
   short getTemperature_HeatExchg(); // temperature of heat exchanger
   void setTemperature_HeatExchg(short degC); // temperature of heat exchanger
 
-  CFrame& operator=(const CFrame& rhs);
+  CProtocol& operator=(const CProtocol& rhs);
 };
 
 
