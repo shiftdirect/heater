@@ -1,7 +1,6 @@
 #ifndef _CPROTOCOL_H_
 #define _CPROTOCOL_H_
-/*"output": "c:\\Users\\ray\\AppData\\Local\\Arduino\\"
-  }*/
+
 class CProtocol {
 public:
   union {

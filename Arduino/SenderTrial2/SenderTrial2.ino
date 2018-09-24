@@ -11,6 +11,10 @@
   
   This software can connect to the blue wire in a normal OEM system, detecting the 
   OEM controller and allowing extraction of the data or injecting on/off commands.
+
+  If Pin 21 is grounded on the Due, this simple stream will be reported over USB and
+  no control from the Arduino will be allowed.
+  This allows sniffing of the blue wire in a normal system.
   
   The binary data is received from the line.
   If it has been > 100ms since the last blue wire activity this indicates a new frame 
@@ -18,7 +22,7 @@
   Synchronise as such then count off the next 24 bytes storing them in the Controller's 
   data array. These bytes are then reported over USB to the PC in ASCII.
 
-  It is then expected the heater wil lrespond with it's 24 bytes.
+  It is then expected the heater will respond with it's 24 bytes.
   Capture those bytes and store them in the Heater1 data array.
   Once again these bytes are then reported over USB to the PC in ASCII.
 
@@ -83,17 +87,20 @@ private:
   int m_Count;
 };
 
+
+
 UARTClass& USB(Serial);
 UARTClass& BlueWire(Serial1);
 UARTClass& BlueTooth(Serial2);
 
 const int TxEnbPin = 20;
+const int ListenOnlyPin = 21;
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, Serial1);
 CProtocol Controller;     // most recent data packet received from OEM controller found on blue wire
 CProtocol Heater1;        // data packet received from heater in response to OEM controller packet
 CProtocol Heater2;        // data packet received from heater in response to our packet 
-CProtocol SelfParams(CProtocol::CtrlMode);  // holds our local parameters, used in case on no OEM controller
+CProtocol SelfParams(CProtocol::CtrlMode);  // holds our local parameters, used in case of no OEM controller
 long lastRxTime;        // used to observe inter character delays
 
 
@@ -103,6 +110,8 @@ void setup()
   // initialize listening serial port
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, special baud rate for Chinese heater controllers
+  pinMode(ListenOnlyPin, INPUT_PULLUP);
+
   BlueWire.begin(25000);   
   pinMode(19, INPUT_PULLUP);  // required for MUX to work properly
   
@@ -140,6 +149,7 @@ void loop()
     }
   }
 
+
   // Handle time interval where we send data to the blue wire
   if(CommState.is(CommStates::SelfTx)) {
     lastRxTime = timenow;                  // we are pumping onto blue wire, track this activity!
@@ -162,8 +172,8 @@ void loop()
     TxManage.Start(SelfParams, timenow, bOurParams);
   }
 
-  // precaution action if all 24 bytes were not received whilst expecting them
-  if(RxTimeElapsed > 150) {              
+  // precautionary action if all 24 bytes were not received whilst expecting them
+  if(RxTimeElapsed > 50) {              
     if( CommState.is(CommStates::ControllerRx) || 
         CommState.is(CommStates::HeaterRx1) || 
         CommState.is(CommStates::HeaterRx2) ) {
@@ -215,9 +225,14 @@ void loop()
     // received heater frame (after controller message), report
     SerialReport("Htr1  ", Heater1.Data, "\r\n");
 
-    bool bOurParams = false;
-    TxManage.Start(Controller, timenow, bOurParams);
-    CommState.set(CommStates::SelfTx);
+    if(digitalRead(ListenOnlyPin)) {
+      bool bOurParams = false;
+      TxManage.Start(Controller, timenow, bOurParams);
+      CommState.set(CommStates::SelfTx);
+    }
+    else {
+      CommState.set(CommStates::Idle);    // "Listen Only" input held low, don't send out Tx
+    }
   }
     
   else if( CommState.is(CommStates::HeaterReport2) ) {
