@@ -41,6 +41,11 @@
   The delay before seeing Heater Rx data after any Tx is usually much less than 10ms.
   But this does rise if new max/min or voltage settings are sent.
   **The heater only ever sends Rx data in response to a data frame from a controller**
+
+  A HC-05 Bluetooth module is attached to Serial2:
+  TXD -> Rx2 (pin 17)
+  RXD -> Tx2 (pin 16)
+  EN(key) -> pin 15
   
  
   This code only works with boards that have more than one hardware serial port like Arduino 
@@ -61,6 +66,8 @@
 #include "TxManage.h"
 
 void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr);
+void BluetoothDetect();
+bool BlueToothCommand(const char* cmd);
 
 class CommStates {
   public:
@@ -95,6 +102,13 @@ UARTClass& BlueTooth(Serial2);
 
 const int TxEnbPin = 20;
 const int ListenOnlyPin = 21;
+const int KeyPin = 15;
+const int Tx2Pin = 16;
+
+const int BTRates[] = {
+  9600, 38400, 115200, 19200, 57600, 2400, 4800
+};
+
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, Serial1);
 CProtocol Controller;     // most recent data packet received from OEM controller found on blue wire
@@ -102,6 +116,7 @@ CProtocol Heater1;        // data packet received from heater in response to OEM
 CProtocol Heater2;        // data packet received from heater in response to our packet 
 CProtocol SelfParams(CProtocol::CtrlMode);  // holds our local parameters, used in case of no OEM controller
 long lastRxTime;        // used to observe inter character delays
+bool bBlueToothAvailable = false;
 
 
 
@@ -111,6 +126,10 @@ void setup()
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, special baud rate for Chinese heater controllers
   pinMode(ListenOnlyPin, INPUT_PULLUP);
+  pinMode(KeyPin, OUTPUT);
+//  pinMode(Tx2Pin, OUTPUT);
+  digitalWrite(KeyPin, LOW);
+//  digitalWrite(Tx2Pin, HIGH);
 
   BlueWire.begin(25000);   
   pinMode(19, INPUT_PULLUP);  // required for MUX to work properly
@@ -132,6 +151,7 @@ void setup()
   SelfParams.setFan_Min(1680);
   SelfParams.setFan_Max(4500);
 
+  BluetoothDetect();
 }
 
 void loop() 
@@ -170,6 +190,8 @@ void loop()
     CommState.set(CommStates::SelfTx);
     bool bOurParams = true;
     TxManage.Start(SelfParams, timenow, bOurParams);
+    if(bBlueToothAvailable)
+      BlueTooth.println("Sending");
   }
 
   // precautionary action if all 24 bytes were not received whilst expecting them
@@ -253,3 +275,91 @@ void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr)
   }
   USB.print(ftr);                     // footer
 }
+
+void BluetoothDetect()
+{
+    // search for BlueTooth adapter, trying the common baud rates, then less common
+  // as the device cannot be guaranteed to power up with the key pin high
+  // we are at the mercy of the baud rate stored in the module.
+  BlueTooth.begin(9600);   
+  digitalWrite(KeyPin, HIGH);
+  delay(500);
+
+  USB.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
+
+  int BTidx = 0;
+  int maxTries =  sizeof(BTRates)/sizeof(int);
+  for(BTidx = 0; BTidx < maxTries; BTidx++) {
+    USB.print("  @ ");
+    USB.print(BTRates[BTidx]);
+    USB.print(" baud... ");
+    BlueTooth.begin(BTRates[BTidx]);   // open serial port at a certain baud rate
+    BlueTooth.print("\r\n");
+    BlueTooth.setTimeout(50);
+
+    if(BlueToothCommand("AT\r\n")) {
+      USB.println(" OK.");
+      break;
+    }
+    // failed, try another baud rate
+    USB.println("");
+    BlueTooth.flush();
+  }
+
+  USB.println("");
+  if(BTidx == maxTries) {
+    USB.println("FAILED to detect HC-05 Bluetooth module :-(");
+  }
+  else {
+    if(BTRates[BTidx] == 115200) {
+      USB.println("HC-05 found and already set to 115200 baud, skipping Init.");
+      bBlueToothAvailable = true;
+    }
+    else {
+      do {
+        USB.println("HC-05 found");
+
+        USB.print("  Setting Name to \"DieselHeater\"... ");
+        if(!BlueToothCommand("AT+NAME=\"DieselHeater\"\r\n")) {
+          USB.println("FAILED");
+          break;
+        }
+        USB.println("OK");
+
+        USB.print("  Setting baud rate to 115200N81...");
+        if(!BlueToothCommand("AT+UART=115200,1,0\r\n")) {
+          USB.println("FAILED");
+          break;
+        };
+        USB.println("OK");
+
+        BlueTooth.begin(115200);
+        bBlueToothAvailable = true;
+
+      } while(0);
+
+    }
+  }
+  digitalWrite(KeyPin, LOW);  // leave HC-05 command mode
+
+  delay(500);
+
+  if(!bBlueToothAvailable)
+    BlueTooth.end();    // close serial port if no module found
+
+  USB.println("");
+
+}
+
+bool BlueToothCommand(const char* cmd)
+{
+  BlueTooth.print(cmd);
+  char RxBuffer[16];
+  memset(RxBuffer, 0, 16);
+  int read = BlueTooth.readBytesUntil('\n', RxBuffer, 16);  // \n is not included in returned string!
+  if((read == 3) && (0 == strcmp(RxBuffer, "OK\r")) ) {
+    return true;
+  }
+  return false;
+}
+
