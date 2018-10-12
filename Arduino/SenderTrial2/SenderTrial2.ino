@@ -68,6 +68,7 @@
 void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr);
 void BluetoothDetect();
 bool BlueToothCommand(const char* cmd);
+void BlueToothReport(const char* pHdr, const unsigned char Data[24]);
 
 class CommStates {
   public:
@@ -191,7 +192,7 @@ void loop()
     bool bOurParams = true;
     TxManage.Start(SelfParams, timenow, bOurParams);
     if(bBlueToothAvailable)
-      BlueTooth.println("Sending");
+      BlueToothReport("[SLF]", SelfParams.Data);
   }
 
   // precautionary action if all 24 bytes were not received whilst expecting them
@@ -239,6 +240,7 @@ void loop()
 
   if( CommState.is(CommStates::ControllerReport) ) {  
     // filled controller frame, report
+    BlueToothReport("[CTL]", Controller.Data);
     SerialReport("Ctrl  ", Controller.Data, "  ");
     CommState.set(CommStates::HeaterRx1);
   }
@@ -246,6 +248,7 @@ void loop()
   else if(CommState.is(CommStates::HeaterReport1) ) {
     // received heater frame (after controller message), report
     SerialReport("Htr1  ", Heater1.Data, "\r\n");
+    BlueToothReport("[HTR]", Heater1.Data);
 
     if(digitalRead(ListenOnlyPin)) {
       bool bOurParams = false;
@@ -260,6 +263,7 @@ void loop()
   else if( CommState.is(CommStates::HeaterReport2) ) {
     // received heater frame (after our control message), report
     SerialReport("Htr2  ", Heater2.Data, "\r\n");
+    BlueToothReport("[HTR]", Heater2.Data);
     CommState.set(CommStates::Idle);
   }
     
@@ -363,3 +367,13 @@ bool BlueToothCommand(const char* cmd)
   return false;
 }
 
+void BlueToothReport(const char* pHdr, const unsigned char Data[24])
+{
+  if(bBlueToothAvailable) {
+/*    for(int i=0; i<24; i++) {
+      BlueTooth.write(Data[i]);
+    }*/
+    BlueTooth.print(pHdr);
+    BlueTooth.write(Data, 24);
+  }
+}

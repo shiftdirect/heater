@@ -1,0 +1,6 @@
+*.bin
+*.elf
+*.d
+*.o
+*.a
+*.cache
