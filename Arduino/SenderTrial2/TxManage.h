@@ -8,7 +8,7 @@ class CTxManage
   const int m_nFrontPorch = 2;
 
 public:
-  CTxManage(int TxEnbPin, USARTClass& serial);
+  CTxManage(int TxEnbPin, HardwareSerial& serial);
   void RequestOn();
   void RequestOff();
   void Start(const CProtocol& ref, unsigned long timenow, bool self);
@@ -23,7 +23,7 @@ private:
   bool m_bTxPending;
   int  m_nTxEnbPin;
   unsigned long m_nStartTime;
-  USARTClass& m_Serial;
+  HardwareSerial& m_Serial;
 
   void _send();
 };

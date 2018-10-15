@@ -3,7 +3,7 @@
 
 extern void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr);
 
-CTxManage::CTxManage(int TxEnbPin, USARTClass& serial) : 
+CTxManage::CTxManage(int TxEnbPin, HardwareSerial& serial) : 
   m_Serial(serial),
   m_Frame(CProtocol::CtrlMode)
 {

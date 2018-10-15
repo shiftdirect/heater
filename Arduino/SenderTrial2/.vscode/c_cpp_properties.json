@@ -3,12 +3,12 @@
         {
             "name": "Win32",
             "includePath": [
+                "C:\\Users\\ray\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\**",
+                "C:\\Users\\ray\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.0\\**",
                 "C:\\Users\\ray\\AppData\\Local\\Arduino15\\packages\\arduino\\tools\\**",
                 "C:\\Users\\ray\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\sam\\1.6.11\\**"
             ],
-            "forcedInclude": [
-                "C:\\Users\\ray\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\sam\\1.6.11\\cores\\arduino\\Arduino.h"
-            ],
+            "forcedInclude": [],
             "intelliSenseMode": "msvc-x64",
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.15.26726/bin/Hostx64/x64/cl.exe",
             "cStandard": "c11",
