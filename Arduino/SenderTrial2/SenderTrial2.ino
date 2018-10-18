@@ -64,8 +64,13 @@
 
 #include "Protocol.h"
 #include "TxManage.h"
-#include "Bluetooth.h"
 #include "pins.h"
+
+#define BLUETOOTH
+
+#ifdef BLUETOOTH
+#include "Bluetooth.h"
+#endif
 
 #if defined(__arm__)
 // for Arduino Due
@@ -125,12 +130,11 @@ void setup()
 
 #if defined(__arm__) || defined(__AVR__)
   BlueWire.begin(25000);   
-  pinMode(19, INPUT_PULLUP);  // required for MUX to work properly
+  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
 #else if defined(__ESP32__)
   // ESP32
-#define RXD2 16
-#define TXD2 17
   BlueWire.begin(25000, SERIAL_8N1, Rx1Pin, Tx1Pin);  
+  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
 #endif
   
   // initialise serial monitor on serial port 0
@@ -150,7 +154,9 @@ void setup()
   BTCParams.setFan_Min(1680);
   BTCParams.setFan_Max(4500);
 
+#ifdef BLUETOOTH
   Bluetooth_Init();
+#endif
 }
 
 void loop() 
@@ -168,8 +174,10 @@ void loop()
     }
   }
 
+#ifdef BLUETOOTH
   // check for Bluetooth activity
   Bluetooth_Check();
+#endif
 
   // Handle time interval where we send data to the blue wire
   if(CommState.is(CommStates::BTC_Tx)) {
@@ -191,7 +199,9 @@ void loop()
     CommState.set(CommStates::BTC_Tx);
     bool bOurParams = true;
     TxManage.Start(BTCParams, timenow, bOurParams);
+#ifdef BLUETOOTH
     Bluetooth_Report("[BTC]", BTCParams.Data);    //  BTC => Bluetooth Controller :-)
+#endif
   }
 
   // precautionary action if all 24 bytes were not received whilst expecting them
@@ -239,7 +249,9 @@ void loop()
 
   if( CommState.is(CommStates::ControllerReport) ) {  
     // filled controller frame, report
+#ifdef BLUETOOTH
     Bluetooth_Report("[OEM]", OEMController.Data);
+#endif
     SerialReport("Ctrl  ", OEMController.Data, "  ");
     CommState.set(CommStates::HeaterRx1);
   }
@@ -247,7 +259,9 @@ void loop()
   else if(CommState.is(CommStates::HeaterReport1) ) {
     // received heater frame (after controller message), report
     SerialReport("Htr1  ", Heater1.Data, "\r\n");
+#ifdef BLUETOOTH
     Bluetooth_Report("[HTR]", Heater1.Data);
+#endif
 
     if(digitalRead(ListenOnlyPin)) {
       bool bOurParams = false;
@@ -263,7 +277,9 @@ void loop()
     // received heater frame (after our control message), report
     SerialReport("Htr2  ", Heater2.Data, "\r\n");
 //    if(!digitalRead(ListenOnlyPin)) {
+#ifdef BLUETOOTH
       Bluetooth_Report("[HTR]", Heater2.Data);    // pin not grounded, suppress duplicate to BT
+#endif
 //    }
     CommState.set(CommStates::Idle);
   }

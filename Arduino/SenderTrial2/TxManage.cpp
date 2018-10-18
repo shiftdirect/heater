@@ -1,4 +1,3 @@
-//#include <Arduino.h>
 #include "TxManage.h"
 
 extern void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr);
