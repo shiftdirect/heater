@@ -28,3 +28,5 @@ private:
   void _send();
 };
 
+extern CTxManage TxManage;
+

@@ -64,18 +64,24 @@
 
 #include "Protocol.h"
 #include "TxManage.h"
+#include "Bluetooth.h"
+#include "pins.h"
+
+#if defined(__arm__)
+// for Arduino Due
+static UARTClass& BlueWire(Serial1);
+#else
+// for ESP32, Mega
+static HardwareSerial& BlueWire(Serial1);  
+#endif
 
 void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr);
-void BluetoothDetect();
-bool BlueToothCommand(const char* cmd);
-void BlueToothReport(const char* pHdr, const unsigned char Data[24]);
-void BluetoothInterpret();
 
 class CommStates {
   public:
     // comms states
     enum eCS { 
-      Idle, ControllerRx, ControllerReport, HeaterRx1, HeaterReport1, SelfTx, HeaterRx2, HeaterReport2 
+      Idle, ControllerRx, ControllerReport, HeaterRx1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterReport2 
     };
   CommStates() {
     set(Idle);
@@ -96,50 +102,14 @@ private:
   int m_Count;
 };
 
-#if defined(__arm__)
-// for Arduino Due
-UARTClass& USB(Serial);
-UARTClass& BlueWire(Serial1);
-UARTClass& BlueTooth(Serial2);
-#else
-// for ESP32, Mega
-HardwareSerial& USB(Serial);
-HardwareSerial& BlueWire(Serial1);
-#if defined(__ESP32__)
-// ESP32
-HardwareSerial& BlueTooth(Serial2);  // TODO: make proper ESP32 BT client
-#else
-// Mega
-HardwareSerial& BlueTooth(Serial2);
-#endif
-#endif
-
-#if defined(__ESP32__)
-const int TxEnbPin = 22;
-#else
-const int TxEnbPin = 20;
-#endif
-const int ListenOnlyPin = 21;
-const int KeyPin = 15;
-const int Tx1Pin = 18;
-const int Rx1Pin = 19;
-const int Tx2Pin = 16;
-const int Rx2Pin = 17;
-
-const int BTRates[] = {
-  9600, 38400, 115200, 19200, 57600, 2400, 4800
-};
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, Serial1);
-CProtocol Controller;     // most recent data packet received from OEM controller found on blue wire
+CProtocol OEMController;     // most recent data packet received from OEM controller found on blue wire
 CProtocol Heater1;        // data packet received from heater in response to OEM controller packet
 CProtocol Heater2;        // data packet received from heater in response to our packet 
-CProtocol SelfParams(CProtocol::CtrlMode);  // holds our local parameters, used in case of no OEM controller
+CProtocol BTCParams(CProtocol::CtrlMode);  // holds our local parameters, used in case of no OEM controller
 long lastRxTime;        // used to observe inter character delays
-bool bBlueToothAvailable = false;
-String BluetoothRxData;
-
 
 
 void setup() 
@@ -172,15 +142,15 @@ void setup()
   TxManage.begin(); // ensure Tx enable pin setup
 
   // define defaults should heater controller be missing
-  SelfParams.setTemperature_Desired(23);
-  SelfParams.setTemperature_Actual(22);
-  SelfParams.Controller.OperatingVoltage = 120;
-  SelfParams.setPump_Min(16);
-  SelfParams.setPump_Max(55);
-  SelfParams.setFan_Min(1680);
-  SelfParams.setFan_Max(4500);
+  BTCParams.setTemperature_Desired(23);
+  BTCParams.setTemperature_Actual(22);
+  BTCParams.Controller.OperatingVoltage = 120;
+  BTCParams.setPump_Min(16);
+  BTCParams.setPump_Max(55);
+  BTCParams.setFan_Min(1680);
+  BTCParams.setFan_Max(4500);
 
-  BluetoothDetect();
+  Bluetooth_Init();
 }
 
 void loop() 
@@ -198,21 +168,11 @@ void loop()
     }
   }
 
-  // check for data coming back over Bluetooth
-  if(BlueTooth.available()) {
-    char rxVal = BlueTooth.read();
-    if(isControl(rxVal)) {    // "End of Line"
-      BluetoothRxData += '\0';
-      BluetoothInterpret();
-    }
-    else {
-      BluetoothRxData += rxVal;   // append new char to our Rx buffer
-    }
-  }
-
+  // check for Bluetooth activity
+  Bluetooth_Check();
 
   // Handle time interval where we send data to the blue wire
-  if(CommState.is(CommStates::SelfTx)) {
+  if(CommState.is(CommStates::BTC_Tx)) {
     lastRxTime = timenow;                  // we are pumping onto blue wire, track this activity!
     if(TxManage.CheckTx(timenow) ) {       // monitor our data delivery
       CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
@@ -227,11 +187,11 @@ void loop()
   if(CommState.is(CommStates::Idle) && (RxTimeElapsed >= 970)) {
     // have not seen any receive data for a second.
     // OEM controller probably not connected. 
-    // Skip to SelfTx, sending our own settings.
-    CommState.set(CommStates::SelfTx);
+    // Skip to BTC_Tx, sending our own settings.
+    CommState.set(CommStates::BTC_Tx);
     bool bOurParams = true;
-    TxManage.Start(SelfParams, timenow, bOurParams);
-    BlueToothReport("[BTC]", SelfParams.Data);    //  BTC => Bluetooth Controller :-)
+    TxManage.Start(BTCParams, timenow, bOurParams);
+    Bluetooth_Report("[BTC]", BTCParams.Data);    //  BTC => Bluetooth Controller :-)
   }
 
   // precautionary action if all 24 bytes were not received whilst expecting them
@@ -257,7 +217,7 @@ void loop()
     int inByte = BlueWire.read(); // read hex byte
 
     if( CommState.is(CommStates::ControllerRx) ) {
-      if(CommState.saveData(Controller.Data, inByte) ) {
+      if(CommState.saveData(OEMController.Data, inByte) ) {
         CommState.set(CommStates::ControllerReport);
       }
     }
@@ -279,20 +239,20 @@ void loop()
 
   if( CommState.is(CommStates::ControllerReport) ) {  
     // filled controller frame, report
-    BlueToothReport("[OEM]", Controller.Data);
-    SerialReport("Ctrl  ", Controller.Data, "  ");
+    Bluetooth_Report("[OEM]", OEMController.Data);
+    SerialReport("Ctrl  ", OEMController.Data, "  ");
     CommState.set(CommStates::HeaterRx1);
   }
     
   else if(CommState.is(CommStates::HeaterReport1) ) {
     // received heater frame (after controller message), report
     SerialReport("Htr1  ", Heater1.Data, "\r\n");
-    BlueToothReport("[HTR]", Heater1.Data);
+    Bluetooth_Report("[HTR]", Heater1.Data);
 
     if(digitalRead(ListenOnlyPin)) {
       bool bOurParams = false;
-      TxManage.Start(Controller, timenow, bOurParams);
-      CommState.set(CommStates::SelfTx);
+      TxManage.Start(OEMController, timenow, bOurParams);
+      CommState.set(CommStates::BTC_Tx);
     }
     else {
       CommState.set(CommStates::Idle);    // "Listen Only" input held low, don't send out Tx
@@ -303,7 +263,7 @@ void loop()
     // received heater frame (after our control message), report
     SerialReport("Htr2  ", Heater2.Data, "\r\n");
 //    if(!digitalRead(ListenOnlyPin)) {
-      BlueToothReport("[HTR]", Heater2.Data);    // pin not grounded, suppress duplicate to BT
+      Bluetooth_Report("[HTR]", Heater2.Data);    // pin not grounded, suppress duplicate to BT
 //    }
     CommState.set(CommStates::Idle);
   }
@@ -321,132 +281,3 @@ void SerialReport(const char* hdr, const unsigned char* pData, const char* ftr)
   USB.print(ftr);                     // footer
 }
 
-void BluetoothDetect()
-{
-  #if defined(__ESP32__)
-  #else
-    // search for BlueTooth adapter, trying the common baud rates, then less common
-  // as the device cannot be guaranteed to power up with the key pin high
-  // we are at the mercy of the baud rate stored in the module.
-  BlueTooth.begin(9600);   
-  digitalWrite(KeyPin, HIGH);
-  delay(500);
-
-  USB.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
-
-  int BTidx = 0;
-  int maxTries =  sizeof(BTRates)/sizeof(int);
-  for(BTidx = 0; BTidx < maxTries; BTidx++) {
-    USB.print("  @ ");
-    USB.print(BTRates[BTidx]);
-    USB.print(" baud... ");
-    BlueTooth.begin(BTRates[BTidx]);   // open serial port at a certain baud rate
-    BlueTooth.print("\r\n");
-    BlueTooth.setTimeout(50);
-
-    if(BlueToothCommand("AT\r\n")) {
-      USB.println(" OK.");
-      break;
-    }
-    // failed, try another baud rate
-    USB.println("");
-    BlueTooth.flush();
-  }
-
-  USB.println("");
-  if(BTidx == maxTries) {
-    USB.println("FAILED to detect HC-05 Bluetooth module :-(");
-  }
-  else {
-    if(BTRates[BTidx] == 115200) {
-      USB.println("HC-05 found and already set to 115200 baud, skipping Init.");
-      bBlueToothAvailable = true;
-    }
-    else {
-      do {
-        USB.println("HC-05 found");
-
-        USB.print("  Setting Name to \"DieselHeater\"... ");
-        if(!BlueToothCommand("AT+NAME=\"DieselHeater\"\r\n")) {
-          USB.println("FAILED");
-          break;
-        }
-        USB.println("OK");
-
-        USB.print("  Setting baud rate to 115200N81...");
-        if(!BlueToothCommand("AT+UART=115200,1,0\r\n")) {
-          USB.println("FAILED");
-          break;
-        };
-        USB.println("OK");
-
-        BlueTooth.begin(115200);
-        bBlueToothAvailable = true;
-
-      } while(0);
-
-    }
-  }
-  digitalWrite(KeyPin, LOW);  // leave HC-05 command mode
-
-  delay(500);
-
-  if(!bBlueToothAvailable)
-    BlueTooth.end();    // close serial port if no module found
-
-  USB.println("");
-#endif
-}
-
-bool BlueToothCommand(const char* cmd)
-{
-  if(bBlueToothAvailable) {
-    BlueTooth.print(cmd);
-    char RxBuffer[16];
-    memset(RxBuffer, 0, 16);
-    int read = BlueTooth.readBytesUntil('\n', RxBuffer, 16);  // \n is not included in returned string!
-    if((read == 3) && (0 == strcmp(RxBuffer, "OK\r")) ) {
-      return true;
-    }
-    return false;
-  }
-  return false;
-}
-
-void BlueToothReport(const char* pHdr, const unsigned char Data[24])
-{
-  if(bBlueToothAvailable) {
-    BlueTooth.print(pHdr);
-    BlueTooth.write(Data, 24);
-  }
-}
-
-void BluetoothInterpret()
-{
-  if(BluetoothRxData.startsWith("[CMD]") ) {
-    USB.write("BT command Rx'd: ");
-    // incoming command from BT app!
-    BluetoothRxData.remove(0, 5);   // strip away "[CMD]" header
-    if(BluetoothRxData.startsWith("ON")) {
-      USB.write("ON\n");
-      TxManage.RequestOn();
-    }
-    else if(BluetoothRxData.startsWith("OFF")) {
-      USB.write("OFF\n");
-      TxManage.RequestOff();
-    }
-    else if(BluetoothRxData.startsWith("Pmin")) {
-      USB.write("Pmin\n");
-    }
-    else if(BluetoothRxData.startsWith("Pmax")) {
-      USB.write("Pmax\n");
-    }
-    else if(BluetoothRxData.startsWith("Fmin")) {
-      USB.write("Fmin\n");
-    }
-    else if(BluetoothRxData.startsWith("Fmax")) {
-      USB.write("Fmax\n");
-    }
-  }
-  BluetoothRxData = "";   //flush string, ready for new data
-}
