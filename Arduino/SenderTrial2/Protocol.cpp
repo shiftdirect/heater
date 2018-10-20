@@ -1,14 +1,15 @@
 #include <Arduino.h>
 #include "Protocol.h"
-
+#include "debugport.h"
+ 
 unsigned short 
-CProtocol::CalcCRC(int len) 
+CProtocol::CalcCRC(int len) const
 {
   // calculate a CRC-16/MODBUS checksum using the first 22 bytes of the data array
   unsigned short  wCRCWord = 0xFFFF;
 
   int wLength = len;
-  unsigned char* pData = Data;
+  const unsigned char* pData = Data;
    while (wLength--)
    {
       unsigned char nTemp = *pData++ ^ wCRCWord;
@@ -34,20 +35,29 @@ CProtocol::setCRC(unsigned short CRC)
 
 
 unsigned short
-CProtocol::getCRC()
+CProtocol::getCRC() const
 {
   unsigned short CRC;
   CRC = Data[22];   // MSB of CRC in Data[22]
   CRC <<= 8;
   CRC |= Data[23];  // LSB of CRC in Data[23]
+  return CRC;
 }
 
 // return true for CRC match
 bool
-CProtocol::verifyCRC()
+CProtocol::verifyCRC() const
 {
   unsigned short CRC = CalcCRC(22);  // calculate CRC based on first 22 bytes
-  return (getCRC() == CRC);        // does it match the stored values?
+  unsigned short FrameCRC = getCRC();
+  bool bOK = (FrameCRC == CRC);
+  if(!bOK) {
+    DebugPort.print("verifyCRC FAILED: calc:");
+    DebugPort.print(CRC, HEX);
+    DebugPort.print(" data:");
+    DebugPort.println(FrameCRC, HEX);
+  }
+  return bOK;        // does it match the stored values?
 }
 
 CProtocol& 
@@ -57,21 +67,6 @@ CProtocol::operator=(const CProtocol& rhs)
   return *this;
 }
 
-int
-CProtocol::getCommand()
-{
-  return Controller.Command;
-}
-
-void
-CProtocol::setCommand(int cmd)
-{
-  Controller.Command = cmd;
-}
-
-/*unsigned char getCommand();
-  void setCommand(int mode);*/
-  
 
 void 
 CProtocol::setFan_Min(short Speed) 
