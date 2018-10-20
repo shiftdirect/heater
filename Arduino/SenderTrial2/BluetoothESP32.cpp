@@ -9,7 +9,7 @@ const int LED = 2;
 
 // ESP32
 
-String BluetoothRxLine;
+sRxLine RxLine;
 
 #ifndef ESP32_USE_BLE_RLJ
 
@@ -25,6 +25,7 @@ BluetoothSerial SerialBT;
 
 void Bluetooth_Init()
 {
+  RxLine.clear();
   pinMode(LED, OUTPUT);
 
   if(!SerialBT.begin("ESPHEATER")) {
@@ -37,18 +38,18 @@ void Bluetooth_Check()
   if(SerialBT.available()) {
     char rxVal = SerialBT.read();
     if(isControl(rxVal)) {    // "End of Line"
-      BluetoothRxLine += '\0';
-      Command_Interpret(BluetoothRxLine);
-      BluetoothRxLine = "";
+      Command_Interpret(RxLine.Line);
+      RxLine.clear();
     }
     else {
-      BluetoothRxLine += rxVal;   // append new char to our Rx buffer
+      RxLine.append(rxVal);
     }
   }
 }
 
-void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame)
+void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
+  DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
   if(SerialBT.hasClient()) {
 
     if(Frame.verifyCRC()) {
@@ -57,11 +58,11 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame)
       SerialBT.write(Frame.Data, 24);
     }
     else {
-      DebugPort.print("Bluetooth data not sent, CRC error ");
-      DebugPort.println(pHdr);
+      DebugPort.println("Data not sent to Bluetooth, CRC error!");
     }
   }
   else {
+    DebugPort.println("No Bluetooth client");
     digitalWrite(LED, 0);
   }
 }

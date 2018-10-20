@@ -3,5 +3,5 @@
     "port": "COM9",
     "sketch": "SenderTrial2.ino",
     "output": "..\\build",
-    "configuration": "PSRAM=disabled,PartitionScheme=default,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none"
+    "configuration": "PSRAM=disabled,PartitionScheme=default,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=warn"
 }

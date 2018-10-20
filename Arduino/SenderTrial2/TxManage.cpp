@@ -100,7 +100,7 @@ CTxManage::CheckTx(unsigned long timenow)
       // begin serial transmission
       m_bTxPending = false;
       m_BlueWireSerial.write(m_TxFrame.Data, 24);  // write native binary values
-      DebugReportFrame("BTC  ", m_TxFrame, "  ");  // report frame to debug port
+//      DebugReportFrame("BTC  ", m_TxFrame, "  ");  // report frame to debug port
     }
     if(diff > (m_nStartDelay + m_nFrameTime)) {
       // conclude Tx gating

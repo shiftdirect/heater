@@ -84,8 +84,6 @@ static UARTClass& BlueWire(Serial1);
 static HardwareSerial& BlueWire(Serial1);  
 #endif
 
-void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr);
-
 class CommStates {
   public:
     // comms states
@@ -128,7 +126,6 @@ CESP32HeaterStorage NVStorage;
 CHeaterStorage NVStorage;   // dummy, for now
 #endif
 CHeaterStorage* pNVStorage = NULL;
-
 
 void setup() 
 {
@@ -225,7 +222,7 @@ void loop()
     TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
     TxManage.Start(timenow);
 #ifdef BLUETOOTH
-    Bluetooth_SendFrame("[BTC]", TxManage.getFrame());    //  BTC => Bluetooth Controller :-)
+    Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), false);    //  BTC => Bluetooth Controller :-)
 #endif
   }
 
@@ -276,18 +273,20 @@ void loop()
     // filled controller frame, report
 #ifdef BLUETOOTH
     // echo received OEM controller frame over Bluetooth, using [OEM] header
-    Bluetooth_SendFrame("[OEM]", OEMControllerFrame);
-#endif
+    Bluetooth_SendFrame("[OEM]", OEMControllerFrame, false);
+#else
     DebugReportFrame("OEM  ", OEMControllerFrame, "  ");
+#endif
     CommState.set(CommStates::HeaterRx1);
   }
     
   else if(CommState.is(CommStates::HeaterReport1) ) {
     // received heater frame (after controller message), report
-    DebugReportFrame("Htr1  ", HeaterFrame1, "\r\n");
 #ifdef BLUETOOTH
     // echo heater reponse data to Bluetooth client
     Bluetooth_SendFrame("[HTR]", HeaterFrame1);
+#else
+    DebugReportFrame("Htr1  ", HeaterFrame1, "\r\n");
 #endif
 
     if(digitalRead(ListenOnlyPin)) {
@@ -303,11 +302,12 @@ void loop()
     
   else if( CommState.is(CommStates::HeaterReport2) ) {
     // received heater frame (after our control message), report
-    DebugReportFrame("Htr2  ", HeaterFrame2, "\r\n");
-//    if(!digitalRead(ListenOnlyPin)) {
 #ifdef BLUETOOTH
-      Bluetooth_SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
+    Bluetooth_SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
+#else
+    DebugReportFrame("Htr2  ", HeaterFrame2, "\r\n");
 #endif
+//    if(!digitalRead(ListenOnlyPin)) {
 //    }
     CommState.set(CommStates::Idle);
   }
@@ -319,80 +319,86 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
   DebugPort.print(hdr);                     // header
   for(int i=0; i<24; i++) {
     char str[16];
-    sprintf(str, "%02X ", Frame.Data[i]);  // build 2 dig hex values
+    sprintf(str, " %02X", Frame.Data[i]);  // build 2 dig hex values
     DebugPort.print(str);                   // and print     
   }
   DebugPort.print(ftr);                     // footer
 }
 
-void Command_Interpret(String line)
+void Command_Interpret(const char* pLine)
 {
   unsigned char cVal;
   unsigned short sVal;
+
+  if(strlen(pLine) == 0)
+    return;
   
   #ifdef DEBUG_BTRX
-    DebugPort.println(line);
-    DebugPort.println();
+    DebugPort.println(pLine);
   #endif
 
-  if(line.startsWith("[CMD]") ) {
-    DebugPort.write("BT command Rx'd: ");
+  if(strncmp(pLine, "[CMD]", 5) == 0) {
     // incoming command from BT app!
-    line.remove(0, 5);   // strip away "[CMD]" header
-    if(line.startsWith("ON") ) {
-      DebugPort.write("ON\n");
+    DebugPort.write("  Command decode: ");
+
+    pLine += 5;   // skip past "[CMD]" header
+    if(strncmp(pLine, "ON", 2) == 0) {
       TxManage.queueOnRequest();
+      DebugPort.println("Heater ON");
     }
-    else if(line.startsWith("OFF")) {
-      DebugPort.write("OFF\n");
+    else if(strncmp(pLine, "OFF", 3) == 0) {
       TxManage.queueOffRequest();
+      DebugPort.println("Heater OFF");
     }
-    else if(line.startsWith("Pmin")) {
-      line.remove(0, 4);
-      DebugPort.write("Pmin=");
-      cVal = (line.toFloat() * 10) + 0.5;
-      DebugPort.println(cVal);
+    else if(strncmp(pLine, "Pmin", 4) == 0) {
+      pLine += 4;
+      cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmin(cVal);
-    }
-    else if(line.startsWith("Pmax")) {
-      line.remove(0, 4);
-      DebugPort.write("Pmax=");
-      cVal = (line.toFloat() * 10) + 0.5;
+      DebugPort.print("Pump min = ");
       DebugPort.println(cVal);
+    }
+    else if(strncmp(pLine, "Pmax", 4) == 0) {
+      pLine += 4;
+      cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmax(cVal);
-    }
-    else if(line.startsWith("Fmin")) {
-      line.remove(0, 4);
-      DebugPort.print("Fmin=");
-      sVal = line.toInt();
-      DebugPort.println(sVal);
-      pNVStorage->setFmin(sVal);
-    }
-    else if(line.startsWith("Fmax")) {
-      line.remove(0, 4);
-      DebugPort.print("Fmax=");
-      sVal = line.toInt();
-      DebugPort.println(sVal);
-      pNVStorage->setFmax(sVal);
-    }
-    else if(line.startsWith("save")) {
-      line.remove(0, 4);
-      DebugPort.write("save\n");
-      pNVStorage->save();
-    }
-    else if(line.startsWith("degC")) {
-      line.remove(0, 4);
-      DebugPort.write("degC=");
-      cVal = line.toInt();
+      DebugPort.print("Pump max = ");
       DebugPort.println(cVal);
-      pNVStorage->setTemperature(cVal);
     }
-    else if(line.startsWith("Mode")) {
-      line.remove(0, 4);
-      DebugPort.write("Mode=");
+    else if(strncmp(pLine, "Fmin", 4) == 0) {
+      pLine += 4;
+      sVal = atoi(pLine);
+      pNVStorage->setFmin(sVal);
+      DebugPort.print("Fan min = ");
+      DebugPort.println(sVal);
+    }
+    else if(strncmp(pLine, "Fmax", 4) == 0) {
+      pLine += 4;
+      sVal = atoi(pLine);
+      pNVStorage->setFmax(sVal);
+      DebugPort.print("Fan max = ");
+      DebugPort.println(int(sVal));
+    }
+    else if(strncmp(pLine, "save", 4) == 0) {
+      pNVStorage->save();
+      DebugPort.println("NV save");
+    }
+    else if(strncmp(pLine, "degC", 4) == 0) {
+      pLine += 4;
+      cVal = atoi(pLine);
+      pNVStorage->setTemperature(cVal);
+      DebugPort.print("degC = ");
+      DebugPort.println(cVal);
+    }
+    else if(strncmp(pLine, "Mode", 4) == 0) {
+      pLine += 4;
       cVal = !pNVStorage->getThermostatMode();
       pNVStorage->setThermostatMode(cVal);
-      DebugPort.println(cVal);
+      DebugPort.print("Mode = ");
+      DebugPort.println(cVal ? "Thermostat" : "Fixed Hz");
+    }
+    else {
+      DebugPort.print(pLine);
+      DebugPort.println(" ????");
     }
 
   }
