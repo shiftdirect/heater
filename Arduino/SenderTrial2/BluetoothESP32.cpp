@@ -1,13 +1,13 @@
 #include "Bluetooth.h"
-#include "TxManage.h"
 #include "pins.h"
+#include "Protocol.h"
+#include "debugport.h"
 
-#if defined(ESP32)
+#ifdef ESP32
 
+const int LED = 2;
 
 // ESP32
-
-void Bluetooth_Interpret();
 
 String BluetoothRxLine;
 
@@ -25,8 +25,10 @@ BluetoothSerial SerialBT;
 
 void Bluetooth_Init()
 {
+  pinMode(LED, OUTPUT);
+
   if(!SerialBT.begin("ESPHEATER")) {
-    Serial.println("An error occurred initialising Bluetooth");
+    DebugPort.println("An error occurred initialising Bluetooth");
   }
 }
 
@@ -36,7 +38,7 @@ void Bluetooth_Check()
     char rxVal = SerialBT.read();
     if(isControl(rxVal)) {    // "End of Line"
       BluetoothRxLine += '\0';
-      Bluetooth_Interpret(BluetoothRxLine);
+      Command_Interpret(BluetoothRxLine);
       BluetoothRxLine = "";
     }
     else {
@@ -45,11 +47,22 @@ void Bluetooth_Check()
   }
 }
 
-void Bluetooth_Report(const char* pHdr, const unsigned char Data[24])
+void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame)
 {
   if(SerialBT.hasClient()) {
-    SerialBT.print(pHdr);
-    SerialBT.write(Data, 24);
+
+    if(Frame.verifyCRC()) {
+      digitalWrite(LED, !digitalRead(LED)); // toggle LED
+      SerialBT.print(pHdr);
+      SerialBT.write(Frame.Data, 24);
+    }
+    else {
+      DebugPort.print("Bluetooth data not sent, CRC error ");
+      DebugPort.println(pHdr);
+    }
+  }
+  else {
+    digitalWrite(LED, 0);
   }
 }
 
@@ -106,7 +119,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
     while(rxValue.length() > 0) {
       char rxVal = rxValue[0];
       if(isControl(rxVal)) {    // "End of Line"
-        Bluetooth_Interpret(BluetoothRxLine);
+        Command_Interpret(BluetoothRxLine);
         BluetoothRxLine = "";
       }
       else {
@@ -148,18 +161,20 @@ void Bluetooth_Init()
   pService->start();
   // start advertising
   pServer->getAdvertising()->start();
-  Serial.println("Awaiting a client to notify...");
+  DebugPort.println("Awaiting a client to notify...");
 }
 
-void Bluetooth_Report(const char* pHdr, const unsigned char Data[24])
+void Bluetooth_Report(const char* pHdr, const CProtocol& Frame)
 {
   if(deviceConnected) {
-    // BLE can only squirt 20 bytes per packet.
-    // build the entire message then divide and conquer
-    std::string txData = pHdr;
-    txData.append((char*)Data, 24);
+    if(Frame.verifyCRC()) {
+      // BLE can only squirt 20 bytes per packet.
+      // build the entire message then divide and conquer
+      std::string txData = pHdr;
+      txData.append((char*)Frame.Data, 24);
     
-    BLE_Send(txData);
+      BLE_Send(txData);
+    }
   }
 }
 
@@ -169,7 +184,7 @@ void Bluetooth_Check()
   if (!deviceConnected && oldDeviceConnected) {
     delay(500); // give the bluetooth stack the chance to get things ready
     pServer->startAdvertising(); // restart advertising
-    Serial.println("start advertising");
+    DebugPort.println("start advertising");
     oldDeviceConnected = deviceConnected;
   }
   // connecting

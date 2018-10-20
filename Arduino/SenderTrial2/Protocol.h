@@ -98,16 +98,24 @@ public:
 public:
   CProtocol() { Init(0); };
   CProtocol(int TxMode) { Init(TxMode); };
+
   void Init(int Txmode);
   // CRC handlers
-  unsigned short CalcCRC(int len);  // calculate and set the CRC upon len bytes
-  void setCRC();             // calculate and set the CRC in the buffer
+  unsigned short CalcCRC(int len) const;  // calculate the CRC upon len bytes
+  void setCRC();                    // calculate and set the CRC in the buffer
   void setCRC(unsigned short CRC);  // set  the CRC in the buffer
-  unsigned short getCRC();   // extract CRC value from buffer
-  bool verifyCRC();          // return true for CRC match
-  // command
-  int getCommand();
-  void setCommand(int mode);
+  unsigned short getCRC() const;    // extract CRC value from buffer
+  bool verifyCRC() const;           // return true for CRC match
+
+  void setActiveMode() { Controller.Byte0 = 0x76; };  // this allows heater to save tuning params to EEPROM
+  void setPassiveMode() { Controller.Byte0 = 0x78; };  // this prevents heater saving tuning params to EEPROM
+  // command helpers
+  void resetCommand() { setRawCommand(0x00); };
+  void onCommand() { setRawCommand(0xA0); };
+  void offCommand() { setRawCommand(0x05); };
+  // raw command
+  int getRawCommand() { return Controller.Command; };
+  void setRawCommand(int mode) { Controller.Command = mode; };
   // Run state
   unsigned char getRunState() { return Heater.RunState; };
   void setRunState(unsigned char state) { Heater.RunState = state; };
@@ -144,10 +152,13 @@ public:
   unsigned char getTemperature_Desired() { return Controller.DesiredTemperature; };
   unsigned char getTemperature_Min() { return Controller.MinTemperature; };
   unsigned char getTemperature_Max() { return Controller.MaxTemperature; };
+  void setThermostatMode(unsigned on) { Controller.OperatingMode = on ? 0x32 : 0xCD; };
+  // glow plug
   short getGlowPlug_Current();   // glow plug current
   short getGlowPlug_Voltage();   // glow plug voltage
   void setGlowPlug_Current(short ampsx100);   // glow plug current
   void setGlowPlug_Voltage(short voltsx10);   // glow plug voltage
+  // heat exchanger
   short getTemperature_HeatExchg(); // temperature of heat exchanger
   void setTemperature_HeatExchg(short degC); // temperature of heat exchanger
 

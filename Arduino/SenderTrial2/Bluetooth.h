@@ -1,11 +1,12 @@
 #include <Arduino.h>
 
+class CProtocol;
 
 void Bluetooth_Init();
-void Bluetooth_Report(const char* pHdr, const unsigned char Data[24]);
+void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame);
 void Bluetooth_Check();
 
-void Bluetooth_Interpret(String line);
+extern void Command_Interpret(String line);   // decodes received command lines, implemented in main .ino file!
 
 
 

@@ -8,24 +8,24 @@ class CTxManage
   const int m_nFrontPorch = 2;
 
 public:
-  CTxManage(int TxEnbPin, HardwareSerial& serial);
-  void RequestOn();
-  void RequestOff();
-  void Start(const CProtocol& ref, unsigned long timenow, bool self);
+  CTxManage(int TxGatePin, HardwareSerial& serial);
+  void queueOnRequest();
+  void queueOffRequest();
+  void PrepareFrame(const CProtocol& Frame, bool isBTCmaster);
+  void Start(unsigned long timenow);
   bool CheckTx(unsigned long timenow);
-  void Report();
   void begin();
+  const CProtocol& getFrame() const { return m_TxFrame; };
 
 private:
-  CProtocol m_Frame;
+  CProtocol m_TxFrame;
   bool m_bOnReq;
   bool m_bOffReq;
   bool m_bTxPending;
-  int  m_nTxEnbPin;
+  int  m_nTxGatePin;
   unsigned long m_nStartTime;
-  HardwareSerial& m_Serial;
+  HardwareSerial& m_BlueWireSerial;
 
-  void _send();
 };
 
 extern CTxManage TxManage;
