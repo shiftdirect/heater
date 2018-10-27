@@ -45,6 +45,7 @@ void Bluetooth_Init()
     DebugPort.print("  @ ");
     DebugPort.print(BTRates[BTidx]);
     DebugPort.print(" baud... ");
+    Bluetooth.end();
     Bluetooth.begin(BTRates[BTidx]);   // open serial port at a certain baud rate
     Bluetooth.print("\r\n");
     Bluetooth.setTimeout(50);
@@ -85,6 +86,7 @@ void Bluetooth_Init()
         };
         DebugPort.println("OK");
 
+        Bluetooth.end();
         Bluetooth.begin(115200);
         bHC05Available = true;
 

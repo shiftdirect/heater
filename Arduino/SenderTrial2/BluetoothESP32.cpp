@@ -5,12 +5,171 @@
 
 #ifdef ESP32
 
+#define ESP32_USE_HC05
+
 const int LED = 2;
 
 // ESP32
 
 sRxLine RxLine;
 
+#ifdef ESP32_USE_HC05
+
+//static HardwareSerial& Bluetooth(Serial2); // TODO: make proper ESP32 BT client
+
+bool Bluetooth_ATCommand(const char* cmd);
+
+const int BTRates[] = {
+  9600, 38400, 115200, 19200, 57600, 2400, 4800, 1200
+};
+
+bool bHC05Available = false;
+
+void Bluetooth_Init()
+{
+  RxLine.clear();
+  
+  // search for BlueTooth adapter, trying the common baud rates, then less common
+  // as the device cannot be guaranteed to power up with the key pin high
+  // we are at the mercy of the baud rate stored in the module.
+  digitalWrite(KeyPin, HIGH);
+  delay(5000);
+  Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);  // need to explicitly specify pins for pin multiplexer!);   
+
+  DebugPort.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
+
+  int BTidx = 0;
+  int maxTries =  sizeof(BTRates)/sizeof(int);
+  for(BTidx = 0; BTidx < maxTries; BTidx++) {
+    DebugPort.print("  @ ");
+    DebugPort.print(BTRates[BTidx]);
+    DebugPort.print(" baud... ");
+    Serial2.begin(BTRates[BTidx], SERIAL_8N1, Rx2Pin, Tx2Pin);   // open serial port at a certain baud rate
+    delay(100);
+    Serial2.print("\r\n");
+    Serial2.setTimeout(100);
+
+    if(Bluetooth_ATCommand("AT\r\n")) {
+      DebugPort.println(" OK.");
+      break;
+    }
+    if(Bluetooth_ATCommand("AT\r\n")) {
+      DebugPort.println(" OK.");
+      break;
+    }
+    // failed, try another baud rate
+    DebugPort.println("");
+    Serial2.flush();
+    Serial2.end();
+    delay(1000);
+  }
+
+  DebugPort.println("");
+  if(BTidx == maxTries) {
+    DebugPort.println("FAILED to detect HC-05 Bluetooth module :-(");
+  }
+  else {
+/*//    if(BTRates[BTidx] == 115200) {
+    if(BTRates[BTidx] == 9600) {
+//      DebugPort.println("HC-05 found and already set to 115200 baud, skipping Init.");
+      DebugPort.println("HC-05 found and already set to 9600 baud, skipping Init.");
+      bHC05Available = true;
+    }
+    else*/ {
+      do {
+        DebugPort.println("HC-05 found");
+
+        DebugPort.print("  Setting Name to \"Diesel Heater\"... ");
+        if(!Bluetooth_ATCommand("AT+NAME=\"Diesel Heater\"\r\n")) {
+          DebugPort.println("FAILED");
+          break;
+        }
+        DebugPort.println("OK");
+
+//        DebugPort.print("  Setting baud rate to 115200N81...");
+//        if(!Bluetooth_ATCommand("AT+UART=115200,1,0\r\n")) {
+        DebugPort.print("  Setting baud rate to 9600N81...");
+        if(!Bluetooth_ATCommand("AT+UART=9600,1,0\r\n")) {
+          DebugPort.println("FAILED");
+          break;
+        };
+        DebugPort.println("OK");
+
+//        Serial2.begin(115200, SERIAL_8N1, Rx2Pin, Tx2Pin);
+        Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);
+        bHC05Available = true;
+
+      } while(0);
+
+    }
+  }
+  digitalWrite(KeyPin, LOW);  // leave HC-05 command mode
+
+  delay(500);
+
+  if(!bHC05Available)
+    Serial2.end();    // close serial port if no module found
+
+  DebugPort.println("");
+}
+
+void Bluetooth_Check()
+{
+  // check for data coming back over Bluetooth
+  if(bHC05Available) {
+    if(Serial2.available()) {
+      char rxVal = Serial2.read();
+      if(isControl(rxVal)) {    // "End of Line"
+        Command_Interpret(RxLine.Line);
+        RxLine.clear();
+      }
+      else {
+        RxLine.append(rxVal);   // append new char to our Rx buffer
+      }
+    }
+  }
+}
+
+
+void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
+{
+  DebugPort.print(millis());
+  DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
+
+  if(bHC05Available) {
+    if(Frame.verifyCRC()) {
+      digitalWrite(LED, !digitalRead(LED)); // toggle LED
+      Serial2.print(pHdr);
+      Serial2.write(Frame.Data, 24);
+    }
+    else {
+      DebugPort.print("Bluetooth data not sent, CRC error ");
+      DebugPort.println(pHdr);
+    }
+  }
+  else {
+    DebugPort.println("No Bluetooth client");
+    digitalWrite(LED, 0);
+  }
+}
+
+// local function, typically to perform Hayes commands with HC-05
+bool Bluetooth_ATCommand(const char* cmd)
+{
+//  if(bHC05Available) {
+    Serial2.print(cmd);
+    char RxBuffer[16];
+    memset(RxBuffer, 0, 16);
+    int read = Serial2.readBytesUntil('\n', RxBuffer, 16);  // \n is not included in returned string!
+    if((read == 3) && (0 == strcmp(RxBuffer, "OK\r")) ) {
+      return true;
+    }
+    return false;
+//  }
+//  return false;
+}
+
+#else // ESP32_USE_HC05
 #ifndef ESP32_USE_BLE_RLJ
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -49,13 +208,25 @@ void Bluetooth_Check()
 
 void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
+  char fullMsg[32];
+
+  DebugPort.print(millis());
   DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
+  delay(40);
   if(SerialBT.hasClient()) {
 
     if(Frame.verifyCRC()) {
       digitalWrite(LED, !digitalRead(LED)); // toggle LED
-      SerialBT.print(pHdr);
-      SerialBT.write(Frame.Data, 24);
+      int len = strlen(pHdr);
+      if(len < 8) {
+        strcpy(fullMsg, pHdr);
+        memcpy(&fullMsg[len], Frame.Data, 24);
+        SerialBT.write((uint8_t*)fullMsg, 24+len);
+      }
+/*      SerialBT.print(pHdr);
+      delay(1);
+      SerialBT.write(Frame.Data, 24);*/
+      delay(10);
     }
     else {
       DebugPort.println("Data not sent to Bluetooth, CRC error!");
@@ -67,6 +238,14 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm
   }
 }
 
+void Bluetooth_SendACK()
+{
+ /* if(SerialBT.hasClient()) {
+    SerialBT.print("[ACK]");
+  }*/
+}
+
+ 
 //                              ^
 //                              |
 //                       CLASSIC BLUETOOTH
@@ -215,5 +394,7 @@ void BLE_Send(std::string Data)
 /////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // ESP32_USE_BLE_RLJ
+
+#endif // ESP32_USE_HC05
 
 #endif  // __ESP32__
