@@ -1,4 +1,4 @@
- /*
+  /*
   Chinese Heater Half Duplex Serial Data Sending Tool
 
   Connects to the blue wire of a Chinese heater, which is the half duplex serial link.
@@ -68,12 +68,9 @@
 #include "NVStorage.h"
 #include "debugport.h"
 
-#define BLUETOOTH
 #define DEBUG_BTRX
   
-#ifdef BLUETOOTH
 #include "Bluetooth.h"
-#endif
 
 #if defined(__arm__)
 // Required for Arduino Due, UARTclass is derived from HardwareSerial
@@ -84,13 +81,11 @@ static UARTClass& BlueWire(Serial1);
 static HardwareSerial& BlueWire(Serial1);  
 #endif
 
-void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr);
-
 class CommStates {
   public:
     // comms states
     enum eCS { 
-      Idle, ControllerRx, ControllerReport, HeaterRx1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterReport2 
+      Idle, OEMCtrlRx, OEMCtrlReport, HeaterRx1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterReport2 
     };
   CommStates() {
     set(Idle);
@@ -102,8 +97,8 @@ class CommStates {
   bool is(eCS eState) {
     return m_State == eState;
   }
-  bool saveData(unsigned char* pData, unsigned char val, int limit = 24) {   // returns true when buffer filled
-    pData[m_Count++] = val;
+  bool collectData(CProtocol& Frame, unsigned char val, int limit = 24) {   // returns true when buffer filled
+    Frame.Data[m_Count++] = val;
     return m_Count == limit;
   }
 private:
@@ -114,11 +109,12 @@ private:
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWire);
-CProtocol OEMControllerFrame;        // data packet received from heater in response to OEM controller packet
+CProtocol OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
 CProtocol HeaterFrame1;        // data packet received from heater in response to OEM controller packet
 CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 long lastRxTime;        // used to observe inter character delays
+bool hasOEMController = false;
 
 // setup Non Volatile storage
 // this is very much hardware dependent, we can use the ESP32's FLASH
@@ -129,6 +125,7 @@ CHeaterStorage NVStorage;   // dummy, for now
 #endif
 CHeaterStorage* pNVStorage = NULL;
 
+void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCmaster);
 
 void setup() 
 {
@@ -136,6 +133,9 @@ void setup()
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, 
   // Note special baud rate for Chinese heater controllers
+  pinMode(Tx2Pin, OUTPUT);
+  digitalWrite(Tx2Pin, HIGH);
+  pinMode(Rx2Pin, INPUT_PULLUP);
   pinMode(ListenOnlyPin, INPUT_PULLUP);
   pinMode(KeyPin, OUTPUT);
   digitalWrite(KeyPin, LOW);
@@ -167,9 +167,7 @@ void setup()
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
 
-#ifdef BLUETOOTH
   Bluetooth_Init();
-#endif
  
   // create pointer to CHeaterStorage
   // via the magic of polymorphism we can use this to access whatever 
@@ -199,9 +197,7 @@ void loop()
     }
   }
 
-#ifdef BLUETOOTH
   Bluetooth_Check();    // check for Bluetooth activity
-#endif
 
   // Handle time interval where we send data to the blue wire
   if(CommState.is(CommStates::BTC_Tx)) {
@@ -220,18 +216,16 @@ void loop()
     // have not seen any receive data for a second.
     // OEM controller is probably not connected. 
     // Skip state machine immediately to BTC_Tx, sending our own settings.
+    hasOEMController = false;
     CommState.set(CommStates::BTC_Tx);
     bool isBTCmaster = true;
     TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
     TxManage.Start(timenow);
-#ifdef BLUETOOTH
-    Bluetooth_SendFrame("[BTC]", TxManage.getFrame());    //  BTC => Bluetooth Controller :-)
-#endif
   }
 
   // precautionary action if all 24 bytes were not received whilst expecting them
   if(RxTimeElapsed > 50) {              
-    if( CommState.is(CommStates::ControllerRx) || 
+    if( CommState.is(CommStates::OEMCtrlRx) || 
         CommState.is(CommStates::HeaterRx1) ||  
         CommState.is(CommStates::HeaterRx2) ) {
 
@@ -239,32 +233,47 @@ void loop()
     }
   }
 
-  // read data from Serial port 1, the "blue wire" (to/from heater), store according to CommState
+  //////////////////////////////////////////////////////////////////////////////////////
+  // Blue wire data reception
+  //  Reads data from the "blue wire" Serial port, (to/from heater)
+  //  If an OEM controller exists we will also see it's data frames
+  //
   if (BlueWire.available()) {
+    
+    // Data is avaialable, read and store according to CommState
+    // if not in a recognised data frame state, the data is deliberately lost
   
     lastRxTime = timenow;
 
-    // detect start of a new frame sequence from OEM controller
-    if( CommState.is(CommStates::Idle) && (RxTimeElapsed > 100)) {       
-      CommState.set(CommStates::ControllerRx);
+    // Detect the start of a new frame sequence from an OEM controller
+    // This when there has been no activity for a while on the blue wire
+    // the heater always responds to a controller frame, but not otherwise
+    if( CommState.is(CommStates::Idle) && (RxTimeElapsed > 100)) {  
+      DebugPort.print(RxTimeElapsed);
+      DebugPort.println(" OEM Controller re-sync");
+      hasOEMController = true;
+      CommState.set(CommStates::OEMCtrlRx);
     }
     
     int inByte = BlueWire.read(); // read hex byte
 
-    if( CommState.is(CommStates::ControllerRx) ) {
-      if(CommState.saveData(OEMControllerFrame.Data, inByte) ) {
-        CommState.set(CommStates::ControllerReport);
+    // collect OEM controller frame
+    if( CommState.is(CommStates::OEMCtrlRx) ) {
+      if(CommState.collectData(OEMCtrlFrame, inByte) ) {
+        CommState.set(CommStates::OEMCtrlReport);
       }
     }
 
+    // collect heater frame, in response to an OEM controller
     else if( CommState.is(CommStates::HeaterRx1) ) {
-      if( CommState.saveData(HeaterFrame1.Data, inByte) ) {
+      if( CommState.collectData(HeaterFrame1, inByte) ) {
         CommState.set(CommStates::HeaterReport1);
       }
     }
 
+    // collect heater frame, in response to our control frame
     else if( CommState.is(CommStates::HeaterRx2) ) {
-      if( CommState.saveData(HeaterFrame2.Data, inByte) ) {
+      if( CommState.collectData(HeaterFrame2, inByte) ) {
         CommState.set(CommStates::HeaterReport2);
       }
     }  
@@ -272,27 +281,21 @@ void loop()
   } // BlueWire.available
 
 
-  if( CommState.is(CommStates::ControllerReport) ) {  
+  if( CommState.is(CommStates::OEMCtrlReport) ) {  
     // filled controller frame, report
-#ifdef BLUETOOTH
     // echo received OEM controller frame over Bluetooth, using [OEM] header
-    Bluetooth_SendFrame("[OEM]", OEMControllerFrame);
-#endif
-    DebugReportFrame("OEM  ", OEMControllerFrame, "  ");
+    Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
     CommState.set(CommStates::HeaterRx1);
   }
     
   else if(CommState.is(CommStates::HeaterReport1) ) {
     // received heater frame (after controller message), report
-    DebugReportFrame("Htr1  ", HeaterFrame1, "\r\n");
-#ifdef BLUETOOTH
     // echo heater reponse data to Bluetooth client
     Bluetooth_SendFrame("[HTR]", HeaterFrame1);
-#endif
 
     if(digitalRead(ListenOnlyPin)) {
       bool isBTCmaster = false;
-      TxManage.PrepareFrame(OEMControllerFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
+      TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
       TxManage.Start(timenow);
       CommState.set(CommStates::BTC_Tx);
     }
@@ -303,13 +306,22 @@ void loop()
     
   else if( CommState.is(CommStates::HeaterReport2) ) {
     // received heater frame (after our control message), report
-    DebugReportFrame("Htr2  ", HeaterFrame2, "\r\n");
-//    if(!digitalRead(ListenOnlyPin)) {
-#ifdef BLUETOOTH
+    delay(5);
+    if(!hasOEMController) {
+      Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), true);    //  BTC => Bluetooth Controller :-)
       Bluetooth_SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
-#endif
+    }
+    else {
+      DebugReportFrame("Htr2  ", HeaterFrame2, "\r\n");
+    }
+//    if(!digitalRead(ListenOnlyPin)) {
 //    }
     CommState.set(CommStates::Idle);
+
+#ifdef SHOW_HEAP
+    Serial.print("Free heap ");
+    Serial.println(ESP.getFreeHeap());
+#endif
   }
     
 }  // loop
@@ -319,80 +331,87 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
   DebugPort.print(hdr);                     // header
   for(int i=0; i<24; i++) {
     char str[16];
-    sprintf(str, "%02X ", Frame.Data[i]);  // build 2 dig hex values
+    sprintf(str, " %02X", Frame.Data[i]);  // build 2 dig hex values
     DebugPort.print(str);                   // and print     
   }
   DebugPort.print(ftr);                     // footer
 }
 
-void Command_Interpret(String line)
+
+void Command_Interpret(const char* pLine)
 {
   unsigned char cVal;
   unsigned short sVal;
+
+  if(strlen(pLine) == 0)
+    return;
   
   #ifdef DEBUG_BTRX
-    DebugPort.println(line);
-    DebugPort.println();
+    DebugPort.println(pLine);
   #endif
 
-  if(line.startsWith("[CMD]") ) {
-    DebugPort.write("BT command Rx'd: ");
+  if(strncmp(pLine, "[CMD]", 5) == 0) {
     // incoming command from BT app!
-    line.remove(0, 5);   // strip away "[CMD]" header
-    if(line.startsWith("ON") ) {
-      DebugPort.write("ON\n");
+    DebugPort.write("  Command decode: ");
+
+    pLine += 5;   // skip past "[CMD]" header
+    if(strncmp(pLine, "ON", 2) == 0) {
       TxManage.queueOnRequest();
+      DebugPort.println("Heater ON");
     }
-    else if(line.startsWith("OFF")) {
-      DebugPort.write("OFF\n");
+    else if(strncmp(pLine, "OFF", 3) == 0) {
       TxManage.queueOffRequest();
+      DebugPort.println("Heater OFF");
     }
-    else if(line.startsWith("Pmin")) {
-      line.remove(0, 4);
-      DebugPort.write("Pmin=");
-      cVal = (line.toFloat() * 10) + 0.5;
-      DebugPort.println(cVal);
+    else if(strncmp(pLine, "Pmin", 4) == 0) {
+      pLine += 4;
+      cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmin(cVal);
-    }
-    else if(line.startsWith("Pmax")) {
-      line.remove(0, 4);
-      DebugPort.write("Pmax=");
-      cVal = (line.toFloat() * 10) + 0.5;
+      DebugPort.print("Pump min = ");
       DebugPort.println(cVal);
+    }
+    else if(strncmp(pLine, "Pmax", 4) == 0) {
+      pLine += 4;
+      cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmax(cVal);
-    }
-    else if(line.startsWith("Fmin")) {
-      line.remove(0, 4);
-      DebugPort.print("Fmin=");
-      sVal = line.toInt();
-      DebugPort.println(sVal);
-      pNVStorage->setFmin(sVal);
-    }
-    else if(line.startsWith("Fmax")) {
-      line.remove(0, 4);
-      DebugPort.print("Fmax=");
-      sVal = line.toInt();
-      DebugPort.println(sVal);
-      pNVStorage->setFmax(sVal);
-    }
-    else if(line.startsWith("save")) {
-      line.remove(0, 4);
-      DebugPort.write("save\n");
-      pNVStorage->save();
-    }
-    else if(line.startsWith("degC")) {
-      line.remove(0, 4);
-      DebugPort.write("degC=");
-      cVal = line.toInt();
+      DebugPort.print("Pump max = ");
       DebugPort.println(cVal);
-      pNVStorage->setTemperature(cVal);
     }
-    else if(line.startsWith("Mode")) {
-      line.remove(0, 4);
-      DebugPort.write("Mode=");
+    else if(strncmp(pLine, "Fmin", 4) == 0) {
+      pLine += 4;
+      sVal = atoi(pLine);
+      pNVStorage->setFmin(sVal);
+      DebugPort.print("Fan min = ");
+      DebugPort.println(sVal);
+    }
+    else if(strncmp(pLine, "Fmax", 4) == 0) {
+      pLine += 4;
+      sVal = atoi(pLine);
+      pNVStorage->setFmax(sVal);
+      DebugPort.print("Fan max = ");
+      DebugPort.println(int(sVal));
+    }
+    else if(strncmp(pLine, "save", 4) == 0) {
+      pNVStorage->save();
+      DebugPort.println("NV save");
+    }
+    else if(strncmp(pLine, "degC", 4) == 0) {
+      pLine += 4;
+      cVal = atoi(pLine);
+      pNVStorage->setTemperature(cVal);
+      DebugPort.print("degC = ");
+      DebugPort.println(cVal);
+    }
+    else if(strncmp(pLine, "Mode", 4) == 0) {
+      pLine += 4;
       cVal = !pNVStorage->getThermostatMode();
       pNVStorage->setThermostatMode(cVal);
-      DebugPort.println(cVal);
+      DebugPort.print("Mode now ");
+      DebugPort.println(cVal ? "Thermostat" : "Fixed Hz");
+    }
+    else {
+      DebugPort.print(pLine);
+      DebugPort.println(" ????");
     }
 
   }

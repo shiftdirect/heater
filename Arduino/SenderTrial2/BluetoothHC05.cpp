@@ -18,7 +18,7 @@ static HardwareSerial& Bluetooth(Serial2); // TODO: make proper ESP32 BT client
 
 bool Bluetooth_ATCommand(const char* cmd);
 
-String BluetoothRxData;
+sRxLine RxLine;
 
 const int BTRates[] = {
   9600, 38400, 115200, 19200, 57600, 2400, 4800
@@ -28,7 +28,8 @@ bool bHC05Available = false;
 
 void Bluetooth_Init()
 {
-
+  RxLine.clear();
+  
   // search for BlueTooth adapter, trying the common baud rates, then less common
   // as the device cannot be guaranteed to power up with the key pin high
   // we are at the mercy of the baud rate stored in the module.
@@ -44,6 +45,7 @@ void Bluetooth_Init()
     DebugPort.print("  @ ");
     DebugPort.print(BTRates[BTidx]);
     DebugPort.print(" baud... ");
+    Bluetooth.end();
     Bluetooth.begin(BTRates[BTidx]);   // open serial port at a certain baud rate
     Bluetooth.print("\r\n");
     Bluetooth.setTimeout(50);
@@ -84,6 +86,7 @@ void Bluetooth_Init()
         };
         DebugPort.println("OK");
 
+        Bluetooth.end();
         Bluetooth.begin(115200);
         bHC05Available = true;
 
@@ -108,12 +111,11 @@ void Bluetooth_Check()
     if(Bluetooth.available()) {
       char rxVal = Bluetooth.read();
       if(isControl(rxVal)) {    // "End of Line"
-        BluetoothRxData += '\0';
-        Command_Interpret(BluetoothRxData);
-        BluetoothRxData = "";
+        Command_Interpret(RxLine.Line);
+        RxLine.clear();
       }
       else {
-        BluetoothRxData += rxVal;   // append new char to our Rx buffer
+        RxLine.append(rxVal);   // append new char to our Rx buffer
       }
     }
   }

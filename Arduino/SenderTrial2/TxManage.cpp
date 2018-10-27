@@ -3,6 +3,26 @@
 
 extern void DebugReportFrame(const char* hdr, const CProtocol&, const char* ftr);
 
+// CTxManage is used to send a data frame to the blue wire
+//
+// As the blue wire is bidirectional, we need to only allow our transmit data
+// to reach the blue wire when we actually want to send data.
+// At all other times we are listening to the blue wire, receiving any async data
+//
+// This requires external circuitry to toggle the Tx/Rx modes.
+// A "Tx Gating" signal is used.
+//   when high, transmit data is sent to the blue wire
+//   when low, transmit data is blocked (Hi-Z)
+//
+// Ideally the circuit also prevents feeding back our own Tx data into the Rx pin
+// but the main software loop handles this situation by only accepting Rx data when expected.
+//
+//  Timing diagram
+//                                 ____________________
+//   Tx Gate  ____________________|                    |___________________________
+//            _____________________________________________________________________
+//   Tx Data                          |||||||||||||||
+
 CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) : 
   m_BlueWireSerial(serial),
   m_TxFrame(CProtocol::CtrlMode)
@@ -75,7 +95,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 void
 CTxManage::Start(unsigned long timenow)
 {
-  if(timenow == 0)  // avoid a black hole if millis() wraps
+  if(timenow == 0)  // avoid a black hole if millis() has wrapped to zero
     timenow++;
 
   m_nStartTime = timenow;
@@ -97,17 +117,17 @@ CTxManage::CheckTx(unsigned long timenow)
       digitalWrite(m_nTxGatePin, HIGH);
     }
     if(m_bTxPending && (diff > (m_nStartDelay + m_nFrontPorch))) {
-      // begin serial transmission
+      // front porch expired, perform serial transmission
+      // Tx gate remains held high
       m_bTxPending = false;
       m_BlueWireSerial.write(m_TxFrame.Data, 24);  // write native binary values
-      DebugReportFrame("BTC  ", m_TxFrame, "  ");  // report frame to debug port
     }
     if(diff > (m_nStartDelay + m_nFrameTime)) {
-      // conclude Tx gating
-      m_nStartTime = 0;
+      // conclude Tx gating after (emperical) delay
       digitalWrite(m_nTxGatePin, LOW);
+      m_nStartTime = 0;                          // cancel, we are DONE
     }
   }
-  return m_nStartTime == 0;
+  return m_nStartTime == 0;   // returns true when done
 }
 
