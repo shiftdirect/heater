@@ -1,4 +1,4 @@
- /*
+  /*
   Chinese Heater Half Duplex Serial Data Sending Tool
 
   Connects to the blue wire of a Chinese heater, which is the half duplex serial link.
@@ -68,12 +68,9 @@
 #include "NVStorage.h"
 #include "debugport.h"
 
-#define BLUETOOTH
 #define DEBUG_BTRX
   
-#ifdef BLUETOOTH
 #include "Bluetooth.h"
-#endif
 
 #if defined(__arm__)
 // Required for Arduino Due, UARTclass is derived from HardwareSerial
@@ -117,7 +114,7 @@ CProtocol HeaterFrame1;        // data packet received from heater in response t
 CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 long lastRxTime;        // used to observe inter character delays
-int hasController = 0;
+bool hasOEMController = false;
 
 // setup Non Volatile storage
 // this is very much hardware dependent, we can use the ESP32's FLASH
@@ -170,9 +167,7 @@ void setup()
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
 
-#ifdef BLUETOOTH
   Bluetooth_Init();
-#endif
  
   // create pointer to CHeaterStorage
   // via the magic of polymorphism we can use this to access whatever 
@@ -202,9 +197,7 @@ void loop()
     }
   }
 
-#ifdef BLUETOOTH
   Bluetooth_Check();    // check for Bluetooth activity
-#endif
 
   // Handle time interval where we send data to the blue wire
   if(CommState.is(CommStates::BTC_Tx)) {
@@ -223,17 +216,11 @@ void loop()
     // have not seen any receive data for a second.
     // OEM controller is probably not connected. 
     // Skip state machine immediately to BTC_Tx, sending our own settings.
-    hasController = 0;
+    hasOEMController = false;
     CommState.set(CommStates::BTC_Tx);
     bool isBTCmaster = true;
     TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
     TxManage.Start(timenow);
-#ifdef BLUETOOTH
-//    Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), false);    //  BTC => Bluetooth Controller :-)
-//    Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), true);    //  BTC => Bluetooth Controller :-)
-#else
-    DebugReportFrame("BTC  ", OEMCtrlFrame, "  ");
-#endif
   }
 
   // precautionary action if all 24 bytes were not received whilst expecting them
@@ -264,7 +251,7 @@ void loop()
     if( CommState.is(CommStates::Idle) && (RxTimeElapsed > 100)) {  
       DebugPort.print(RxTimeElapsed);
       DebugPort.println(" OEM Controller re-sync");
-      hasController = 1;
+      hasOEMController = true;
       CommState.set(CommStates::OEMCtrlRx);
     }
     
@@ -296,23 +283,15 @@ void loop()
 
   if( CommState.is(CommStates::OEMCtrlReport) ) {  
     // filled controller frame, report
-#ifdef BLUETOOTH
     // echo received OEM controller frame over Bluetooth, using [OEM] header
     Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
-#else
-    DebugReportFrame("OEM  ", OEMCtrlFrame, "  ");
-#endif
     CommState.set(CommStates::HeaterRx1);
   }
     
   else if(CommState.is(CommStates::HeaterReport1) ) {
     // received heater frame (after controller message), report
-#ifdef BLUETOOTH
     // echo heater reponse data to Bluetooth client
     Bluetooth_SendFrame("[HTR]", HeaterFrame1);
-#else
-    DebugReportFrame("Htr1  ", HeaterFrame1, "\r\n");
-#endif
 
     if(digitalRead(ListenOnlyPin)) {
       bool isBTCmaster = false;
@@ -328,20 +307,21 @@ void loop()
   else if( CommState.is(CommStates::HeaterReport2) ) {
     // received heater frame (after our control message), report
     delay(5);
-#ifdef BLUETOOTH
-    if(!hasController) {
+    if(!hasOEMController) {
       Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), true);    //  BTC => Bluetooth Controller :-)
       Bluetooth_SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
     }
-#else
-    DebugReportFrame("Htr2  ", HeaterFrame2, "\r\n");
-#endif
+    else {
+      DebugReportFrame("Htr2  ", HeaterFrame2, "\r\n");
+    }
 //    if(!digitalRead(ListenOnlyPin)) {
 //    }
     CommState.set(CommStates::Idle);
 
+#ifdef SHOW_HEAP
     Serial.print("Free heap ");
     Serial.println(ESP.getFreeHeap());
+#endif
   }
     
 }  // loop

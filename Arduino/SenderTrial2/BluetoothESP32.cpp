@@ -19,22 +19,38 @@ sRxLine RxLine;
 
 bool Bluetooth_ATCommand(const char* cmd);
 
-const int BTRates[] = {
-  9600, 38400, 115200, 19200, 57600, 2400, 4800, 1200
-};
 
-bool bHC05Available = false;
+// Search for a HC-05 BlueTooth adapter, trying the more common baud rates first.
+// As we cannot power up with the key pin high we are at the mercy of the baud rate 
+// stored in the module.
+// **IMPORTANT** 
+//     We must use a HC-05 module that uses a 3 pin 3.3V regulator (NOT 5 pin).
+//     On those modules, the EN input drive pin 34 and can be used to switch to AT 
+//     command mode from data mode by raising EN high.
+//  ** BEWARE** 
+//     The other style modules (with a 5 pin regulator) will disable the HC-05's power
+//     when the EN pin is low!!!!
+//
+// Once in command mode we can start interrogating using a simple "AT" command and 
+// checking for a response.
+// If no response, try another baud rate till we do find a response.
+// We can then proceed and configure the device's name, and force 9600 data rate
 
 void Bluetooth_Init()
 {
+  const int BTRates[] = {
+    9600, 38400, 115200, 19200, 57600, 2400, 4800, 1200
+  };
+
   RxLine.clear();
+
+  // attach to the SENSE line from the HC-05 module
+  // this line goes high when a BT client is connected :-)
+  pinMode(HC05_Sense, INPUT);              
   
-  // search for BlueTooth adapter, trying the common baud rates, then less common
-  // as the device cannot be guaranteed to power up with the key pin high
-  // we are at the mercy of the baud rate stored in the module.
-  digitalWrite(KeyPin, HIGH);
-  delay(5000);
-  Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);  // need to explicitly specify pins for pin multiplexer!);   
+  digitalWrite(KeyPin, HIGH);              // request HC-05 module to enter command mode
+  // Open Serial2, explicitly specify pins for pin multiplexer!);   
+  Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);  
 
   DebugPort.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
 
@@ -44,88 +60,85 @@ void Bluetooth_Init()
     DebugPort.print("  @ ");
     DebugPort.print(BTRates[BTidx]);
     DebugPort.print(" baud... ");
-    Serial2.begin(BTRates[BTidx], SERIAL_8N1, Rx2Pin, Tx2Pin);   // open serial port at a certain baud rate
+    Serial2.begin(BTRates[BTidx], SERIAL_8N1, Rx2Pin, Tx2Pin);   // open serial port at a std.baud rate
+    delay(10);
+    Serial2.print("\r\n");      // clear the throat!
     delay(100);
-    Serial2.print("\r\n");
     Serial2.setTimeout(100);
 
-    if(Bluetooth_ATCommand("AT\r\n")) {
+    if(Bluetooth_ATCommand("AT\r\n")) {   // probe with a simple "AT"
+      DebugPort.println(" OK.");          // got a response - woo hoo found the module!
+      break;
+    }
+    if(Bluetooth_ATCommand("AT\r\n")) {   // sometimes a second try is good...
       DebugPort.println(" OK.");
       break;
     }
-    if(Bluetooth_ATCommand("AT\r\n")) {
-      DebugPort.println(" OK.");
-      break;
-    }
+
     // failed, try another baud rate
     DebugPort.println("");
     Serial2.flush();
     Serial2.end();
-    delay(1000);
+    delay(100);
   }
 
   DebugPort.println("");
   if(BTidx == maxTries) {
-    DebugPort.println("FAILED to detect HC-05 Bluetooth module :-(");
+    // we could not get anywhere with teh AT commands, but maybe this is the other module
+    // plough on and assume 9600 baud, but at the mercy of whatever the module name is...
+    DebugPort.println("FAILED to detect a HC-05 Bluetooth module :-(");
+    // leave the EN pin high - if other style module keeps it powered!
+
+    // assume it is 9600, and just (try to) use it like that...
+    // we will sense the STATE line to prove a client is hanging off the link...
+    DebugPort.println("ASSUMING a HC-05 module @ 9600baud (Unknown name)");
+    Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);
   }
   else {
-/*//    if(BTRates[BTidx] == 115200) {
-    if(BTRates[BTidx] == 9600) {
-//      DebugPort.println("HC-05 found and already set to 115200 baud, skipping Init.");
-      DebugPort.println("HC-05 found and already set to 9600 baud, skipping Init.");
-      bHC05Available = true;
-    }
-    else*/ {
-      do {
-        DebugPort.println("HC-05 found");
+    // found a HC-05 module at one of its supported baud rates.
+    // now program it's name and force a 9600 baud data interface.
+    // this is the defacto standard as shipped!
 
-        DebugPort.print("  Setting Name to \"Diesel Heater\"... ");
-        if(!Bluetooth_ATCommand("AT+NAME=\"Diesel Heater\"\r\n")) {
-          DebugPort.println("FAILED");
-          break;
-        }
-        DebugPort.println("OK");
+    DebugPort.println("HC-05 found");
 
-//        DebugPort.print("  Setting baud rate to 115200N81...");
-//        if(!Bluetooth_ATCommand("AT+UART=115200,1,0\r\n")) {
-        DebugPort.print("  Setting baud rate to 9600N81...");
-        if(!Bluetooth_ATCommand("AT+UART=9600,1,0\r\n")) {
-          DebugPort.println("FAILED");
-          break;
-        };
-        DebugPort.println("OK");
+    do {   // so we can break!
+      DebugPort.print("  Setting Name to \"Diesel Heater\"... ");
+      if(!Bluetooth_ATCommand("AT+NAME=\"Diesel Heater\"\r\n")) {
+        DebugPort.println("FAILED");
+        break;
+      }
+      DebugPort.println("OK");
 
-//        Serial2.begin(115200, SERIAL_8N1, Rx2Pin, Tx2Pin);
-        Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);
-        bHC05Available = true;
+      DebugPort.print("  Setting baud rate to 9600N81...");
+      if(!Bluetooth_ATCommand("AT+UART=9600,1,0\r\n")) {
+        DebugPort.println("FAILED");
+        break;
+      };
+      DebugPort.println("OK");
 
-      } while(0);
+      Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);
 
-    }
+      // leave HC-05 command mode, return to data mode
+      digitalWrite(KeyPin, LOW);  
+    } while (0);   // yeah lame, allows break prior though :-)
   }
-  digitalWrite(KeyPin, LOW);  // leave HC-05 command mode
 
-  delay(500);
-
-  if(!bHC05Available)
-    Serial2.end();    // close serial port if no module found
+  delay(50);
 
   DebugPort.println("");
 }
 
 void Bluetooth_Check()
-{
+{  
   // check for data coming back over Bluetooth
-  if(bHC05Available) {
-    if(Serial2.available()) {
-      char rxVal = Serial2.read();
-      if(isControl(rxVal)) {    // "End of Line"
-        Command_Interpret(RxLine.Line);
-        RxLine.clear();
-      }
-      else {
-        RxLine.append(rxVal);   // append new char to our Rx buffer
-      }
+  if(Serial2.available()) {
+    char rxVal = Serial2.read();
+    if(isControl(rxVal)) {    // "End of Line"
+      Command_Interpret(RxLine.Line);
+      RxLine.clear();
+    }
+    else {
+      RxLine.append(rxVal);   // append new char to our Rx buffer
     }
   }
 }
@@ -134,39 +147,42 @@ void Bluetooth_Check()
 void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
   DebugPort.print(millis());
-  DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
+  DebugPort.print("ms ");
+//  DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
+  DebugReportFrame(pHdr, Frame, "   ");
 
-  if(bHC05Available) {
+  if(digitalRead(HC05_Sense)) {
     if(Frame.verifyCRC()) {
-      digitalWrite(LED, !digitalRead(LED)); // toggle LED
+      // send data frame to HC-05
       Serial2.print(pHdr);
       Serial2.write(Frame.Data, 24);
+      // toggle LED
+      digitalWrite(LED, !digitalRead(LED)); // toggle LED
     }
     else {
       DebugPort.print("Bluetooth data not sent, CRC error ");
-      DebugPort.println(pHdr);
     }
   }
   else {
-    DebugPort.println("No Bluetooth client");
+    DebugPort.print("No Bluetooth client");
+      // force LED off
     digitalWrite(LED, 0);
   }
+  if(lineterm)
+    DebugPort.println("");
 }
 
 // local function, typically to perform Hayes commands with HC-05
 bool Bluetooth_ATCommand(const char* cmd)
 {
-//  if(bHC05Available) {
-    Serial2.print(cmd);
-    char RxBuffer[16];
-    memset(RxBuffer, 0, 16);
-    int read = Serial2.readBytesUntil('\n', RxBuffer, 16);  // \n is not included in returned string!
-    if((read == 3) && (0 == strcmp(RxBuffer, "OK\r")) ) {
-      return true;
-    }
-    return false;
-//  }
-//  return false;
+  Serial2.print(cmd);
+  char RxBuffer[16];
+  memset(RxBuffer, 0, 16);
+  int read = Serial2.readBytesUntil('\n', RxBuffer, 16);  // \n is not included in returned string!
+  if((read == 3) && (0 == strcmp(RxBuffer, "OK\r")) ) {
+    return true;
+  }
+  return false;
 }
 
 #else // ESP32_USE_HC05
