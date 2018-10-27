@@ -67,9 +67,11 @@
 #include "pins.h"
 #include "NVStorage.h"
 #include "debugport.h"
+#include "BTCWifi.h"
 
-#define DEBUG_BTRX
-  
+#define TRIGGER_PIN 12
+
+#define DEBUG_BTRX  
 #include "Bluetooth.h"
 
 #if defined(__arm__)
@@ -152,6 +154,7 @@ void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCm
 
 void setup() 
 {
+  initWifi(TRIGGER_PIN);
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, 
@@ -208,7 +211,7 @@ void setup()
 void loop() 
 {
   unsigned long timenow = millis();
-
+  doWiFiManager();
   // check for test commands received from PC Over USB
   if(DebugPort.available()) {
     char rxval = DebugPort.read();
