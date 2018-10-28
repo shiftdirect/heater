@@ -235,6 +235,16 @@ void loop()
         CommState.is(CommStates::HeaterRx1) ||  
         CommState.is(CommStates::HeaterRx2) ) {
 
+      if(CommState.is(CommStates::OEMCtrlRx)) {
+        DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
+      }
+      else if(CommState.is(CommStates::HeaterRx1)) {
+        DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
+      }
+      else {
+        DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
+      }
+
       CommState.set(CommStates::Idle);  // revert to idle mode
     }
   }
