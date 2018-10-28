@@ -1,17 +1,4 @@
-//comment this out to remove TELNET
-
-#define TELNET
-
-
-#ifdef TELNET
-#define PRNT Debug
-#endif
-
-#ifndef TELNET
-#define PRNT Serial
-#endif
-
-  
+ 
   /*
   Chinese Heater Half Duplex Serial Data Sending Tool
 
@@ -85,7 +72,8 @@
 #define HOST_NAME "remotedebug-sample"
 #define TRIGGER_PIN 0
 
-
+#define FAILEDSSID "BTCESP32"
+#define FAILEDPASSWORD "thereisnospoon"
 
 //comment this out to remove TELNET
 
@@ -182,7 +170,7 @@ void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCm
 
 void setup() 
 {
-  initWifi(TRIGGER_PIN);
+  initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
   inittelnetdebug(HOST_NAME);
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
@@ -241,6 +229,7 @@ void loop()
 {
   unsigned long timenow = millis();
   doWiFiManager();
+  //PRNT.println(WiFi.localIP());
   DoDebug();
   // check for test commands received from PC Over USB
   
@@ -297,7 +286,7 @@ void loop()
     // This will be the first activity for considerable period on the blue wire
     // The heater always responds to a controller frame, but otherwise never by itself
     if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
-      PRNT.print("Re-sync'd with OEM Controller. ");
+      PRNT.printf("Re-sync'd with OEM Controller. ");
       PRNT.print(RxTimeElapsed);
       PRNT.println("ms Idle time.");
       hasOEMController = true;
@@ -386,7 +375,7 @@ void loop()
     CommState.set(CommStates::Idle);
 
 #ifdef SHOW_HEAP
-    Serial.print("Free heap ");
+    Serial.printf("Free heap ");
     Serial.println(ESP.getFreeHeap());
 #endif
   }
@@ -395,13 +384,13 @@ void loop()
 
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 {
-  PRNT.print(hdr);                     // header
+  PRNT.printf(hdr);                     // header
   for(int i=0; i<24; i++) {
     char str[16];
     sprintf(str, " %02X", Frame.Data[i]);  // build 2 dig hex values
-    PRNT.print(str);                   // and print     
+    PRNT.printf(str);                   // and print     
   }
-  PRNT.print(ftr);                     // footer
+  PRNT.printf(ftr);                     // footer
 }
 
 
@@ -434,28 +423,28 @@ void Command_Interpret(const char* pLine)
       pLine += 4;
       cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmin(cVal);
-      PRNT.print("Pump min = ");
+      PRNT.printf("Pump min = ");
       PRNT.println(cVal);
     }
     else if(strncmp(pLine, "Pmax", 4) == 0) {
       pLine += 4;
       cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmax(cVal);
-      PRNT.print("Pump max = ");
+      PRNT.printf("Pump max = ");
       PRNT.println(cVal);
     }
     else if(strncmp(pLine, "Fmin", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
       pNVStorage->setFmin(sVal);
-      PRNT.print("Fan min = ");
+      PRNT.printf("Fan min = ");
       PRNT.println(sVal);
     }
     else if(strncmp(pLine, "Fmax", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
       pNVStorage->setFmax(sVal);
-      PRNT.print("Fan max = ");
+      PRNT.printf("Fan max = ");
       PRNT.println(int(sVal));
     }
     else if(strncmp(pLine, "save", 4) == 0) {
@@ -466,21 +455,20 @@ void Command_Interpret(const char* pLine)
       pLine += 4;
       cVal = atoi(pLine);
       pNVStorage->setTemperature(cVal);
-      PRNT.print("degC = ");
+      PRNT.printf("degC = ");
       PRNT.println(cVal);
     }
     else if(strncmp(pLine, "Mode", 4) == 0) {
       pLine += 4;
       cVal = !pNVStorage->getThermostatMode();
       pNVStorage->setThermostatMode(cVal);
-      PRNT.print("Mode now ");
+      PRNT.printf("Mode now ");
       PRNT.println(cVal ? "Thermostat" : "Fixed Hz");
     }
     else {
-      PRNT.print(pLine);
+      PRNT.printf(pLine);
       PRNT.println(" ????");
     }
 
   }
 }
-

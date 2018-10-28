@@ -1,10 +1,4 @@
 #include "BTCWifi.h"
-
-
-
-//this is for telnet only
-
-
 // select which pin will trigger the configuration portal when set to LOW
 
 WiFiManager wm;
@@ -36,6 +30,7 @@ void inittelnetdebug(String HOST_NAME)
   hostNameWifi.concat(".local");
 
   Debug.begin(HOST_NAME);
+  Debug.setSerialEnabled(true);
   
   Debug.setResetCmdEnabled(true); // Enable the reset command
 
@@ -81,7 +76,7 @@ void DoDebug()
     }
 }
 
-void initWifi(int initpin) 
+void initWifi(int initpin,const char *failedssid, const char *failedpassword) 
 {
 
   
@@ -94,16 +89,20 @@ void initWifi(int initpin)
     // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
     // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
     // then goes into a blocking loop awaiting configuration and will return success result
+    wm.setConfigPortalTimeout(20);
+    wm.setConfigPortalBlocking(false);
 
     res = wm.autoConnect(); // auto generated AP name from chipid
-    
+
     if(!res) {
         Serial.println("Failed to connect");
-        // ESP.restart();
+        Serial.println("Setting up ESP as AP");
+        WiFi.softAP(failedssid, failedpassword);
     } 
     else {
         //if you get here you have connected to the WiFi    
         Serial.println("connected...yeey :)");
+        
 }
 }
 
@@ -140,5 +139,3 @@ void doWiFiManager(){
     startTime = millis();
   }
 }
-
-

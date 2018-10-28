@@ -68,7 +68,7 @@ void Bluetooth_Init()
   for(BTidx = 0; BTidx < maxTries; BTidx++) {
     PRNT.print("  @ ");
     PRNT.print(BTRates[BTidx]);
-    PRNT.print(" baud... ");
+    PRNT.printf(" baud... ");
     Serial2.begin(BTRates[BTidx], SERIAL_8N1, Rx2Pin, Tx2Pin);   // open serial port at a std.baud rate
     delay(10);
     Serial2.print("\r\n");      // clear the throat!
@@ -97,7 +97,6 @@ void Bluetooth_Init()
     // plough on and assume 9600 baud, but at the mercy of whatever the module name is...
     PRNT.println("FAILED to detect a HC-05 Bluetooth module :-(");
     // leave the EN pin high - if other style module keeps it powered!
-
     // assume it is 9600, and just (try to) use it like that...
     // we will sense the STATE line to prove a client is hanging off the link...
     PRNT.println("ASSUMING a HC-05 module @ 9600baud (Unknown name)");
@@ -111,14 +110,14 @@ void Bluetooth_Init()
     PRNT.println("HC-05 found");
 
     do {   // so we can break!
-      PRNT.print("  Setting Name to \"Diesel Heater\"... ");
+      PRNT.printf("  Setting Name to \"Diesel Heater\"... ");
       if(!Bluetooth_ATCommand("AT+NAME=\"Diesel Heater\"\r\n")) {
         PRNT.println("FAILED");
         break;
       }
       PRNT.println("OK");
 
-      PRNT.print("  Setting baud rate to 9600N81...");
+      PRNT.printf("  Setting baud rate to 9600N81...");
       if(!Bluetooth_ATCommand("AT+UART=9600,1,0\r\n")) {
         PRNT.println("FAILED");
         break;
@@ -156,7 +155,7 @@ void Bluetooth_Check()
 void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
   PRNT.print(millis());
-  PRNT.print("ms ");
+  PRNT.printf("ms ");
 //  DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
   DebugReportFrame(pHdr, Frame, "   ");
 
@@ -169,11 +168,11 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm
       digitalWrite(LED, !digitalRead(LED)); // toggle LED
     }
     else {
-      PRNT.print("Bluetooth data not sent, CRC error ");
+      PRNT.printf("Bluetooth data not sent, CRC error ");
     }
   }
   else {
-    PRNT.print("No Bluetooth client");
+    PRNT.printf("No Bluetooth client");
       // force LED off
     digitalWrite(LED, 0);
   }
@@ -235,7 +234,7 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm
 {
   char fullMsg[32];
 
-  PRNT.print(millis());
+  PRNT.printf(millis());
   DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
   delay(40);
   if(SerialBT.hasClient()) {
