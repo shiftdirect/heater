@@ -130,11 +130,20 @@ public:
   }
 };
 
+class CModeratedFrame : public CProtocol {
+  unsigned long lastTime;
+public:
+  CModeratedFrame() { lastTime = 0; };
+  void setTime() { lastTime = millis(); };
+  unsigned long elapsedTime() { return millis() - lastTime; };
+};
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
-CProtocol OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
-CProtocol HeaterFrame1;        // data packet received from heater in response to OEM controller packet
+//CProtocol OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
+//CProtocol HeaterFrame1;        // data packet received from heater in response to OEM controller packet
+CModeratedFrame OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
+CModeratedFrame HeaterFrame1;        // data packet received from heater in response to OEM controller packet
 CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
@@ -307,7 +316,13 @@ void loop()
   else if( CommState.is(CommStates::OEMCtrlReport) ) {  
     // filled OEM controller frame, report
     // echo received OEM controller frame over Bluetooth, using [OEM] header
-    Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
+    if(OEMCtrlFrame.elapsedTime() > 700) {
+      Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
+      OEMCtrlFrame.setTime();
+    }
+    else {
+      DebugPort.println("Suppressed delivery of OEM frame");
+    }
     CommState.set(CommStates::HeaterRx1);
   }
 
@@ -328,7 +343,13 @@ void loop()
     SmartError.monitor(HeaterFrame1);
 
     // echo heater reponse data to Bluetooth client
-    Bluetooth_SendFrame("[HTR]", HeaterFrame1);
+    if(HeaterFrame1.elapsedTime() > 700) {
+      Bluetooth_SendFrame("[HTR]", HeaterFrame1);
+      HeaterFrame1.setTime();
+    }
+    else {
+      DebugPort.println("Suppressed delivery of OEM heater response frame");
+    }
 
     if(digitalRead(ListenOnlyPin)) {
       bool isBTCmaster = false;
