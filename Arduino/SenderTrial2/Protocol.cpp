@@ -1,6 +1,15 @@
 #include <Arduino.h>
 #include "Protocol.h"
 #include "debugport.h"
+
+#ifdef TELNET
+#define PRNT Debug
+#endif
+
+#ifndef TELNET
+#define PRNT Serial
+#endif
+
  
 unsigned short 
 CProtocol::CalcCRC(int len) const
@@ -52,10 +61,10 @@ CProtocol::verifyCRC() const
   unsigned short FrameCRC = getCRC();
   bool bOK = (FrameCRC == CRC);
   if(!bOK) {
-    DebugPort.print("verifyCRC FAILED: calc:");
-    DebugPort.print(CRC, HEX);
-    DebugPort.print(" data:");
-    DebugPort.println(FrameCRC, HEX);
+    PRNT.print("verifyCRC FAILED: calc:");
+    PRNT.print(CRC, HEX);
+    PRNT.print(" data:");
+    PRNT.println(FrameCRC, HEX);
   }
   return bOK;        // does it match the stored values?
 }

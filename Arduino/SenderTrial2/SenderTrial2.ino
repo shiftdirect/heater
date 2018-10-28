@@ -1,3 +1,17 @@
+//comment this out to remove TELNET
+
+#define TELNET
+
+
+#ifdef TELNET
+#define PRNT Debug
+#endif
+
+#ifndef TELNET
+#define PRNT Serial
+#endif
+
+  
   /*
   Chinese Heater Half Duplex Serial Data Sending Tool
 
@@ -68,8 +82,22 @@
 #include "NVStorage.h"
 #include "debugport.h"
 #include "BTCWifi.h"
+#define HOST_NAME "remotedebug-sample"
+#define TRIGGER_PIN 0
 
-#define TRIGGER_PIN 12
+
+
+//comment this out to remove TELNET
+
+#define TELNET
+
+#ifdef TELNET
+#define PRNT Debug
+#endif
+
+#ifndef TELNET
+#define PRNT DebugPort
+#endif
 
 #define DEBUG_BTRX  
 #include "Bluetooth.h"
@@ -155,6 +183,7 @@ void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCm
 void setup() 
 {
   initWifi(TRIGGER_PIN);
+  inittelnetdebug(HOST_NAME);
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, 
@@ -212,7 +241,9 @@ void loop()
 {
   unsigned long timenow = millis();
   doWiFiManager();
+  DoDebug();
   // check for test commands received from PC Over USB
+  
   if(DebugPort.available()) {
     char rxval = DebugPort.read();
     if(rxval  == '+') {
@@ -266,9 +297,9 @@ void loop()
     // This will be the first activity for considerable period on the blue wire
     // The heater always responds to a controller frame, but otherwise never by itself
     if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
-      DebugPort.print("Re-sync'd with OEM Controller. ");
-      DebugPort.print(RxTimeElapsed);
-      DebugPort.println("ms Idle time.");
+      PRNT.print("Re-sync'd with OEM Controller. ");
+      PRNT.print(RxTimeElapsed);
+      PRNT.println("ms Idle time.");
       hasOEMController = true;
       CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
     }
@@ -364,13 +395,13 @@ void loop()
 
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 {
-  DebugPort.print(hdr);                     // header
+  PRNT.print(hdr);                     // header
   for(int i=0; i<24; i++) {
     char str[16];
     sprintf(str, " %02X", Frame.Data[i]);  // build 2 dig hex values
-    DebugPort.print(str);                   // and print     
+    PRNT.print(str);                   // and print     
   }
-  DebugPort.print(ftr);                     // footer
+  PRNT.print(ftr);                     // footer
 }
 
 
@@ -383,7 +414,7 @@ void Command_Interpret(const char* pLine)
     return;
   
   #ifdef DEBUG_BTRX
-    DebugPort.println(pLine);
+    PRNT.println(pLine);
   #endif
 
   if(strncmp(pLine, "[CMD]", 5) == 0) {
@@ -393,61 +424,61 @@ void Command_Interpret(const char* pLine)
     pLine += 5;   // skip past "[CMD]" header
     if(strncmp(pLine, "ON", 2) == 0) {
       TxManage.queueOnRequest();
-      DebugPort.println("Heater ON");
+      PRNT.println("Heater ON");
     }
     else if(strncmp(pLine, "OFF", 3) == 0) {
       TxManage.queueOffRequest();
-      DebugPort.println("Heater OFF");
+      PRNT.println("Heater OFF");
     }
     else if(strncmp(pLine, "Pmin", 4) == 0) {
       pLine += 4;
       cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmin(cVal);
-      DebugPort.print("Pump min = ");
-      DebugPort.println(cVal);
+      PRNT.print("Pump min = ");
+      PRNT.println(cVal);
     }
     else if(strncmp(pLine, "Pmax", 4) == 0) {
       pLine += 4;
       cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmax(cVal);
-      DebugPort.print("Pump max = ");
-      DebugPort.println(cVal);
+      PRNT.print("Pump max = ");
+      PRNT.println(cVal);
     }
     else if(strncmp(pLine, "Fmin", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
       pNVStorage->setFmin(sVal);
-      DebugPort.print("Fan min = ");
-      DebugPort.println(sVal);
+      PRNT.print("Fan min = ");
+      PRNT.println(sVal);
     }
     else if(strncmp(pLine, "Fmax", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
       pNVStorage->setFmax(sVal);
-      DebugPort.print("Fan max = ");
-      DebugPort.println(int(sVal));
+      PRNT.print("Fan max = ");
+      PRNT.println(int(sVal));
     }
     else if(strncmp(pLine, "save", 4) == 0) {
       pNVStorage->save();
-      DebugPort.println("NV save");
+      PRNT.println("NV save");
     }
     else if(strncmp(pLine, "degC", 4) == 0) {
       pLine += 4;
       cVal = atoi(pLine);
       pNVStorage->setTemperature(cVal);
-      DebugPort.print("degC = ");
-      DebugPort.println(cVal);
+      PRNT.print("degC = ");
+      PRNT.println(cVal);
     }
     else if(strncmp(pLine, "Mode", 4) == 0) {
       pLine += 4;
       cVal = !pNVStorage->getThermostatMode();
       pNVStorage->setThermostatMode(cVal);
-      DebugPort.print("Mode now ");
-      DebugPort.println(cVal ? "Thermostat" : "Fixed Hz");
+      PRNT.print("Mode now ");
+      PRNT.println(cVal ? "Thermostat" : "Fixed Hz");
     }
     else {
-      DebugPort.print(pLine);
-      DebugPort.println(" ????");
+      PRNT.print(pLine);
+      PRNT.println(" ????");
     }
 
   }
