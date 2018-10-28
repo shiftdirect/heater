@@ -49,7 +49,7 @@ public:
       unsigned char GlowPlugCurrent_MSB; // 16 bit - big endian MSB  
       unsigned char GlowPlugCurrent_LSB; // 16 bit - big endian LSB : 10mA / digit
       unsigned char ActualPumpFreq;     // fuel pump freq.: 0.1Hz / digit
-      unsigned char ErrorCode;          // 
+      unsigned char StoredErrorCode;    // 
       unsigned char Unknown1;           // always 0x00
       unsigned char FixedPumpFreq;      // fixed mode frequency set point: 0.1Hz / digit
       unsigned char Unknown2;           // always 0x64  "100 ?"
@@ -121,6 +121,8 @@ public:
   void setRunState(unsigned char state) { Heater.RunState = state; };
   unsigned char getErrState() { return Heater.ErrState; };
   void setErrState(unsigned char state) { Heater.ErrState = state; };
+  unsigned char getStoredErrCode() { return Heater.StoredErrorCode; };
+  void setStoredErrCode(unsigned char state) { Heater.StoredErrorCode = state; };
   //
   short getVoltage_Supply();
   void setVoltage_Supply(short voltsx10);

@@ -248,7 +248,7 @@ CProtocol::Init(int FrameMode)
     setGlowPlug_Voltage(0);
     setGlowPlug_Current(0);
     Heater.ActualPumpFreq = 0;     // fuel pump freq.: 0.1Hz / digit
-    Heater.ErrorCode = 0;          // 
+    Heater.StoredErrorCode = 0;    // 
     Heater.Unknown1 = 0;           // always 0x00
     Heater.FixedPumpFreq = 23;     // fixed mode frequency set point: 0.1Hz / digit
     Heater.Unknown2 = 100;         // always 0x64  "100 ?"

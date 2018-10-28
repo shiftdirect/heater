@@ -67,6 +67,7 @@
 #include "pins.h"
 #include "NVStorage.h"
 #include "debugport.h"
+#include "SmartError.h"
 
 #define DEBUG_BTRX
   
@@ -129,13 +130,23 @@ public:
   }
 };
 
+class CModeratedFrame : public CProtocol {
+  unsigned long lastTime;
+public:
+  CModeratedFrame() { lastTime = 0; };
+  void setTime() { lastTime = millis(); };
+  unsigned long elapsedTime() { return millis() - lastTime; };
+};
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
-CProtocol OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
-CProtocol HeaterFrame1;        // data packet received from heater in response to OEM controller packet
+//CProtocol OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
+//CProtocol HeaterFrame1;        // data packet received from heater in response to OEM controller packet
+CModeratedFrame OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
+CModeratedFrame HeaterFrame1;        // data packet received from heater in response to OEM controller packet
 CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
+CSmartError SmartError;
 long lastRxTime;        // used to observe inter character delays
 bool hasOEMController = false;
 
@@ -152,10 +163,6 @@ void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCm
 
 void setup() 
 {
-  // initialize serial port to interact with the "blue wire"
-  // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
-  // Tx/Rx data to/from heater, 
-  // Note special baud rate for Chinese heater controllers
   pinMode(Tx2Pin, OUTPUT);
   digitalWrite(Tx2Pin, HIGH);
   pinMode(Rx2Pin, INPUT_PULLUP);
@@ -163,6 +170,10 @@ void setup()
   pinMode(KeyPin, OUTPUT);
   digitalWrite(KeyPin, LOW);
 
+  // initialize serial port to interact with the "blue wire"
+  // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
+  // Tx/Rx data to/from heater, 
+  // Note special baud rate for Chinese heater controllers
 #if defined(__arm__) || defined(__AVR__)
   BlueWireSerial.begin(25000);   
   pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
@@ -181,7 +192,7 @@ void setup()
 
   TxManage.begin(); // ensure Tx enable pin is setup
 
-  // define defaults should heater controller be missing
+  // define defaults should OEM controller be missing
   DefaultBTCParams.setTemperature_Desired(23);
   DefaultBTCParams.setTemperature_Actual(22);
   DefaultBTCParams.Controller.OperatingVoltage = 120;
@@ -232,6 +243,16 @@ void loop()
     if( CommState.is(CommStates::OEMCtrlRx) || 
         CommState.is(CommStates::HeaterRx1) ||  
         CommState.is(CommStates::HeaterRx2) ) {
+
+      if(CommState.is(CommStates::OEMCtrlRx)) {
+        DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
+      }
+      else if(CommState.is(CommStates::HeaterRx1)) {
+        DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
+      }
+      else {
+        DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
+      }
 
       CommState.set(CommStates::Idle);  // revert to idle mode
     }
@@ -295,7 +316,13 @@ void loop()
   else if( CommState.is(CommStates::OEMCtrlReport) ) {  
     // filled OEM controller frame, report
     // echo received OEM controller frame over Bluetooth, using [OEM] header
-    Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
+    if(OEMCtrlFrame.elapsedTime() > 700) {
+      Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
+      OEMCtrlFrame.setTime();
+    }
+    else {
+      DebugPort.println("Suppressed delivery of OEM frame");
+    }
     CommState.set(CommStates::HeaterRx1);
   }
 
@@ -310,8 +337,19 @@ void loop()
 
   else if(CommState.is(CommStates::HeaterReport1) ) {
     // received heater frame (after controller message), report
+    
+    // do some monitoring of the heater state variable
+    // if suspicious transitions, introduce a smart error!
+    SmartError.monitor(HeaterFrame1);
+
     // echo heater reponse data to Bluetooth client
-    Bluetooth_SendFrame("[HTR]", HeaterFrame1);
+    if(HeaterFrame1.elapsedTime() > 700) {
+      Bluetooth_SendFrame("[HTR]", HeaterFrame1);
+      HeaterFrame1.setTime();
+    }
+    else {
+      DebugPort.println("Suppressed delivery of OEM heater response frame");
+    }
 
     if(digitalRead(ListenOnlyPin)) {
       bool isBTCmaster = false;
@@ -343,6 +381,11 @@ void loop()
 
   else if( CommState.is(CommStates::HeaterReport2) ) {
     // received heater frame (after our control message), report
+
+    // do some monitoring of the heater state variable
+    // if suspicious transitions, introduce a smart error!
+    SmartError.monitor(HeaterFrame2);
+
     delay(5);
     if(!hasOEMController) {
       // only convey these frames to Bluetooth when NOT using an OEM controller!
@@ -391,10 +434,12 @@ void Command_Interpret(const char* pLine)
     if(strncmp(pLine, "ON", 2) == 0) {
       TxManage.queueOnRequest();
       DebugPort.println("Heater ON");
+      SmartError.reset();
     }
     else if(strncmp(pLine, "OFF", 3) == 0) {
       TxManage.queueOffRequest();
       DebugPort.println("Heater OFF");
+      SmartError.inhibit();
     }
     else if(strncmp(pLine, "Pmin", 4) == 0) {
       pLine += 4;
