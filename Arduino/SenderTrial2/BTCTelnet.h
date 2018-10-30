@@ -1,3 +1,5 @@
+// Unfinished - Jimmy C 30/10/18
+
 #include <Arduino.h>
 #include "BTCWifi.h"
 

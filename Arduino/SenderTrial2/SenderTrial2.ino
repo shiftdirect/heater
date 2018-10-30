@@ -1,4 +1,4 @@
- 
+//
   /*
   Chinese Heater Half Duplex Serial Data Sending Tool
 

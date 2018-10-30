@@ -1,3 +1,4 @@
+// Hopefully this code will be removed on the next commit as I dont think its required
 //#define TELNET
 
 #ifdef TELNET

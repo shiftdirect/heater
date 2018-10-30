@@ -1,3 +1,5 @@
+// Should be working - Jimmy C
+
 #include "BTCWifi.h"
 // select which pin will trigger the configuration portal when set to LOW
 
