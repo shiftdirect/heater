@@ -55,7 +55,7 @@
 
   The circuit:
   - a Tx Rx multiplexer is required to combine the Arduino's Tx1 And Rx1 pins onto the blue wire.
-  - a Tx Enable signal from pin 20 controls the multiplexer
+  - a Tx Enable signal from pin 22 controls the multiplexer, high for Tx, low for Rx
   - Serial logging software on Serial0 via USB link
 
   created 23 Sep 2018 by Ray Jones
@@ -70,6 +70,8 @@
 #include "debugport.h"
 #include "SmartError.h"
 #include "BTCWifi.h"
+#include "BTCConfig.h"
+
 #define HOST_NAME "remotedebug-sample"
 #define TRIGGER_PIN 0
 
@@ -88,8 +90,11 @@
 #define DebugPort DebugPort
 #endif
 
-#define DEBUG_BTRX  
-#include "Bluetooth.h"
+#ifdef ESP32
+#include "BluetoothESP32.h"
+#else
+#include "BluetoothHC05.h"
+#endif
 
 #if defined(__arm__)
 // Required for Arduino Due, UARTclass is derived from HardwareSerial
@@ -165,6 +170,18 @@ CModeratedFrame HeaterFrame1;        // data packet received from heater in resp
 CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
+
+
+#ifdef USE_HC05_BLUETOOTH
+#ifdef ESP32
+CBluetoothHC05onESP32 Bluetooth(HC05_KeyPin, HC05_SensePin, Rx2Pin, Tx2Pin);
+#else
+CBluetoothHC05 Bluetooth(HC05_KeyPin, HC05_SensePin);
+#endif
+#else
+CBluetoothAbstract Bluetooth;
+#endif
+
 long lastRxTime;        // used to observe inter character delays
 bool hasOEMController = false;
 
@@ -179,16 +196,15 @@ CHeaterStorage* pNVStorage = NULL;
 
 void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCmaster);
 
-void setup() 
-{
+void setup() {
   initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
 
   pinMode(Tx2Pin, OUTPUT);
   digitalWrite(Tx2Pin, HIGH);
   pinMode(Rx2Pin, INPUT_PULLUP);
   pinMode(ListenOnlyPin, INPUT_PULLUP);
-  pinMode(KeyPin, OUTPUT);
-  digitalWrite(KeyPin, LOW);
+  pinMode(HC05_KeyPin, OUTPUT);
+  digitalWrite(HC05_KeyPin, LOW);
 
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
@@ -221,7 +237,8 @@ void setup()
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
 
-  Bluetooth_Init();
+//  Bluetooth_Init();
+  Bluetooth.Init();
  
   // create pointer to CHeaterStorage
   // via the magic of polymorphism we can use this to access whatever 
@@ -253,7 +270,8 @@ void loop()
     }
   }
 
-  Bluetooth_Check();    // check for Bluetooth activity
+//  Bluetooth_Check();    // check for Bluetooth activity
+  Bluetooth.Check();    // check for Bluetooth activity
 
   // calc elapsed time since last rxd byte
   // used to detect no OEM controller, or the start of an OEM frame sequence
@@ -339,7 +357,8 @@ void loop()
     // filled OEM controller frame, report
     // echo received OEM controller frame over Bluetooth, using [OEM] header
     if(OEMCtrlFrame.elapsedTime() > 700) {
-      Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
+//      Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
+      Bluetooth.SendFrame("[OEM]", OEMCtrlFrame, true);
       OEMCtrlFrame.setTime();
     }
     else {
@@ -366,7 +385,8 @@ void loop()
 
     // echo heater reponse data to Bluetooth client
     if(HeaterFrame1.elapsedTime() > 700) {
-      Bluetooth_SendFrame("[HTR]", HeaterFrame1);
+//      Bluetooth_SendFrame("[HTR]", HeaterFrame1);
+      Bluetooth.SendFrame("[HTR]", HeaterFrame1);
       HeaterFrame1.setTime();
     }
     else {
@@ -411,8 +431,10 @@ void loop()
     delay(5);
     if(!hasOEMController) {
       // only convey these frames to Bluetooth when NOT using an OEM controller!
-      Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), true);    //  BTC => Bluetooth Controller :-)
-      Bluetooth_SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
+//      Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), true);    //  BTC => Bluetooth Controller :-)
+//      Bluetooth_SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
+      Bluetooth.SendFrame("[BTC]", TxManage.getFrame(), true);    //  BTC => Bluetooth Controller :-)
+      Bluetooth.SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
     }
     CommState.set(CommStates::Idle);
 

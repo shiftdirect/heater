@@ -2,6 +2,7 @@
 #include "pins.h"
 #include "Protocol.h"
 #include "debugport.h"
+#include "BluetoothESP32.h"
 
 #ifdef TELNET
 #define DebugPort Debug
@@ -21,7 +22,7 @@ const int LED = 2;
 // ESP32
 
 sRxLine RxLine;
-
+/*
 #ifdef ESP32_USE_HC05
 
 //static HardwareSerial& Bluetooth(Serial2); // TODO: make proper ESP32 BT client
@@ -55,9 +56,9 @@ void Bluetooth_Init()
 
   // attach to the SENSE line from the HC-05 module
   // this line goes high when a BT client is connected :-)
-  pinMode(HC05_Sense, INPUT);              
+  pinMode(HC05_SensePin, INPUT);              
   
-  digitalWrite(KeyPin, HIGH);              // request HC-05 module to enter command mode
+  digitalWrite(HC05_KeyPin, HIGH);              // request HC-05 module to enter command mode
   // Open Serial2, explicitly specify pins for pin multiplexer!);   
   Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);  
 
@@ -127,7 +128,7 @@ void Bluetooth_Init()
       Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);
 
       // leave HC-05 command mode, return to data mode
-      digitalWrite(KeyPin, LOW);  
+      digitalWrite(HC05_KeyPin, LOW);  
     } while (0);   // yeah lame, allows break prior though :-)
   }
 
@@ -159,7 +160,7 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm
 //  DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
   DebugReportFrame(pHdr, Frame, "   ");
 
-  if(digitalRead(HC05_Sense)) {
+  if(digitalRead(HC05_SensePin)) {
     if(Frame.verifyCRC()) {
       // send data frame to HC-05
       Serial2.print(pHdr);
@@ -193,7 +194,7 @@ bool Bluetooth_ATCommand(const char* cmd)
   return false;
 }
 
-#else // ESP32_USE_HC05
+#else // ESP32_USE_HC05*/
 #ifndef ESP32_USE_BLE_RLJ
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -419,6 +420,19 @@ void BLE_Send(std::string Data)
 
 #endif // ESP32_USE_BLE_RLJ
 
-#endif // ESP32_USE_HC05
+/*#endif // ESP32_USE_HC05*/
+
+CBluetoothHC05onESP32::CBluetoothHC05onESP32(int keyPin, int sensePin, int rxPin, int txPin) : CBluetoothHC05(keyPin, sensePin)
+{
+  _rxPin = rxPin;
+  _txPin = txPin;
+}
+
+void 
+CBluetoothHC05onESP32::OpenSerial(int baudrate)
+{
+  Serial2.begin(baudrate, SERIAL_8N1, _rxPin, _txPin);
+}
 
 #endif  // __ESP32__
+
