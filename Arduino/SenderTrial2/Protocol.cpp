@@ -1,6 +1,15 @@
 #include <Arduino.h>
 #include "Protocol.h"
 #include "debugport.h"
+
+#ifdef TELNET
+#define DebugPort Debug
+#endif
+
+#ifndef TELNET
+#define DebugPort Serial
+#endif
+
  
 unsigned short 
 CProtocol::CalcCRC(int len) const

@@ -3,6 +3,15 @@
 #include "Protocol.h"
 #include "debugport.h"
 
+#ifdef TELNET
+#define DebugPort Debug
+#endif
+
+#ifndef TELNET
+#define DebugPort Serial
+#endif
+
+
 #ifdef ESP32
 
 #define ESP32_USE_HC05
@@ -88,7 +97,6 @@ void Bluetooth_Init()
     // plough on and assume 9600 baud, but at the mercy of whatever the module name is...
     DebugPort.println("FAILED to detect a HC-05 Bluetooth module :-(");
     // leave the EN pin high - if other style module keeps it powered!
-
     // assume it is 9600, and just (try to) use it like that...
     // we will sense the STATE line to prove a client is hanging off the link...
     DebugPort.println("ASSUMING a HC-05 module @ 9600baud (Unknown name)");

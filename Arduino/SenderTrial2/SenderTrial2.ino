@@ -1,3 +1,4 @@
+//
   /*
   Chinese Heater Half Duplex Serial Data Sending Tool
 
@@ -68,9 +69,26 @@
 #include "NVStorage.h"
 #include "debugport.h"
 #include "SmartError.h"
+#include "BTCWifi.h"
+#define HOST_NAME "remotedebug-sample"
+#define TRIGGER_PIN 0
 
-#define DEBUG_BTRX
-  
+#define FAILEDSSID "BTCESP32"
+#define FAILEDPASSWORD "thereisnospoon"
+
+//comment this out to remove TELNET
+
+//#define TELNET
+
+#ifdef TELNET
+#define DebugPort Debug
+#endif
+
+#ifndef TELNET
+#define DebugPort DebugPort
+#endif
+
+#define DEBUG_BTRX  
 #include "Bluetooth.h"
 
 #if defined(__arm__)
@@ -163,6 +181,8 @@ void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCm
 
 void setup() 
 {
+  initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
+
   pinMode(Tx2Pin, OUTPUT);
   digitalWrite(Tx2Pin, HIGH);
   pinMode(Rx2Pin, INPUT_PULLUP);
@@ -219,8 +239,10 @@ void setup()
 void loop() 
 {
   unsigned long timenow = millis();
+  doWiFiManager();
 
   // check for test commands received from PC Over USB
+  
   if(DebugPort.available()) {
     char rxval = DebugPort.read();
     if(rxval  == '+') {
@@ -494,4 +516,3 @@ void Command_Interpret(const char* pLine)
 
   }
 }
-
