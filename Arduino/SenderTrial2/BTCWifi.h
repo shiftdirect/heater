@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <WiFiManager.h>
 #include <WiFi.h>
-#include <WiFiMulti.h>
 
 /*
   const char *failedssid;

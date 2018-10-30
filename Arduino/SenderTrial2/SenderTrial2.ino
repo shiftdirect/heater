@@ -374,7 +374,7 @@ void loop()
     CommState.set(CommStates::Idle);
 
 #ifdef SHOW_HEAP
-    Serial.printf("Free heap ");
+    Serial.print("Free heap ");
     Serial.println(ESP.getFreeHeap());
 #endif
   }
