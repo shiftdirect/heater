@@ -3,11 +3,11 @@
 #include "debugport.h"
 
 #ifdef TELNET
-#define PRNT Debug
+#define DebugPort Debug
 #endif
 
 #ifndef TELNET
-#define PRNT Serial
+#define DebugPort Serial
 #endif
 
  
@@ -61,10 +61,10 @@ CProtocol::verifyCRC() const
   unsigned short FrameCRC = getCRC();
   bool bOK = (FrameCRC == CRC);
   if(!bOK) {
-    PRNT.print("verifyCRC FAILED: calc:");
-    PRNT.print(CRC, HEX);
-    PRNT.print(" data:");
-    PRNT.println(FrameCRC, HEX);
+    DebugPort.print("verifyCRC FAILED: calc:");
+    DebugPort.print(CRC, HEX);
+    DebugPort.print(" data:");
+    DebugPort.println(FrameCRC, HEX);
   }
   return bOK;        // does it match the stored values?
 }

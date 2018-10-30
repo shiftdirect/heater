@@ -2,16 +2,6 @@
 // select which pin will trigger the configuration portal when set to LOW
 
 WiFiManager wm;
-// Time
-RemoteDebug Debug;
-
-uint32_t mLastTime = 0;
-uint32_t mTimeSeconds = 0;
-
-// Buildin Led ON ?
-
-boolean mLedON = false;
-
 
 unsigned int  timeout   = 120; // seconds to run for
 unsigned int  startTime = millis();
@@ -21,60 +11,7 @@ int TRIG_PIN;
 bool res;
 
 
-void inittelnetdebug(String HOST_NAME)
-{
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-  
-  String hostNameWifi = HOST_NAME;
-  hostNameWifi.concat(".local");
 
-  Debug.begin(HOST_NAME);
-  Debug.setSerialEnabled(true);
-  
-  Debug.setResetCmdEnabled(true); // Enable the reset command
-
-    Serial.println("* Arduino RemoteDebug Library");
-    Serial.println("*");
-    Serial.print("* WiFI connected. IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println("*");
-    Serial.println("* Please use the telnet client (telnet for Mac/Unix or putty and others for Windows)");
-    Serial.println("*");
-    Serial.println("* This sample will send messages of debug in all levels.");
-    Serial.println("*");
-    Serial.println("* Please try change debug level in telnet, to see how it works");
-    Serial.println("*");
-
-}
-
-void DoDebug()
-{
-   // Each second
-
-    if ((millis() - mLastTime) >= 1000) {
-
-        // Time
-
-        mLastTime = millis();
-
-        mTimeSeconds++;
-
-        // Blink the led
-
-        mLedON = !mLedON;
-        digitalWrite(LED_BUILTIN, (mLedON)?LOW:HIGH);
-
-        // Debug the time (verbose level)
-
-        rdebugVln("* Time: %u seconds (VERBOSE)", mTimeSeconds);
-
-        if (mTimeSeconds % 5 == 0) { // Each 5 seconds
-
-          Debug.handle();
-        }
-    }
-}
 
 void initWifi(int initpin,const char *failedssid, const char *failedpassword) 
 {

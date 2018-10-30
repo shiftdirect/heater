@@ -37,54 +37,54 @@ void Bluetooth_Init()
   digitalWrite(KeyPin, HIGH);
   delay(500);
 
-  PRNT.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
+  DebugPort.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
 
   int BTidx = 0;
   int maxTries =  sizeof(BTRates)/sizeof(int);
   for(BTidx = 0; BTidx < maxTries; BTidx++) {
-    PRNT.print("  @ ");
-    PRNT.print(BTRates[BTidx]);
-    PRNT.print(" baud... ");
+    DebugPort.print("  @ ");
+    DebugPort.print(BTRates[BTidx]);
+    DebugPort.print(" baud... ");
     Bluetooth.end();
     Bluetooth.begin(BTRates[BTidx]);   // open serial port at a certain baud rate
     Bluetooth.print("\r\n");
     Bluetooth.setTimeout(50);
 
     if(Bluetooth_ATCommand("AT\r\n")) {
-      PRNT.println(" OK.");
+      DebugPort.println(" OK.");
       break;
     }
     // failed, try another baud rate
-    PRNT.println("");
+    DebugPort.println("");
     Bluetooth.flush();
   }
 
-  PRNT.println("");
+  DebugPort.println("");
   if(BTidx == maxTries) {
-    PRNT.println("FAILED to detect HC-05 Bluetooth module :-(");
+    DebugPort.println("FAILED to detect HC-05 Bluetooth module :-(");
   }
   else {
     if(BTRates[BTidx] == 115200) {
-      PRNT.println("HC-05 found and already set to 115200 baud, skipping Init.");
+      DebugPort.println("HC-05 found and already set to 115200 baud, skipping Init.");
       bHC05Available = true;
     }
     else {
       do {
-        PRNT.println("HC-05 found");
+        DebugPort.println("HC-05 found");
 
-        PRNT.print("  Setting Name to \"DieselHeater\"... ");
+        DebugPort.print("  Setting Name to \"DieselHeater\"... ");
         if(!Bluetooth_ATCommand("AT+NAME=\"DieselHeater\"\r\n")) {
-          PRNT.println("FAILED");
+          DebugPort.println("FAILED");
           break;
         }
-        PRNT.println("OK");
+        DebugPort.println("OK");
 
-        PRNT.print("  Setting baud rate to 115200N81...");
+        DebugPort.print("  Setting baud rate to 115200N81...");
         if(!Bluetooth_ATCommand("AT+UART=115200,1,0\r\n")) {
-          PRNT.println("FAILED");
+          DebugPort.println("FAILED");
           break;
         };
-        PRNT.println("OK");
+        DebugPort.println("OK");
 
         Bluetooth.end();
         Bluetooth.begin(115200);
@@ -101,7 +101,7 @@ void Bluetooth_Init()
   if(!bHC05Available)
     Bluetooth.end();    // close serial port if no module found
 
-  PRNT.println("");
+  DebugPort.println("");
 }
 
 void Bluetooth_Check()
@@ -130,8 +130,8 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame)
       Bluetooth.write(Frame.Data, 24);
     }
     else {
-      PRNT.print("Bluetooth data not sent, CRC error ");
-      PRNT.println(pHdr);
+      DebugPort.print("Bluetooth data not sent, CRC error ");
+      DebugPort.println(pHdr);
     }
   }
 }

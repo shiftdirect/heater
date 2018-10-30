@@ -4,11 +4,11 @@
 #include "debugport.h"
 
 #ifdef TELNET
-#define PRNT Debug
+#define DebugPort Debug
 #endif
 
 #ifndef TELNET
-#define PRNT Serial
+#define DebugPort Serial
 #endif
 
 
@@ -61,14 +61,14 @@ void Bluetooth_Init()
   // Open Serial2, explicitly specify pins for pin multiplexer!);   
   Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);  
 
-  PRNT.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
+  DebugPort.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
 
   int BTidx = 0;
   int maxTries =  sizeof(BTRates)/sizeof(int);
   for(BTidx = 0; BTidx < maxTries; BTidx++) {
-    PRNT.print("  @ ");
-    PRNT.print(BTRates[BTidx]);
-    PRNT.printf(" baud... ");
+    DebugPort.print("  @ ");
+    DebugPort.print(BTRates[BTidx]);
+    DebugPort.print(" baud... ");
     Serial2.begin(BTRates[BTidx], SERIAL_8N1, Rx2Pin, Tx2Pin);   // open serial port at a std.baud rate
     delay(10);
     Serial2.print("\r\n");      // clear the throat!
@@ -76,30 +76,30 @@ void Bluetooth_Init()
     Serial2.setTimeout(100);
 
     if(Bluetooth_ATCommand("AT\r\n")) {   // probe with a simple "AT"
-      PRNT.println(" OK.");          // got a response - woo hoo found the module!
+      DebugPort.println(" OK.");          // got a response - woo hoo found the module!
       break;
     }
     if(Bluetooth_ATCommand("AT\r\n")) {   // sometimes a second try is good...
-      PRNT.println(" OK.");
+      DebugPort.println(" OK.");
       break;
     }
 
     // failed, try another baud rate
-    PRNT.println("");
+    DebugPort.println("");
     Serial2.flush();
     Serial2.end();
     delay(100);
   }
 
-  PRNT.println("");
+  DebugPort.println("");
   if(BTidx == maxTries) {
     // we could not get anywhere with teh AT commands, but maybe this is the other module
     // plough on and assume 9600 baud, but at the mercy of whatever the module name is...
-    PRNT.println("FAILED to detect a HC-05 Bluetooth module :-(");
+    DebugPort.println("FAILED to detect a HC-05 Bluetooth module :-(");
     // leave the EN pin high - if other style module keeps it powered!
     // assume it is 9600, and just (try to) use it like that...
     // we will sense the STATE line to prove a client is hanging off the link...
-    PRNT.println("ASSUMING a HC-05 module @ 9600baud (Unknown name)");
+    DebugPort.println("ASSUMING a HC-05 module @ 9600baud (Unknown name)");
     Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);
   }
   else {
@@ -107,22 +107,22 @@ void Bluetooth_Init()
     // now program it's name and force a 9600 baud data interface.
     // this is the defacto standard as shipped!
 
-    PRNT.println("HC-05 found");
+    DebugPort.println("HC-05 found");
 
     do {   // so we can break!
-      PRNT.printf("  Setting Name to \"Diesel Heater\"... ");
+      DebugPort.print("  Setting Name to \"Diesel Heater\"... ");
       if(!Bluetooth_ATCommand("AT+NAME=\"Diesel Heater\"\r\n")) {
-        PRNT.println("FAILED");
+        DebugPort.println("FAILED");
         break;
       }
-      PRNT.println("OK");
+      DebugPort.println("OK");
 
-      PRNT.printf("  Setting baud rate to 9600N81...");
+      DebugPort.print("  Setting baud rate to 9600N81...");
       if(!Bluetooth_ATCommand("AT+UART=9600,1,0\r\n")) {
-        PRNT.println("FAILED");
+        DebugPort.println("FAILED");
         break;
       };
-      PRNT.println("OK");
+      DebugPort.println("OK");
 
       Serial2.begin(9600, SERIAL_8N1, Rx2Pin, Tx2Pin);
 
@@ -133,7 +133,7 @@ void Bluetooth_Init()
 
   delay(50);
 
-  PRNT.println("");
+  DebugPort.println("");
 }
 
 void Bluetooth_Check()
@@ -154,8 +154,8 @@ void Bluetooth_Check()
 
 void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
-  PRNT.print(millis());
-  PRNT.printf("ms ");
+  DebugPort.print(millis());
+  DebugPort.print("ms ");
 //  DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
   DebugReportFrame(pHdr, Frame, "   ");
 
@@ -168,16 +168,16 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm
       digitalWrite(LED, !digitalRead(LED)); // toggle LED
     }
     else {
-      PRNT.printf("Bluetooth data not sent, CRC error ");
+      DebugPort.print("Bluetooth data not sent, CRC error ");
     }
   }
   else {
-    PRNT.printf("No Bluetooth client");
+    DebugPort.print("No Bluetooth client");
       // force LED off
     digitalWrite(LED, 0);
   }
   if(lineterm)
-    PRNT.println("");
+    DebugPort.println("");
 }
 
 // local function, typically to perform Hayes commands with HC-05
@@ -212,7 +212,7 @@ void Bluetooth_Init()
   pinMode(LED, OUTPUT);
 
   if(!SerialBT.begin("ESPHEATER")) {
-    PRNT.println("An error occurred initialising Bluetooth");
+    DebugPort.println("An error occurred initialising Bluetooth");
   }
 }
 
@@ -234,7 +234,7 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm
 {
   char fullMsg[32];
 
-  PRNT.printf(millis());
+  DebugPort.print(millis());
   DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
   delay(40);
   if(SerialBT.hasClient()) {
@@ -253,11 +253,11 @@ void Bluetooth_SendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm
       delay(10);
     }
     else {
-      PRNT.println("Data not sent to Bluetooth, CRC error!");
+      DebugPort.println("Data not sent to Bluetooth, CRC error!");
     }
   }
   else {
-    PRNT.println("No Bluetooth client");
+    DebugPort.println("No Bluetooth client");
     digitalWrite(LED, 0);
   }
 }
@@ -365,7 +365,7 @@ void Bluetooth_Init()
   pService->start();
   // start advertising
   pServer->getAdvertising()->start();
-  PRNT.println("Awaiting a client to notify...");
+  DebugPort.println("Awaiting a client to notify...");
 }
 
 void Bluetooth_Report(const char* pHdr, const CProtocol& Frame)
@@ -388,7 +388,7 @@ void Bluetooth_Check()
   if (!deviceConnected && oldDeviceConnected) {
     delay(500); // give the bluetooth stack the chance to get things ready
     pServer->startAdvertising(); // restart advertising
-    PRNT.println("start advertising");
+    DebugPort.println("start advertising");
     oldDeviceConnected = deviceConnected;
   }
   // connecting

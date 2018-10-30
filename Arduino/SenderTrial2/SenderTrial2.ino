@@ -77,14 +77,14 @@
 
 //comment this out to remove TELNET
 
-#define TELNET
+//#define TELNET
 
 #ifdef TELNET
-#define PRNT Debug
+#define DebugPort Debug
 #endif
 
 #ifndef TELNET
-#define PRNT DebugPort
+#define DebugPort DebugPort
 #endif
 
 #define DEBUG_BTRX  
@@ -171,7 +171,7 @@ void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCm
 void setup() 
 {
   initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
-  inittelnetdebug(HOST_NAME);
+
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, 
@@ -229,8 +229,7 @@ void loop()
 {
   unsigned long timenow = millis();
   doWiFiManager();
-  //PRNT.println(WiFi.localIP());
-  DoDebug();
+
   // check for test commands received from PC Over USB
   
   if(DebugPort.available()) {
@@ -286,9 +285,9 @@ void loop()
     // This will be the first activity for considerable period on the blue wire
     // The heater always responds to a controller frame, but otherwise never by itself
     if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
-      PRNT.printf("Re-sync'd with OEM Controller. ");
-      PRNT.print(RxTimeElapsed);
-      PRNT.println("ms Idle time.");
+      DebugPort.print("Re-sync'd with OEM Controller. ");
+      DebugPort.print(RxTimeElapsed);
+      DebugPort.println("ms Idle time.");
       hasOEMController = true;
       CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
     }
@@ -384,13 +383,13 @@ void loop()
 
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 {
-  PRNT.printf(hdr);                     // header
+  DebugPort.print(hdr);                     // header
   for(int i=0; i<24; i++) {
     char str[16];
     sprintf(str, " %02X", Frame.Data[i]);  // build 2 dig hex values
-    PRNT.printf(str);                   // and print     
+    DebugPort.print(str);                   // and print     
   }
-  PRNT.printf(ftr);                     // footer
+  DebugPort.print(ftr);                     // footer
 }
 
 
@@ -403,7 +402,7 @@ void Command_Interpret(const char* pLine)
     return;
   
   #ifdef DEBUG_BTRX
-    PRNT.println(pLine);
+    DebugPort.println(pLine);
   #endif
 
   if(strncmp(pLine, "[CMD]", 5) == 0) {
@@ -413,61 +412,61 @@ void Command_Interpret(const char* pLine)
     pLine += 5;   // skip past "[CMD]" header
     if(strncmp(pLine, "ON", 2) == 0) {
       TxManage.queueOnRequest();
-      PRNT.println("Heater ON");
+      DebugPort.println("Heater ON");
     }
     else if(strncmp(pLine, "OFF", 3) == 0) {
       TxManage.queueOffRequest();
-      PRNT.println("Heater OFF");
+      DebugPort.println("Heater OFF");
     }
     else if(strncmp(pLine, "Pmin", 4) == 0) {
       pLine += 4;
       cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmin(cVal);
-      PRNT.printf("Pump min = ");
-      PRNT.println(cVal);
+      DebugPort.print("Pump min = ");
+      DebugPort.println(cVal);
     }
     else if(strncmp(pLine, "Pmax", 4) == 0) {
       pLine += 4;
       cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
       pNVStorage->setPmax(cVal);
-      PRNT.printf("Pump max = ");
-      PRNT.println(cVal);
+      DebugPort.print("Pump max = ");
+      DebugPort.println(cVal);
     }
     else if(strncmp(pLine, "Fmin", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
       pNVStorage->setFmin(sVal);
-      PRNT.printf("Fan min = ");
-      PRNT.println(sVal);
+      DebugPort.print("Fan min = ");
+      DebugPort.println(sVal);
     }
     else if(strncmp(pLine, "Fmax", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
       pNVStorage->setFmax(sVal);
-      PRNT.printf("Fan max = ");
-      PRNT.println(int(sVal));
+      DebugPort.print("Fan max = ");
+      DebugPort.println(int(sVal));
     }
     else if(strncmp(pLine, "save", 4) == 0) {
       pNVStorage->save();
-      PRNT.println("NV save");
+      DebugPort.println("NV save");
     }
     else if(strncmp(pLine, "degC", 4) == 0) {
       pLine += 4;
       cVal = atoi(pLine);
       pNVStorage->setTemperature(cVal);
-      PRNT.printf("degC = ");
-      PRNT.println(cVal);
+      DebugPort.print("degC = ");
+      DebugPort.println(cVal);
     }
     else if(strncmp(pLine, "Mode", 4) == 0) {
       pLine += 4;
       cVal = !pNVStorage->getThermostatMode();
       pNVStorage->setThermostatMode(cVal);
-      PRNT.printf("Mode now ");
-      PRNT.println(cVal ? "Thermostat" : "Fixed Hz");
+      DebugPort.print("Mode now ");
+      DebugPort.println(cVal ? "Thermostat" : "Fixed Hz");
     }
     else {
-      PRNT.printf(pLine);
-      PRNT.println(" ????");
+      DebugPort.print(pLine);
+      DebugPort.println(" ????");
     }
 
   }
