@@ -164,6 +164,8 @@ public:
   short getTemperature_HeatExchg(); // temperature of heat exchanger
   void setTemperature_HeatExchg(short degC); // temperature of heat exchanger
 
+  void DebugReport(const char* hdr, const char* ftr);
+
   CProtocol& operator=(const CProtocol& rhs);
 };
 

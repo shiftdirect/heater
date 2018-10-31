@@ -1,4 +1,4 @@
-
+#include <Arduino.h>
 class CProtocol;
 
 #if defined(__arm__)
