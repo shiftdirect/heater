@@ -1,5 +1,4 @@
 // Should be working - Jimmy C
-
 #include "BTCWifi.h"
 // select which pin will trigger the configuration portal when set to LOW
 
@@ -29,7 +28,7 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
     // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
     // then goes into a blocking loop awaiting configuration and will return success result
     wm.setConfigPortalTimeout(20);
-    wm.setConfigPortalBlocking(false);
+    wm.setConfigPortalBlocking(true);
 
     res = wm.autoConnect(); // auto generated AP name from chipid
 
@@ -41,7 +40,9 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
     else {
         //if you get here you have connected to the WiFi    
         Serial.println("connected...yeey :)");
-        
+		Serial.println("Ready");
+		Serial.print("IP address: ");
+		Serial.println(WiFi.localIP());
 }
 }
 

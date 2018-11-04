@@ -70,27 +70,20 @@
 #include "debugport.h"
 #include "SmartError.h"
 #include "BTCWifi.h"
-#define HOST_NAME "remotedebug-sample"
+#include "BTCota.h"
+
+
+
+#define HOST_NAME "BTCHeater"
 #define TRIGGER_PIN 0
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
 
-//comment this out to remove TELNET
-
-//#define TELNET
-
-#ifdef TELNET
-#define DebugPort Debug
-#endif
-
-#ifndef TELNET
-#define DebugPort DebugPort
-#endif
-
-#define DEBUG_BTRX  
+#define ESP32_USE_BLE_RLJ
 #include "Bluetooth.h"
 
+// Setup Serial Port Definitions
 #if defined(__arm__)
 // Required for Arduino Due, UARTclass is derived from HardwareSerial
 static UARTClass& BlueWireSerial(Serial1);
@@ -182,7 +175,7 @@ void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCm
 void setup() 
 {
   initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
-
+  initOTA();
   pinMode(Tx2Pin, OUTPUT);
   digitalWrite(Tx2Pin, HIGH);
   pinMode(Rx2Pin, INPUT_PULLUP);
@@ -240,7 +233,7 @@ void loop()
 {
   unsigned long timenow = millis();
   doWiFiManager();
-
+  DoOTA();
   // check for test commands received from PC Over USB
   
   if(DebugPort.available()) {
