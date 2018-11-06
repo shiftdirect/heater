@@ -16,34 +16,33 @@ bool res;
 
 void initWifi(int initpin,const char *failedssid, const char *failedpassword) 
 {
-
-  
   TRIG_PIN = initpin;
+  pinMode(TRIG_PIN, INPUT);
 
-      //reset settings - wipe credentials for testing
-    //wm.resetSettings();
+  //reset settings - wipe credentials for testing
+  //wm.resetSettings();
 
-    // Automatically connect using saved credentials,
-    // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
-    // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
-    // then goes into a blocking loop awaiting configuration and will return success result
-    wm.setConfigPortalTimeout(20);
-    wm.setConfigPortalBlocking(true);
+  // Automatically connect using saved credentials,
+  // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
+  // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
+  // then goes into a blocking loop awaiting configuration and will return success result
+  wm.setConfigPortalTimeout(20);
+  wm.setConfigPortalBlocking(true);
 
-    res = wm.autoConnect(); // auto generated AP name from chipid
+  res = wm.autoConnect(); // auto generated AP name from chipid
 
-    if(!res) {
-        Serial.println("Failed to connect");
-        Serial.println("Setting up ESP as AP");
-        WiFi.softAP(failedssid, failedpassword);
-    } 
-    else {
-        //if you get here you have connected to the WiFi    
-        Serial.println("connected...yeey :)");
-		Serial.println("Ready");
-		Serial.print("IP address: ");
-		Serial.println(WiFi.localIP());
-}
+  if(!res) {
+    Serial.println("Failed to connect");
+    Serial.println("Setting up ESP as AP");
+    WiFi.softAP(failedssid, failedpassword);
+  } 
+  else {
+    //if you get here you have connected to the WiFi    
+    Serial.println("connected...yeey :)");
+    Serial.println("Ready");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+  }
 }
 
 void doWiFiManager(){

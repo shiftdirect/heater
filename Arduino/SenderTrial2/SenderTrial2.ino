@@ -15,7 +15,7 @@
 
   If Pin 21 is grounded on the Due, this simple stream will be reported over Serial and
   no control from the Arduino will be allowed.
-  This allows sniffing of the blue wire in a normal system.
+  This allows passive sniffing of the blue wire in a normal system.
   
   The binary data is received from the line.
   If it has been > 100ms since the last blue wire activity this indicates a new frame 
@@ -27,12 +27,12 @@
   Capture those bytes and store them in the Heater1 data array.
   Once again these bytes are then reported over Serial to the PC in ASCII.
 
-  If no activity is sensed in a second, it is assumed no controller is attached and we
+  If no activity is sensed in a second, it is assumed no OEM controller is attached and we
   have full control over the heater.
 
   Either way we can now inject a message onto the blue wire allowing our custom 
   on/off control.
-  We must remain synchronous with the OEM controller if it exists otherwise E-07 
+  We must remain synchronous with an OEM controller if it exists otherwise E-07 
   faults will be caused.
 
   Typical data frame timing on the blue wire is then:
@@ -43,19 +43,20 @@
   But this does rise if new max/min or voltage settings are sent.
   **The heater only ever sends Rx data in response to a data frame from a controller**
 
-  A HC-05 Bluetooth module is attached to Serial2:
+  For Bluetooth connectivity, a HC-05 Bluetooth module is attached to Serial2:
   TXD -> Rx2 (pin 17)
   RXD -> Tx2 (pin 16)
   EN(key) -> pin 15
+  STATE -> pin 4
   
  
   This code only works with boards that have more than one hardware serial port like Arduino 
-  Mega, Due, Zero etc.
+  Mega, Due, Zero, ESP32 etc.
 
 
   The circuit:
   - a Tx Rx multiplexer is required to combine the Arduino's Tx1 And Rx1 pins onto the blue wire.
-  - a Tx Enable signal from pin 20 controls the multiplexer
+  - a Tx Enable signal from pin 22 controls the multiplexer, high for Tx, low for Rx
   - Serial logging software on Serial0 via USB link
 
   created 23 Sep 2018 by Ray Jones
@@ -70,18 +71,35 @@
 #include "debugport.h"
 #include "SmartError.h"
 #include "BTCWifi.h"
+#include "BTCConfig.h"
+
+#define HOST_NAME "remotedebug-sample"
 #include "BTCota.h"
 
 
 
 #define HOST_NAME "BTCHeater"
-#define TRIGGER_PIN 0
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
 
-#define ESP32_USE_BLE_RLJ
-#include "Bluetooth.h"
+//comment this out to remove TELNET
+
+//#define TELNET
+
+#ifdef TELNET
+#define DebugPort Debug
+#endif
+
+#ifndef TELNET
+#define DebugPort DebugPort
+#endif
+
+#ifdef ESP32
+#include "BluetoothESP32.h"
+#else
+#include "BluetoothHC05.h"
+#endif
 
 // Setup Serial Port Definitions
 #if defined(__arm__)
@@ -106,6 +124,9 @@ class CommStates {
     m_State = eState;
     m_Count = 0;
   }
+  eCS get() {
+    return m_State;
+  }
   bool is(eCS eState) {
     return m_State == eState;
   }
@@ -114,7 +135,7 @@ class CommStates {
     return m_Count == limit;
   }
 private:
-  int m_State;
+  eCS m_State;
   int m_Count;
 };
 
@@ -151,13 +172,42 @@ public:
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
-//CProtocol OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
-//CProtocol HeaterFrame1;        // data packet received from heater in response to OEM controller packet
 CModeratedFrame OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
 CModeratedFrame HeaterFrame1;        // data packet received from heater in response to OEM controller packet
 CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//               Bluetooth instantiation
+//
+#ifdef ESP32
+
+// Bluetooth options for ESP32
+#if USE_HC05_BLUETOOTH == 1
+CBluetoothESP32HC05 Bluetooth(HC05_KeyPin, HC05_SensePin, Rx2Pin, Tx2Pin); // Instantiate ESP32 using a HC-05
+#elif USE_BLE_BLUETOOTH == 1
+CBluetoothESP32BLE Bluetooth;              // Instantiate ESP32 BLE server
+#elif USE_CLASSIC_BLUETOOTH == 1
+CBluetoothESP32Classic Bluetooth;          // Instantiate ESP32 Classic Bluetooth server
+#else   // none selected
+CBluetoothAbstract Bluetooth;           // default no bluetooth support - empty shell
+#endif  
+
+#else   //  !ESP32
+
+// Bluetooth for others
+#if USE_HC05_BLUETOOTH == 1
+CBluetoothHC05 Bluetooth(HC05_KeyPin, HC05_SensePin);  // Instantiate a HC-05
+#else   // none selected  
+CBluetoothAbstract Bluetooth;           // default no bluetooth support - empty shell
+#endif  // closing USE_HC05_BLUETOOTH
+
+#endif  // closing ESP32
+//
+//                 END Bluetooth instantiation
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 long lastRxTime;        // used to observe inter character delays
 bool hasOEMController = false;
 
@@ -170,18 +220,17 @@ CHeaterStorage NVStorage;   // dummy, for now
 #endif
 CHeaterStorage* pNVStorage = NULL;
 
-void PrepareTxFrame(const CProtocol& basisFrame, CProtocol& TxFrame, bool isBTCmaster);
 
-void setup() 
-{
-  initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
+void setup() {
+//  initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
+  initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
   initOTA();
   pinMode(Tx2Pin, OUTPUT);
   digitalWrite(Tx2Pin, HIGH);
   pinMode(Rx2Pin, INPUT_PULLUP);
   pinMode(ListenOnlyPin, INPUT_PULLUP);
-  pinMode(KeyPin, OUTPUT);
-  digitalWrite(KeyPin, LOW);
+  pinMode(HC05_KeyPin, OUTPUT);
+  digitalWrite(HC05_KeyPin, LOW);
 
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
@@ -214,7 +263,7 @@ void setup()
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
 
-  Bluetooth_Init();
+  Bluetooth.init();
  
   // create pointer to CHeaterStorage
   // via the magic of polymorphism we can use this to access whatever 
@@ -224,10 +273,11 @@ void setup()
   pNVStorage->load();
 }
 
-// main functional loop is based about a state machine approach, waiting for data 
-// to appear upon the blue wire, and marshalling into an appropriate receive buffer
-// according to the state.
 
+
+// main functional loop is based about a state machine approach, waiting for data 
+// to appear upon the blue wire, and marshalling into an appropriate receive buffers
+// according to the state.
 
 void loop() 
 {
@@ -246,7 +296,7 @@ void loop()
     }
   }
 
-  Bluetooth_Check();    // check for Bluetooth activity
+  Bluetooth.check();    // check for Bluetooth activity
 
   // calc elapsed time since last rxd byte
   // used to detect no OEM controller, or the start of an OEM frame sequence
@@ -277,6 +327,7 @@ void loop()
   // Blue wire data reception
   //  Reads data from the "blue wire" Serial port, (to/from heater)
   //  If an OEM controller exists we will also see it's data frames
+  //  Note that the data is read now, then held for later use in the state machine
   //
   sRxData BlueWireData;
 
@@ -292,128 +343,156 @@ void loop()
   ///////////////////////////////////////////////////////////////////////////////////////////
   // do our state machine to track the reception and delivery of blue wire data
 
-  // we may need to transit to a OEMCtrlRx if we captured a new byte, so stand alone if here!
-  if( CommState.is(CommStates::Idle)) {
+  switch(CommState.get()) {
 
-    // Detect the possible start of a new frame sequence from an OEM controller
-    // This will be the first activity for considerable period on the blue wire
-    // The heater always responds to a controller frame, but otherwise never by itself
-    if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
-      DebugPort.print("Re-sync'd with OEM Controller. ");
-      DebugPort.print(RxTimeElapsed);
-      DebugPort.println("ms Idle time.");
-      hasOEMController = true;
-      CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
-    }
+    case CommStates::Idle:
+      // Detect the possible start of a new frame sequence from an OEM controller
+      // This will be the first activity for considerable period on the blue wire
+      // The heater always responds to a controller frame, but otherwise never by itself
+      if(RxTimeElapsed >= 970) {
+        // have not seen any receive data for a second.
+        // OEM controller is probably not connected. 6
+        // Skip state machine immediately to BTC_Tx, sending our own settings.
+        hasOEMController = false;
+        bool isBTCmaster = true;
+        TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
+        TxManage.Start(timenow);
+        CommState.set(CommStates::BTC_Tx);
+        break;
+      } 
 
-    if(RxTimeElapsed >= 970) {
-      // have not seen any receive data for a second.
-      // OEM controller is probably not connected. 6
-      // Skip state machine immediately to BTC_Tx, sending our own settings.
-      hasOEMController = false;
-      CommState.set(CommStates::BTC_Tx);
-      bool isBTCmaster = true;
-      TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
-      TxManage.Start(timenow);
-    }
-
-  } // CommState::Idle
-
-  if( CommState.is(CommStates::OEMCtrlRx) ) {
-    // collect OEM controller frame
-    if(BlueWireData.available()) {
-      if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
-        CommState.set(CommStates::OEMCtrlReport);  // collected 24 bytes, move on!
+      if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
+#ifdef REPORT_OEM_RESYNC
+        DebugPort.print("Re-sync'd with OEM Controller. ");
+        DebugPort.print(RxTimeElapsed);
+        DebugPort.println("ms Idle time.");
+#endif
+        hasOEMController = true;
+        CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
+        //
+        //  ** IMPORTANT - we must drop through to OEMCtrlRx *NOW* (skip break) **
+        //
       }
-    }
-  }
-
-  else if( CommState.is(CommStates::OEMCtrlReport) ) {  
-    // filled OEM controller frame, report
-    // echo received OEM controller frame over Bluetooth, using [OEM] header
-    if(OEMCtrlFrame.elapsedTime() > 700) {
-      Bluetooth_SendFrame("[OEM]", OEMCtrlFrame, true);
-      OEMCtrlFrame.setTime();
-    }
-    else {
-      DebugPort.println("Suppressed delivery of OEM frame");
-    }
-    CommState.set(CommStates::HeaterRx1);
-  }
-
-  else if( CommState.is(CommStates::HeaterRx1) ) {
-    // collect heater frame, always in response to an OEM controller frame
-    if(BlueWireData.available()) {
-      if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
-        CommState.set(CommStates::HeaterReport1);
+      else {
+        break;  // only break if we failed all the Idle tests
       }
-    }
-  }
 
-  else if(CommState.is(CommStates::HeaterReport1) ) {
-    // received heater frame (after controller message), report
+
+    case CommStates::OEMCtrlRx:
+      // collect OEM controller frame
+      if(BlueWireData.available()) {
+        if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
+          CommState.set(CommStates::OEMCtrlReport);  // collected 24 bytes, move on!
+        }
+      }
+      break;
+
+
+    case CommStates::OEMCtrlReport:
+      // filled OEM controller frame, report
+      // echo received OEM controller frame over Bluetooth, using [OEM] header
+      // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
+      // handling at the client side, moderate OEM Bluetooth delivery
+      if(OEMCtrlFrame.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
+        Bluetooth.sendFrame("[OEM]", OEMCtrlFrame, TERMINATE_OEM_LINE);
+        OEMCtrlFrame.setTime();
+      }
+      else {
+#if REPORT_SUPPRESSED_OEM_DATA_FRAMES != 0
+        DebugPort.println("Suppressed delivery of OEM frame");
+#endif
+      }
+      CommState.set(CommStates::HeaterRx1);
+      break;
+
+
+    case CommStates::HeaterRx1:
+      // collect heater frame, always in response to an OEM controller frame
+      if(BlueWireData.available()) {
+        if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
+          CommState.set(CommStates::HeaterReport1);
+        }
+      }
+      break;
+
+
+    case CommStates::HeaterReport1:
+      // received heater frame (after controller message), report
     
-    // do some monitoring of the heater state variable
-    // if suspicious transitions, introduce a smart error!
-    SmartError.monitor(HeaterFrame1);
+      // do some monitoring of the heater state variable
+      // if abnormal transitions, introduce a smart error!
+      SmartError.monitor(HeaterFrame1);
 
-    // echo heater reponse data to Bluetooth client
-    if(HeaterFrame1.elapsedTime() > 700) {
-      Bluetooth_SendFrame("[HTR]", HeaterFrame1);
-      HeaterFrame1.setTime();
-    }
-    else {
-      DebugPort.println("Suppressed delivery of OEM heater response frame");
-    }
-
-    if(digitalRead(ListenOnlyPin)) {
-      bool isBTCmaster = false;
-      TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
-      TxManage.Start(timenow);
-      CommState.set(CommStates::BTC_Tx);
-    }
-    else {
-      CommState.set(CommStates::Idle);    // "Listen Only" input is  held low, don't send out Tx
-    }
-  }
-    
-  // Handle time interval where we send data to the blue wire
-  else if(CommState.is(CommStates::BTC_Tx)) {
-    lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
-    if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
-      CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
-    }
-  }
-
-  else if( CommState.is(CommStates::HeaterRx2) ) {
-    // collect heater frame, in response to our control frame
-    if(BlueWireData.available()) {
-      if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
-        CommState.set(CommStates::HeaterReport2);
+      // echo heater reponse data to Bluetooth client
+      // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
+      // handling at the client side, moderate OEM Bluetooth delivery
+      if(HeaterFrame1.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
+        Bluetooth.sendFrame("[HTR]", HeaterFrame1, true);
+        HeaterFrame1.setTime();
       }
-    } 
-  }
+      else {
+#if REPORT_SUPPRESSED_OEM_DATA_FRAMES != 0
+        DebugPort.println("Suppressed delivery of OEM heater response frame");
+#endif
+      }
 
-  else if( CommState.is(CommStates::HeaterReport2) ) {
-    // received heater frame (after our control message), report
+      if(digitalRead(ListenOnlyPin)) {
+        bool isBTCmaster = false;
+        TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
+        TxManage.Start(timenow);
+        CommState.set(CommStates::BTC_Tx);
+      }
+      else {
+        CommState.set(CommStates::Idle);    // "Listen Only" input is  held low, don't send out Tx
+      }
+      break;
+    
 
-    // do some monitoring of the heater state variable
-    // if suspicious transitions, introduce a smart error!
-    SmartError.monitor(HeaterFrame2);
+    case CommStates::BTC_Tx:
+      // Handle time interval where we send data to the blue wire
+      lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
+      if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
+        if(!hasOEMController) {
+          // only convey this frames to Bluetooth when NOT using an OEM controller!
+          Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
+        }
+        CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
+      }
+      break;
 
-    delay(5);
-    if(!hasOEMController) {
-      // only convey these frames to Bluetooth when NOT using an OEM controller!
-      Bluetooth_SendFrame("[BTC]", TxManage.getFrame(), true);    //  BTC => Bluetooth Controller :-)
-      Bluetooth_SendFrame("[HTR]", HeaterFrame2);    // pin not grounded, suppress duplicate to BT
-    }
-    CommState.set(CommStates::Idle);
+
+    case CommStates::HeaterRx2:
+      // collect heater frame, in response to our control frame
+      if(BlueWireData.available()) {
+        if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
+          CommState.set(CommStates::HeaterReport2);
+        }
+      } 
+      break;
+
+
+    case CommStates::HeaterReport2:
+      // received heater frame (after our control message), report
+
+      // do some monitoring of the heater state variables
+      // if abnormal transitions, introduce a smart error!
+      SmartError.monitor(HeaterFrame2);
+
+      delay(5);
+      if(!hasOEMController) {
+        // only convey these frames to Bluetooth when NOT using an OEM controller!
+//        Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
+        Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
+      }
+      CommState.set(CommStates::Idle);
 
 #ifdef SHOW_HEAP
-    Serial.print("Free heap ");
-    Serial.println(ESP.getFreeHeap());
+      Serial.print("Free heap ");
+      Serial.println(ESP.getFreeHeap());
 #endif
-  }
+      break;
+
+  }  // switch(CommState)
     
 }  // loop
 

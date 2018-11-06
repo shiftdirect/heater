@@ -269,3 +269,15 @@ CProtocol::Init(int FrameMode)
   }
 }
 
+void
+CProtocol::DebugReport(const char* hdr, const char* ftr)
+{
+  DebugPort.print(hdr);                     // header
+  for(int i=0; i<24; i++) {
+    char str[16];
+    sprintf(str, " %02X", Data[i]);  // build 2 dig hex values
+    DebugPort.print(str);                   // and print     
+  }
+  DebugPort.print(ftr);                     // footer
+}
+
