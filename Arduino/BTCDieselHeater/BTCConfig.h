@@ -7,7 +7,7 @@
 // If none are enabled, we'll use an abstract class that only reports 
 // to the debug port what would  have been sent
 //
-#define USE_HC05_BLUETOOTH     1
+#define USE_HC05_BLUETOOTH     0
 #define USE_BLE_BLUETOOTH      0
 #define USE_CLASSIC_BLUETOOTH  0
 

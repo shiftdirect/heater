@@ -28,7 +28,7 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
   // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
   // then goes into a blocking loop awaiting configuration and will return success result
   wm.setConfigPortalTimeout(20);
-  wm.setConfigPortalBlocking(true);
+  wm.setConfigPortalBlocking(false);
 
   res = wm.autoConnect(); // auto generated AP name from chipid
 
