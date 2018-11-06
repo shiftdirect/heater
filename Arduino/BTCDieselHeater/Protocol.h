@@ -156,6 +156,7 @@ public:
   unsigned char getTemperature_Desired() { return Controller.DesiredTemperature; };
   unsigned char getTemperature_Min() { return Controller.MinTemperature; };
   unsigned char getTemperature_Max() { return Controller.MaxTemperature; };
+  unsigned char getTemperature_Actual() { return Controller.ActualTemperature; };
   void setThermostatMode(unsigned on) { Controller.OperatingMode = on ? 0x32 : 0xCD; };
   // glow plug
   short getGlowPlug_Current();   // glow plug current

@@ -1,5 +1,8 @@
 #include <Arduino.h>
 
+#ifndef __DEBUGPORT_H__
+#define __DEBUGPORT_H__
+
 class CProtocol;
 
 #if defined(__arm__)
@@ -11,3 +14,4 @@ static HardwareSerial& DebugPort(Serial);   // reference Serial as DebugPort
 
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr);
 
+#endif // __DEBUGPORT_H__
