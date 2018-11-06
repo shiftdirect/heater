@@ -222,7 +222,12 @@ CHeaterStorage* pNVStorage = NULL;
 
 
 void setup() {
-//  initWifi(TRIGGER_PIN, FAILEDSSID, FAILEDPASSWORD);
+
+  // initialise serial monitor on serial port 0
+  // this is the usual USB connection to a PC
+  // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
+  DebugPort.begin(115200);
+  
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
   initOTA();
   pinMode(Tx2Pin, OUTPUT);
@@ -244,10 +249,6 @@ void setup() {
   BlueWireSerial.begin(25000, SERIAL_8N1, Rx1Pin, Tx1Pin);  // need to explicitly specify pins for pin multiplexer!
   pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
 #endif
-  
-  // initialise serial monitor on serial port 0
-  // this is the usual USB connection to a PC
-  DebugPort.begin(115200);
   
   // prepare for first long delay detection
   lastRxTime = millis();

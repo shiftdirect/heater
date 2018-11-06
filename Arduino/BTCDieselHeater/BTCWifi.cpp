@@ -1,5 +1,6 @@
 // Should be working - Jimmy C
 #include "BTCWifi.h"
+#include "DebugPort.h"
 // select which pin will trigger the configuration portal when set to LOW
 
 WiFiManager wm;
@@ -32,16 +33,16 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
   res = wm.autoConnect(); // auto generated AP name from chipid
 
   if(!res) {
-    Serial.println("Failed to connect");
-    Serial.println("Setting up ESP as AP");
+    DebugPort.println("Failed to connect");
+    DebugPort.println("Setting up ESP as AP");
     WiFi.softAP(failedssid, failedpassword);
   } 
   else {
     //if you get here you have connected to the WiFi    
-    Serial.println("connected...yeey :)");
-    Serial.println("Ready");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+    DebugPort.println("connected...yeey :)");
+    DebugPort.println("Ready");
+    DebugPort.print("IP address: ");
+    DebugPort.println(WiFi.localIP());
   }
 }
 
@@ -50,7 +51,7 @@ void doWiFiManager(){
   if(portalRunning){
     wm.process();
     if((millis()-startTime) > (timeout*1000)){
-      Serial.println("portaltimeout");
+      DebugPort.println("portaltimeout");
       portalRunning = false;
       if(startCP){
         wm.stopConfigPortal();
@@ -64,13 +65,13 @@ void doWiFiManager(){
   // is configuration portal requested?
   if(TRIG_PIN == 1 && (!portalRunning)) {
     if(startCP){
-      Serial.println("Button Pressed, Starting Config Portal");
+      DebugPort.println("Button Pressed, Starting Config Portal");
       wm.setConfigPortalBlocking(false);
       wm.startConfigPortal();
       TRIG_PIN = 0; // reset the flag
     }  
     else{
-      Serial.println("Button Pressed, Starting Web Portal");
+      DebugPort.println("Button Pressed, Starting Web Portal");
       wm.startWebPortal();
       TRIG_PIN = 0; // reset the flag
     }  

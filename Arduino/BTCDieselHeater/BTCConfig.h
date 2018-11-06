@@ -16,7 +16,7 @@
 // limit rate of Bluetooth delivery from enthusiastic OEM controllers
 //
 #define OEM_TO_BLUETOOTH_MODERATION_TIME  700
-// show when we did not echo data frames to bluetooth
+// show when we did moderate data frames to bluetooth
 #define REPORT_SUPPRESSED_OEM_DATA_FRAMES 0
 
 
