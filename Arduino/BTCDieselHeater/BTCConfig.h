@@ -29,3 +29,12 @@
 #define TERMINATE_OEM_LINE false    /* when an OEM controller exists */
 #define TERMINATE_BTC_LINE false    /* when an OEM controller does not exist */
 
+///////////////////////////////////////////////////////////////////////////////
+// LED monitoring
+//
+//   1: enable specific LED function
+//   0: disable specific LED function
+//
+#define RX_LED  1   /* flash when receiving blue wire data */
+#define BT_LED  0   /* flash when sending bluetooth data */
+  

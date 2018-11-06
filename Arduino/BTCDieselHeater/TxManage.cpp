@@ -32,6 +32,7 @@ CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) :
   m_bTxPending = false;
   m_nStartTime = 0;
   m_nTxGatePin = TxGatePin;
+  _rawCommand = 0;
 }
 
 void CTxManage::begin()
@@ -53,6 +54,12 @@ CTxManage::queueOffRequest()
 }
 
 void 
+CTxManage::queueRawCommand(unsigned char val)
+{
+  _rawCommand = val;
+}
+
+void 
 CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 {
   // copy supplied frame, typically this will be the values an OEM controller delivered
@@ -64,13 +71,19 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 
   // ALWAYS install on/off commands if required
   m_TxFrame.resetCommand();   // no command upon blue wire initially, unless a request is pending
-  if(m_bOnReq) {
-    m_bOnReq = false;
-    m_TxFrame.onCommand();
+  if(_rawCommand) {
+    m_TxFrame.setRawCommand(_rawCommand);
+    _rawCommand = 0;
   }
-  if(m_bOffReq) {
-    m_bOffReq = false;
-    m_TxFrame.offCommand();
+  else {
+    if(m_bOnReq) {
+      m_bOnReq = false;
+      m_TxFrame.onCommand();
+    }
+    if(m_bOffReq) {
+      m_bOffReq = false;
+      m_TxFrame.offCommand();
+    }
   }
 
   // 0x78 prevents the controller showing bum information when we parrot the OEM controller

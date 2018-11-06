@@ -3,6 +3,7 @@
 #include "Protocol.h"
 #include "debugport.h"
 #include "BluetoothESP32.h"
+#include "BTCConfig.h"
 
 #ifdef TELNET
 #define DebugPort Debug
@@ -15,9 +16,6 @@
 
 #ifdef ESP32
 
-#ifdef BT_LED      
-const int LED = 2;
-#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //                    HC-05 BLUETOOTH with ESP32
@@ -28,6 +26,10 @@ CBluetoothESP32HC05::CBluetoothESP32HC05(int keyPin, int sensePin, int rxPin, in
 {
   _rxPin = rxPin;
   _txPin = txPin;
+
+  pinMode(_txPin, OUTPUT);
+  digitalWrite(_txPin, HIGH);
+  pinMode(_rxPin, INPUT_PULLUP);
 }
 
 void 
@@ -54,9 +56,6 @@ void
 CBluetoothESP32Classic::init()
 {
   _rxLine.clear();
-#ifdef BT_LED      
-  pinMode(LED, OUTPUT);
-#endif
 
   if(!SerialBT.begin("ESPHEATER")) {
     DebugPort.println("An error occurred initialising Bluetooth");
@@ -84,8 +83,8 @@ CBluetoothESP32Classic::sendFrame(const char* pHdr, const CProtocol& Frame, bool
   if(SerialBT.hasClient()) {
 
     if(Frame.verifyCRC()) {
-#ifdef BT_LED      
-      digitalWrite(LED, !digitalRead(LED)); // toggle LED
+#if BT_LED == 1     
+      digitalWrite(LED_Pin, !digitalRead(LED_Pin)); // toggle LED
 #endif
       int len = strlen(pHdr);
       if(len < 8) {
@@ -102,8 +101,8 @@ CBluetoothESP32Classic::sendFrame(const char* pHdr, const CProtocol& Frame, bool
   }
   else {
     DebugPort.println("No Bluetooth client");
-#ifdef BT_LED      
-    digitalWrite(LED, 0);
+#if BT_LED == 1     
+    digitalWrite(LED_Pin, 0);
 #endif
   }
 }
@@ -235,8 +234,8 @@ CBluetoothESP32BLE::sendFrame(const char* pHdr, const CProtocol& Frame, bool lin
   if(_deviceConnected) {
 
     if(Frame.verifyCRC()) {
-#ifdef BT_LED      
-      digitalWrite(LED, !digitalRead(LED)); // toggle LED
+#if BT_LED == 1     
+      digitalWrite(LED_Pin, !digitalRead(LED_Pin)); // toggle LED
 #endif
       std::string txData = pHdr;
       txData.append((char*)Frame.Data, 24);
@@ -250,8 +249,8 @@ CBluetoothESP32BLE::sendFrame(const char* pHdr, const CProtocol& Frame, bool lin
   }
   else {
     DebugPort.println("No Bluetooth client");
-#ifdef BT_LED      
-    digitalWrite(LED, 0);
+#if BT_LED == 1     
+    digitalWrite(LED_Pin, 0);
 #endif
   }
 }

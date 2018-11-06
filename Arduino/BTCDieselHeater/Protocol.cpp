@@ -55,12 +55,12 @@ CProtocol::getCRC() const
 
 // return true for CRC match
 bool
-CProtocol::verifyCRC() const
+CProtocol::verifyCRC(bool bSilent) const
 {
   unsigned short CRC = CalcCRC(22);  // calculate CRC based on first 22 bytes
   unsigned short FrameCRC = getCRC();
   bool bOK = (FrameCRC == CRC);
-  if(!bOK) {
+  if(!bOK && !bSilent) {
     DebugPort.print("verifyCRC FAILED: calc:");
     DebugPort.print(CRC, HEX);
     DebugPort.print(" data:");
@@ -241,7 +241,7 @@ CProtocol::Init(int FrameMode)
     Controller.Prime = 0;               // 00: normal, 0x5A: fuel prime
     Controller.Unknown1_MSB = 0x01;     // always 0x01
     Controller.Unknown1_LSB = 0x2c;     // always 0x2c  16bit: "300 secs = max run without burn detected" ??
-    Controller.Unknown2_MSB = 0x07;     // always 0x0d
+    Controller.Unknown2_MSB = 0x0d;     // always 0x0d
     Controller.Unknown2_LSB = 0xac;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
     setCRC();
   }

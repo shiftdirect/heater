@@ -1,52 +1,27 @@
 #include <Arduino.h>
-#include <string.h>
+#include "UtilClasses.h"
 
 class CProtocol;
 
 extern void Command_Interpret(const char* pLine);   // decodes received command lines, implemented in main .ino file!
 
-struct sRxLine {
-  char Line[64];
-  int  Len;
-  sRxLine() {
-    clear();
-  }
-  bool append(char val) {
-    if(Len < (sizeof(Line) - 1)) {
-      Line[Len++] = val;
-      Line[Len] = 0;
-      return true;
-    }
-    return false;
-  }
-  void clear() {
-    Line[0] = 0;
-    Len = 0;
-  }
-};
-
 
 class CBluetoothAbstract {
 protected:
   sRxLine _rxLine;
-  unsigned long lastTime;
+  CContextTimeStamp _timeStamp;
 public:
   virtual void init() {};
+  virtual void setRefTime() { 
+    _timeStamp.setRefTime(); 
+  };
   virtual void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true) {
-    char msg[32];
-    if(strncmp(pHdr, "[HTR]", 5) == 0) {
-      unsigned delta = millis() - lastTime;
-      sprintf(msg, "%+8dms ", delta);
-    }
-    else {
-      lastTime = millis();
-      sprintf(msg, "%8dms ", lastTime);
-    }
-    DebugPort.print(msg);
+    _timeStamp.report(pHdr);
     DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
   };
   virtual void check() {};
   virtual void collectRxData(char rxVal) {
+    // provide common behviour for bytes received from a bluetooth client
     if(isControl(rxVal)) {    // "End of Line"
       Command_Interpret(_rxLine.Line);
       _rxLine.clear();

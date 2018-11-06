@@ -72,6 +72,7 @@
 #include "SmartError.h"
 #include "BTCWifi.h"
 #include "BTCConfig.h"
+#include "UtilClasses.h"
 
 #define HOST_NAME "remotedebug-sample"
 #include "BTCota.h"
@@ -91,9 +92,6 @@
 #define DebugPort Debug
 #endif
 
-#ifndef TELNET
-#define DebugPort DebugPort
-#endif
 
 #ifdef ESP32
 #include "BluetoothESP32.h"
@@ -111,64 +109,6 @@ static UARTClass& BlueWireSerial(Serial1);
 static HardwareSerial& BlueWireSerial(Serial1);  
 #endif
 
-class CommStates {
-  public:
-    // comms states
-    enum eCS { 
-      Idle, OEMCtrlRx, OEMCtrlReport, HeaterRx1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterReport2 
-    };
-  CommStates() {
-    set(Idle);
-  }
-  void set(eCS eState) {
-    m_State = eState;
-    m_Count = 0;
-  }
-  eCS get() {
-    return m_State;
-  }
-  bool is(eCS eState) {
-    return m_State == eState;
-  }
-  bool collectData(CProtocol& Frame, unsigned char val, int limit = 24) {   // returns true when buffer filled
-    Frame.Data[m_Count++] = val;
-    return m_Count == limit;
-  }
-private:
-  eCS m_State;
-  int m_Count;
-};
-
-// a class to collect a new data byte from the blue wire
-class sRxData {
-  bool newData;
-  int  Value;
-public:
-  sRxData() {
-    reset();
-  }
-  void reset() {
-    newData = false;
-  }
-  void setValue(int value) {
-    newData = true;
-    Value = value;
-  }
-  bool available() {
-    return newData;
-  }
-  int getValue() {
-    return Value;
-  }
-};
-
-class CModeratedFrame : public CProtocol {
-  unsigned long lastTime;
-public:
-  CModeratedFrame() { lastTime = 0; };
-  void setTime() { lastTime = millis(); };
-  unsigned long elapsedTime() { return millis() - lastTime; };
-};
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
@@ -177,6 +117,10 @@ CModeratedFrame HeaterFrame1;        // data packet received from heater in resp
 CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
+sRxLine PCline;
+long lastRxTime;        // used to observe inter character delays
+bool hasOEMController = false;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
@@ -196,7 +140,7 @@ CBluetoothAbstract Bluetooth;           // default no bluetooth support - empty 
 
 #else   //  !ESP32
 
-// Bluetooth for others
+// Bluetooth for boards other than ESP32
 #if USE_HC05_BLUETOOTH == 1
 CBluetoothHC05 Bluetooth(HC05_KeyPin, HC05_SensePin);  // Instantiate a HC-05
 #else   // none selected  
@@ -208,17 +152,20 @@ CBluetoothAbstract Bluetooth;           // default no bluetooth support - empty 
 //                 END Bluetooth instantiation
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-long lastRxTime;        // used to observe inter character delays
-bool hasOEMController = false;
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 // setup Non Volatile storage
 // this is very much hardware dependent, we can use the ESP32's FLASH
+//
 #ifdef ESP32
 CESP32HeaterStorage NVStorage;
 #else
 CHeaterStorage NVStorage;   // dummy, for now
 #endif
 CHeaterStorage* pNVStorage = NULL;
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void setup() {
@@ -230,12 +177,11 @@ void setup() {
   
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
   initOTA();
-  pinMode(Tx2Pin, OUTPUT);
-  digitalWrite(Tx2Pin, HIGH);
-  pinMode(Rx2Pin, INPUT_PULLUP);
-  pinMode(ListenOnlyPin, INPUT_PULLUP);
-  pinMode(HC05_KeyPin, OUTPUT);
-  digitalWrite(HC05_KeyPin, LOW);
+  
+  pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
+
+  pinMode(LED_Pin, OUTPUT);               // On board LED indicator
+  digitalWrite(LED_Pin, LOW);
 
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
@@ -285,15 +231,65 @@ void loop()
   unsigned long timenow = millis();
   doWiFiManager();
   DoOTA();
+
   // check for test commands received from PC Over USB
-  
   if(DebugPort.available()) {
-    char rxval = DebugPort.read();
-    if(rxval  == '+') {
-      TxManage.queueOnRequest();
+    static int mode = 0;
+    static int val = 0;
+    bool bSendVal = false;
+    char rxVal = DebugPort.read();
+    if(isControl(rxVal)) {    // "End of Line"
+      String convert(PCline.Line);
+      val = convert.toInt();
+      bSendVal = true;
+      PCline.clear();
     }
-    if(rxval  == '-') {
-      TxManage.queueOffRequest();
+    else {
+      if(isDigit(rxVal)) {
+        PCline.append(rxVal);
+      }
+      else if((rxVal == 'p') || (rxVal == 'P')) {
+        DebugPort.println("Test Priming Byte... ");
+        mode = 1;
+      }
+      else if((rxVal == 'g') || (rxVal == 'G')) {
+        DebugPort.println("Test glow power byte... ");
+        mode = 2;
+      }
+      else if((rxVal == 'i') || (rxVal == 'I')) {
+        DebugPort.println("Test fan bytes");
+        mode = 3;
+      }
+      else if(rxVal  == '+') {
+        TxManage.queueOnRequest();
+        Bluetooth.setRefTime();
+      }
+      else if(rxVal  == '-') {
+        TxManage.queueOffRequest();
+        Bluetooth.setRefTime();
+      }
+      else if(rxVal == ']') {
+        val++;
+        bSendVal = true;
+      }
+      else if(rxVal == '[') {
+        val--;
+        bSendVal = true;
+      }
+    }
+    if(bSendVal) {
+      switch(mode) {
+        case 1:
+          DefaultBTCParams.Controller.Prime = val & 0xff;     // always  0x32:Thermostat, 0xCD:Fixed
+          break;
+        case 2:
+          DefaultBTCParams.Controller.MinTempRise = val & 0xff;     // always 0x05
+          break;
+        case 3:
+          DefaultBTCParams.Controller.Unknown2_MSB = (val >> 8) & 0xff;     // always 0x0d
+          DefaultBTCParams.Controller.Unknown2_LSB = (val >> 0) & 0xff;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
+          break;
+      }
     }
   }
 
@@ -347,6 +343,9 @@ void loop()
   switch(CommState.get()) {
 
     case CommStates::Idle:
+#if RX_LED == 1
+      digitalWrite(LED_Pin, LOW);
+#endif
       // Detect the possible start of a new frame sequence from an OEM controller
       // This will be the first activity for considerable period on the blue wire
       // The heater always responds to a controller frame, but otherwise never by itself
@@ -380,6 +379,9 @@ void loop()
 
 
     case CommStates::OEMCtrlRx:
+#if RX_LED == 1
+    digitalWrite(LED_Pin, HIGH);
+#endif
       // collect OEM controller frame
       if(BlueWireData.available()) {
         if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
@@ -390,6 +392,9 @@ void loop()
 
 
     case CommStates::OEMCtrlReport:
+#if RX_LED == 1
+    digitalWrite(LED_Pin, LOW);
+#endif
       // filled OEM controller frame, report
       // echo received OEM controller frame over Bluetooth, using [OEM] header
       // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
@@ -408,6 +413,9 @@ void loop()
 
 
     case CommStates::HeaterRx1:
+#if RX_LED == 1
+    digitalWrite(LED_Pin, HIGH);
+#endif
       // collect heater frame, always in response to an OEM controller frame
       if(BlueWireData.available()) {
         if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
@@ -418,6 +426,9 @@ void loop()
 
 
     case CommStates::HeaterReport1:
+#if RX_LED == 1
+    digitalWrite(LED_Pin, LOW);
+#endif
       // received heater frame (after controller message), report
     
       // do some monitoring of the heater state variable
@@ -439,6 +450,11 @@ void loop()
 
       if(digitalRead(ListenOnlyPin)) {
         bool isBTCmaster = false;
+        while(BlueWireSerial.available()) {
+          DebugPort.println("DUMPED ROGUE RX DATA");
+          BlueWireSerial.read();
+        }
+        BlueWireSerial.flush();
         TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
         TxManage.Start(timenow);
         CommState.set(CommStates::BTC_Tx);
@@ -463,6 +479,9 @@ void loop()
 
 
     case CommStates::HeaterRx2:
+#if RX_LED == 1
+    digitalWrite(LED_Pin, HIGH);
+#endif
       // collect heater frame, in response to our control frame
       if(BlueWireData.available()) {
         if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
@@ -473,6 +492,9 @@ void loop()
 
 
     case CommStates::HeaterReport2:
+#if RX_LED == 1
+    digitalWrite(LED_Pin, LOW);
+#endif
       // received heater frame (after our control message), report
 
       // do some monitoring of the heater state variables
@@ -530,11 +552,13 @@ void Command_Interpret(const char* pLine)
       TxManage.queueOnRequest();
       DebugPort.println("Heater ON");
       SmartError.reset();
+      Bluetooth.setRefTime();
     }
     else if(strncmp(pLine, "OFF", 3) == 0) {
       TxManage.queueOffRequest();
       DebugPort.println("Heater OFF");
       SmartError.inhibit();
+      Bluetooth.setRefTime();
     }
     else if(strncmp(pLine, "Pmin", 4) == 0) {
       pLine += 4;

@@ -31,7 +31,8 @@ CSmartError::inhibit()
 void
 CSmartError::monitor(CProtocol& heaterFrame)
 {
-  if(heaterFrame.verifyCRC()) {
+  bool bSilent = true;
+  if(heaterFrame.verifyCRC(bSilent)) {  // check but don't report dodgy frames to debug
     // only accept valid heater frames!
     monitor(heaterFrame.getRunState());
     unsigned char HtrErr = heaterFrame.getErrState();

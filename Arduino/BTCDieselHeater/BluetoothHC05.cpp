@@ -2,6 +2,7 @@
 #include "Protocol.h"
 #include "debugport.h"
 #include "BluetoothHC05.h"
+#include "BTCConfig.h"
 
 // Bluetooth access via HC-05 Module, using a UART
 
@@ -11,6 +12,12 @@ CBluetoothHC05::CBluetoothHC05(int keyPin, int sensePin)
   // extra control pins required to fully drive a HC05 module 
   _keyPin = keyPin;      // used to enable AT command mode (ONLY ON SUPPORTED MODULES!!!!)
   _sensePin = sensePin;  // feedback signal used to sense if a client is connected
+  
+  pinMode(_keyPin, OUTPUT);              
+  digitalWrite(_keyPin, LOW);              // request HC-05 module to enter data mode
+  // attach to the SENSE line from the HC-05 module
+  // this line goes high when a BT client is connected :-)
+  pinMode(_sensePin, INPUT);              
 }
 
 
@@ -23,10 +30,6 @@ CBluetoothHC05::init()
 
   _rxLine.clear();
 
-  // attach to the SENSE line from the HC-05 module
-  // this line goes high when a BT client is connected :-)
-  pinMode(_sensePin, INPUT);              
-  
   digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
 
   openSerial(9600); // virtual function, may call derived class method here
@@ -130,8 +133,8 @@ CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineter
       HC05_SerialPort.print(pHdr);
       HC05_SerialPort.write(Frame.Data, 24);
       // toggle LED
-#ifdef BT_LED      
-      digitalWrite(LED, !digitalRead(LED)); // toggle LED
+#if BT_LED == 1     
+      digitalWrite(LED_Pin, !digitalRead(LED_Pin)); // toggle LED
 #endif
     }
     else {
@@ -143,8 +146,8 @@ CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineter
       DebugPort.print("No Bluetooth client");
     }
       // force LED off
-#ifdef BT_LED      
-    digitalWrite(LED, 0);
+#if BT_LED == 1
+    digitalWrite(LED_Pin, LOW);
 #endif
   }
   if(lineterm)

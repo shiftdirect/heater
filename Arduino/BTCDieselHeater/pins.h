@@ -7,3 +7,4 @@ const int Rx2Pin = 17;
 const int HC05_KeyPin = 15;
 const int HC05_SensePin = 4;
 const int WiFi_TriggerPin = 23;
+const int LED_Pin = 2;

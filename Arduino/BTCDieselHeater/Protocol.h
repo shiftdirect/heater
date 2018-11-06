@@ -1,6 +1,8 @@
 #ifndef _CPROTOCOL_H_
 #define _CPROTOCOL_H_
 
+#include <Arduino.h>
+
 class CProtocol {
 public:
   union {
@@ -105,7 +107,7 @@ public:
   void setCRC();                    // calculate and set the CRC in the buffer
   void setCRC(unsigned short CRC);  // set  the CRC in the buffer
   unsigned short getCRC() const;    // extract CRC value from buffer
-  bool verifyCRC() const;           // return true for CRC match
+  bool verifyCRC(bool silent=false) const;           // return true for CRC match
 
   void setActiveMode() { Controller.Byte0 = 0x76; };  // this allows heater to save tuning params to EEPROM
   void setPassiveMode() { Controller.Byte0 = 0x78; };  // this prevents heater saving tuning params to EEPROM
@@ -167,6 +169,14 @@ public:
   void DebugReport(const char* hdr, const char* ftr);
 
   CProtocol& operator=(const CProtocol& rhs);
+};
+
+class CModeratedFrame : public CProtocol {
+  unsigned long lastTime;
+public:
+  CModeratedFrame() { lastTime = 0; };
+  void setTime() { lastTime = millis(); };
+  unsigned long elapsedTime() { return millis() - lastTime; };
 };
 
 
