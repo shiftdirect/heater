@@ -1,4 +1,3 @@
-//
   /*
   Chinese Heater Half Duplex Serial Data Sending Tool
 
@@ -64,6 +63,7 @@
   This example code is in the public domain.
 */
 
+#include "BTCWebServer.h"
 #include "Protocol.h"
 #include "TxManage.h"
 #include "pins.h"
@@ -72,14 +72,10 @@
 #include "SmartError.h"
 #include "BTCWifi.h"
 #include "BTCConfig.h"
+
 #include "UtilClasses.h"
-
-#define HOST_NAME "remotedebug-sample"
 #include "BTCota.h"
-
-
-
-#define HOST_NAME "BTCHeater"
+#include "BTCWebServer.h"
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -177,9 +173,9 @@ void setup() {
   
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
   initOTA();
-  
-  pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
+  initWebServer();
 
+  pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
   pinMode(LED_Pin, OUTPUT);               // On board LED indicator
   digitalWrite(LED_Pin, LOW);
 
@@ -231,6 +227,7 @@ void loop()
   unsigned long timenow = millis();
   doWiFiManager();
   DoOTA();
+  doWebServer();
 
   // check for test commands received from PC Over USB
   if(DebugPort.available()) {
