@@ -192,6 +192,7 @@ CBluetoothESP32BLE::~CBluetoothESP32BLE()
 void 
 CBluetoothESP32BLE::init()
 {
+  DebugPort.println("Initialising ESP32 BLE");
   // create the BLE device
   BLEDevice::init("DieselHeater");
 

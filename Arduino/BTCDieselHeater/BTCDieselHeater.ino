@@ -172,10 +172,16 @@ void setup() {
   DebugPort.begin(115200);
 
 #if USE_WIFI == 1
+
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
+#if USE_OTA == 1
   initOTA();
+#endif // USE_OTA
+#if USE_WEBSERVER == 1
   initWebServer();
-#endif
+#endif // USE_WEBSERVER
+
+#endif // USE_WIFI
 
   pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
   pinMode(LED_Pin, OUTPUT);               // On board LED indicator
@@ -229,10 +235,16 @@ void loop()
   unsigned long timenow = millis();
 
 #if USE_WIFI == 1
+
   doWiFiManager();
+#if USE_OTA == 1
   DoOTA();
+#endif // USE_OTA 
+#if USE_WEBSERVER == 1
   doWebServer();
-#endif
+#endif //USE_WEBSERVER
+
+#endif // USE_WIFI
 
   // check for test commands received from PC Over USB
   if(DebugPort.available()) {
