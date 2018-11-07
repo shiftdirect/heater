@@ -42,15 +42,17 @@ void CTxManage::begin()
 }
 
 void
-CTxManage::queueOnRequest()
+CTxManage::queueOnRequest(bool set)
 {
-  m_bOnReq = true;
+  m_bOnReq = set;  // allow cancel via heater frame decode
+  m_bOffReq = false;
 }
 
 void 
-CTxManage::queueOffRequest()
+CTxManage::queueOffRequest(bool set)
 {
-  m_bOffReq = true;
+  m_bOffReq = set;  // allow cancel via heater frame decode 
+  m_bOnReq = false;
 }
 
 void 
@@ -77,11 +79,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
   }
   else {
     if(m_bOnReq) {
-      m_bOnReq = false;
+//      m_bOnReq = false;   // requires cancel via queueOnRequest(false)
       m_TxFrame.onCommand();
     }
     if(m_bOffReq) {
-      m_bOffReq = false;
+//      m_bOffReq = false;   // requires cancel via queueOffRequest(false)
       m_TxFrame.offCommand();
     }
   }

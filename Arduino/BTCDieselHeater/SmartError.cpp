@@ -1,4 +1,5 @@
 #include "SmartError.h"
+#include "TxManage.h"
 
 CSmartError::CSmartError()
 {
@@ -77,6 +78,19 @@ CSmartError::monitor(unsigned char newRunState)
         // - first ignition attempt failed, heater will retry
         m_Error = 12;
       }
+    }
+  }
+
+  if(m_prevRunState != newRunState) {
+    // check for transition to startup 
+    // - force cancellation of an on request if we generated it
+    if(newRunState == 2) {
+      TxManage.queueOnRequest(false);  // ensure ON request is cancelled
+    }
+    // check for transition to shutdown 
+    // - force cancellation of an off request if we generated it
+    if(newRunState == 7) {
+      TxManage.queueOffRequest(false);  // ensure OFF request is cancelled
     }
   }
 

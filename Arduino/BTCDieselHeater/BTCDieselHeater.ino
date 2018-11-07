@@ -170,10 +170,12 @@ void setup() {
   // this is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   DebugPort.begin(115200);
-  
+
+#if USE_WIFI == 1
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
   initOTA();
   initWebServer();
+#endif
 
   pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
   pinMode(LED_Pin, OUTPUT);               // On board LED indicator
@@ -225,9 +227,12 @@ void setup() {
 void loop() 
 {
   unsigned long timenow = millis();
+
+#if USE_WIFI == 1
   doWiFiManager();
   DoOTA();
   doWebServer();
+#endif
 
   // check for test commands received from PC Over USB
   if(DebugPort.available()) {
@@ -430,6 +435,7 @@ void loop()
     
       // do some monitoring of the heater state variable
       // if abnormal transitions, introduce a smart error!
+      // This will also cancel ON/OFF requests if runstate in startup/shutdown
       SmartError.monitor(HeaterFrame1);
 
       // echo heater reponse data to Bluetooth client

@@ -11,6 +11,8 @@
 #define USE_BLE_BLUETOOTH      0
 #define USE_CLASSIC_BLUETOOTH  0
 
+#define USE_WIFI 1
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // limit rate of Bluetooth delivery from enthusiastic OEM controllers

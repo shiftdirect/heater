@@ -56,6 +56,7 @@ void
 CBluetoothESP32Classic::init()
 {
   _rxLine.clear();
+  DebugPort.println("Initialising ESP32 Classic Bluetooth");
 
   if(!SerialBT.begin("ESPHEATER")) {
     DebugPort.println("An error occurred initialising Bluetooth");

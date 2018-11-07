@@ -9,8 +9,8 @@ class CTxManage
 
 public:
   CTxManage(int TxGatePin, HardwareSerial& serial);
-  void queueOnRequest();
-  void queueOffRequest();
+  void queueOnRequest(bool set = true);   // use false to remove repeating command
+  void queueOffRequest(bool set = true);  // use false to remove repeating command
   void queueRawCommand(unsigned char val);
   void PrepareFrame(const CProtocol& Frame, bool isBTCmaster);
   void Start(unsigned long timenow);
