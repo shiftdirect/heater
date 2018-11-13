@@ -91,7 +91,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
   // 0x78 prevents the controller showing bum information when we parrot the OEM controller
   // heater is happy either way, the OEM controller has set the max/min stuff already
   if(isBTCmaster) {
-    m_TxFrame.setActiveMode();   // this allows heater to svae the tuning params to EEPROM
+    m_TxFrame.setActiveMode();   // this allows heater to save the tuning params to EEPROM
     m_TxFrame.setFan_Min(pNVStorage->getFmin());
     m_TxFrame.setFan_Max(pNVStorage->getFmax());
     m_TxFrame.setPump_Min(pNVStorage->getPmin());

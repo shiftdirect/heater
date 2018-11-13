@@ -76,6 +76,11 @@
 #include "UtilClasses.h"
 #include "BTCota.h"
 #include "BTCWebServer.h"
+#include <SPI.h>
+#include "Adafruit_SH1106.h"
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -105,6 +110,16 @@ static UARTClass& BlueWireSerial(Serial1);
 static HardwareSerial& BlueWireSerial(Serial1);  
 #endif
 
+// DS18B20 temperature sensor support
+OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
+DallasTemperature TempSensor(&ds);
+long lastTemperatureTime;        // used to moderate DS18B20 access
+float fFilteredTemperature = 0;
+const float fAlpha = 0.995;
+
+// 128 x 64 OLED support
+SPIClass SPI;
+Adafruit_SH1106 display(LCDpin_DC,  -1, LCDpin_CS);
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
@@ -163,6 +178,8 @@ CHeaterStorage* pNVStorage = NULL;
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void showThermometer(int desired, int actual);
+void showBodyThermometer(int actual);
 
 void setup() {
 
@@ -170,6 +187,20 @@ void setup() {
   // this is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   DebugPort.begin(115200);
+
+  // initialise DS18B20 temperature sensor(s)
+  TempSensor.begin();
+  TempSensor.setWaitForConversion(false);
+  TempSensor.requestTemperatures();
+  lastTemperatureTime = millis();
+
+  // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  display.begin(SH1106_SWITCHCAPVCC, 0, false);
+
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.display();
+//  delay(2000); // Pause for 2 seconds
 
 #if USE_WIFI == 1
 
@@ -232,6 +263,7 @@ void setup() {
 
 void loop() 
 {
+  float fTemperature;
   unsigned long timenow = millis();
 
 #if USE_WIFI == 1
@@ -522,14 +554,29 @@ void loop()
 //        Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
         Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
       }
-      CommState.set(CommStates::Idle);
-
-#ifdef SHOW_HEAP
-      Serial.print("Free heap ");
-      Serial.println(ESP.getFreeHeap());
-#endif
+      CommState.set(CommStates::TemperatureRead);
       break;
 
+    case CommStates::TemperatureRead:
+      // update temperature reading, 
+      // synchronised with serial reception as interrupts do get disabled in the OneWire library
+      unsigned Tdelta = timenow - lastTemperatureTime;
+      if(Tdelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
+        lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature
+        fTemperature = TempSensor.getTempCByIndex(0);    // read sensor
+        // exponential mean to stabilse readings
+        fFilteredTemperature = fFilteredTemperature * (1-fAlpha) + fAlpha * fTemperature;
+        DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
+        TempSensor.requestTemperatures();               // prep sensor for future reading
+        
+        display.clearDisplay();
+        showThermometer(TxManage.getFrame().getTemperature_Desired(),    // read values from most recently sent [BTC] frame
+                        TxManage.getFrame().getTemperature_Actual());
+        showBodyThermometer(HeaterFrame2.getTemperature_HeatExchg());
+        display.display();
+      }
+      CommState.set(CommStates::Idle);
+      break;
   }  // switch(CommState)
     
 }  // loop
@@ -627,4 +674,61 @@ void Command_Interpret(const char* pLine)
     }
 
   }
+}
+
+// 'Thermometer', 8x50px
+const unsigned char thermometerBitmap [] PROGMEM = {
+	0x00, 0x18, 0x24, 0x24, 0x24, 0x24, 0x24, 0x26, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 
+	0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x26, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 
+	0x24, 0x24, 0x24, 0x24, 0x24, 0x26, 0x24, 0x24, 0x24, 0x24, 0x3c, 0x7e, 0xff, 0xff, 0xff, 0xff, 
+	0x7e, 0x3c
+};
+
+// 'ThermoPtr', 3x5px
+const unsigned char thermoPtr [] PROGMEM = {
+	0x80, 0xc0, 0xe0, 0xc0, 0x80
+};
+
+/*int CalcYpos(int T) {
+  return (20-T) * 3 / 2
+}*/
+#define TEMP_YPOS(A) ((((20 - A) * 3) / 2) + 22)
+#define BULB_X 1  // >= 1
+#define BULB_Y 14
+void showThermometer(int desired, int actual) 
+{
+  display.clearDisplay();
+  // draw bulb design
+  display.drawBitmap(BULB_X, BULB_Y, thermometerBitmap, 8, 50, WHITE);
+  // draw set point
+  int yPos = BULB_Y + TEMP_YPOS(desired) - 2;
+  display.drawBitmap(BULB_X-1, yPos, thermoPtr, 3, 5, WHITE);
+  // draw mercury
+  yPos = BULB_Y + TEMP_YPOS(actual);
+  display.drawLine(BULB_X + 3, yPos, BULB_X + 3, BULB_Y + 42, WHITE);
+  display.drawLine(BULB_X + 4, yPos, BULB_X + 4, BULB_Y + 42, WHITE);
+  // print actual temperature
+  display.setTextColor(WHITE);
+  display.setCursor(11, 46);
+//  display.print(actual);
+  display.print(fFilteredTemperature, 1);
+  display.setCursor(16, 56);
+  display.print(desired);
+  display.drawLine(11, 54, 30, 54, WHITE);
+}
+
+#define BODYBULB_X 119
+#define BODY_YPOS(A) ((((100 - A) * 3) / 16) + 22)   // 100degC centre - ticks +- 80C
+void showBodyThermometer(int actual) 
+{
+  // draw bulb design
+  display.drawBitmap(BODYBULB_X, BULB_Y, thermometerBitmap, 8, 50, WHITE);
+  // draw mercury
+  int yPos = BULB_Y + BODY_YPOS(actual);
+  display.drawLine(BODYBULB_X + 3, yPos, BODYBULB_X + 3, BULB_Y + 42, WHITE);
+  display.drawLine(BODYBULB_X + 4, yPos, BODYBULB_X + 4, BULB_Y + 42, WHITE);
+  // print actual temperature
+  display.setTextColor(WHITE);
+  display.setCursor(100, 56);
+  display.print(actual);
 }

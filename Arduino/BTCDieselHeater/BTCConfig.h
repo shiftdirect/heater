@@ -47,4 +47,10 @@
 //
 #define RX_LED  1   /* flash when receiving blue wire data */
 #define BT_LED  0   /* flash when sending bluetooth data */
+
+
+///////////////////////////////////////////////////////////////////////////////
+//  DS18B20 temperature sensing
+//
+#define TEMPERATURE_INTERVAL 1000
   

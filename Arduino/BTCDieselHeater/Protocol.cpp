@@ -170,7 +170,7 @@ CProtocol::setGlowPlug_Voltage(short voltsx10)    // glow plug voltage
 }
 
 short 
-CProtocol::getTemperature_HeatExchg() // temperature of heat exchanger
+CProtocol::getTemperature_HeatExchg() const // temperature of heat exchanger
 {
   short retval;
   retval = Heater.HeatExchgTemp_MSB;

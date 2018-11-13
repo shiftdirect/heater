@@ -144,19 +144,19 @@ public:
   void setPump_Max(unsigned short Freq) {   Controller.MaxPumpFreq = Freq; };
   void setPump_Actual(unsigned char Freq) { Heater.ActualPumpFreq = Freq; }; 
   void setPump_Fixed(unsigned char Freq) { Heater.FixedPumpFreq = Freq; };  
-  unsigned char getPump_Min() { return Controller.MinPumpFreq; };   // Tx side, min pump freq
-  unsigned char getPump_Max() { return Controller.MaxPumpFreq; };   // Tx side, max pump freq
-  unsigned char getPump_Actual() { return Heater.ActualPumpFreq; };  // Rx style, actual
-  unsigned char getPump_Fixed() { return Heater.FixedPumpFreq; };   // Fixed mode pump frequency
+  unsigned char getPump_Min() const { return Controller.MinPumpFreq; };   // Tx side, min pump freq
+  unsigned char getPump_Max() const { return Controller.MaxPumpFreq; };   // Tx side, max pump freq
+  unsigned char getPump_Actual() const { return Heater.ActualPumpFreq; };  // Rx style, actual
+  unsigned char getPump_Fixed() const { return Heater.FixedPumpFreq; };   // Fixed mode pump frequency
   // temperature set/get
   void setTemperature_Desired(unsigned char degC) { Controller.DesiredTemperature = degC; };
   void setTemperature_Min(unsigned char degC) { Controller.MinTemperature = degC; };
   void setTemperature_Max(unsigned char degC) { Controller.MaxTemperature = degC; };
   void setTemperature_Actual(unsigned char degC) { Controller.ActualTemperature = degC; };
-  unsigned char getTemperature_Desired() { return Controller.DesiredTemperature; };
-  unsigned char getTemperature_Min() { return Controller.MinTemperature; };
-  unsigned char getTemperature_Max() { return Controller.MaxTemperature; };
-  unsigned char getTemperature_Actual() { return Controller.ActualTemperature; };
+  unsigned char getTemperature_Desired() const { return Controller.DesiredTemperature; };
+  unsigned char getTemperature_Min() const { return Controller.MinTemperature; };
+  unsigned char getTemperature_Max() const { return Controller.MaxTemperature; };
+  unsigned char getTemperature_Actual() const { return Controller.ActualTemperature; };
   void setThermostatMode(unsigned on) { Controller.OperatingMode = on ? 0x32 : 0xCD; };
   // glow plug
   short getGlowPlug_Current();   // glow plug current
@@ -164,7 +164,7 @@ public:
   void setGlowPlug_Current(short ampsx100);   // glow plug current
   void setGlowPlug_Voltage(short voltsx10);   // glow plug voltage
   // heat exchanger
-  short getTemperature_HeatExchg(); // temperature of heat exchanger
+  short getTemperature_HeatExchg() const; // temperature of heat exchanger
   void setTemperature_HeatExchg(short degC); // temperature of heat exchanger
 
   void DebugReport(const char* hdr, const char* ftr);
