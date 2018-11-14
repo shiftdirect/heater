@@ -120,6 +120,11 @@ CBluetoothHC05::check()
   }
 }
 
+bool 
+CBluetoothHC05::isConnected()
+{
+  return digitalRead(_sensePin);
+}
 
 void
 CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
@@ -127,7 +132,7 @@ CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineter
   // report to debug port
   CBluetoothAbstract::sendFrame(pHdr, Frame, false);
 
-  if(digitalRead(_sensePin)) {
+  if(isConnected()) {
     if(Frame.verifyCRC()) {
       // send data frame to HC-05
       HC05_SerialPort.print(pHdr);

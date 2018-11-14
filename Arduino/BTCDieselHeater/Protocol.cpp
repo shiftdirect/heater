@@ -94,7 +94,7 @@ CProtocol::setFan_Max(short Speed)
 }
 
 short 
-CProtocol::getFan_Min() 
+CProtocol::getFan_Min() const
 {
   short retval;
   // Minimum speed get
@@ -105,7 +105,7 @@ CProtocol::getFan_Min()
 }
 
 short 
-CProtocol::getFan_Max() 
+CProtocol::getFan_Max() const
 {
   short retval;
   // Maximum speed get
@@ -116,7 +116,7 @@ CProtocol::getFan_Max()
 }
 
 short
-CProtocol::getFan_Actual() 
+CProtocol::getFan_Actual() const
 {  
   // Rx side, actual
   short retval;
@@ -135,7 +135,7 @@ CProtocol::setFan_Actual(short Speed)  // Heater side, actual
 }
 
 short 
-CProtocol::getGlowPlug_Current()    // glow plug current
+CProtocol::getGlowPlug_Current() const   // glow plug current
 {
   short retval;
   retval = Heater.GlowPlugCurrent_MSB;
@@ -152,7 +152,7 @@ CProtocol::setGlowPlug_Current(short ampsx100)    // glow plug current
 }
 
 short 
-CProtocol::getGlowPlug_Voltage()    // glow plug voltage
+CProtocol::getGlowPlug_Voltage() const   // glow plug voltage
 {
   short retval;
   retval = Heater.GlowPlugVoltage_MSB;
@@ -187,7 +187,7 @@ CProtocol::setTemperature_HeatExchg(short degC) // temperature of heat exchanger
 }
 
 short 
-CProtocol::getFan_Voltage()     // temperature near inlet
+CProtocol::getFan_Voltage() const    // temperature near inlet
 {
   short retval;
   retval = Heater.FanVoltage_MSB;
@@ -211,12 +211,13 @@ CProtocol::setVoltage_Supply(short voltsx10)
 }
 
 short
-CProtocol::getVoltage_Supply()
+CProtocol::getVoltage_Supply() const
 {
   short retval = 0;
   retval = Heater.SupplyV_MSB & 0xff;
   retval <<= 8;
   retval |= Heater.SupplyV_LSB & 0xff;
+  return retval;
 }
 
 void 

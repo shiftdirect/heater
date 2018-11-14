@@ -1,5 +1,9 @@
+#ifndef __BLUETOOTHABSTRACT_H__
+#define __BLUETOOTHABSTRACT_H__
+
 #include <Arduino.h>
 #include "UtilClasses.h"
+#include "Debugport.h"
 
 class CProtocol;
 
@@ -30,4 +34,7 @@ public:
       _rxLine.append(rxVal);   // append new char to our Rx buffer
     }
   };
+  virtual bool isConnected() { return false; };
 };
+
+#endif // __BLUETOOTHABSTRACT_H__

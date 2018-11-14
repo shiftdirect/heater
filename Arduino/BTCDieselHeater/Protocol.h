@@ -116,27 +116,27 @@ public:
   void onCommand() { setRawCommand(0xA0); };
   void offCommand() { setRawCommand(0x05); };
   // raw command
-  int getRawCommand() { return Controller.Command; };
+  int getRawCommand() const { return Controller.Command; };
   void setRawCommand(int mode) { Controller.Command = mode; };
   // Run state
-  unsigned char getRunState() { return Heater.RunState; };
+  unsigned char getRunState() const { return Heater.RunState; };
   void setRunState(unsigned char state) { Heater.RunState = state; };
-  unsigned char getErrState() { return Heater.ErrState; };
+  unsigned char getErrState() const { return Heater.ErrState; };
   void setErrState(unsigned char state) { Heater.ErrState = state; };
-  unsigned char getStoredErrCode() { return Heater.StoredErrorCode; };
+  unsigned char getStoredErrCode() const { return Heater.StoredErrorCode; };
   void setStoredErrCode(unsigned char state) { Heater.StoredErrorCode = state; };
   //
-  short getVoltage_Supply();
+  short getVoltage_Supply() const;
   void setVoltage_Supply(short voltsx10);
   
   // fan set/get
-  short getFan_Actual();  // Heater side, actual
-  short getFan_Min();  // Controller side, define min fan speed
-  short getFan_Max();  // Controller side, define max fan speed
+  short getFan_Actual() const;  // Heater side, actual
+  short getFan_Min() const;  // Controller side, define min fan speed
+  short getFan_Max() const;  // Controller side, define max fan speed
   void setFan_Actual(short speed);  // Heater side, actual
   void setFan_Min(short speed); // Controller side, define min fan speed
   void setFan_Max(short speed); // Controller side, define max fan speed
-  short getFan_Voltage();           // fan voltage
+  short getFan_Voltage() const;           // fan voltage
   void setFan_Voltage(short voltsx10);  // fan voltage
   
   // pump set/get
@@ -159,8 +159,8 @@ public:
   unsigned char getTemperature_Actual() const { return Controller.ActualTemperature; };
   void setThermostatMode(unsigned on) { Controller.OperatingMode = on ? 0x32 : 0xCD; };
   // glow plug
-  short getGlowPlug_Current();   // glow plug current
-  short getGlowPlug_Voltage();   // glow plug voltage
+  short getGlowPlug_Current() const;   // glow plug current
+  short getGlowPlug_Voltage() const;   // glow plug voltage
   void setGlowPlug_Current(short ampsx100);   // glow plug current
   void setGlowPlug_Voltage(short voltsx10);   // glow plug voltage
   // heat exchanger

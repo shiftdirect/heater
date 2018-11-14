@@ -22,6 +22,7 @@ public:
   void init();
   void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true);
   void check();
+  virtual bool isConnected();
 protected:
   virtual void openSerial(int baudrate);
 };

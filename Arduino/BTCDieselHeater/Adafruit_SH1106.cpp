@@ -155,7 +155,7 @@ Adafruit_SH1106::Adafruit_SH1106(int8_t DC, int8_t RST, int8_t CS) : Adafruit_GF
   dc = DC;
   rst = RST;
   cs = CS;
-//  sid = 0;         // BUG FIX - WAS MISSING!
+  sid = 0;         // BUG FIX - WAS MISSING!
   hwSPI = true;
 }
 

@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <string.h>
 #include "Protocol.h"
+#include "debugport.h"
 
 
 // a class to track the blue wire receive / transmit states
