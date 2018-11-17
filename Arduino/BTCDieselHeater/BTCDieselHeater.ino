@@ -109,13 +109,16 @@ static UARTClass& BlueWireSerial(Serial1);
 static HardwareSerial& BlueWireSerial(Serial1);  
 #endif
 
+void initBlueWireSerial();
+bool validateFrame(const CProtocol& frame, const char* name);
+
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
 DallasTemperature TempSensor(&ds);
 long lastTemperatureTime;        // used to moderate DS18B20 access
 unsigned long lastAnimationTime;
 float fFilteredTemperature = 0;
-const float fAlpha = 0.995;
+const float fAlpha = 0.95;
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
@@ -127,7 +130,10 @@ CSmartError SmartError;
 sRxLine PCline;
 long lastRxTime;        // used to observe inter character delays
 bool hasOEMController = false;
-bool stateDebug = false;
+bool verboseDebug = false;
+
+const CProtocol* pRxFrame = NULL;
+const CProtocol* pTxFrame = NULL;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,18 +219,7 @@ void setup() {
   pinMode(LED_Pin, OUTPUT);               // On board LED indicator
   digitalWrite(LED_Pin, LOW);
 
-  // initialize serial port to interact with the "blue wire"
-  // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
-  // Tx/Rx data to/from heater, 
-  // Note special baud rate for Chinese heater controllers
-#if defined(__arm__) || defined(__AVR__)
-  BlueWireSerial.begin(25000);   
-  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
-#elif ESP32
-  // ESP32
-  BlueWireSerial.begin(25000, SERIAL_8N1, Rx1Pin, Tx1Pin);  // need to explicitly specify pins for pin multiplexer!
-  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
-#endif
+  initBlueWireSerial();
   
   // prepare for first long delay detection
   lastRxTime = millis();
@@ -248,6 +243,7 @@ void setup() {
   pNVStorage = &NVStorage;
   pNVStorage->init();
   pNVStorage->load();
+
 }
 
 
@@ -317,8 +313,8 @@ void loop()
         val--;
         bSendVal = true;
       }
-      else if(rxVal == 's') {
-        stateDebug = !stateDebug;
+      else if(rxVal == 'v') {
+        verboseDebug = !verboseDebug;
       }
     }
     if(bSendVal) {
@@ -361,6 +357,8 @@ void loop()
         DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
       }
 
+      DebugPort.println("\007Recycling blue wire serial interface");
+      initBlueWireSerial();
       CommState.set(CommStates::Idle);  // revert to idle mode
     }
   }
@@ -370,21 +368,21 @@ void loop()
   //  Reads data from the "blue wire" Serial port, (to/from heater)
   //  If an OEM controller exists we will also see it's data frames
   //  Note that the data is read now, then held for later use in the state machine
-  //s
+  //
   sRxData BlueWireData;
 
   if (BlueWireSerial.available()) {
     // Data is avaialable, read and store it now, use it later
     // Note that if not in a recognised data receive frame state, the data 
     // will be deliberately lost!
-    unsigned long dT = timenow - lastRxTime;
-    lastRxTime = timenow;    // tickle last rx time, for rx data timeout purposes
     BlueWireData.setValue(BlueWireSerial.read());  // read hex byte, store for later use
       
-    if(stateDebug) {
-      Serial.print("dT{");
-      Serial.print(dT);
-      Serial.print("}");
+    unsigned long dT = timenow - lastRxTime;
+    lastRxTime = timenow;    // tickle last rx time, for rx data timeout purposes
+    if(verboseDebug) {
+      DebugPort.print("dT{");
+      DebugPort.print(dT);
+      DebugPort.print("}");
     }
 
   } 
@@ -397,14 +395,14 @@ void loop()
 
     case CommStates::Idle:
 
-      if(stateDebug) {
-        Serial.print(":0");
+      if(verboseDebug) {
+        DebugPort.print(":0");
       }
 
       // only update OLED when not processing blue wire
       tDelta = timenow - lastAnimationTime;
-      if(tDelta >= 250) {
-        lastAnimationTime += 250;
+      if(tDelta >= 100) {
+        lastAnimationTime += 100;
         animateOLED();
       }
 
@@ -444,8 +442,8 @@ void loop()
 
 
     case CommStates::OEMCtrlRx:
-      if(stateDebug) {
-        Serial.print(":1");
+      if(verboseDebug) {
+        DebugPort.print(":1");
       }
 
 #if RX_LED == 1
@@ -453,8 +451,8 @@ void loop()
 #endif
       // collect OEM controller frame
       if(BlueWireData.available()) {
-        if(stateDebug) {
-          Serial.print(",RD1");
+        if(verboseDebug) {
+          DebugPort.print(",RD1");
         }
         if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
           CommState.set(CommStates::OEMCtrlReport);  // collected 24 bytes, move on!
@@ -464,12 +462,18 @@ void loop()
 
 
     case CommStates::OEMCtrlReport:
-      if(stateDebug) {
-        Serial.print(":2");
+      if(verboseDebug) {
+        DebugPort.print(":2");
       }
+
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
+      // test for valid CRC, abort and restarts Serial1 if invalid
+      if(!validateFrame(OEMCtrlFrame, "OEM")) {
+        break;
+      }
+
       // filled OEM controller frame, report
       // echo received OEM controller frame over Bluetooth, using [OEM] header
       // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
@@ -488,16 +492,16 @@ void loop()
 
 
     case CommStates::HeaterRx1:
-      if(stateDebug) {
-        Serial.print(":3");
+      if(verboseDebug) {
+        DebugPort.print(":3");
       }
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect heater frame, always in response to an OEM controller frame
       if(BlueWireData.available()) {
-        if(stateDebug) {
-          Serial.print(",RD2");
+        if(verboseDebug) {
+          DebugPort.print(",RD2");
         }
         if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
           CommState.set(CommStates::HeaterReport1);
@@ -507,12 +511,18 @@ void loop()
 
 
     case CommStates::HeaterReport1:
-      if(stateDebug) {
-        Serial.print(":4");
+      if(verboseDebug) {
+        DebugPort.print(":4");
       }
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
+
+      // test for valid CRC, abort and restarts Serial1 if invalid
+      if(!validateFrame(HeaterFrame1, "RX1")) {
+        break;
+      }
+
       // received heater frame (after controller message), report
     
       // do some monitoring of the heater state variable
@@ -545,14 +555,17 @@ void loop()
         CommState.set(CommStates::BTC_Tx);
       }
       else {
-        CommState.set(CommStates::Idle);    // "Listen Only" input is  held low, don't send out Tx
+//        CommState.set(CommStates::Idle);    // "Listen Only" input is  held low, don't send out Tx
+        pRxFrame = &HeaterFrame1;
+        pTxFrame = &OEMCtrlFrame;
+        CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send out Tx
       }
       break;
     
 
     case CommStates::BTC_Tx:
-      if(stateDebug) {
-        Serial.print(":5");
+      if(verboseDebug) {
+        DebugPort.print(":5");
       }
       // Handle time interval where we send data to the blue wire
       lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
@@ -567,33 +580,52 @@ void loop()
 
 
     case CommStates::HeaterRx2:
-      if(stateDebug) {
-        Serial.print(":6");
+      if(verboseDebug) {
+        DebugPort.print(":6");
       }
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect heater frame, in response to our control frame
       if(BlueWireData.available()) {
-        if(stateDebug) {
-          Serial.print(",RD(");
-          Serial.print(BlueWireData.getValue(), HEX);
-          Serial.print(")");
+        if(verboseDebug) {
+          DebugPort.print(",RD(");
+          DebugPort.print(BlueWireData.getValue(), HEX);
+          DebugPort.print(")");
         }
-        if( CommState.collectDataEx(HeaterFrame2, BlueWireData.getValue()) ) {
+#ifdef BADSTARTCHECK
+        if(!CommState.checkValidStart(BlueWireData.getValue())) {
+          DebugPort.println("***** \007 Invalid start of frame - restarting Serial port *****");    
+          initBlueWireSerial();
+          CommState.set(CommStates::Idle);
+        }
+        else {
+          if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
+            CommState.set(CommStates::HeaterReport2);
+          }
+        }
+#else
+        if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
           CommState.set(CommStates::HeaterReport2);
         }
+#endif
       } 
       break;
 
 
     case CommStates::HeaterReport2:
-      if(stateDebug) {
-        Serial.print(":7");
+      if(verboseDebug) {
+        DebugPort.print(":7");
       }
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
+
+      // test for valid CRC, abort and restarts Serial1 if invalid
+      if(!validateFrame(HeaterFrame2, "RX2")) {
+        break;
+      }
+
       // received heater frame (after our control message), report
 
       // do some monitoring of the heater state variables
@@ -603,29 +635,30 @@ void loop()
       delay(5);
       if(!hasOEMController) {
         // only convey these frames to Bluetooth when NOT using an OEM controller!
-//        Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
         Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
       }
       CommState.set(CommStates::TemperatureRead);
+      pRxFrame = &HeaterFrame2;
+      pTxFrame = &TxManage.getFrame();
       break;
 
     case CommStates::TemperatureRead:
-      if(stateDebug) {
-        Serial.print(":8");
+      if(verboseDebug) {
+        DebugPort.print(":8");
       }
       // update temperature reading, 
       // synchronised with serial reception as interrupts do get disabled in the OneWire library
-      unsigned Tdelta = timenow - lastTemperatureTime;
-      if(Tdelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
+      tDelta = timenow - lastTemperatureTime;
+      if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
         lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature
         fTemperature = TempSensor.getTempCByIndex(0);    // read sensor
         // exponential mean to stabilse readings
-        fFilteredTemperature = fFilteredTemperature * (1-fAlpha) + fAlpha * fTemperature;
+        fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         TempSensor.requestTemperatures();               // prep sensor for future reading
 
-        updateOLED(TxManage.getFrame(), HeaterFrame2);        
-
+//        updateOLED(TxManage.getFrame(), HeaterFrame2);        
+        updateOLED(*pTxFrame, *pRxFrame);        
       }
       CommState.set(CommStates::Idle);
       break;
@@ -728,4 +761,37 @@ void Command_Interpret(const char* pLine)
     }
 
   }
+}
+
+void initBlueWireSerial()
+{
+  // initialize serial port to interact with the "blue wire"
+  // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
+  // Tx/Rx data to/from heater, 
+  // Note special baud rate for Chinese heater controllers
+#if defined(__arm__) || defined(__AVR__)
+  BlueWireSerial.begin(25000);   
+  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
+#elif ESP32
+  // ESP32
+  BlueWireSerial.begin(25000, SERIAL_8N1, Rx1Pin, Tx1Pin);  // need to explicitly specify pins for pin multiplexer!
+  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
+#endif
+}
+
+bool validateFrame(const CProtocol& frame, const char* name)
+{
+  if(!frame.verifyCRC()) {
+    // Bad CRC - restart blue wire Serial port
+    DebugPort.print("\007Bad CRC detected for ");
+    DebugPort.print(name);
+    DebugPort.println(" frame - restarting Serial1");
+    char header[16];
+    sprintf(header, "[CRC_%s]", name);
+    DebugReportFrame(header, frame, "\r\n");
+    initBlueWireSerial();
+    CommState.set(CommStates::Idle);
+    return false;
+  }
+  return true;
 }

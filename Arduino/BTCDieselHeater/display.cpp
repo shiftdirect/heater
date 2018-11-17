@@ -6,13 +6,28 @@
 #include "BluetoothAbstract.h" 
 #include "OLEDconsts.h"
 
-#define X_FANICON 60 //46
+#define X_FANICON 55 
 #define Y_FANICON 39
-#define X_FUELICON 90 // 80
+#define X_FUELICON 81 
 #define Y_FUELICON 39
-#define X_TARGETICON 30
+#define X_TARGETICON 31
 #define Y_TARGETICON 39
-#define Y_BASELINE 57
+#define Y_BASELINE 58
+#define X_BATTICON 95
+#define Y_BATTICON 0
+#define X_GLOWICON 97
+#define Y_GLOWICON 38
+#define X_BODYBULB 119
+#define X_BULB 1  // >= 1
+#define Y_BULB 4
+
+#define MINI_BATTLABEL
+#define MINI_TEMPLABEL
+#define MINI_TARGETLABEL
+#define MINI_FANLABEL
+#define MINI_GLOWLABEL
+#define MINI_FUELLABEL
+#define MINI_BODYLABEL
 
 //
 // **** NOTE: There are two very lame libaries conspiring to make life difficult ****
@@ -28,8 +43,9 @@
 SPIClass SPI;    // default constructor opens HSPI on pins
 Adafruit_SH1106 display(LCDpin_DC,  -1, LCDpin_CS);
 
-int prevPump;
-int prevRPM;
+bool animatePump = false;
+bool animateRPM = false;
+bool animateGlow = false;
 
 
 extern float fFilteredTemperature;
@@ -65,7 +81,7 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   display.clearDisplay();
 
   float desiredT = 0;
-  if(runstate) {
+  if(runstate && (runstate <= 5)) {
     if(CtlFrame.isThermostat())
       desiredT = CtlFrame.getTemperature_Desired();
     else
@@ -81,20 +97,21 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
   showBatteryIcon(voltage);
 
+  animateRPM = false;
+  animatePump = false;
+  animateGlow = false;
+
   if(runstate) {
     float power = HtrFrame.getGlowPlug_Current() * 0.01 * HtrFrame.getGlowPlug_Voltage() * 0.1;
-    if(power > 1)
+    if(power > 1) {
       showGlowPlug(int(power));
+    }
 
     showFan(HtrFrame.getFan_Actual());
 
     showFuel(HtrFrame.getPump_Actual() * 0.1f);
 
     showBodyThermometer(HtrFrame.getTemperature_HeatExchg());
-  }
-  else {
-    prevRPM = 0;
-    prevPump = 0;
   }
 
   showRunState(runstate, errstate);
@@ -106,18 +123,19 @@ void animateOLED()
 {
   static int fan = 0;
   static int drip = 0;
+  static int heat = 0;
 
-  if(prevPump || prevRPM) {
+  if(animatePump || animateRPM || animateGlow) {
 
-    if(prevPump) {
+    if(animatePump) {
       // erase region of fuel icon
       display.fillRect(X_FUELICON, Y_FUELICON, 7, 16, BLACK);
-      display.drawBitmap(X_FUELICON, Y_FUELICON+drip, FuelIcon, 7, 12, WHITE);
+      display.drawBitmap(X_FUELICON, Y_FUELICON+(drip/2), FuelIcon, 7, 12, WHITE);
       drip++;
-      drip &= 0x03;
+      drip &= 0x07;
     }
 
-    if(prevRPM) {
+    if(animateRPM) {
       // erase region of fuel icon
       display.fillRect(X_FANICON, Y_FANICON, 16, 16, BLACK);
       switch(fan) {
@@ -129,66 +147,86 @@ void animateOLED()
       fan++;
       fan &= 0x03;
     }
+    
+    if(animateGlow) {
+      display.fillRect(X_GLOWICON, Y_GLOWICON, 17, 10, BLACK);
+      display.drawBitmap(X_GLOWICON, Y_GLOWICON, GlowPlugIcon, 16, 9, WHITE);
+      display.drawBitmap(X_GLOWICON, Y_GLOWICON + 2 + heat, GlowHeatIcon, 17, 2, WHITE);
+      heat -= 2;
+      heat &= 0x07;
+    }
   }
   display.display();
 }
 
 
 #define TEMP_YPOS(A) ((((20 - A) * 3) / 2) + 22)
-#define BULB_X 1  // >= 1
-#define BULB_Y 4
 void showThermometer(float desired, float actual) 
 {
+  char msg[16];
   display.clearDisplay();
   // draw bulb design
-  display.drawBitmap(BULB_X, BULB_Y, thermometerBitmap, 8, 50, WHITE);
+  display.drawBitmap(X_BULB, Y_BULB, thermometerBitmap, 8, 50, WHITE);
   // draw mercury
-  int yPos = BULB_Y + TEMP_YPOS(actual);
-  display.drawLine(BULB_X + 3, yPos, BULB_X + 3, BULB_Y + 42, WHITE);
-  display.drawLine(BULB_X + 4, yPos, BULB_X + 4, BULB_Y + 42, WHITE);
+  int yPos = Y_BULB + TEMP_YPOS(actual);
+  display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
+  display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);
   // print actual temperature
+#ifdef MINI_TEMPLABEL  
+  sprintf(msg, "%.1f`C", actual);
+  printMiniNumericString(0, Y_BASELINE, msg);
+#else
   display.setTextColor(WHITE);
   display.setCursor(0, Y_BASELINE);
   display.print(actual, 1);
-  // draw set point
+#endif
 
+  // draw set point
   if(desired) {
-    char msg[16];
-    int desY = 19;
     display.drawBitmap(X_TARGETICON, Y_TARGETICON, TargetIcon, 13, 13, WHITE);   // set indicator against bulb
-    desY += 14;
+    char msg[16];
     if(desired > 0) {
-      int yPos = BULB_Y + TEMP_YPOS(desired) - 2;
-      display.drawBitmap(BULB_X-1, yPos, thermoPtr, 3, 5, WHITE);   // set indicator against bulb
-      sprintf(msg, "%.0fC", desired);
+      int yPos = Y_BULB + TEMP_YPOS(desired) - 2;
+      display.drawBitmap(X_BULB-1, yPos, thermoPtr, 3, 5, WHITE);   // set indicator against bulb
+      sprintf(msg, "%.0f`C", desired);
     }
     else {
       sprintf(msg, "%.1fHz", -desired);
     }
-    int xPos = X_TARGETICON + 6 - ( strlen(msg) * 3);    // 3 = 1/2 width font
+#ifdef MINI_TARGETLABEL
+    int xPos = X_TARGETICON + 7 - strlen(msg) * 2;    // 2 = 1/2 width mini font
+    printMiniNumericString(xPos, Y_BASELINE, msg);
+#else
+    int xPos = X_TARGETICON + 6 - strlen(msg) * 3;    // 3 = 1/2 width normal font
     display.setCursor(xPos, Y_BASELINE);
     display.print(msg);
+#endif
   }
 }
 
-#define BODYBULB_X 119
 #define BODY_YPOS(A) ((((100 - A) * 3) / 16) + 22)   // 100degC centre - ticks +- 80C
 void showBodyThermometer(int actual) 
 {
   // draw bulb design
-  display.drawBitmap(BODYBULB_X, BULB_Y, thermometerBitmap, 8, 50, WHITE);
+  display.drawBitmap(X_BODYBULB, Y_BULB, thermometerBitmap, 8, 50, WHITE);
   // draw mercury
-  int yPos = BULB_Y + BODY_YPOS(actual);
-  display.drawLine(BODYBULB_X + 3, yPos, BODYBULB_X + 3, BULB_Y + 42, WHITE);
-  display.drawLine(BODYBULB_X + 4, yPos, BODYBULB_X + 4, BULB_Y + 42, WHITE);
+  int yPos = Y_BULB + BODY_YPOS(actual);
+  display.drawLine(X_BODYBULB + 3, yPos, X_BODYBULB + 3, Y_BULB + 42, WHITE);
+  display.drawLine(X_BODYBULB + 4, yPos, X_BODYBULB + 4, Y_BULB + 42, WHITE);
   // print actual temperature
   display.setTextColor(WHITE);
   char label[16];
-  sprintf(label, "%d", actual);
   // determine width and position right justified
+#ifdef MINI_BODYLABEL
+  sprintf(label, "%d`C", actual);
+  int width = strlen(label) * 4;
+  printMiniNumericString(127-width, Y_BASELINE, label);
+#else
+  sprintf(label, "%d", actual);
   int width = strlen(label) * 6;
   display.setCursor(127-width, Y_BASELINE);
   display.print(label);
+#endif
 }
 
 void showBTicon()
@@ -198,54 +236,78 @@ void showBTicon()
 
 void showBatteryIcon(float voltage)
 {
-  display.drawBitmap(95, 0, BatteryIcon, 15, 10, WHITE);
+  display.drawBitmap(X_BATTICON, Y_BATTICON, BatteryIcon, 15, 10, WHITE);
+#ifdef MINI_BATTLABEL
+  char msg[16];
+  sprintf(msg, "%.1fV", voltage);
+  int xPos = X_BATTICON + 7 - strlen(msg) * 2;
+  printMiniNumericString(xPos, Y_BATTICON+12, msg);
+#else
   display.setCursor(85, 12);
   display.setTextColor(WHITE);
   display.print(voltage, 1);
   display.print("V");
+#endif
 
   // nominal 10.5 -> 13.5V bargraph
-  int Capacity = int((voltage - 11.0) * 4.5);
+//  int Capacity = int((voltage - 11.0) * 4.5);
+//  int Capacity = (voltage - 11.4) * 7;
+  int Capacity = (voltage - 10.7) * 4;
   if(Capacity < 0)   Capacity = 0;
   if(Capacity > 11)  Capacity = 11;
-  display.fillRect(97 + Capacity, 2, 11-Capacity, 6, BLACK);
+  display.fillRect(X_BATTICON+2 + Capacity, Y_BATTICON+2, 11-Capacity, 6, BLACK);
 }
 
-#define XPOS_GLOW 35
-#define YPOS_GLOW 0
 void showGlowPlug(int power)
 {
-  display.drawBitmap(XPOS_GLOW, YPOS_GLOW, GlowPlugIcon, 16, 10, WHITE);
-  display.setCursor(XPOS_GLOW, YPOS_GLOW+12);
-  display.setTextColor(WHITE);
+  display.drawBitmap(X_GLOWICON, Y_GLOWICON, GlowPlugIcon, 16, 9, WHITE);
+//  animateGlow = true;
+#ifdef MINI_GLOWLABEL  
+  char msg[16];
+  sprintf(msg, "%dW", power);
+  int xPos = X_GLOWICON + 9 - strlen(msg) * 2;
+  printMiniNumericString(xPos, Y_GLOWICON+12, msg);
+#else
+  display.setCursor(X_GLOWICON, Y_GLOWICON+12);
   display.print(power);
   display.print("W");
+#endif
 }
 
 void showFan(int RPM)
 {
   // NOTE: fan rotation animation performed in animateOLED
-  prevRPM = RPM;   // used by animation routine
+  animateRPM = RPM != 0;   // used by animation routine
 
   display.setTextColor(WHITE);
   char msg[16];
   sprintf(msg, "%d", RPM);
+#ifdef MINI_FANLABEL  
+  int xPos = X_FANICON + 8 - strlen(msg) * 2;    // 3 = 1/2 width font
+  printMiniNumericString(xPos, Y_BASELINE, msg);
+#else
   int xPos = X_FANICON + 8 - ( strlen(msg) * 3);    // 3 = 1/2 width font
   display.setCursor(xPos, Y_BASELINE);
   display.print(msg);
+#endif
 }
 
 void showFuel(float rate)
 {
   // NOTE: fuel drop animation performed in animateOLED
-  prevPump = rate > 0;    // used by animation routine
+  animatePump = rate != 0;    // used by animation routine
   if(rate) {
     char msg[16];
     sprintf(msg, "%.1f", rate);
+#ifdef MINI_FUELLABEL
+    int xPos = X_FUELICON + 3 - strlen(msg) * 2;    // 3 = 1/2 width font
+    printMiniNumericString(xPos, Y_BASELINE, msg);
+#else
     int xPos = X_FUELICON + 3 - ( strlen(msg) * 3);    // 3 = 1/2 width font
     display.setCursor(xPos, Y_BASELINE);
     display.setTextColor(WHITE);
-    display.print(rate, 1);
+    display.print(msg);
+#endif
   }
 }
 
@@ -256,11 +318,13 @@ void showRunState(int runstate, int errstate)
   int yPos = 25;
   display.setTextColor(WHITE, BLACK);
   if(runstate >= 0 && runstate <= 8) {
-    if(runstate == 0 && errstate) {
+    if(((runstate == 0) || (runstate > 5)) && errstate) {
       // create an "E-XX" message to display
       char msg[16];
       sprintf(msg, "E-%02d", errstate);
       int xPos = 64 - ((strlen(msg)/2) * 6);
+      if(runstate > 5)
+        yPos -= 8;
       display.setCursor(xPos, yPos);
       yPos += 8;
       // flash error code
@@ -309,6 +373,8 @@ void printMiniNumericString(int xPos, int yPos, const char* str)
       case 'H':  pBmp = MiniH; break;
       case 'z':  pBmp = Miniz; break;
       case ' ':  pBmp = MiniSpc; break;
+      case 'V':  pBmp = MiniV; break;
+      case 'W':  pBmp = MiniW; break;
     }
     if(pBmp) {
       display.drawBitmap(xPos, yPos, pBmp, 3, 5, WHITE);

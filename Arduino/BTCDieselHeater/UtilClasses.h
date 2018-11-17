@@ -41,6 +41,13 @@ public:
     Frame.Data[m_Count++] = val;
     return m_Count >= limit;
   }
+  bool checkValidStart(unsigned char val)
+  {
+    if(m_Count) 
+      return true;
+    else 
+      return val == 0x76;
+  }
 
 private:
   eCS m_State;

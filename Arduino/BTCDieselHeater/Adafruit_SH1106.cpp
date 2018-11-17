@@ -180,7 +180,6 @@ void Adafruit_SH1106::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
 
   // set pin directions
   if (sid != -1){
-    Serial.println("SH1106 pin set");
     pinMode(dc, OUTPUT);
     pinMode(cs, OUTPUT);
     csport      = portOutputRegister(digitalPinToPort(cs));
@@ -197,7 +196,6 @@ void Adafruit_SH1106::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
       mosipinmask = digitalPinToBitMask(sid);
       }
     if (hwSPI){
-      Serial.println("SH1106 SPI begin");
       SPI.begin ();
 #ifdef __SAM3X8E__
       SPI.setClockDivider (9); // 9.3 MHz
@@ -527,8 +525,6 @@ void Adafruit_SH1106::display(void) {
     TWBR = 12; // upgrade to 400KHz!
 #endif
 #endif
-    //Serial.println(TWBR, DEC);
-    //Serial.println(TWSR & 0x3, DEC);
 
     // I2C
   	for (int8_t i = (SH1106_LCDHEIGHT/8)-1; i >= 0; i--)
