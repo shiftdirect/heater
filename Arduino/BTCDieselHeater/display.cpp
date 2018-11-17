@@ -6,20 +6,25 @@
 #include "BluetoothAbstract.h" 
 #include "OLEDconsts.h"
 
-#define X_FANICON 55 
-#define Y_FANICON 39
-#define X_FUELICON 81 
-#define Y_FUELICON 39
-#define X_TARGETICON 31
-#define Y_TARGETICON 39
-#define Y_BASELINE 58
-#define X_BATTICON 95
-#define Y_BATTICON 0
-#define X_GLOWICON 97
-#define Y_GLOWICON 38
-#define X_BODYBULB 119
-#define X_BULB 1  // >= 1
-#define Y_BULB 4
+#define X_FANICON     55 
+#define Y_FANICON     39
+#define X_FUELICON    81 
+#define Y_FUELICON    39
+#define X_TARGETICON  31
+#define Y_TARGETICON  39
+#define Y_BASELINE    58
+#define X_BATTICON    95
+#define Y_BATTICON     0
+#define X_GLOWICON    97
+#define Y_GLOWICON    38
+#define X_BODYBULB   119
+#define X_BULB         1  // >= 1
+#define Y_BULB         4
+#define X_WIFIICON    22
+#define Y_WIFIICON     0
+#define X_BTICON      12
+#define Y_BTICON       0
+
 
 #define MINI_BATTLABEL
 #define MINI_TEMPLABEL
@@ -54,6 +59,7 @@ extern CBluetoothAbstract& getBluetoothClient();
 void showThermometer(float desired, float actual);
 void showBodyThermometer(int actual);
 void showBTicon();
+void showWifiIcon();
 void showBatteryIcon(float voltage);
 void showGlowPlug(int power);
 void showFan(int RPM);
@@ -93,6 +99,8 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
   if(getBluetoothClient().isConnected())
     showBTicon();
+
+  // showWifiIcon();
 
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
   showBatteryIcon(voltage);
@@ -231,7 +239,12 @@ void showBodyThermometer(int actual)
 
 void showBTicon()
 {
-  display.drawBitmap(12, 0, BTicon, 6, 11, WHITE);
+  display.drawBitmap(X_BTICON, Y_BTICON, BTicon, W_BTICON, H_BTICON, WHITE);
+}
+
+void showWifiIcon()
+{
+  display.drawBitmap(X_WIFIICON, Y_WIFIICON, wifiIcon, W_WIFIICON, H_WIFIICON, WHITE);
 }
 
 void showBatteryIcon(float voltage)

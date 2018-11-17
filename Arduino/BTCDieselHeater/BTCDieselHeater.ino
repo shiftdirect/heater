@@ -117,7 +117,7 @@ OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
 DallasTemperature TempSensor(&ds);
 long lastTemperatureTime;        // used to moderate DS18B20 access
 unsigned long lastAnimationTime;
-float fFilteredTemperature = 0;
+float fFilteredTemperature = -100;
 const float fAlpha = 0.95;
 
 CommStates CommState;
@@ -652,6 +652,10 @@ void loop()
       if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
         lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature
         fTemperature = TempSensor.getTempCByIndex(0);    // read sensor
+        // initialise filtered temperature upon very first pass
+        if(fFilteredTemperature <= -90) {              // avoid FP exactness issues
+          fFilteredTemperature = fTemperature;         // prime with initial reading
+        }
         // exponential mean to stabilse readings
         fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
