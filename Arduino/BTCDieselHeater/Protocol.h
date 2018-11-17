@@ -158,6 +158,7 @@ public:
   unsigned char getTemperature_Max() const { return Controller.MaxTemperature; };
   unsigned char getTemperature_Actual() const { return Controller.ActualTemperature; };
   void setThermostatMode(unsigned on) { Controller.OperatingMode = on ? 0x32 : 0xCD; };
+  bool isThermostat() const { return Controller.OperatingMode == 0x32; };
   // glow plug
   short getGlowPlug_Current() const;   // glow plug current
   short getGlowPlug_Voltage() const;   // glow plug voltage

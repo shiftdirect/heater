@@ -30,8 +30,18 @@ public:
   }
   bool collectData(CProtocol& Frame, unsigned char val, int limit = 24) {   // returns true when buffer filled
     Frame.Data[m_Count++] = val;
-    return m_Count == limit;
+    return m_Count >= limit;
   }
+  bool collectDataEx(CProtocol& Frame, unsigned char val, int limit = 24) {   // returns true when buffer filled
+    // guarding against rogue rx kernel buffer stutters....
+    if((m_Count == 0) && (val != 0x76)) {
+      Serial.println("First heater byte not 0x76 - SKIPPING");
+      return false;
+    }
+    Frame.Data[m_Count++] = val;
+    return m_Count >= limit;
+  }
+
 private:
   eCS m_State;
   int m_Count;

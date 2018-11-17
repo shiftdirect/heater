@@ -113,6 +113,7 @@ static HardwareSerial& BlueWireSerial(Serial1);
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
 DallasTemperature TempSensor(&ds);
 long lastTemperatureTime;        // used to moderate DS18B20 access
+unsigned long lastAnimationTime;
 float fFilteredTemperature = 0;
 const float fAlpha = 0.995;
 
@@ -126,6 +127,7 @@ CSmartError SmartError;
 sRxLine PCline;
 long lastRxTime;        // used to observe inter character delays
 bool hasOEMController = false;
+bool stateDebug = false;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,6 +193,7 @@ void setup() {
   TempSensor.setWaitForConversion(false);
   TempSensor.requestTemperatures();
   lastTemperatureTime = millis();
+  lastAnimationTime = millis();
 
   initOLED();
 
@@ -314,6 +317,9 @@ void loop()
         val--;
         bSendVal = true;
       }
+      else if(rxVal == 's') {
+        stateDebug = !stateDebug;
+      }
     }
     if(bSendVal) {
       switch(mode) {
@@ -330,6 +336,7 @@ void loop()
       }
     }
   }
+
 
   Bluetooth.check();    // check for Bluetooth activity
 
@@ -363,24 +370,44 @@ void loop()
   //  Reads data from the "blue wire" Serial port, (to/from heater)
   //  If an OEM controller exists we will also see it's data frames
   //  Note that the data is read now, then held for later use in the state machine
-  //
+  //s
   sRxData BlueWireData;
 
   if (BlueWireSerial.available()) {
     // Data is avaialable, read and store it now, use it later
     // Note that if not in a recognised data receive frame state, the data 
     // will be deliberately lost!
-  
+    unsigned long dT = timenow - lastRxTime;
     lastRxTime = timenow;    // tickle last rx time, for rx data timeout purposes
     BlueWireData.setValue(BlueWireSerial.read());  // read hex byte, store for later use
+      
+    if(stateDebug) {
+      Serial.print("dT{");
+      Serial.print(dT);
+      Serial.print("}");
+    }
+
   } 
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // do our state machine to track the reception and delivery of blue wire data
 
+  unsigned long tDelta;
   switch(CommState.get()) {
 
     case CommStates::Idle:
+
+      if(stateDebug) {
+        Serial.print(":0");
+      }
+
+      // only update OLED when not processing blue wire
+      tDelta = timenow - lastAnimationTime;
+      if(tDelta >= 250) {
+        lastAnimationTime += 250;
+        animateOLED();
+      }
+
 #if RX_LED == 1
       digitalWrite(LED_Pin, LOW);
 #endif
@@ -408,7 +435,7 @@ void loop()
         hasOEMController = true;
         CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
         //
-        //  ** IMPORTANT - we must drop through to OEMCtrlRx *NOW* (skip break) **
+        //  ** IMPORTANT - we must drop through to OEMCtrlRx *NOW* (skipping break) **
         //
       }
       else {
@@ -417,11 +444,18 @@ void loop()
 
 
     case CommStates::OEMCtrlRx:
+      if(stateDebug) {
+        Serial.print(":1");
+      }
+
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect OEM controller frame
       if(BlueWireData.available()) {
+        if(stateDebug) {
+          Serial.print(",RD1");
+        }
         if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
           CommState.set(CommStates::OEMCtrlReport);  // collected 24 bytes, move on!
         }
@@ -430,6 +464,9 @@ void loop()
 
 
     case CommStates::OEMCtrlReport:
+      if(stateDebug) {
+        Serial.print(":2");
+      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -451,11 +488,17 @@ void loop()
 
 
     case CommStates::HeaterRx1:
+      if(stateDebug) {
+        Serial.print(":3");
+      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect heater frame, always in response to an OEM controller frame
       if(BlueWireData.available()) {
+        if(stateDebug) {
+          Serial.print(",RD2");
+        }
         if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
           CommState.set(CommStates::HeaterReport1);
         }
@@ -464,6 +507,9 @@ void loop()
 
 
     case CommStates::HeaterReport1:
+      if(stateDebug) {
+        Serial.print(":4");
+      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -505,6 +551,9 @@ void loop()
     
 
     case CommStates::BTC_Tx:
+      if(stateDebug) {
+        Serial.print(":5");
+      }
       // Handle time interval where we send data to the blue wire
       lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
       if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
@@ -518,12 +567,20 @@ void loop()
 
 
     case CommStates::HeaterRx2:
+      if(stateDebug) {
+        Serial.print(":6");
+      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect heater frame, in response to our control frame
       if(BlueWireData.available()) {
-        if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
+        if(stateDebug) {
+          Serial.print(",RD(");
+          Serial.print(BlueWireData.getValue(), HEX);
+          Serial.print(")");
+        }
+        if( CommState.collectDataEx(HeaterFrame2, BlueWireData.getValue()) ) {
           CommState.set(CommStates::HeaterReport2);
         }
       } 
@@ -531,6 +588,9 @@ void loop()
 
 
     case CommStates::HeaterReport2:
+      if(stateDebug) {
+        Serial.print(":7");
+      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -550,6 +610,9 @@ void loop()
       break;
 
     case CommStates::TemperatureRead:
+      if(stateDebug) {
+        Serial.print(":8");
+      }
       // update temperature reading, 
       // synchronised with serial reception as interrupts do get disabled in the OneWire library
       unsigned Tdelta = timenow - lastTemperatureTime;
@@ -562,17 +625,13 @@ void loop()
         TempSensor.requestTemperatures();               // prep sensor for future reading
 
         updateOLED(TxManage.getFrame(), HeaterFrame2);        
-/*        display.clearDisplay();
-        showThermometer(TxManage.getFrame().getTemperature_Desired(),    // read values from most recently sent [BTC] frame
-                        TxManage.getFrame().getTemperature_Actual());
-        showBodyThermometer(HeaterFrame2.getTemperature_HeatExchg());
-        showBTicon();
-        showBatteryIcon();
-        display.display();*/
+
       }
       CommState.set(CommStates::Idle);
       break;
   }  // switch(CommState)
+
+  BlueWireData.reset();   // ensure we flush any used data
     
 }  // loop
 
