@@ -5,6 +5,7 @@
 #include "pins.h"
 #include "BluetoothAbstract.h" 
 #include "OLEDconsts.h"
+#include "BTCWifi.h"
 
 #define X_FANICON     55 
 #define Y_FANICON     39
@@ -45,8 +46,8 @@
 // then we declare "SPI" here, which will use HSPI!!!!
 
 // 128 x 64 OLED support
-SPIClass SPI;    // default constructor opens HSPI on pins
-Adafruit_SH1106 display(LCDpin_DC,  -1, LCDpin_CS);
+SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
+Adafruit_SH1106 display(OLED_DC_pin,  -1, OLED_CS_pin);
 
 bool animatePump = false;
 bool animateRPM = false;
@@ -66,6 +67,7 @@ void showFan(int RPM);
 void showFuel(float rate);
 void showRunState(int state, int errstate);
 void printMiniNumericString(int xPos, int yPos, const char* str);
+void printRightJustify(const char* str, int yPos, int RHS=128);
 
 void initOLED()
 {
@@ -100,7 +102,11 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   if(getBluetoothClient().isConnected())
     showBTicon();
 
-  // showWifiIcon();
+  if(isWifiConnected()) {
+    showWifiIcon();
+    display.fillRect(X_WIFIICON + 8, Y_WIFIICON + 5, 10, 7, BLACK);
+    printMiniNumericString(X_WIFIICON + 9, Y_WIFIICON + 6, "AP");
+  }
 
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
   showBatteryIcon(voltage);
@@ -120,6 +126,11 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     showFuel(HtrFrame.getPump_Actual() * 0.1f);
 
     showBodyThermometer(HtrFrame.getTemperature_HeatExchg());
+  }
+  else {
+    if(isWifiConnected()) {
+      printRightJustify(getWifiAddrStr(), 57);
+    }
   }
 
   showRunState(runstate, errstate);
@@ -178,7 +189,7 @@ void showThermometer(float desired, float actual)
   // draw mercury
   int yPos = Y_BULB + TEMP_YPOS(actual);
   display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
-  display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);
+  display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);  
   // print actual temperature
 #ifdef MINI_TEMPLABEL  
   sprintf(msg, "%.1f`C", actual);
@@ -366,6 +377,8 @@ void showRunState(int runstate, int errstate)
 
 void printMiniNumericString(int xPos, int yPos, const char* str) 
 {
+//  xPos = display.getCursorX();
+//  yPos = display.getCursorY();
   const char* pNext = str;
   while(*pNext) {
     const uint8_t* pBmp = NULL;
@@ -380,14 +393,16 @@ void printMiniNumericString(int xPos, int yPos, const char* str)
       case '7':  pBmp = Mini7; break;
       case '8':  pBmp = Mini8; break;
       case '9':  pBmp = Mini9; break;
+      case ' ':  pBmp = MiniSpc; break;
       case '.':  pBmp = MiniDP; break;
       case '`':  pBmp = MiniDeg; break;
+      case 'A':  pBmp = MiniA; break;
       case 'C':  pBmp = MiniC; break;
       case 'H':  pBmp = MiniH; break;
-      case 'z':  pBmp = Miniz; break;
-      case ' ':  pBmp = MiniSpc; break;
+      case 'P':  pBmp = MiniP; break;
       case 'V':  pBmp = MiniV; break;
       case 'W':  pBmp = MiniW; break;
+      case 'z':  pBmp = Miniz; break;
     }
     if(pBmp) {
       display.drawBitmap(xPos, yPos, pBmp, 3, 5, WHITE);
@@ -395,4 +410,18 @@ void printMiniNumericString(int xPos, int yPos, const char* str)
     xPos += 4;
     pNext++;
   }
+}
+
+void printRightJustify(const char* str, int yPos, int RHS)
+{
+  int xPos = RHS - strlen(str) * 6;
+  display.setCursor(xPos, yPos);
+  display.print(str);
+}
+
+void printMiniRightJustify(const char* str, int yPos, int RHS)
+{
+  int xPos = RHS - strlen(str) * 4;
+  display.setCursor(xPos, yPos);
+//  display.print(str);
 }

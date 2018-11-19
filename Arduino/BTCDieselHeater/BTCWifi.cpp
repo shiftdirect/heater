@@ -79,3 +79,14 @@ void doWiFiManager(){
     startTime = millis();
   }
 }
+
+const char* getWifiAddrStr()
+{ 
+  return WiFi.localIP().toString().c_str(); 
+};
+  
+
+bool isWifiConnected()
+{
+  return WiFi.status() == WL_CONNECTED;
+}
