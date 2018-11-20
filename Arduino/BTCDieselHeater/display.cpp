@@ -1,11 +1,16 @@
 #include <SPI.h>
-#include "AdaFruit_SH1106.h"
+#include "CustomFont.h"
+#include "MiniFont.h"
+#include "tahoma16.h"
 #include "protocol.h" 
 #include "display.h"
 #include "pins.h"
 #include "BluetoothAbstract.h" 
 #include "OLEDconsts.h"
 #include "BTCWifi.h"
+
+#define MAXIFONT tahoma_16ptFontInfo
+#define MINIFONT miniFontInfo
 
 #define X_FANICON     55 
 #define Y_FANICON     39
@@ -47,7 +52,8 @@
 
 // 128 x 64 OLED support
 SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
-Adafruit_SH1106 display(OLED_DC_pin,  -1, OLED_CS_pin);
+//Adafruit_SH1106 display(OLED_DC_pin,  -1, OLED_CS_pin);
+CCustomFont display(OLED_DC_pin,  -1, OLED_CS_pin);
 
 bool animatePump = false;
 bool animateRPM = false;
@@ -66,7 +72,6 @@ void showGlowPlug(int power);
 void showFan(int RPM);
 void showFuel(float rate);
 void showRunState(int state, int errstate);
-void printMiniNumericString(int xPos, int yPos, const char* str);
 void printRightJustify(const char* str, int yPos, int RHS=128);
 
 void initOLED()
@@ -105,7 +110,10 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   if(isWifiConnected()) {
     showWifiIcon();
     display.fillRect(X_WIFIICON + 8, Y_WIFIICON + 5, 10, 7, BLACK);
-    printMiniNumericString(X_WIFIICON + 9, Y_WIFIICON + 6, "AP");
+    display.setFontInfo(&MINIFONT);  // select Mini Font
+    display.setCursor(X_WIFIICON+9, Y_WIFIICON+6);
+    display.print("AP");
+    display.setFontInfo(NULL);  
   }
 
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
@@ -134,6 +142,14 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   }
 
   showRunState(runstate, errstate);
+
+#ifdef DEMO_LARGEFONT
+  display.fillRect(20,20, 80,16, BLACK);
+  display.setCursor(20,20);
+  display.setFontInfo(&MAXIFONT);  // Dot Factory Font
+  display.print("25.6`");
+  display.setFontInfo(NULL);  // standard 5x7 font
+#endif
 
 }
 
@@ -193,7 +209,10 @@ void showThermometer(float desired, float actual)
   // print actual temperature
 #ifdef MINI_TEMPLABEL  
   sprintf(msg, "%.1f`C", actual);
-  printMiniNumericString(0, Y_BASELINE, msg);
+  display.setCursor(0, Y_BASELINE);
+  display.setFontInfo(&MINIFONT);  // select Mini Font
+  display.print(msg);
+  display.setFontInfo(NULL);  
 #else
   display.setTextColor(WHITE);
   display.setCursor(0, Y_BASELINE);
@@ -214,7 +233,10 @@ void showThermometer(float desired, float actual)
     }
 #ifdef MINI_TARGETLABEL
     int xPos = X_TARGETICON + 7 - strlen(msg) * 2;    // 2 = 1/2 width mini font
-    printMiniNumericString(xPos, Y_BASELINE, msg);
+    display.setCursor(xPos, Y_BASELINE);
+    display.setFontInfo(&MINIFONT);  // select Mini Font
+    display.print(msg);
+    display.setFontInfo(NULL);  
 #else
     int xPos = X_TARGETICON + 6 - strlen(msg) * 3;    // 3 = 1/2 width normal font
     display.setCursor(xPos, Y_BASELINE);
@@ -239,7 +261,10 @@ void showBodyThermometer(int actual)
 #ifdef MINI_BODYLABEL
   sprintf(label, "%d`C", actual);
   int width = strlen(label) * 4;
-  printMiniNumericString(127-width, Y_BASELINE, label);
+  display.setCursor(125-width, Y_BASELINE);
+  display.setFontInfo(&MINIFONT);  // select Mini Font
+  display.print(label);
+  display.setFontInfo(NULL);  
 #else
   sprintf(label, "%d", actual);
   int width = strlen(label) * 6;
@@ -265,7 +290,10 @@ void showBatteryIcon(float voltage)
   char msg[16];
   sprintf(msg, "%.1fV", voltage);
   int xPos = X_BATTICON + 7 - strlen(msg) * 2;
-  printMiniNumericString(xPos, Y_BATTICON+12, msg);
+  display.setCursor(xPos, Y_BATTICON+12);
+  display.setFontInfo(&MINIFONT);  // select Mini Font
+  display.print(msg);
+  display.setFontInfo(NULL);  
 #else
   display.setCursor(85, 12);
   display.setTextColor(WHITE);
@@ -290,7 +318,10 @@ void showGlowPlug(int power)
   char msg[16];
   sprintf(msg, "%dW", power);
   int xPos = X_GLOWICON + 9 - strlen(msg) * 2;
-  printMiniNumericString(xPos, Y_GLOWICON+12, msg);
+  display.setCursor(xPos, Y_GLOWICON+12);
+  display.setFontInfo(&MINIFONT);  // select Mini Font
+  display.print(msg);
+  display.setFontInfo(NULL);  
 #else
   display.setCursor(X_GLOWICON, Y_GLOWICON+12);
   display.print(power);
@@ -308,7 +339,10 @@ void showFan(int RPM)
   sprintf(msg, "%d", RPM);
 #ifdef MINI_FANLABEL  
   int xPos = X_FANICON + 8 - strlen(msg) * 2;    // 3 = 1/2 width font
-  printMiniNumericString(xPos, Y_BASELINE, msg);
+  display.setCursor(xPos, Y_BASELINE);
+  display.setFontInfo(&MINIFONT);  // select Mini Font
+  display.print(msg);
+  display.setFontInfo(NULL);  
 #else
   int xPos = X_FANICON + 8 - ( strlen(msg) * 3);    // 3 = 1/2 width font
   display.setCursor(xPos, Y_BASELINE);
@@ -325,7 +359,10 @@ void showFuel(float rate)
     sprintf(msg, "%.1f", rate);
 #ifdef MINI_FUELLABEL
     int xPos = X_FUELICON + 3 - strlen(msg) * 2;    // 3 = 1/2 width font
-    printMiniNumericString(xPos, Y_BASELINE, msg);
+    display.setCursor(xPos, Y_BASELINE);
+    display.setFontInfo(&MINIFONT);  // select Mini Font
+    display.print(msg);
+    display.setFontInfo(NULL);  
 #else
     int xPos = X_FUELICON + 3 - ( strlen(msg) * 3);    // 3 = 1/2 width font
     display.setCursor(xPos, Y_BASELINE);
@@ -375,42 +412,6 @@ void showRunState(int runstate, int errstate)
 }
 
 
-void printMiniNumericString(int xPos, int yPos, const char* str) 
-{
-//  xPos = display.getCursorX();
-//  yPos = display.getCursorY();
-  const char* pNext = str;
-  while(*pNext) {
-    const uint8_t* pBmp = NULL;
-    switch(*pNext) {
-      case '0':  pBmp = Mini0; break;
-      case '1':  pBmp = Mini1; break;
-      case '2':  pBmp = Mini2; break;
-      case '3':  pBmp = Mini3; break;
-      case '4':  pBmp = Mini4; break;
-      case '5':  pBmp = Mini5; break;
-      case '6':  pBmp = Mini6; break;
-      case '7':  pBmp = Mini7; break;
-      case '8':  pBmp = Mini8; break;
-      case '9':  pBmp = Mini9; break;
-      case ' ':  pBmp = MiniSpc; break;
-      case '.':  pBmp = MiniDP; break;
-      case '`':  pBmp = MiniDeg; break;
-      case 'A':  pBmp = MiniA; break;
-      case 'C':  pBmp = MiniC; break;
-      case 'H':  pBmp = MiniH; break;
-      case 'P':  pBmp = MiniP; break;
-      case 'V':  pBmp = MiniV; break;
-      case 'W':  pBmp = MiniW; break;
-      case 'z':  pBmp = Miniz; break;
-    }
-    if(pBmp) {
-      display.drawBitmap(xPos, yPos, pBmp, 3, 5, WHITE);
-    }
-    xPos += 4;
-    pNext++;
-  }
-}
 
 void printRightJustify(const char* str, int yPos, int RHS)
 {
@@ -419,9 +420,3 @@ void printRightJustify(const char* str, int yPos, int RHS)
   display.print(str);
 }
 
-void printMiniRightJustify(const char* str, int yPos, int RHS)
-{
-  int xPos = RHS - strlen(str) * 4;
-  display.setCursor(xPos, yPos);
-//  display.print(str);
-}
