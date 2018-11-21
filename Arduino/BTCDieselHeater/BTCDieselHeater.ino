@@ -79,6 +79,7 @@
 #include "display.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include "keypad.h"
 
 
 #define FAILEDSSID "BTCESP32"
@@ -111,6 +112,7 @@ static HardwareSerial& BlueWireSerial(Serial1);
 
 void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
+void doKeyPad();
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -136,6 +138,7 @@ const CProtocol* pRxFrame = NULL;
 const CProtocol* pTxFrame = NULL;
 
 unsigned long moderator;
+int TestKeys = 0;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -195,6 +198,8 @@ void setup() {
   // this is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   DebugPort.begin(115200);
+
+  initKeyPad();
 
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
@@ -335,6 +340,7 @@ void loop()
     }
   }
 
+  doKeyPad();
 
   Bluetooth.check();    // check for Bluetooth activity
 
@@ -765,4 +771,54 @@ bool validateFrame(const CProtocol& frame, const char* name)
     return false;
   }
   return true;
+}
+
+void  doKeyPad()
+{
+  static uint8_t lastKey = 0;
+  static unsigned long lastHoldTime = 0;
+  static unsigned long holdTimeout = 0;
+
+  uint8_t newKey = readKeys();
+
+  uint8_t Change = newKey ^ lastKey;
+  uint8_t Press = Change & newKey;     // bits set upon intial press, ONLY
+  uint8_t Release = Change & ~newKey;  // bits set upon intial release, ONLY
+  uint8_t Repeat = 0;  
+
+  lastKey = newKey;
+
+  if(Press) {
+    Serial.println("PRESS");
+    lastHoldTime = millis();
+    holdTimeout = 350;                 // initial hold delay
+  }
+
+  if(Release) {
+    Serial.println("RELEASE");
+    holdTimeout = 0;                   // cancel repeat
+  }
+
+  if(holdTimeout && ((millis() - lastHoldTime) > holdTimeout)) {
+    lastHoldTime += holdTimeout;
+    Serial.println("REPEAT");
+    holdTimeout = 150;                 // repeat delay
+    Repeat = newKey;
+  }
+
+  if((Press | Repeat) & keyPress_Left) {
+    TestKeys--;    
+  }
+  if((Press | Repeat) & keyPress_Right) {
+    TestKeys++;    
+  }
+  if((Press | Repeat) & keyPress_Up) {
+    TestKeys += 10;    
+  }
+  if((Press | Repeat) & keyPress_Down) {
+    TestKeys -= 10;    
+  }
+  if((Press | Repeat) & keyPress_Centre) {
+    TestKeys = 0;    
+  }
 }

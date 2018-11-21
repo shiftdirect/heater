@@ -59,7 +59,7 @@ bool animatePump = false;
 bool animateRPM = false;
 bool animateGlow = false;
 
-
+extern int TestKeys;
 extern float fFilteredTemperature;
 extern CBluetoothAbstract& getBluetoothClient();
 
@@ -142,6 +142,9 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   }
 
   showRunState(runstate, errstate);
+
+  display.setCursor(20,45);
+  display.print(TestKeys);
 
 #ifdef DEMO_LARGEFONT
   display.fillRect(20,20, 80,16, BLACK);
