@@ -138,7 +138,6 @@ const CProtocol* pRxFrame = NULL;
 const CProtocol* pTxFrame = NULL;
 
 unsigned long moderator;
-int TestKeys = 0;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -762,7 +761,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
     // Bad CRC - restart blue wire Serial port
     DebugPort.print("\007Bad CRC detected for ");
     DebugPort.print(name);
-    DebugPort.println(" frame - restarting Serial1");
+    DebugPort.println(" frame - restarting blue wire's serial port");
     char header[16];
     sprintf(header, "[CRC_%s]", name);
     DebugReportFrame(header, frame, "\r\n");
@@ -789,36 +788,37 @@ void  doKeyPad()
   lastKey = newKey;
 
   if(Press) {
-    Serial.println("PRESS");
+#ifdef DBG_KEYPAD
+    DebugPort.println("PRESS");
+#endif
     lastHoldTime = millis();
     holdTimeout = 350;                 // initial hold delay
   }
 
   if(Release) {
-    Serial.println("RELEASE");
+#ifdef DBG_KEYPAD
+    DebugPort.println("RELEASE");
+#endif
     holdTimeout = 0;                   // cancel repeat
   }
 
   if(holdTimeout && ((millis() - lastHoldTime) > holdTimeout)) {
+#ifdef DBG_KEYPAD
+    DebugPort.println("REPEAT");
+#endif
     lastHoldTime += holdTimeout;
-    Serial.println("REPEAT");
     holdTimeout = 150;                 // repeat delay
     Repeat = newKey;
   }
 
   if((Press | Repeat) & keyPress_Left) {
-    TestKeys--;    
   }
   if((Press | Repeat) & keyPress_Right) {
-    TestKeys++;    
   }
   if((Press | Repeat) & keyPress_Up) {
-    TestKeys += 10;    
   }
   if((Press | Repeat) & keyPress_Down) {
-    TestKeys -= 10;    
   }
   if((Press | Repeat) & keyPress_Centre) {
-    TestKeys = 0;    
   }
 }
