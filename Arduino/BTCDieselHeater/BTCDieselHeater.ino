@@ -112,7 +112,7 @@ static HardwareSerial& BlueWireSerial(Serial1);
 
 void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
-void doKeyPad();
+void keyCallback(uint8_t event);
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -130,6 +130,8 @@ CModeratedFrame HeaterFrame1;        // data packet received from heater in resp
 CProtocol HeaterFrame2;              // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
+CKeyPad KeyPad;
+
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool hasOEMController = false;
@@ -198,7 +200,8 @@ void setup() {
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   DebugPort.begin(115200);
 
-  initKeyPad();
+  KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
+  KeyPad.setCallback(keyCallback);
 
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
@@ -339,7 +342,11 @@ void loop()
     }
   }
 
-  doKeyPad();
+  uint8_t key = KeyPad.update();
+/*  if(key) {
+    Serial.print("\007Key event=0x");
+    Serial.println(key, HEX);
+  }*/
 
   Bluetooth.check();    // check for Bluetooth activity
 
@@ -772,53 +779,9 @@ bool validateFrame(const CProtocol& frame, const char* name)
   return true;
 }
 
-void  doKeyPad()
+void keyCallback(uint8_t event) 
 {
-  static uint8_t lastKey = 0;
-  static unsigned long lastHoldTime = 0;
-  static unsigned long holdTimeout = 0;
-
-  uint8_t newKey = readKeys();
-
-  uint8_t Change = newKey ^ lastKey;
-  uint8_t Press = Change & newKey;     // bits set upon intial press, ONLY
-  uint8_t Release = Change & ~newKey;  // bits set upon intial release, ONLY
-  uint8_t Repeat = 0;  
-
-  lastKey = newKey;
-
-  if(Press) {
-#ifdef DBG_KEYPAD
-    DebugPort.println("PRESS");
-#endif
-    lastHoldTime = millis();
-    holdTimeout = 350;                 // initial hold delay
-  }
-
-  if(Release) {
-#ifdef DBG_KEYPAD
-    DebugPort.println("RELEASE");
-#endif
-    holdTimeout = 0;                   // cancel repeat
-  }
-
-  if(holdTimeout && ((millis() - lastHoldTime) > holdTimeout)) {
-#ifdef DBG_KEYPAD
-    DebugPort.println("REPEAT");
-#endif
-    lastHoldTime += holdTimeout;
-    holdTimeout = 150;                 // repeat delay
-    Repeat = newKey;
-  }
-
-  if((Press | Repeat) & keyPress_Left) {
-  }
-  if((Press | Repeat) & keyPress_Right) {
-  }
-  if((Press | Repeat) & keyPress_Up) {
-  }
-  if((Press | Repeat) & keyPress_Down) {
-  }
-  if((Press | Repeat) & keyPress_Centre) {
-  }
+  DebugPort.print("\007Callback key event=0x");
+  DebugPort.println(event, HEX);
 }
+
