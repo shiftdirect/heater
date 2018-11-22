@@ -112,7 +112,6 @@ static HardwareSerial& BlueWireSerial(Serial1);
 
 void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
-void keyCallback(uint8_t event);
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -201,7 +200,6 @@ void setup() {
   DebugPort.begin(115200);
 
   KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
-  KeyPad.setCallback(keyCallback);
 
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
@@ -779,9 +777,36 @@ bool validateFrame(const CProtocol& frame, const char* name)
   return true;
 }
 
-void keyCallback(uint8_t event) 
+
+int getRunState()
 {
-  DebugPort.print("\007Callback key event=0x");
-  DebugPort.println(event, HEX);
+  return pRxFrame->getRunState();
 }
+
+void requestOn()
+{
+  TxManage.queueOnRequest();
+  SmartError.reset();
+  Bluetooth.setRefTime();
+}
+
+void requestOff()
+{
+  TxManage.queueOffRequest();
+  SmartError.inhibit();
+  Bluetooth.setRefTime();
+}
+
+void ToggleOnOff()
+{
+  if(getRunState()) {
+    DebugPort.println("ToggleOnOff: Heater OFF");
+    requestOff();
+  }
+  else {
+    DebugPort.println("ToggleOnOff: Heater ON");
+    requestOn();
+  }
+}
+
 

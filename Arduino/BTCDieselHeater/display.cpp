@@ -1,5 +1,5 @@
 #include <SPI.h>
-#include "CustomFont.h"
+#include "128x64OLED.h"
 #include "MiniFont.h"
 #include "tahoma16.h"
 #include "protocol.h" 
@@ -8,37 +8,25 @@
 #include "BluetoothAbstract.h" 
 #include "OLEDconsts.h"
 #include "BTCWifi.h"
+#include "BluetoothAbstract.h" 
+#include "Screen1.h"
+#include "KeyPad.h"
 
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
 
-#define X_FANICON     55 
-#define Y_FANICON     39
-#define X_FUELICON    81 
-#define Y_FUELICON    39
-#define X_TARGETICON  31
-#define Y_TARGETICON  39
-#define Y_BASELINE    58
-#define X_BATTICON    95
-#define Y_BATTICON     0
-#define X_GLOWICON    97
-#define Y_GLOWICON    38
-#define X_BODYBULB   119
-#define X_BULB         1  // >= 1
-#define Y_BULB         4
-#define X_WIFIICON    22
-#define Y_WIFIICON     0
-#define X_BTICON      12
-#define Y_BTICON       0
-
+#define X_BATT_ICON    95
+#define Y_BATT_ICON     0
+#define X_WIFI_ICON    22
+#define Y_WIFI_ICON     0
+#define X_BT_ICON      12
+#define Y_BT_ICON       0
 
 #define MINI_BATTLABEL
-#define MINI_TEMPLABEL
-#define MINI_TARGETLABEL
-#define MINI_FANLABEL
-#define MINI_GLOWLABEL
-#define MINI_FUELLABEL
-#define MINI_BODYLABEL
+
+void showBTicon(C128x64_OLED& display);
+void showWifiIcon(C128x64_OLED& display);
+void showBatteryIcon(C128x64_OLED& display, float voltage);
 
 //
 // **** NOTE: There are two very lame libaries conspiring to make life difficult ****
@@ -53,14 +41,13 @@
 // 128 x 64 OLED support
 SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
 //Adafruit_SH1106 display(OLED_DC_pin,  -1, OLED_CS_pin);
-CCustomFont display(OLED_DC_pin,  -1, OLED_CS_pin);
+C128x64_OLED display(OLED_DC_pin,  -1, OLED_CS_pin);
 
-bool animatePump = false;
+/*bool animatePump = false;
 bool animateRPM = false;
 bool animateGlow = false;
-
-extern int TestKeys;
-extern float fFilteredTemperature;
+*/
+/*extern float fFilteredTemperature;
 extern CBluetoothAbstract& getBluetoothClient();
 
 void showThermometer(float desired, float actual);
@@ -73,7 +60,7 @@ void showFan(int RPM);
 void showFuel(float rate);
 void showRunState(int state, int errstate);
 void printRightJustify(const char* str, int yPos, int RHS=128);
-
+*/
 void initOLED()
 {
   SPI.setFrequency(8000000);
@@ -83,214 +70,59 @@ void initOLED()
   // Show initial display buffer contents on the screen --
   // the library initializes this with an Adafruit splash screen.
   display.display();
-}
 
-void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
-{
-  int runstate = HtrFrame.getRunState(); 
-  int errstate = HtrFrame.getErrState(); 
-  if(errstate) errstate--;  // correct for +1 biased return value
-  
-  display.clearDisplay();
-
-  float desiredT = 0;
-  if(runstate && (runstate <= 5)) {
-    if(CtlFrame.isThermostat())
-      desiredT = CtlFrame.getTemperature_Desired();
-    else
-      desiredT = -HtrFrame.getPump_Fixed() * 0.1f;
-  }
-
-  showThermometer(desiredT,    // read values from most recently sent [BTC] frame
-                  fFilteredTemperature);
-
-  if(getBluetoothClient().isConnected())
-    showBTicon();
-
-  if(isWifiConnected()) {
-    showWifiIcon();
-    display.fillRect(X_WIFIICON + 8, Y_WIFIICON + 5, 10, 7, BLACK);
-    display.setFontInfo(&MINIFONT);  // select Mini Font
-    display.setCursor(X_WIFIICON+9, Y_WIFIICON+6);
-    display.print("AP");
-    display.setFontInfo(NULL);  
-  }
-
-  float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
-  showBatteryIcon(voltage);
-
-  animateRPM = false;
-  animatePump = false;
-  animateGlow = false;
-
-  if(runstate) {
-    float power = HtrFrame.getGlowPlug_Current() * 0.01 * HtrFrame.getGlowPlug_Voltage() * 0.1;
-    if(power > 1) {
-      showGlowPlug(int(power));
-    }
-
-    showFan(HtrFrame.getFan_Actual());
-
-    showFuel(HtrFrame.getPump_Actual() * 0.1f);
-
-    showBodyThermometer(HtrFrame.getTemperature_HeatExchg());
-  }
-  else {
-    if(isWifiConnected()) {
-      printRightJustify(getWifiAddrStr(), 57);
-    }
-  }
-
-  showRunState(runstate, errstate);
-
-#ifdef DEMO_LARGEFONT
-  display.fillRect(20,20, 80,16, BLACK);
-  display.setCursor(20,20);
-  display.setFontInfo(&MAXIFONT);  // Dot Factory Font
-  display.print("25.6`");
-  display.setFontInfo(NULL);  // standard 5x7 font
-#endif
+  KeyPad.setCallback(keyhandlerScreen1);
 
 }
-
 
 void animateOLED()
 {
-  static int fan = 0;
-  static int drip = 0;
-  static int heat = 0;
-
-  if(animatePump || animateRPM || animateGlow) {
-
-    if(animatePump) {
-      // erase region of fuel icon
-      display.fillRect(X_FUELICON, Y_FUELICON, 7, 16, BLACK);
-      display.drawBitmap(X_FUELICON, Y_FUELICON+(drip/2), FuelIcon, 7, 12, WHITE);
-      drip++;
-      drip &= 0x07;
-    }
-
-    if(animateRPM) {
-      // erase region of fuel icon
-      display.fillRect(X_FANICON, Y_FANICON, 16, 16, BLACK);
-      switch(fan) {
-        case 0: display.drawBitmap(X_FANICON, Y_FANICON, FanIcon1, 16, 16, WHITE); break;
-        case 1: display.drawBitmap(X_FANICON, Y_FANICON, FanIcon2, 16, 16, WHITE); break;
-        case 2: display.drawBitmap(X_FANICON, Y_FANICON, FanIcon3, 16, 16, WHITE); break;
-        case 3: display.drawBitmap(X_FANICON, Y_FANICON, FanIcon4, 16, 16, WHITE); break;
-      }
-      fan++;
-      fan &= 0x03;
-    }
-    
-    if(animateGlow) {
-      display.fillRect(X_GLOWICON, Y_GLOWICON, 17, 10, BLACK);
-      display.drawBitmap(X_GLOWICON, Y_GLOWICON, GlowPlugIcon, 16, 9, WHITE);
-      display.drawBitmap(X_GLOWICON, Y_GLOWICON + 2 + heat, GlowHeatIcon, 17, 2, WHITE);
-      heat -= 2;
-      heat &= 0x07;
-    }
-  }
-  display.display();
+  animateScreen1(display);
 }
 
 
-#define TEMP_YPOS(A) ((((20 - A) * 3) / 2) + 22)
-void showThermometer(float desired, float actual) 
+void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 {
-  char msg[16];
   display.clearDisplay();
-  // draw bulb design
-  display.drawBitmap(X_BULB, Y_BULB, thermometerBitmap, 8, 50, WHITE);
-  // draw mercury
-  int yPos = Y_BULB + TEMP_YPOS(actual);
-  display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
-  display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);  
-  // print actual temperature
-#ifdef MINI_TEMPLABEL  
-  sprintf(msg, "%.1f`C", actual);
-  display.setCursor(0, Y_BASELINE);
-  display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(msg);
-  display.setFontInfo(NULL);  
-#else
-  display.setTextColor(WHITE);
-  display.setCursor(0, Y_BASELINE);
-  display.print(actual, 1);
-#endif
 
-  // draw set point
-  if(desired) {
-    display.drawBitmap(X_TARGETICON, Y_TARGETICON, TargetIcon, 13, 13, WHITE);   // set indicator against bulb
-    char msg[16];
-    if(desired > 0) {
-      int yPos = Y_BULB + TEMP_YPOS(desired) - 2;
-      display.drawBitmap(X_BULB-1, yPos, thermoPtr, 3, 5, WHITE);   // set indicator against bulb
-      sprintf(msg, "%.0f`C", desired);
-    }
-    else {
-      sprintf(msg, "%.1fHz", -desired);
-    }
-#ifdef MINI_TARGETLABEL
-    int xPos = X_TARGETICON + 7 - strlen(msg) * 2;    // 2 = 1/2 width mini font
-    display.setCursor(xPos, Y_BASELINE);
+  // standard header items
+  //Bluetooth
+  if(getBluetoothClient().isConnected())
+    showBTicon(display);
+  // WiFi
+  if(isWifiConnected()) {
+    showWifiIcon(display);
+    display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
     display.setFontInfo(&MINIFONT);  // select Mini Font
-    display.print(msg);
+    display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
+    display.print("AP");
     display.setFontInfo(NULL);  
-#else
-    int xPos = X_TARGETICON + 6 - strlen(msg) * 3;    // 3 = 1/2 width normal font
-    display.setCursor(xPos, Y_BASELINE);
-    display.print(msg);
-#endif
   }
+  // battery
+  float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
+  showBatteryIcon(display, voltage);
+
+  showScreen1(display, CtlFrame, HtrFrame);
 }
 
-#define BODY_YPOS(A) ((((100 - A) * 3) / 16) + 22)   // 100degC centre - ticks +- 80C
-void showBodyThermometer(int actual) 
+void showBTicon(C128x64_OLED& display)
 {
-  // draw bulb design
-  display.drawBitmap(X_BODYBULB, Y_BULB, thermometerBitmap, 8, 50, WHITE);
-  // draw mercury
-  int yPos = Y_BULB + BODY_YPOS(actual);
-  display.drawLine(X_BODYBULB + 3, yPos, X_BODYBULB + 3, Y_BULB + 42, WHITE);
-  display.drawLine(X_BODYBULB + 4, yPos, X_BODYBULB + 4, Y_BULB + 42, WHITE);
-  // print actual temperature
-  display.setTextColor(WHITE);
-  char label[16];
-  // determine width and position right justified
-#ifdef MINI_BODYLABEL
-  sprintf(label, "%d`C", actual);
-  int width = strlen(label) * 4;
-  display.setCursor(125-width, Y_BASELINE);
-  display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(label);
-  display.setFontInfo(NULL);  
-#else
-  sprintf(label, "%d", actual);
-  int width = strlen(label) * 6;
-  display.setCursor(127-width, Y_BASELINE);
-  display.print(label);
-#endif
+  display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
 }
 
-void showBTicon()
+void showWifiIcon(C128x64_OLED& display)
 {
-  display.drawBitmap(X_BTICON, Y_BTICON, BTicon, W_BTICON, H_BTICON, WHITE);
+  display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
 }
 
-void showWifiIcon()
+void showBatteryIcon(C128x64_OLED& display, float voltage)
 {
-  display.drawBitmap(X_WIFIICON, Y_WIFIICON, wifiIcon, W_WIFIICON, H_WIFIICON, WHITE);
-}
-
-void showBatteryIcon(float voltage)
-{
-  display.drawBitmap(X_BATTICON, Y_BATTICON, BatteryIcon, 15, 10, WHITE);
+  display.drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIcon, W_BATT_ICON, H_BATT_ICON, WHITE);
 #ifdef MINI_BATTLABEL
   char msg[16];
   sprintf(msg, "%.1fV", voltage);
-  int xPos = X_BATTICON + 7 - strlen(msg) * 2;
-  display.setCursor(xPos, Y_BATTICON+12);
+  int xPos = X_BATT_ICON + 7 - strlen(msg) * 2;
+  display.setCursor(xPos, Y_BATT_ICON+H_BATT_ICON+2);
   display.setFontInfo(&MINIFONT);  // select Mini Font
   display.print(msg);
   display.setFontInfo(NULL);  
@@ -302,121 +134,8 @@ void showBatteryIcon(float voltage)
 #endif
 
   // nominal 10.5 -> 13.5V bargraph
-//  int Capacity = int((voltage - 11.0) * 4.5);
-//  int Capacity = (voltage - 11.4) * 7;
   int Capacity = (voltage - 10.7) * 4;
   if(Capacity < 0)   Capacity = 0;
   if(Capacity > 11)  Capacity = 11;
-  display.fillRect(X_BATTICON+2 + Capacity, Y_BATTICON+2, 11-Capacity, 6, BLACK);
+  display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
 }
-
-void showGlowPlug(int power)
-{
-  display.drawBitmap(X_GLOWICON, Y_GLOWICON, GlowPlugIcon, 16, 9, WHITE);
-//  animateGlow = true;
-#ifdef MINI_GLOWLABEL  
-  char msg[16];
-  sprintf(msg, "%dW", power);
-  int xPos = X_GLOWICON + 9 - strlen(msg) * 2;
-  display.setCursor(xPos, Y_GLOWICON+12);
-  display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(msg);
-  display.setFontInfo(NULL);  
-#else
-  display.setCursor(X_GLOWICON, Y_GLOWICON+12);
-  display.print(power);
-  display.print("W");
-#endif
-}
-
-void showFan(int RPM)
-{
-  // NOTE: fan rotation animation performed in animateOLED
-  animateRPM = RPM != 0;   // used by animation routine
-
-  display.setTextColor(WHITE);
-  char msg[16];
-  sprintf(msg, "%d", RPM);
-#ifdef MINI_FANLABEL  
-  int xPos = X_FANICON + 8 - strlen(msg) * 2;    // 3 = 1/2 width font
-  display.setCursor(xPos, Y_BASELINE);
-  display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(msg);
-  display.setFontInfo(NULL);  
-#else
-  int xPos = X_FANICON + 8 - ( strlen(msg) * 3);    // 3 = 1/2 width font
-  display.setCursor(xPos, Y_BASELINE);
-  display.print(msg);
-#endif
-}
-
-void showFuel(float rate)
-{
-  // NOTE: fuel drop animation performed in animateOLED
-  animatePump = rate != 0;    // used by animation routine
-  if(rate) {
-    char msg[16];
-    sprintf(msg, "%.1f", rate);
-#ifdef MINI_FUELLABEL
-    int xPos = X_FUELICON + 3 - strlen(msg) * 2;    // 3 = 1/2 width font
-    display.setCursor(xPos, Y_BASELINE);
-    display.setFontInfo(&MINIFONT);  // select Mini Font
-    display.print(msg);
-    display.setFontInfo(NULL);  
-#else
-    int xPos = X_FUELICON + 3 - ( strlen(msg) * 3);    // 3 = 1/2 width font
-    display.setCursor(xPos, Y_BASELINE);
-    display.setTextColor(WHITE);
-    display.print(msg);
-#endif
-  }
-}
-
-void showRunState(int runstate, int errstate) 
-{
-  static bool toggle = false;
-  const char* toPrint = NULL;
-  int yPos = 25;
-  display.setTextColor(WHITE, BLACK);
-  if(runstate >= 0 && runstate <= 8) {
-    if(((runstate == 0) || (runstate > 5)) && errstate) {
-      // create an "E-XX" message to display
-      char msg[16];
-      sprintf(msg, "E-%02d", errstate);
-      int xPos = 64 - ((strlen(msg)/2) * 6);
-      if(runstate > 5)
-        yPos -= 8;
-      display.setCursor(xPos, yPos);
-      yPos += 8;
-      // flash error code
-      toggle = !toggle;
-      if(toggle)
-        display.print(msg);
-      else {
-        display.print("     ");
-      }
-      // bounds limit error and gather message
-      if(errstate > 10) errstate = 11;
-      toPrint = Errstates[errstate-1];
-    }
-    else {
-      toPrint = Runstates[runstate];
-    }
-  }
-  if(toPrint) {
-      int width = strlen(toPrint);
-      int xPos = 64 - ((width/2) * 6);
-      display.setCursor(xPos, yPos);
-      display.print(toPrint);
-  }
-}
-
-
-
-void printRightJustify(const char* str, int yPos, int RHS)
-{
-  int xPos = RHS - strlen(str) * 6;
-  display.setCursor(xPos, yPos);
-  display.print(str);
-}
-

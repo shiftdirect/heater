@@ -84,12 +84,12 @@ CSmartError::monitor(unsigned char newRunState)
   if(m_prevRunState != newRunState) {
     // check for transition to startup 
     // - force cancellation of an on request if we generated it
-    if(newRunState == 2) {
+    if(newRunState >= 2) {
       TxManage.queueOnRequest(false);  // ensure ON request is cancelled
     }
     // check for transition to shutdown 
     // - force cancellation of an off request if we generated it
-    if(newRunState == 7) {
+    if(newRunState >= 7) {
       TxManage.queueOffRequest(false);  // ensure OFF request is cancelled
     }
   }

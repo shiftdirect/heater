@@ -5,7 +5,7 @@
  *      Author: ray
  */
 
-#include "CustomFont.h"
+#include "128x64OLED.h"
 #include "DebugPort.h"
 
 #define DBG DebugPort.print
@@ -13,12 +13,12 @@
 
 //#define DEBUG_FONT
 
-CCustomFont::CCustomFont(int8_t DC, int8_t CS, int8_t RST) : Adafruit_SH1106(DC, CS, RST)
+C128x64_OLED::C128x64_OLED(int8_t DC, int8_t CS, int8_t RST) : Adafruit_SH1106(DC, CS, RST)
 {
 	m_pFontInfo = NULL;
 }
 
-size_t CCustomFont::write(uint8_t c) 
+size_t C128x64_OLED::write(uint8_t c) 
 {
   if(m_pFontInfo) {
     if (c == '\n') {
@@ -47,7 +47,7 @@ size_t CCustomFont::write(uint8_t c)
 
 
 void
-CCustomFont::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, const FONT_INFO* pFontDescriptor, int& xsize, int& ysize)
+C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, const FONT_INFO* pFontDescriptor, int& xsize, int& ysize)
 {
 #ifdef DEBUG_FONT
   char pr = c;
@@ -97,3 +97,12 @@ CCustomFont::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t 
 	  }
   }
 }
+
+void
+C128x64_OLED::printRightJustify(const char* str, int yPos, int RHS)
+{
+  int xPos = RHS - strlen(str) * 6;  // standard font width
+  setCursor(xPos, yPos);
+  print(str);
+}
+

@@ -41,7 +41,6 @@ uint8_t readKeys()
     if (newKey != debouncedKey) {
       debouncedKey = newKey;
     }
-  }
 
   return debouncedKey;
 }
@@ -77,11 +76,11 @@ CKeyPad::scanPins()
 { 
   
   uint8_t newPins = 0;
-  if(digitalRead(_pins[0]) == LOW)  newPins |= keyPress_Left;
-  if(digitalRead(_pins[1]) == LOW)  newPins |= keyPress_Right;
-  if(digitalRead(_pins[2]) == LOW)  newPins |= keyPress_Centre;
-  if(digitalRead(_pins[3]) == LOW)  newPins |= keyPress_Up;
-  if(digitalRead(_pins[4]) == LOW)  newPins |= keyPress_Down;
+  if(digitalRead(_pins[0]) == LOW)  newPins |= key_Left;
+  if(digitalRead(_pins[1]) == LOW)  newPins |= key_Right;
+  if(digitalRead(_pins[2]) == LOW)  newPins |= key_Centre;
+  if(digitalRead(_pins[3]) == LOW)  newPins |= key_Up;
+  if(digitalRead(_pins[4]) == LOW)  newPins |= key_Down;
 
   if(newPins != _prevPins) {
     _lastDebounceTime = millis();

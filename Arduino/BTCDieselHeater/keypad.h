@@ -6,14 +6,14 @@
 //void initKeyPad();
 //uint8_t readKeys();
 
-const uint8_t keyPress_Left   = 0x01;
-const uint8_t keyPress_Right  = 0x02;
-const uint8_t keyPress_Centre = 0x04;
-const uint8_t keyPress_Up     = 0x08;
-const uint8_t keyPress_Down   = 0x10;
-const uint8_t keyPressed      = 0x20;   // action flag
-const uint8_t keyReleased     = 0x40;   // action flag
-const uint8_t keyRepeat       = 0x80;   // action flag
+const uint8_t key_Left     = 0x01;
+const uint8_t key_Right    = 0x02;
+const uint8_t key_Centre   = 0x04;
+const uint8_t key_Up       = 0x08;
+const uint8_t key_Down     = 0x10;
+const uint8_t keyPressed   = 0x20;   // action flag
+const uint8_t keyReleased  = 0x40;   // action flag
+const uint8_t keyRepeat    = 0x80;   // action flag
 
 class CKeyPad {
 private:
@@ -35,5 +35,7 @@ public:
   uint8_t update();
 	void setCallback(void (*Callback)(uint8_t event));
 };
+
+extern CKeyPad KeyPad;
 
 #endif
