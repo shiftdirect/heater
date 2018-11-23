@@ -1,19 +1,18 @@
 #include "128x64OLED.h"
 #include "MiniFont.h"
+#include "display.h"
 #include "tahoma16.h"
 #include "OLEDconsts.h"
 #include "BluetoothAbstract.h" 
 #include "Screen1.h"
 #include "BTCWifi.h"
 #include "KeyPad.h"
-
+#include "helpers.h"
 #include "Protocol.h"
 
 bool animatePump = false;
 bool animateRPM = false;
 bool animateGlow = false;
-
-extern float fFilteredTemperature;
 
 void showThermometer(C128x64_OLED& display, float desired, float actual);
 void showBodyThermometer(C128x64_OLED& display, int actual);
@@ -21,11 +20,6 @@ void showGlowPlug(C128x64_OLED& display, int power);
 void showFan(C128x64_OLED& display, int RPM);
 void showFuel(C128x64_OLED& display, float rate);
 void showRunState(C128x64_OLED& display, int state, int errstate);
-
-extern void ToggleOnOff();
-extern void requestOn();
-extern void requestOff();
-extern int  getRunState();
 
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
@@ -94,14 +88,6 @@ void showScreen1(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
   }
 
   showRunState(display, runstate, errstate);
-
-#ifdef DEMO_LARGEFONT
-  display.fillRect(20,20, 80,16, BLACK);
-  display.setCursor(20,20);
-  display.setFontInfo(&MAXIFONT);  // Dot Factory Font
-  display.print("25.6`");
-  display.setFontInfo(NULL);  // standard 5x7 font
-#endif
 
 }
 
@@ -332,6 +318,12 @@ void keyhandlerScreen1(uint8_t event)
   static int repeatCount = -1;
   if(event & keyPressed) {
     repeatCount = 0;     // unlock tracking of repeat events
+    if(event & key_Left) {
+      prevScreen();
+    }
+    if(event & key_Right) {
+      nextScreen();
+    }
   }
   // require hold to turn ON or OFF
   if(event & keyRepeat) {
@@ -357,5 +349,4 @@ void keyhandlerScreen1(uint8_t event)
     repeatCount = -1;
   }
 }
-
 

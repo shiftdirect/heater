@@ -80,6 +80,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "keypad.h"
+#include "helpers.h"
 
 
 #define FAILEDSSID "BTCESP32"
@@ -112,6 +113,7 @@ static HardwareSerial& BlueWireSerial(Serial1);
 
 void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
+void checkDisplayUpdate();
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -139,7 +141,7 @@ const CProtocol* pRxFrame = NULL;
 const CProtocol* pTxFrame = NULL;
 
 unsigned long moderator;
-
+bool bUpdateDisplay = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
@@ -409,13 +411,6 @@ void loop()
 
       moderator = 50;
 
-      // only update OLED when not processing blue wire
-      tDelta = timenow - lastAnimationTime;
-      if(tDelta >= 100) {
-        lastAnimationTime += 100;
-        animateOLED();
-      }
-
 #if RX_LED == 1
       digitalWrite(LED_Pin, LOW);
 #endif
@@ -448,9 +443,11 @@ void loop()
         //
       }
       else {
+        checkDisplayUpdate();    
         break;  // only break if we fail all Idle state tests
       }
 #else
+      checkDisplayUpdate();
       break;  
 #endif
 
@@ -638,15 +635,14 @@ void loop()
         fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         TempSensor.requestTemperatures();               // prep sensor for future reading
-
-        updateOLED(*pTxFrame, *pRxFrame);        
+        reqDisplayUpdate();
       }
       CommState.set(CommStates::Idle);
       break;
   }  // switch(CommState)
 
   BlueWireData.reset();   // ensure we flush any used data
-    
+
 }  // loop
 
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
@@ -780,7 +776,9 @@ bool validateFrame(const CProtocol& frame, const char* name)
 
 int getRunState()
 {
-  return pRxFrame->getRunState();
+  if(pRxFrame)
+    return pRxFrame->getRunState();
+  return 0;
 }
 
 void requestOn()
@@ -810,3 +808,72 @@ void ToggleOnOff()
 }
 
 
+void reqTempChange(int val)
+{
+  unsigned char curTemp = getSetTemp();
+
+  curTemp += val;
+  unsigned char max = DefaultBTCParams.getTemperature_Max();
+  unsigned char min = DefaultBTCParams.getTemperature_Min();
+  if(curTemp >= max)
+    curTemp = max;
+  if(curTemp <= min)
+    curTemp = min;
+     
+  pNVStorage->setTemperature(curTemp);
+
+  reqDisplayUpdate();
+}
+
+int getSetTemp()
+{
+//  pTxFrame->getTemperature_Desired();  // sluggish - delays until new packet goes out!
+  return pNVStorage->getTemperature();
+}
+
+float getFixedHz()
+{
+  if(pRxFrame) {
+    return float(pRxFrame->getPump_Fixed()) / 10.f;
+  }
+  return 0.0;
+}
+
+
+void reqThermoToggle()
+{
+  setThermostatMode(getThermostatMode() ? 0 : 1);
+}
+
+void setThermostatMode(unsigned char val)
+{
+  pNVStorage->setThermostatMode(val);
+}
+
+
+bool getThermostatMode()
+{
+  return pNVStorage->getThermostatMode() != 0;
+}
+
+void reqDisplayUpdate()
+{
+  bUpdateDisplay = true;
+}
+
+void checkDisplayUpdate()
+{
+  // only update OLED when not processing blue wire
+  if(bUpdateDisplay) {
+    if(pTxFrame && pRxFrame) {
+      updateOLED(*pTxFrame, *pRxFrame);        
+      bUpdateDisplay = false;
+    }
+  }
+
+  unsigned long tDelta = millis() - lastAnimationTime;
+  if(tDelta >= 100) {
+    lastAnimationTime += 100;
+    animateOLED();
+  }
+}

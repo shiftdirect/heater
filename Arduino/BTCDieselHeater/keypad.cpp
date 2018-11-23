@@ -142,7 +142,7 @@ CKeyPad::update()
 
   if(Press) {
     if(_keyCallback != NULL) 
-      _keyCallback(keyPressed | Press);
+      _keyCallback(keyPressed | Press | newKey);
     return keyPressed | Press;
   }
 

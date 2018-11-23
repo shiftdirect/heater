@@ -10,7 +10,9 @@
 #include "BTCWifi.h"
 #include "BluetoothAbstract.h" 
 #include "Screen1.h"
+#include "Screen2.h"
 #include "KeyPad.h"
+#include "helpers.h"
 
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
@@ -27,6 +29,10 @@
 void showBTicon(C128x64_OLED& display);
 void showWifiIcon(C128x64_OLED& display);
 void showBatteryIcon(C128x64_OLED& display, float voltage);
+void switchScreen();
+
+static int currentScreen = 0;
+const int maxScreens = 2;
 
 //
 // **** NOTE: There are two very lame libaries conspiring to make life difficult ****
@@ -40,29 +46,12 @@ void showBatteryIcon(C128x64_OLED& display, float voltage);
 
 // 128 x 64 OLED support
 SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
-//Adafruit_SH1106 display(OLED_DC_pin,  -1, OLED_CS_pin);
 C128x64_OLED display(OLED_DC_pin,  -1, OLED_CS_pin);
 
-/*bool animatePump = false;
-bool animateRPM = false;
-bool animateGlow = false;
-*/
-/*extern float fFilteredTemperature;
-extern CBluetoothAbstract& getBluetoothClient();
-
-void showThermometer(float desired, float actual);
-void showBodyThermometer(int actual);
-void showBTicon();
-void showWifiIcon();
-void showBatteryIcon(float voltage);
-void showGlowPlug(int power);
-void showFan(int RPM);
-void showFuel(float rate);
-void showRunState(int state, int errstate);
-void printRightJustify(const char* str, int yPos, int RHS=128);
-*/
 void initOLED()
 {
+  currentScreen = 0;
+
   SPI.setFrequency(8000000);
   // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
   display.begin(SH1106_SWITCHCAPVCC, 0, false);
@@ -77,7 +66,14 @@ void initOLED()
 
 void animateOLED()
 {
-  animateScreen1(display);
+  switch(currentScreen) {
+    case 0:
+      animateScreen1(display);
+      break;
+    case 1:
+      animateScreen2(display);
+      break;
+  }
 }
 
 
@@ -102,7 +98,14 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
   showBatteryIcon(display, voltage);
 
-  showScreen1(display, CtlFrame, HtrFrame);
+  switch(currentScreen) {
+    case 0:
+      showScreen1(display, CtlFrame, HtrFrame);
+      break;
+    case 1:
+      showScreen2(display, CtlFrame, HtrFrame);
+      break;
+  }
 }
 
 void showBTicon(C128x64_OLED& display)
@@ -138,4 +141,35 @@ void showBatteryIcon(C128x64_OLED& display, float voltage)
   if(Capacity < 0)   Capacity = 0;
   if(Capacity > 11)  Capacity = 11;
   display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
+}
+
+void nextScreen()
+{
+  currentScreen++;
+  if(currentScreen >= maxScreens) {
+    currentScreen = 0;
+  }
+  switchScreen();
+}
+
+void prevScreen()
+{
+  currentScreen--;
+  if(currentScreen < 0) {
+    currentScreen = maxScreens-1;
+  }
+  switchScreen();
+}
+
+void switchScreen()
+{
+  switch(currentScreen) {
+    case 0:
+      KeyPad.setCallback(keyhandlerScreen1);
+      break;
+    case 1:
+      KeyPad.setCallback(keyhandlerScreen2);
+      break;
+  }
+  reqDisplayUpdate();
 }

@@ -44,7 +44,31 @@ size_t C128x64_OLED::write(uint8_t c)
 #endif
 }
 
-
+void C128x64_OLED::getTextExtents(const char* str, uint16_t& w, uint16_t& h)
+{
+  w = 0;
+  h = 0;
+  if(m_pFontInfo) {
+    while(*str) {
+      unsigned char c = (unsigned char)*str++;
+      if(c >= m_pFontInfo->StartChar && c <= m_pFontInfo->EndChar) {
+    	  const FONT_CHAR_INFO* pCharInfo = &m_pFontInfo->pCharInfo[c - m_pFontInfo->StartChar];
+        // and extract info from flash (program) storage
+        int xsize = pgm_read_byte(&pCharInfo->Width);
+        int ysize = pgm_read_byte(&pCharInfo->Height);
+        if(ysize > h) 
+          h = ysize;
+        w += xsize;
+      }
+      if(*str)  // check if next character exists, if so include space size
+        w += m_pFontInfo->SpaceWidth;
+    }
+  }
+  else {
+    int16_t x1, y1;
+    Adafruit_SH1106::getTextBounds(str, 0, 0, &x1, &y1, &w, &h);
+  }
+}
 
 void
 C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, const FONT_INFO* pFontDescriptor, int& xsize, int& ysize)

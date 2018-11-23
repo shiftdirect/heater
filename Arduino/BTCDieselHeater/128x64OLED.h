@@ -13,6 +13,8 @@ public:
     cursor_x += x;
     cursor_y += y;
   };
+  void getTextExtents(const char* str, uint16_t& w, uint16_t& h);
+
   void printRightJustify(const char* str, int yPos, int RHS=127);
 
   size_t write(uint8_t c);

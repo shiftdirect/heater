@@ -9,4 +9,8 @@ void initOLED();
 void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
 void animateOLED();
 
+void nextScreen();
+void prevScreen();
+
+
 #endif // __DISPLAY_H__
