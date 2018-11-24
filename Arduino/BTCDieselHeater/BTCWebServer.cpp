@@ -7,13 +7,13 @@
 #include "TxManage.h"
 
 WebServer server(80);
+WebSocketsServer webSocket = WebSocketsServer(81);
 
 const int led = 13;
 
 void handleRoot() {
-	digitalWrite(led, 1);
-	server.send(200, "text/plain", "Chnage URL to /on to poweron heater... /off to poweroff");
-	digitalWrite(led, 0);
+	String s = MAIN_PAGE; //Read HTML contents
+	server.send(200, "text/html", s); //Send web page
 }
 
 void handleNotFound() {
@@ -38,34 +38,29 @@ void initWebServer(void) {
 	if (MDNS.begin("BTCHeater")) {
 		DebugPort.println("MDNS responder started");
 	}
-	server.on("/on", webturnOn);
-	server.on("/off", webturnOff);
+	
 	server.on("/", handleRoot);
-
-	server.on("/inline", []() {
-		server.send(200, "text/plain", "this works as well");
-	});
-
 	server.onNotFound(handleNotFound);
 
 	server.begin();
+	webSocket.begin();
+	webSocket.onEvent(webSocketEvent);
 	DebugPort.println("HTTP server started");
 }
+unsigned char cVal;
 
 void doWebServer(void) {
+	webSocket.loop();
 	server.handleClient();
-}
-
-void webturnOn() {
-
-	TxManage.queueOnRequest();
-	server.send(200, "text/plain", "Heater Turning on");
+	char c[] = { "23" };
+	webSocket.broadcastTXT(c, sizeof(c));
 
 }
 
-void webturnOff() {
-
-	TxManage.queueOffRequest();
-	server.send(200, "text/plan", "Turning off heater");
-
-}
+extern void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+	if (type == WStype_TEXT) {
+			for (int i = 0; i < length; i++)
+				Serial.print((char)payload[i]);
+			Serial.println();
+		}
+	}

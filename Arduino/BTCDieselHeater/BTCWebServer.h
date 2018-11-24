@@ -13,10 +13,16 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include "ESPAsyncWebServer.h"
+#include "Index.h"
+#include <WebSocketsServer.h>
+
+
 
 
 #endif
 
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 void initWebServer();
 void doWebServer();
 void handleRoot();
