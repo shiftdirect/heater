@@ -30,7 +30,7 @@ size_t C128x64_OLED::write(uint8_t c)
       int xsize, ysize;
       drawDotFactoryChar(cursor_x, cursor_y, c, textcolor, textbgcolor, m_pFontInfo, xsize, ysize);
       cursor_x += xsize + m_pFontInfo->SpaceWidth;
-      if (wrap && (cursor_x > (_width - 8))) {
+      if (wrap && (cursor_x >= _width)) {
         cursor_y += ysize;
         cursor_x = 0;
       }
@@ -44,10 +44,10 @@ size_t C128x64_OLED::write(uint8_t c)
 #endif
 }
 
-void C128x64_OLED::getTextExtents(const char* str, uint16_t& w, uint16_t& h)
+void C128x64_OLED::getTextExtents(const char* str, CRect& rect)
 {
-  w = 0;
-  h = 0;
+  rect.width = 0;
+  rect.height = 0;
   if(m_pFontInfo) {
     while(*str) {
       unsigned char c = (unsigned char)*str++;
@@ -56,17 +56,17 @@ void C128x64_OLED::getTextExtents(const char* str, uint16_t& w, uint16_t& h)
         // and extract info from flash (program) storage
         int xsize = pgm_read_byte(&pCharInfo->Width);
         int ysize = pgm_read_byte(&pCharInfo->Height);
-        if(ysize > h) 
-          h = ysize;
-        w += xsize;
+        if(ysize > rect.height) 
+          rect.height = ysize;
+        rect.width += xsize;
       }
       if(*str)  // check if next character exists, if so include space size
-        w += m_pFontInfo->SpaceWidth;
+        rect.width += m_pFontInfo->SpaceWidth;
     }
   }
   else {
     int16_t x1, y1;
-    Adafruit_SH1106::getTextBounds(str, 0, 0, &x1, &y1, &w, &h);
+    Adafruit_SH1106::getTextBounds(str, 0, 0, &x1, &y1, &rect.width, &rect.height);
   }
 }
 
@@ -123,10 +123,24 @@ C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t
 }
 
 void
-C128x64_OLED::printRightJustify(const char* str, int yPos, int RHS)
+C128x64_OLED::printRightJustified(const char* str)
 {
-  int xPos = RHS - strlen(str) * 6;  // standard font width
-  setCursor(xPos, yPos);
+  CRect textRect;
+  getTextExtents(str, textRect);
+  textRect.xPos = cursor_x - textRect.width;  
+  textRect.yPos = cursor_y;
+  setCursor(textRect.xPos, textRect.yPos);
   print(str);
 }
 
+void 
+C128x64_OLED::printCentreJustified(const char* str) 
+{
+  CRect textRect;
+  getTextExtents(str, textRect);
+  textRect.xPos = cursor_x - (textRect.width / 2);  // use X cursor position as centre point
+  textRect.yPos = cursor_y;
+  fillRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, BLACK);
+  setCursor(textRect.xPos, textRect.yPos);
+  print(str);
+}

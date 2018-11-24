@@ -2,6 +2,7 @@ extern void ToggleOnOff();
 extern void requestOn();
 extern void requestOff();
 extern int  getRunState();
+extern int  getErrState();
 extern void reqTempChange(int val);
 extern void tempDec();
 extern int  getSetTemp();

@@ -88,11 +88,13 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   // WiFi
   if(isWifiConnected()) {
     showWifiIcon(display);
+#ifdef DEMO_AP_MODE
     display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
     display.setFontInfo(&MINIFONT);  // select Mini Font
     display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
     display.print("AP");
     display.setFontInfo(NULL);  
+#endif
   }
   // battery
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
@@ -173,3 +175,4 @@ void switchScreen()
   }
   reqDisplayUpdate();
 }
+

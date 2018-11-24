@@ -83,7 +83,8 @@ void showScreen1(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
   }
   else {
     if(isWifiConnected()) {
-      display.printRightJustify(getWifiAddrStr(), 57);
+      display.setCursor(display.width(), 57);   // xPos irrelevant here - setting Y
+      display.printRightJustified(getWifiAddrStr());
     }
   }
 
@@ -146,15 +147,13 @@ void showThermometer(C128x64_OLED& display, float desired, float actual)
   // print actual temperature
 #ifdef MINI_TEMPLABEL  
   sprintf(msg, "%.1f`C", actual);
-  display.setCursor(0, Y_BASELINE);
   display.setFontInfo(&MINIFONT);  // select Mini Font
+#else
+  sprintf(msg, "%.1f", actual);
+#endif
+  display.setCursor(0, Y_BASELINE);
   display.print(msg);
   display.setFontInfo(NULL);  
-#else
-  display.setTextColor(WHITE);
-  display.setCursor(0, Y_BASELINE);
-  display.print(actual, 1);
-#endif
 
   // draw set point
   if(desired) {
@@ -169,16 +168,12 @@ void showThermometer(C128x64_OLED& display, float desired, float actual)
       sprintf(msg, "%.1fHz", -desired);
     }
 #ifdef MINI_TARGETLABEL
-    int xPos = X_TARGET_ICON + 7 - strlen(msg) * 2;    // 2 = 1/2 width mini font
-    display.setCursor(xPos, Y_BASELINE);
     display.setFontInfo(&MINIFONT);  // select Mini Font
-    display.print(msg);
-    display.setFontInfo(NULL);  
-#else
-    int xPos = X_TARGET_ICON + 6 - strlen(msg) * 3;    // 3 = 1/2 width normal font
-    display.setCursor(xPos, Y_BASELINE);
-    display.print(msg);
 #endif
+    display.setCursor(X_TARGET_ICON + (W_TARGET_ICON/2), 
+                      Y_BASELINE);   // set centre position of text
+    display.printCentreJustified(msg);
+    display.setFontInfo(NULL);  
   }
 }
 
@@ -197,17 +192,13 @@ void showBodyThermometer(C128x64_OLED& display, int actual)
   // determine width and position right justified
 #ifdef MINI_BODYLABEL
   sprintf(label, "%d`C", actual);
-  int width = strlen(label) * 4;
-  display.setCursor(125-width, Y_BASELINE);
   display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(label);
-  display.setFontInfo(NULL);  
 #else
   sprintf(label, "%d", actual);
-  int width = strlen(label) * 6;
-  display.setCursor(127-width, Y_BASELINE);
-  display.print(label);
 #endif
+  display.setCursor(display.width(), Y_BASELINE);
+  display.printRightJustified(label);
+  display.setFontInfo(NULL);  
 }
 
 
@@ -215,19 +206,15 @@ void showGlowPlug(C128x64_OLED& display, int power)
 {
   display.drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIcon, W_GLOW_ICON, H_GLOW_ICON, WHITE);
 //  animateGlow = true;
-#ifdef MINI_GLOWLABEL  
   char msg[16];
   sprintf(msg, "%dW", power);
-  int xPos = X_GLOW_ICON + (W_GLOW_ICON/2) - strlen(msg) * 2;
-  display.setCursor(xPos, Y_GLOW_ICON+H_GLOW_ICON+3);
+#ifdef MINI_GLOWLABEL  
   display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(msg);
-  display.setFontInfo(NULL);  
-#else
-  display.setCursor(X_GLOW_ICON, Y_GLOW_ICON+H_GLOW_ICON+3);
-  display.print(power);
-  display.print("W");
 #endif
+  display.setCursor(X_GLOW_ICON + (W_GLOW_ICON/2), 
+                    Y_GLOW_ICON + H_GLOW_ICON + 3); // set centre position of text
+  display.printCentreJustified(msg);
+  display.setFontInfo(NULL);  
 }
 
 void showFan(C128x64_OLED& display, int RPM)
@@ -239,16 +226,12 @@ void showFan(C128x64_OLED& display, int RPM)
   char msg[16];
   sprintf(msg, "%d", RPM);
 #ifdef MINI_FANLABEL  
-  int xPos = X_FAN_ICON + (W_FAN_ICON/2) - strlen(msg) * 2;    // 3 = 1/2 width font
-  display.setCursor(xPos, Y_BASELINE);
   display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(msg);
-  display.setFontInfo(NULL);  
-#else
-  int xPos = X_FAN_ICON + (W_FAN_ICON/2) - ( strlen(msg) * 3);    // 3 = 1/2 width font
-  display.setCursor(xPos, Y_BASELINE);
-  display.print(msg);
 #endif
+  display.setCursor(X_FAN_ICON + (W_FAN_ICON/2), 
+                    Y_BASELINE);
+  display.printCentreJustified(msg);
+  display.setFontInfo(NULL);  
 }
 
 void showFuel(C128x64_OLED& display, float rate)
@@ -259,17 +242,12 @@ void showFuel(C128x64_OLED& display, float rate)
     char msg[16];
     sprintf(msg, "%.1f", rate);
 #ifdef MINI_FUELLABEL
-    int xPos = X_FUEL_ICON + (W_FUEL_ICON/2) - strlen(msg) * 2;    // 3 = 1/2 width font
-    display.setCursor(xPos, Y_BASELINE);
     display.setFontInfo(&MINIFONT);  // select Mini Font
-    display.print(msg);
-    display.setFontInfo(NULL);  
-#else
-    int xPos = X_FUEL_ICON + (W_FUEL_ICON/2) - ( strlen(msg) * 3);    // 3 = 1/2 width font
-    display.setCursor(xPos, Y_BASELINE);
-    display.setTextColor(WHITE);
-    display.print(msg);
 #endif
+    display.setCursor(X_FUEL_ICON + (W_FUEL_ICON/2),
+                      Y_BASELINE);
+    display.printCentreJustified(msg);
+    display.setFontInfo(NULL);  // select Mini Font
   }
 }
 
@@ -284,17 +262,16 @@ void showRunState(C128x64_OLED& display, int runstate, int errstate)
       // create an "E-XX" message to display
       char msg[16];
       sprintf(msg, "E-%02d", errstate);
-      int xPos = 64 - ((strlen(msg)/2) * 6);
       if(runstate > 5)
         yPos -= 8;
-      display.setCursor(xPos, yPos);
+      display.setCursor(display.xCentre(), yPos);
       yPos += 8;
       // flash error code
       toggle = !toggle;
       if(toggle)
-        display.print(msg);
+        display.printCentreJustified(msg);
       else {
-        display.print("     ");
+        display.printCentreJustified("          ");
       }
       // bounds limit error and gather message
       if(errstate > 10) errstate = 11;
@@ -305,10 +282,8 @@ void showRunState(C128x64_OLED& display, int runstate, int errstate)
     }
   }
   if(toPrint) {
-      int width = strlen(toPrint);
-      int xPos = 64 - ((width/2) * 6);
-      display.setCursor(xPos, yPos);
-      display.print(toPrint);
+      display.setCursor(display.xCentre(), yPos);
+      display.printCentreJustified(toPrint);
   }
 }
 

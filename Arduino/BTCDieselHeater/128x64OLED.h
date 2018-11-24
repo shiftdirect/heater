@@ -1,6 +1,7 @@
 #include "Adafruit_SH1106.h"
 
 #include "FontTypes.h"
+#include "UtilClasses.h"
 
 class C128x64_OLED : public Adafruit_SH1106 {
 	const FONT_INFO* m_pFontInfo;
@@ -13,9 +14,12 @@ public:
     cursor_x += x;
     cursor_y += y;
   };
-  void getTextExtents(const char* str, uint16_t& w, uint16_t& h);
+  void getTextExtents(const char* str, CRect& rect);
 
-  void printRightJustify(const char* str, int yPos, int RHS=127);
+  void printRightJustified(const char* str);
+  void printCentreJustified(const char* str); 
+
+  int  xCentre() { return width() / 2; };
 
   size_t write(uint8_t c);
 };

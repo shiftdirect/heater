@@ -126,4 +126,20 @@ public:
   };
 };
 
+
+struct CRect {
+  // types match with getTextBounds in Adafruit_GFX
+  int16_t xPos, yPos;
+  uint16_t width, height;
+  CRect() {
+    xPos = yPos = width = height = 0;
+  }
+  void Expand(int val) {
+    xPos -= val;
+    yPos -= val;
+    width += 2 * val;
+    height += 2 * val;
+  }
+};
+
 #endif // __UTIL_CLASSES_H__

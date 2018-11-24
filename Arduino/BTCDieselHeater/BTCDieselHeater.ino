@@ -781,6 +781,13 @@ int getRunState()
   return 0;
 }
 
+int getErrState()
+{
+  if(pRxFrame)
+    return pRxFrame->getErrState();
+  return 8;  // Comms error!
+}
+
 void requestOn()
 {
   TxManage.queueOnRequest();
