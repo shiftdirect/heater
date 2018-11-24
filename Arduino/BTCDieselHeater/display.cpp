@@ -11,8 +11,11 @@
 #include "BluetoothAbstract.h" 
 #include "Screen1.h"
 #include "Screen2.h"
+#include "Screen3.h"
+#include "Screen4.h"
 #include "KeyPad.h"
 #include "helpers.h"
+#include "clock.h"
 
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
@@ -32,7 +35,7 @@ void showBatteryIcon(C128x64_OLED& display, float voltage);
 void switchScreen();
 
 static int currentScreen = 0;
-const int maxScreens = 2;
+const int maxScreens = 4;
 
 //
 // **** NOTE: There are two very lame libaries conspiring to make life difficult ****
@@ -50,29 +53,25 @@ C128x64_OLED display(OLED_DC_pin,  -1, OLED_CS_pin);
 
 void initOLED()
 {
-  currentScreen = 0;
+  currentScreen = 1;
 
   SPI.setFrequency(8000000);
   // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
   display.begin(SH1106_SWITCHCAPVCC, 0, false);
 
   // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
   display.display();
 
-  KeyPad.setCallback(keyhandlerScreen1);
-
+  switchScreen();
 }
 
 void animateOLED()
 {
   switch(currentScreen) {
-    case 0:
-      animateScreen1(display);
-      break;
-    case 1:
-      animateScreen2(display);
-      break;
+    case 0: animateScreen1(display); break;
+    case 1: animateScreen2(display); break;
+    case 2: animateScreen3(display); break;
+    case 3: animateScreen4(display); break;
   }
 }
 
@@ -100,13 +99,13 @@ void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
   showBatteryIcon(display, voltage);
 
+  showTime(display);
+
   switch(currentScreen) {
-    case 0:
-      showScreen1(display, CtlFrame, HtrFrame);
-      break;
-    case 1:
-      showScreen2(display, CtlFrame, HtrFrame);
-      break;
+    case 0: showScreen1(display, CtlFrame, HtrFrame); break;
+    case 1: showScreen2(display, CtlFrame, HtrFrame); break;
+    case 2: showScreen3(display); break;
+    case 3: showScreen4(display); break;
   }
 }
 
@@ -166,12 +165,10 @@ void prevScreen()
 void switchScreen()
 {
   switch(currentScreen) {
-    case 0:
-      KeyPad.setCallback(keyhandlerScreen1);
-      break;
-    case 1:
-      KeyPad.setCallback(keyhandlerScreen2);
-      break;
+    case 0: KeyPad.setCallback(keyhandlerScreen1); break;
+    case 1: KeyPad.setCallback(keyhandlerScreen2); break;
+    case 2: KeyPad.setCallback(keyhandlerScreen3); break;
+    case 3: KeyPad.setCallback(keyhandlerScreen4); break;
   }
   reqDisplayUpdate();
 }

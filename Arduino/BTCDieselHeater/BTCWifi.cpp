@@ -50,7 +50,8 @@ void doWiFiManager(){
   // is auto timeout portal running
   if(portalRunning){
     wm.process();
-    if((millis()-startTime) > (timeout*1000)){
+    long tDelta = millis() - startTime;
+    if(tDelta > (timeout*1000)){
       DebugPort.println("portaltimeout");
       portalRunning = false;
       if(startCP){

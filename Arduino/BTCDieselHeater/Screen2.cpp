@@ -15,7 +15,7 @@
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
 
-unsigned long showSetTemp = 0;
+unsigned long showSetMode = 0;
 unsigned long showMode = 0;
 unsigned char nModeSel;
 
@@ -46,41 +46,43 @@ void showScreen2(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
     const int border = 3;
     const int radius = 4;
     // Show selection between Fixed or Thermostat mode
-    if(millis() < showMode) {
+    long tDelta = millis() - showMode;
+    if(tDelta < 0) {
       // display "Fixed Hz" at lower left, allowing space for a selection surrounding box
       strcpy(msg, "Fixed Hz");
       display.getTextExtents(msg, textRect);  // size of text to print
-      textRect.xPos = border;
+      textRect.xPos = display.width()- textRect.width - border;     // set X position to finish short of RHS
       textRect.yPos = display.height() - textRect.height - border;  // bottom of screen, with room for box
       display.setCursor(textRect.xPos,            // centre text in potential box
                         textRect.yPos);     
       display.print(msg);                         // show the text
-      if(nModeSel == 0) {                         // add selection box if current selection
+      if(nModeSel == 1) {                         // add selection box if current selection
         textRect.Expand(border);                  // expand about text position
         display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
       }
       // display "Thermostat" at lower right, allowing space for a selection surrounding box
       strcpy(msg, "Thermostat");
       display.getTextExtents(msg, textRect);
-      textRect.xPos = display.width()- textRect.width - border;     // set X position to finish short of RHS
+      textRect.xPos = border;
       textRect.yPos = display.height() - textRect.height - border;  // bottom of screen, with room for box
       display.setCursor(textRect.xPos,            // centre text in potential box
                         textRect.yPos);
       display.print(msg);                         // show the text
-      if(nModeSel == 1) {                         // add selection box if current selection
+      if(nModeSel == 0) {                         // add selection box if current selection
         textRect.Expand(border);                  // expand about text position
         display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
       }
+      setThermostatMode(nModeSel == 0 ? 1 : 0);    // set the new mode
     }
     else {
       // cancel selection mode, apply whatever is boxed
       showMode = 0;
-      setThermostatMode(nModeSel);    // set the new mode
-      showSetTemp = millis() + 5000;  // then make the new mode setting be shown
+      showSetMode = millis() + 5000;  // then make the new mode setting be shown
     }
   }
-  if((showMode == 0) && showSetTemp) {
-    if(millis() < showSetTemp) {
+  if((showMode == 0) && showSetMode) {
+    long tDelta = millis() - showSetMode;  
+    if(tDelta < 0) {
       // Show current heat demand setting
       if(getThermostatMode()) {
         sprintf(msg, "Setpoint = %d`C", getSetTemp());
@@ -95,10 +97,10 @@ void showScreen2(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
       display.printCentreJustified(msg);
     }
     else {
-      showSetTemp = 0;
+      showSetMode = 0;
     }
   }
-  if((showMode == 0) && (showSetTemp == 0)) {
+  if((showMode == 0) && (showSetMode == 0)) {
     showRunState(display);
   }
 }
@@ -138,7 +140,7 @@ void keyhandlerScreen2(uint8_t event)
     uint8_t doubleKey = key_Down | key_Up;
     if((event & doubleKey) == doubleKey) {
       reqThermoToggle();
-      showSetTemp = millis() + 2000;
+      showSetMode = millis() + 2000;
     }
   }
   // use repeat function for key hold detection
@@ -150,7 +152,7 @@ void keyhandlerScreen2(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
           showMode = millis() + 5000;
-          nModeSel = getThermostatMode();
+          nModeSel = getThermostatMode() ? 0 : 1;
         }
       }
       // hold CENTRE to turn ON or OFF
@@ -177,12 +179,12 @@ void keyhandlerScreen2(uint8_t event)
       // release DOWN key to reduce set demand, provided we are not in mode select
       if(event & key_Down) {
         reqTempChange(-1);
-        showSetTemp = millis() + 2000;
+        showSetMode = millis() + 2000;
       }
       // release UP key to increase set demand, provided we are not in mode select
       if(event & key_Up) {
         reqTempChange(+1);
-        showSetTemp = millis() + 2000;
+        showSetMode = millis() + 2000;
       }
     }
     // release CENTRE to accept new mode, and/or show current setting
@@ -191,7 +193,7 @@ void keyhandlerScreen2(uint8_t event)
         if(showMode) {
           showMode = millis(); // force immediate cancellation of showmode (via screen update)
         }
-        showSetTemp = millis() + 2000;
+        showSetMode = millis() + 2000;
       }
       reqDisplayUpdate();
     }

@@ -115,8 +115,8 @@ public:
   void report(const char* pHdr) {
     char msg[32];
     if(strncmp(pHdr, "[HTR]", 5) == 0) {
-      unsigned delta = millis() - prevTime;
-      sprintf(msg, "%+8dms ", delta);
+      long delta = millis() - prevTime;
+      sprintf(msg, "%+8ldms ", delta);
     }
     else {
       prevTime = millis();

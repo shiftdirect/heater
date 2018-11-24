@@ -148,6 +148,7 @@ public:
   unsigned char getPump_Max() const { return Controller.MaxPumpFreq; };   // Tx side, max pump freq
   unsigned char getPump_Actual() const { return Heater.ActualPumpFreq; };  // Rx style, actual
   unsigned char getPump_Fixed() const { return Heater.FixedPumpFreq; };   // Fixed mode pump frequency
+  void setPump_Prime(bool on) { Controller.Prime = on ? 0x5A : 0; };
   // temperature set/get
   void setTemperature_Desired(unsigned char degC) { Controller.DesiredTemperature = degC; };
   void setTemperature_Min(unsigned char degC) { Controller.MinTemperature = degC; };
@@ -178,7 +179,7 @@ class CModeratedFrame : public CProtocol {
 public:
   CModeratedFrame() { lastTime = 0; };
   void setTime() { lastTime = millis(); };
-  unsigned long elapsedTime() { return millis() - lastTime; };
+  long elapsedTime() { return millis() - lastTime; };
 };
 
 

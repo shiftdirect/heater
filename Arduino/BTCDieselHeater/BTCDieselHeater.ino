@@ -81,7 +81,7 @@
 #include <DallasTemperature.h>
 #include "keypad.h"
 #include "helpers.h"
-
+#include <time.h>
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -324,6 +324,19 @@ void loop()
       else if(rxVal == '[') {
         val--;
         bSendVal = true;
+      }
+      else if(rxVal == '=') {
+        int hour = 0;
+        int min = 0;
+
+        char buffer[16];
+        DebugPort.readBytesUntil('\n', buffer, 15);
+        sscanf(buffer, "%d:%d", &hour, &min);
+        DebugPort.print("New time=");
+        DebugPort.print(hour);DebugPort.print(":");DebugPort.println(min);
+
+        struct timeval tv = {1543030148, 0};
+        settimeofday(&tv, 0);
       }
     }
     if(bSendVal) {
@@ -883,4 +896,17 @@ void checkDisplayUpdate()
     lastAnimationTime += 100;
     animateOLED();
   }
+}
+
+void reqPumpPrime(bool on)
+{
+  DefaultBTCParams.setPump_Prime(on);
+}
+
+float getPumpHz()
+{
+  if(pRxFrame) {
+    return float(pRxFrame->getPump_Actual()) / 10.f;
+  }
+  return 0.0;
 }

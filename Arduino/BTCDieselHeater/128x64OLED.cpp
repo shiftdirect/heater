@@ -13,6 +13,31 @@
 
 //#define DEBUG_FONT
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Dot Factory Settings
+// 
+// Flip/Rotate      Padding Removal           Line Wrap         Descriptors
+//   [X] Flip X       Height(Y): Tightest       (O) At column     [X] Generate descriptor array
+//   [ ] Flip Y       Width(X):  Tightest       ( ) At bitmap     Char Width:  In Bits
+//                                                                Char Height: In Bits
+// Comments              Byte                                     Font Height: In Bits
+//   [X] Variable Name     Bit layout: RowMajor                   [ ] Multiple descriptor arrays
+//   [X] BMP visualise     Order:      MSBfirst
+//   [X] Char descriptor   Format:     Hex                        Create new when exceeds [80]
+//    Style: Cpp           Leading:    0x                         
+//                                                                Image width:  In Bits
+//  Variable name format                                          Image height: In Bits
+//    Bitmaps:   const uint8_t PROGMEM {0}Bitmaps
+//    Char Info: const FONT_CHAR_INFO PROGMEM {0}Descriptors    Space char generation
+//    Font Info: const FONT_INFO {0}FontInfo                      [X] Generate space bitmap     
+//    Width:     const uint8_t {0}Width                           [2] pixels for space char
+//    Height:    const uint8_t {0}Height
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 C128x64_OLED::C128x64_OLED(int8_t DC, int8_t CS, int8_t RST) : Adafruit_SH1106(DC, CS, RST)
 {
 	m_pFontInfo = NULL;

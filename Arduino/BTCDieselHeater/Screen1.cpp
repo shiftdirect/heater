@@ -13,6 +13,7 @@
 bool animatePump = false;
 bool animateRPM = false;
 bool animateGlow = false;
+unsigned long showTarget = 0;
 
 void showThermometer(C128x64_OLED& display, float desired, float actual);
 void showBodyThermometer(C128x64_OLED& display, int actual);
@@ -30,13 +31,12 @@ void showRunState(C128x64_OLED& display, int state, int errstate);
 #define Y_FUEL_ICON    39
 #define X_TARGET_ICON  31
 #define Y_TARGET_ICON  39
-#define Y_BASELINE    58
+#define Y_BASELINE     58
 #define X_GLOW_ICON    97
 #define Y_GLOW_ICON    38
 #define X_BODY_BULB   119
-#define X_BULB         1  // >= 1
-#define Y_BULB         4
-
+#define X_BULB          1  // >= 1
+#define Y_BULB          4
 
 #define MINI_BATTLABEL
 #define MINI_TEMPLABEL
@@ -53,8 +53,13 @@ void showScreen1(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
   int errstate = HtrFrame.getErrState(); 
   if(errstate) errstate--;  // correct for +1 biased return value
   
+  long tDelta = millis() - showTarget;
+  if(showTarget && (tDelta > 0)) {
+    showTarget = 0;
+  }
+
   float desiredT = 0;
-  if(runstate && (runstate <= 5)) {
+  if((runstate && (runstate <= 5)) || showTarget) {
     if(CtlFrame.isThermostat())
       desiredT = CtlFrame.getTemperature_Desired();
     else
@@ -81,12 +86,12 @@ void showScreen1(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
 
     showBodyThermometer(display, HtrFrame.getTemperature_HeatExchg());
   }
-  else {
+/*  else {
     if(isWifiConnected()) {
       display.setCursor(display.width(), 57);   // xPos irrelevant here - setting Y
       display.printRightJustified(getWifiAddrStr());
     }
-  }
+  }*/
 
   showRunState(display, runstate, errstate);
 
@@ -134,6 +139,52 @@ void animateScreen1(C128x64_OLED& display)
 }
 
 
+void keyhandlerScreen1(uint8_t event)
+{
+  static int repeatCount = -1;
+  if(event & keyPressed) {
+    repeatCount = 0;     // unlock tracking of repeat events
+    if(event & key_Left) {
+      prevScreen();
+    }
+    if(event & key_Right) {
+      nextScreen();
+    }
+    if(event & key_Up) {
+      reqTempChange(+1);
+      showTarget = millis() + 3500;
+    }
+    if(event & key_Down) {
+      reqTempChange(-1);
+      showTarget = millis() + 3500;
+    }
+  }
+  // require hold to turn ON or OFF
+  if(event & keyRepeat) {
+    if(repeatCount >= 0) {
+      repeatCount++;
+      if(event & key_Centre) {
+        if(getRunState()) {
+          if(repeatCount > 5) {
+            repeatCount = -1;        // prevent double handling
+            requestOff();
+          }
+        }
+        else {
+          if(repeatCount > 3) {
+            repeatCount = -1;
+            requestOn();
+          }
+        }
+      }
+    }
+  }
+  if(event & keyReleased) {
+    repeatCount = -1;
+  }
+}
+
+
 #define TEMP_YPOS(A) ((((20 - A) * 3) / 2) + 22)
 void showThermometer(C128x64_OLED& display, float desired, float actual) 
 {
@@ -155,7 +206,7 @@ void showThermometer(C128x64_OLED& display, float desired, float actual)
   display.print(msg);
   display.setFontInfo(NULL);  
 
-  // draw set point
+  // draw target setting
   if(desired) {
     display.drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIcon, W_TARGET_ICON, H_TARGET_ICON, WHITE);   // set indicator against bulb
     char msg[16];
@@ -287,41 +338,4 @@ void showRunState(C128x64_OLED& display, int runstate, int errstate)
   }
 }
 
-
-void keyhandlerScreen1(uint8_t event)
-{
-  static int repeatCount = -1;
-  if(event & keyPressed) {
-    repeatCount = 0;     // unlock tracking of repeat events
-    if(event & key_Left) {
-      prevScreen();
-    }
-    if(event & key_Right) {
-      nextScreen();
-    }
-  }
-  // require hold to turn ON or OFF
-  if(event & keyRepeat) {
-    if(repeatCount >= 0) {
-      repeatCount++;
-      if(event & key_Centre) {
-        if(getRunState()) {
-          if(repeatCount > 5) {
-            repeatCount = -1;        // prevent double handling
-            requestOff();
-          }
-        }
-        else {
-          if(repeatCount > 3) {
-            repeatCount = -1;
-            requestOn();
-          }
-        }
-      }
-    }
-  }
-  if(event & keyReleased) {
-    repeatCount = -1;
-  }
-}
 
