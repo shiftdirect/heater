@@ -1,7 +1,0 @@
-{
-    "board": "esp32:esp32:esp32",
-    "port": "192.168.0.45",
-    "sketch": "BTCDieselHeater.ino",
-    "output": "..\\build",
-    "configuration": "PSRAM=disabled,PartitionScheme=min_spiffs,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none"
-}
