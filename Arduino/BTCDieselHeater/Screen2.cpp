@@ -15,26 +15,30 @@
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
 
-unsigned long showSetMode = 0;
-unsigned long showMode = 0;
-unsigned char nModeSel;
-
-void showRunState(C128x64_OLED& display);
-
-void showScreen2(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+CScreen2::CScreen2(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
 {
+  _showSetMode = 0;
+  _showMode = 0;
+  _nModeSel = 0;
+}
+
+void 
+CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+{
+  CScreen::show(CtlFrame, HtrFrame);
+  
   char msg[20];
   CRect textRect;
 
-  sprintf(msg, "%.1f`", fFilteredTemperature);
-  display.setFontInfo(&MAXIFONT);  // Dot Factory Font
-  display.getTextExtents(msg, textRect);
-  textRect.xPos = (display.width()- textRect.width) / 2;
+  sprintf(msg, "%.1f`", getActualTemperature());
+  _display.setFontInfo(&MAXIFONT);  // Dot Factory Font
+  _display.getTextExtents(msg, textRect);
+  textRect.xPos = (_display.width()- textRect.width) / 2;
   textRect.yPos = 25;
-  display.fillRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, BLACK);
-  display.setCursor(textRect.xPos, textRect.yPos);
-  display.print(msg);
-  display.setFontInfo(NULL);  // standard 5x7 font
+  _display.fillRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, BLACK);
+  _display.setCursor(textRect.xPos, textRect.yPos);
+  _display.print(msg);
+  _display.setFontInfo(NULL);  // standard 5x7 font
 
 
   // at bottom of screen show either:
@@ -42,46 +46,46 @@ void showScreen2(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
   //   Current heat demand setting
   //   Run state of heater
   
-  if(showMode) {
+  if(_showMode) {
     const int border = 3;
     const int radius = 4;
     // Show selection between Fixed or Thermostat mode
-    long tDelta = millis() - showMode;
+    long tDelta = millis() - _showMode;
     if(tDelta < 0) {
       // display "Fixed Hz" at lower left, allowing space for a selection surrounding box
       strcpy(msg, "Fixed Hz");
-      display.getTextExtents(msg, textRect);  // size of text to print
-      textRect.xPos = display.width()- textRect.width - border;     // set X position to finish short of RHS
-      textRect.yPos = display.height() - textRect.height - border;  // bottom of screen, with room for box
-      display.setCursor(textRect.xPos,            // centre text in potential box
+      _display.getTextExtents(msg, textRect);  // size of text to print
+      textRect.xPos = _display.width()- textRect.width - border;     // set X position to finish short of RHS
+      textRect.yPos = _display.height() - textRect.height - border;  // bottom of screen, with room for box
+      _display.setCursor(textRect.xPos,            // centre text in potential box
                         textRect.yPos);     
-      display.print(msg);                         // show the text
-      if(nModeSel == 1) {                         // add selection box if current selection
+      _display.print(msg);                         // show the text
+      if(_nModeSel == 1) {                         // add selection box if current selection
         textRect.Expand(border);                  // expand about text position
-        display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
+        _display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
       }
       // display "Thermostat" at lower right, allowing space for a selection surrounding box
       strcpy(msg, "Thermostat");
-      display.getTextExtents(msg, textRect);
+      _display.getTextExtents(msg, textRect);
       textRect.xPos = border;
-      textRect.yPos = display.height() - textRect.height - border;  // bottom of screen, with room for box
-      display.setCursor(textRect.xPos,            // centre text in potential box
+      textRect.yPos = _display.height() - textRect.height - border;  // bottom of screen, with room for box
+      _display.setCursor(textRect.xPos,            // centre text in potential box
                         textRect.yPos);
-      display.print(msg);                         // show the text
-      if(nModeSel == 0) {                         // add selection box if current selection
+      _display.print(msg);                         // show the text
+      if(_nModeSel == 0) {                         // add selection box if current selection
         textRect.Expand(border);                  // expand about text position
-        display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
+        _display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
       }
-      setThermostatMode(nModeSel == 0 ? 1 : 0);    // set the new mode
+      setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
     }
     else {
       // cancel selection mode, apply whatever is boxed
-      showMode = 0;
-      showSetMode = millis() + 5000;  // then make the new mode setting be shown
+      _showMode = 0;
+      _showSetMode = millis() + 5000;  // then make the new mode setting be shown
     }
   }
-  if((showMode == 0) && showSetMode) {
-    long tDelta = millis() - showSetMode;  
+  if((_showMode == 0) && _showSetMode) {
+    long tDelta = millis() - _showSetMode;  
     if(tDelta < 0) {
       // Show current heat demand setting
       if(getThermostatMode()) {
@@ -91,47 +95,44 @@ void showScreen2(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtoc
         sprintf(msg, "Setpoint = %.1fHz", getFixedHz());
       }
       // centre message at bottom of screen
-      display.getTextExtents(msg, textRect);
-      display.setCursor(display.xCentre(), 
-                        display.height() - textRect.height);
-      display.printCentreJustified(msg);
+      _display.getTextExtents(msg, textRect);
+      _display.setCursor(_display.xCentre(), 
+                        _display.height() - textRect.height);
+      _display.printCentreJustified(msg);
     }
     else {
-      showSetMode = 0;
+      _showSetMode = 0;
     }
   }
-  if((showMode == 0) && (showSetMode == 0)) {
-    showRunState(display);
+  if((_showMode == 0) && (_showSetMode == 0)) {
+    showRunState();
   }
 }
 
-void animateScreen2(C128x64_OLED& display)
-{
-  display.display();
-}
 
-void keyhandlerScreen2(uint8_t event)
+void 
+CScreen2::keyHandler(uint8_t event)
 {
   static int repeatCount = -1;
   if(event & keyPressed) {
     repeatCount = 0;     // unlock tracking of repeat events
     // press LEFT to select previous screen, or Fixed Hz mode when in mode select
     if(event & key_Left) {
-      if(!showMode)
-        prevScreen();
+      if(!_showMode)
+        _Manager.prevScreen();
       else {
-        showMode = millis() + 5000;
-        nModeSel = 0;
+        _showMode = millis() + 5000;
+        _nModeSel = 0;
         reqDisplayUpdate();
       }
     }
     // press RIGHT to selecxt next screen, or Thermostat mode when in mode select
     if(event & key_Right) {
-      if(!showMode)
-        nextScreen();
+      if(!_showMode)
+        _Manager.nextScreen();
       else {
-        showMode = millis() + 5000;
-        nModeSel = 1;
+        _showMode = millis() + 5000;
+        _nModeSel = 1;
         reqDisplayUpdate();
       }
     }
@@ -140,7 +141,7 @@ void keyhandlerScreen2(uint8_t event)
     uint8_t doubleKey = key_Down | key_Up;
     if((event & doubleKey) == doubleKey) {
       reqThermoToggle();
-      showSetMode = millis() + 2000;
+      _showSetMode = millis() + 2000;
     }
   }
   // use repeat function for key hold detection
@@ -151,8 +152,8 @@ void keyhandlerScreen2(uint8_t event)
       if(event & key_Down) {
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
-          showMode = millis() + 5000;
-          nModeSel = getThermostatMode() ? 0 : 1;
+          _showMode = millis() + 5000;
+          _nModeSel = getThermostatMode() ? 0 : 1;
         }
       }
       // hold CENTRE to turn ON or OFF
@@ -175,25 +176,25 @@ void keyhandlerScreen2(uint8_t event)
     }
   }
   if(event & keyReleased) {
-    if(!showMode) {
+    if(!_showMode) {
       // release DOWN key to reduce set demand, provided we are not in mode select
       if(event & key_Down) {
         reqTempChange(-1);
-        showSetMode = millis() + 2000;
+        _showSetMode = millis() + 2000;
       }
       // release UP key to increase set demand, provided we are not in mode select
       if(event & key_Up) {
         reqTempChange(+1);
-        showSetMode = millis() + 2000;
+        _showSetMode = millis() + 2000;
       }
     }
     // release CENTRE to accept new mode, and/or show current setting
     if(event & key_Centre) {
       if(repeatCount != -2) {  // prevent after off commands
-        if(showMode) {
-          showMode = millis(); // force immediate cancellation of showmode (via screen update)
+        if(_showMode) {
+          _showMode = millis(); // force immediate cancellation of showmode (via screen update)
         }
-        showSetMode = millis() + 2000;
+        _showSetMode = millis() + 2000;
       }
       reqDisplayUpdate();
     }
@@ -202,7 +203,8 @@ void keyhandlerScreen2(uint8_t event)
   }
 }
 
-void showRunState(C128x64_OLED& display)
+void 
+CScreen2::showRunState()
 {
   int runstate = getRunState(); 
   int errstate = getErrState(); 
@@ -211,7 +213,7 @@ void showRunState(C128x64_OLED& display)
 
   static bool toggle = false;
   const char* toPrint = NULL;
-  display.setTextColor(WHITE, BLACK);
+  _display.setTextColor(WHITE, BLACK);
   if(runstate >= 0 && runstate <= 8) {
     if(((runstate == 0) || (runstate > 5)) && errstate) {
       // create an "E-XX" message to display
@@ -219,15 +221,15 @@ void showRunState(C128x64_OLED& display)
       sprintf(msg, "E-%02d", errstate);
       // determine height of font
       CRect textRect;
-      display.getTextExtents(msg, textRect);
-      display.setCursor(display.xCentre(),    // locate at bottom centre, 1 line up
-                        display.height() - 2*textRect.height);
+      _display.getTextExtents(msg, textRect);
+      _display.setCursor(_display.xCentre(),    // locate at bottom centre, 1 line up
+                        _display.height() - 2*textRect.height);
       // flash error code
       toggle = !toggle;
       if(toggle)
-        display.printCentreJustified(msg);
+        _display.printCentreJustified(msg);
       else {
-        display.printCentreJustified("          ");
+        _display.printCentreJustified("          ");
       }
       // bounds limit error and gather message
       if(errstate > 10) errstate = 11;
@@ -245,9 +247,9 @@ void showRunState(C128x64_OLED& display)
   if(toPrint) {
     // determine height of font
     CRect textRect;
-    display.getTextExtents(toPrint, textRect);
-    display.setCursor(display.xCentre(),                   // locate at bottom centre
-                      display.height() - textRect.height);
-    display.printCentreJustified(toPrint);
+    _display.getTextExtents(toPrint, textRect);
+    _display.setCursor(_display.xCentre(),                   // locate at bottom centre
+                      _display.height() - textRect.height);
+    _display.printCentreJustified(toPrint);
   }
 }

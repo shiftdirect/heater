@@ -12,8 +12,7 @@ extern bool getThermostatMode();
 extern float getFixedHz();
 extern float getPumpHz();
 extern void reqPumpPrime(bool on);
-
-extern float fFilteredTemperature;
+extern float getActualTemperature();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

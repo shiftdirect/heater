@@ -29,14 +29,6 @@
 
 #define MINI_BATTLABEL
 
-void showBTicon(C128x64_OLED& display);
-void showWifiIcon(C128x64_OLED& display);
-void showBatteryIcon(C128x64_OLED& display, float voltage);
-void switchScreen();
-
-static int currentScreen = 0;
-const int maxScreens = 4;
-
 //
 // **** NOTE: There are two very lame libaries conspiring to make life difficult ****
 // A/ The ESP32 SPI.cpp library instatiates an instance of SPI, using the VSPI port (and pins)
@@ -47,129 +39,181 @@ const int maxScreens = 4;
 // You **MUST comment out the SPIClass SPI(VSPI);**  at the end of the ESP32 SPI library
 // then we declare "SPI" here, which will use HSPI!!!!
 
-// 128 x 64 OLED support
 SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
-C128x64_OLED display(OLED_DC_pin,  -1, OLED_CS_pin);
+//C128x64_OLED display(OLED_DC_pin,  -1, OLED_CS_pin);
 
-void initOLED()
+
+CScreenManager::CScreenManager() 
 {
-  currentScreen = 1;
-
-  SPI.setFrequency(8000000);
-  // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  display.begin(SH1106_SWITCHCAPVCC, 0, false);
-
-  // Show initial display buffer contents on the screen --
-  display.display();
-
-  switchScreen();
+  _pDisplay = NULL;
+  _pActiveScreen = NULL;
+  for(int i = 0; i < _maxScreens; i++)
+    _pScreen[i] = NULL;
+  _currentScreen = 1;
 }
 
-void animateOLED()
+CScreenManager::~CScreenManager()
 {
-  switch(currentScreen) {
-    case 0: animateScreen1(display); break;
-    case 1: animateScreen2(display); break;
-    case 2: animateScreen3(display); break;
-    case 3: animateScreen4(display); break;
+  _pActiveScreen = NULL;      
+  for(int i=0; i<_maxScreens; i++) {
+    if(_pScreen[i]) {
+      delete _pScreen[i]; _pScreen[i] = NULL;
+    }
+  }
+  if(_pDisplay) {
+    delete _pDisplay; _pDisplay = NULL;
   }
 }
 
-
-void updateOLED(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+void 
+CScreenManager::init()
 {
-  display.clearDisplay();
+  SPI.setFrequency(8000000);
+
+  // 128 x 64 OLED support (Hardware SPI)
+  _pDisplay = new C128x64_OLED(OLED_DC_pin, -1, OLED_CS_pin);
+
+  // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  _pDisplay->begin(SH1106_SWITCHCAPVCC, 0, false);
+
+  // Show initial display buffer contents on the screen --
+  _pDisplay->display();
+
+  _pScreen[0] = new CScreen1(*_pDisplay, *this);
+  _pScreen[1] = new CScreen2(*_pDisplay, *this);
+  _pScreen[2] = new CScreen3(*_pDisplay, *this);
+  _pScreen[3] = new CScreen4(*_pDisplay, *this);
+
+  _switchScreen();
+}
+
+void 
+CScreenManager::update(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+{
+  if(_pActiveScreen) _pActiveScreen->show(CtlFrame, HtrFrame);
+}
+  
+void 
+CScreenManager::animate()
+{
+  if(_pActiveScreen) _pActiveScreen->animate();
+}
+
+void 
+CScreenManager::_switchScreen()
+{
+  if(_currentScreen < _maxScreens)
+    _pActiveScreen = _pScreen[_currentScreen]; 
+  
+  reqDisplayUpdate();
+}
+
+void 
+CScreenManager::nextScreen()
+{
+  _currentScreen++;
+  if(_currentScreen >= _maxScreens) {
+    _currentScreen = 0;
+  }
+  _switchScreen();
+}
+
+void 
+CScreenManager::prevScreen()
+{
+  _currentScreen--;
+  if(_currentScreen < 0) {
+    _currentScreen = _maxScreens-1;
+  }
+  _switchScreen();
+}
+
+void 
+CScreenManager::keyHandler(uint8_t event)
+{
+  if(_pActiveScreen) _pActiveScreen->keyHandler(event);
+}
+
+
+
+CScreen::CScreen(C128x64_OLED& disp, CScreenManager& mgr) : 
+  _display(disp), 
+  _Manager(mgr) 
+{
+}
+
+CScreen::~CScreen()
+{
+}
+
+void
+CScreen::animate()
+{
+  _display.display();
+}
+
+void 
+CScreen::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+{
+  _display.clearDisplay();
 
   // standard header items
   //Bluetooth
   if(getBluetoothClient().isConnected())
-    showBTicon(display);
+    showBTicon();
   // WiFi
   if(isWifiConnected()) {
-    showWifiIcon(display);
-#ifdef DEMO_AP_MODE
-    display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
-    display.setFontInfo(&MINIFONT);  // select Mini Font
-    display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
-    display.print("AP");
-    display.setFontInfo(NULL);  
-#endif
+    showWifiIcon();
   }
   // battery
   float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
-  showBatteryIcon(display, voltage);
+  showBatteryIcon(voltage);
 
-  showTime(display);
-
-  switch(currentScreen) {
-    case 0: showScreen1(display, CtlFrame, HtrFrame); break;
-    case 1: showScreen2(display, CtlFrame, HtrFrame); break;
-    case 2: showScreen3(display); break;
-    case 3: showScreen4(display); break;
-  }
+  showTime(_display);
 }
 
-void showBTicon(C128x64_OLED& display)
+void 
+CScreen::showBTicon()
 {
-  display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
+  _display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
 }
 
-void showWifiIcon(C128x64_OLED& display)
+void 
+CScreen::showWifiIcon()
 {
-  display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
+  _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
+#ifdef DEMO_AP_MODE
+  _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
+  _display.setFontInfo(&MINIFONT);  // select Mini Font
+  _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
+  _display.print("AP");
+  _display.setFontInfo(NULL);  
+#endif
 }
 
-void showBatteryIcon(C128x64_OLED& display, float voltage)
+void
+CScreen::showBatteryIcon(float voltage)
 {
-  display.drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIcon, W_BATT_ICON, H_BATT_ICON, WHITE);
+  _display.drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIcon, W_BATT_ICON, H_BATT_ICON, WHITE);
 #ifdef MINI_BATTLABEL
   char msg[16];
   sprintf(msg, "%.1fV", voltage);
   int xPos = X_BATT_ICON + 7 - strlen(msg) * 2;
-  display.setCursor(xPos, Y_BATT_ICON+H_BATT_ICON+2);
-  display.setFontInfo(&MINIFONT);  // select Mini Font
-  display.print(msg);
-  display.setFontInfo(NULL);  
+  _display.setCursor(xPos, Y_BATT_ICON+H_BATT_ICON+2);
+  _display.setFontInfo(&MINIFONT);  // select Mini Font
+  _display.print(msg);
+  _display.setFontInfo(NULL);  
 #else
-  display.setCursor(85, 12);
-  display.setTextColor(WHITE);
-  display.print(voltage, 1);
-  display.print("V");
+  _display.setCursor(85, 12);
+  _display.setTextColor(WHITE);
+  _display.print(voltage, 1);
+  _display.print("V");
 #endif
 
   // nominal 10.5 -> 13.5V bargraph
   int Capacity = (voltage - 10.7) * 4;
   if(Capacity < 0)   Capacity = 0;
   if(Capacity > 11)  Capacity = 11;
-  display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
-}
-
-void nextScreen()
-{
-  currentScreen++;
-  if(currentScreen >= maxScreens) {
-    currentScreen = 0;
-  }
-  switchScreen();
-}
-
-void prevScreen()
-{
-  currentScreen--;
-  if(currentScreen < 0) {
-    currentScreen = maxScreens-1;
-  }
-  switchScreen();
-}
-
-void switchScreen()
-{
-  switch(currentScreen) {
-    case 0: KeyPad.setCallback(keyhandlerScreen1); break;
-    case 1: KeyPad.setCallback(keyhandlerScreen2); break;
-    case 2: KeyPad.setCallback(keyhandlerScreen3); break;
-    case 3: KeyPad.setCallback(keyhandlerScreen4); break;
-  }
-  reqDisplayUpdate();
+  _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
 }
 

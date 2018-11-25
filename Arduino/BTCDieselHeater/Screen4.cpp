@@ -6,29 +6,33 @@
 #include "BTCWifi.h"
 
 
-void showScreen4(C128x64_OLED& display)
+CScreen4::CScreen4(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
 {
+}
+
+
+void 
+CScreen4::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+{
+  CScreen::show(CtlFrame, HtrFrame);
+  
   CRect extents;
 
-  display.setCursor(0, 24);
-  display.print("IP addr:");
-  display.setCursor(display.width(), 24);
+  _display.setCursor(0, 24);
+  _display.print("IP addr:");
+  _display.setCursor(_display.width(), 24);
   if(isWifiConnected()) {
-    display.printRightJustified(getWifiAddrStr());
+    _display.printRightJustified(getWifiAddrStr());
   }
   else {
-    display.printRightJustified("Not active");
+    _display.printRightJustified("Not active");
   }
 
 }
 
-void animateScreen4(C128x64_OLED& display)
-{
-  display.display();
-}
 
-
-void keyhandlerScreen4(uint8_t event)
+void 
+CScreen4::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
     // press CENTRE
@@ -37,11 +41,11 @@ void keyhandlerScreen4(uint8_t event)
     }
     // press LEFT 
     if(event & key_Left) {
-      prevScreen(); 
+      _Manager.prevScreen(); 
     }
     // press RIGHT 
     if(event & key_Right) {
-      nextScreen(); 
+      _Manager.nextScreen(); 
     }
   }
 }

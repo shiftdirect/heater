@@ -132,6 +132,7 @@ CProtocol HeaterFrame2;              // data packet received from heater in resp
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
 CKeyPad KeyPad;
+CScreenManager ScreenManager;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -193,6 +194,12 @@ CBluetoothAbstract& getBluetoothClient()
   return Bluetooth;
 }
 
+// callback function for Keypad events.
+// must be an absolute function, cannot be a class member due the "this" element!
+void parentKeyHandler(uint8_t event) 
+{
+  ScreenManager.keyHandler(event);   // call into the Screen Manager
+}
 
 void setup() {
 
@@ -202,6 +209,8 @@ void setup() {
   DebugPort.begin(115200);
 
   KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
+  KeyPad.setCallback(parentKeyHandler);
+
 
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
@@ -210,7 +219,8 @@ void setup() {
   lastTemperatureTime = millis();
   lastAnimationTime = millis();
 
-  initOLED();
+  ScreenManager.init();
+//  initOLED();
 
 #if USE_WIFI == 1
 
@@ -417,7 +427,7 @@ void loop()
   ///////////////////////////////////////////////////////////////////////////////////////////
   // do our state machine to track the reception and delivery of blue wire data
 
-  unsigned long tDelta;
+  long tDelta;
   switch(CommState.get()) {
 
     case CommStates::Idle:
@@ -886,15 +896,17 @@ void checkDisplayUpdate()
   // only update OLED when not processing blue wire
   if(bUpdateDisplay) {
     if(pTxFrame && pRxFrame) {
-      updateOLED(*pTxFrame, *pRxFrame);        
+      ScreenManager.update(*pTxFrame, *pRxFrame);        
+//      updateOLED(*pTxFrame, *pRxFrame);        
       bUpdateDisplay = false;
     }
   }
 
-  unsigned long tDelta = millis() - lastAnimationTime;
+  long tDelta = millis() - lastAnimationTime;
   if(tDelta >= 100) {
     lastAnimationTime += 100;
-    animateOLED();
+    ScreenManager.animate();
+//    animateOLED();
   }
 }
 
@@ -909,4 +921,9 @@ float getPumpHz()
     return float(pRxFrame->getPump_Actual()) / 10.f;
   }
   return 0.0;
+}
+
+float getActualTemperature()
+{
+  return fFilteredTemperature;
 }

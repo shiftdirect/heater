@@ -1,7 +1,12 @@
 #include "stdint.h"
 
 class C128x64_OLED;
+class CScreenManager;
+class CProtocol;
 
-void showScreen4(C128x64_OLED& display);
-void animateScreen4(C128x64_OLED& display);
-void keyhandlerScreen4(uint8_t event);
+class CScreen4 : public CScreen {
+public:
+  CScreen4(C128x64_OLED& display, CScreenManager& mgr);
+  void show(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
+  void keyHandler(uint8_t event);
+};

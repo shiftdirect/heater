@@ -1,9 +1,18 @@
 #include "stdint.h"
+#include "display.h"
 
 class C128x64_OLED;
 class CProtocol;
+class CScreenManager;
 
-void showScreen2(C128x64_OLED& display, const CProtocol& CtlFrame, const CProtocol& HtrFrame);
-void animateScreen2(C128x64_OLED& display);
-
-void keyhandlerScreen2(uint8_t event);
+class CScreen2 : public CScreen
+{
+  unsigned long _showSetMode;
+  unsigned long _showMode;
+  unsigned char _nModeSel;
+  void showRunState();
+public:
+  CScreen2(C128x64_OLED& display, CScreenManager& mgr);
+  void show(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
+  void keyHandler(uint8_t event);
+};
