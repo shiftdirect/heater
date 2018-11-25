@@ -79,7 +79,9 @@
 #include "display.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
-
+#include "keypad.h"
+#include "helpers.h"
+#include <time.h>
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -111,30 +113,35 @@ static HardwareSerial& BlueWireSerial(Serial1);
 
 void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
+void checkDisplayUpdate();
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
 DallasTemperature TempSensor(&ds);
-long lastTemperatureTime;        // used to moderate DS18B20 access
-unsigned long lastAnimationTime;
-float fFilteredTemperature = -100;
-const float fAlpha = 0.95;
+long lastTemperatureTime;            // used to moderate DS18B20 access
+float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
+const float fAlpha = 0.95;           // exponential mean alpha
+
+unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
 CModeratedFrame OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
 CModeratedFrame HeaterFrame1;        // data packet received from heater in response to OEM controller packet
-CProtocol HeaterFrame2;        // data packet received from heater in response to our packet 
+CProtocol HeaterFrame2;              // data packet received from heater in response to our packet 
 CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
+CKeyPad KeyPad;
+
 sRxLine PCline;
-long lastRxTime;        // used to observe inter character delays
+long lastRxTime;                     // used to observe inter character delays
 bool hasOEMController = false;
-bool verboseDebug = false;
 
 const CProtocol* pRxFrame = NULL;
 const CProtocol* pTxFrame = NULL;
 
+unsigned long moderator;
+bool bUpdateDisplay = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
@@ -193,6 +200,8 @@ void setup() {
   // this is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   DebugPort.begin(115200);
+
+  KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
 
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
@@ -254,6 +263,7 @@ void setup() {
 
 void loop() 
 {
+
   float fTemperature;
   unsigned long timenow = millis();
 
@@ -273,8 +283,10 @@ void loop()
   if(DebugPort.available()) {
     static int mode = 0;
     static int val = 0;
-    bool bSendVal = false;
+
     char rxVal = DebugPort.read();
+
+    bool bSendVal = false;
     if(isControl(rxVal)) {    // "End of Line"
       String convert(PCline.Line);
       val = convert.toInt();
@@ -299,7 +311,7 @@ void loop()
       }
       else if(rxVal  == '+') {
         TxManage.queueOnRequest();
-        Bluetooth.setRefTime();
+        Bluetooth.setRefTime();             // reset time reference "run time"
       }
       else if(rxVal  == '-') {
         TxManage.queueOffRequest();
@@ -313,8 +325,18 @@ void loop()
         val--;
         bSendVal = true;
       }
-      else if(rxVal == 'v') {
-        verboseDebug = !verboseDebug;
+      else if(rxVal == '=') {
+        int hour = 0;
+        int min = 0;
+
+        char buffer[16];
+        DebugPort.readBytesUntil('\n', buffer, 15);
+        sscanf(buffer, "%d:%d", &hour, &min);
+        DebugPort.print("New time=");
+        DebugPort.print(hour);DebugPort.print(":");DebugPort.println(min);
+
+        struct timeval tv = {1543030148, 0};
+        settimeofday(&tv, 0);
       }
     }
     if(bSendVal) {
@@ -333,35 +355,14 @@ void loop()
     }
   }
 
+  uint8_t key = KeyPad.update();
+/*  if(key) {
+    Serial.print("\007Key event=0x");
+    Serial.println(key, HEX);
+  }*/
 
   Bluetooth.check();    // check for Bluetooth activity
 
-  // calc elapsed time since last rxd byte
-  // used to detect no OEM controller, or the start of an OEM frame sequence
-  unsigned long RxTimeElapsed = timenow - lastRxTime;
-
-  // precautionary state machine action if all 24 bytes were not received 
-  // whilst expecting a frame from the blue wire
-  if(RxTimeElapsed > 50) {              
-    if( CommState.is(CommStates::OEMCtrlRx) || 
-        CommState.is(CommStates::HeaterRx1) ||  
-        CommState.is(CommStates::HeaterRx2) ) {
-
-      if(CommState.is(CommStates::OEMCtrlRx)) {
-        DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
-      }
-      else if(CommState.is(CommStates::HeaterRx1)) {
-        DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
-      }
-      else {
-        DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
-      }
-
-      DebugPort.println("\007Recycling blue wire serial interface");
-      initBlueWireSerial();
-      CommState.set(CommStates::Idle);  // revert to idle mode
-    }
-  }
 
   //////////////////////////////////////////////////////////////////////////////////////
   // Blue wire data reception
@@ -377,15 +378,41 @@ void loop()
     // will be deliberately lost!
     BlueWireData.setValue(BlueWireSerial.read());  // read hex byte, store for later use
       
-    unsigned long dT = timenow - lastRxTime;
     lastRxTime = timenow;    // tickle last rx time, for rx data timeout purposes
-    if(verboseDebug) {
-      DebugPort.print("dT{");
-      DebugPort.print(dT);
-      DebugPort.print("}");
-    }
-
   } 
+
+
+  // calc elapsed time since last rxd byte
+  // used to detect no OEM controller, or the start of an OEM frame sequence
+  unsigned long RxTimeElapsed = timenow - lastRxTime;
+
+  // precautionary state machine action if all 24 bytes were not received 
+  // whilst expecting a frame from the blue wire
+  if(RxTimeElapsed > 50) {              
+    if( CommState.is(CommStates::OEMCtrlRx) || 
+        CommState.is(CommStates::HeaterRx1) ||  
+        CommState.is(CommStates::HeaterRx2) ) {
+
+      if(RxTimeElapsed >= moderator) {
+        moderator += 10;
+        DebugPort.print(RxTimeElapsed);
+        DebugPort.print("ms - ");
+        if(CommState.is(CommStates::OEMCtrlRx)) {
+          DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
+        }
+        else if(CommState.is(CommStates::HeaterRx1)) {
+          DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
+        }
+        else {
+          DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
+        }
+      }
+
+      DebugPort.println("\007Recycling blue wire serial interface");
+      initBlueWireSerial();
+      CommState.set(CommStates::Idle);  // revert to idle mode
+    }
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // do our state machine to track the reception and delivery of blue wire data
@@ -395,16 +422,7 @@ void loop()
 
     case CommStates::Idle:
 
-      if(verboseDebug) {
-        DebugPort.print(":0");
-      }
-
-      // only update OLED when not processing blue wire
-      tDelta = timenow - lastAnimationTime;
-      if(tDelta >= 100) {
-        lastAnimationTime += 100;
-        animateOLED();
-      }
+      moderator = 50;
 
 #if RX_LED == 1
       digitalWrite(LED_Pin, LOW);
@@ -424,6 +442,7 @@ void loop()
         break;
       } 
 
+#if SUPPORT_OEM_CONTROLLER == 1
       if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
 #ifdef REPORT_OEM_RESYNC
         DebugPort.print("Re-sync'd with OEM Controller. ");
@@ -437,23 +456,22 @@ void loop()
         //
       }
       else {
-        break;  // only break if we failed all the Idle tests
+        checkDisplayUpdate();    
+        break;  // only break if we fail all Idle state tests
       }
+#else
+      checkDisplayUpdate();
+      break;  
+#endif
 
 
     case CommStates::OEMCtrlRx:
-      if(verboseDebug) {
-        DebugPort.print(":1");
-      }
 
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect OEM controller frame
       if(BlueWireData.available()) {
-        if(verboseDebug) {
-          DebugPort.print(",RD1");
-        }
         if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
           CommState.set(CommStates::OEMCtrlReport);  // collected 24 bytes, move on!
         }
@@ -462,10 +480,6 @@ void loop()
 
 
     case CommStates::OEMCtrlReport:
-      if(verboseDebug) {
-        DebugPort.print(":2");
-      }
-
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -492,17 +506,11 @@ void loop()
 
 
     case CommStates::HeaterRx1:
-      if(verboseDebug) {
-        DebugPort.print(":3");
-      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect heater frame, always in response to an OEM controller frame
       if(BlueWireData.available()) {
-        if(verboseDebug) {
-          DebugPort.print(",RD2");
-        }
         if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
           CommState.set(CommStates::HeaterReport1);
         }
@@ -511,9 +519,6 @@ void loop()
 
 
     case CommStates::HeaterReport1:
-      if(verboseDebug) {
-        DebugPort.print(":4");
-      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -564,9 +569,6 @@ void loop()
     
 
     case CommStates::BTC_Tx:
-      if(verboseDebug) {
-        DebugPort.print(":5");
-      }
       // Handle time interval where we send data to the blue wire
       lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
       if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
@@ -580,19 +582,11 @@ void loop()
 
 
     case CommStates::HeaterRx2:
-      if(verboseDebug) {
-        DebugPort.print(":6");
-      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, HIGH);
 #endif
       // collect heater frame, in response to our control frame
       if(BlueWireData.available()) {
-        if(verboseDebug) {
-          DebugPort.print(",RD(");
-          DebugPort.print(BlueWireData.getValue(), HEX);
-          DebugPort.print(")");
-        }
 #ifdef BADSTARTCHECK
         if(!CommState.checkValidStart(BlueWireData.getValue())) {
           DebugPort.println("***** \007 Invalid start of frame - restarting Serial port *****");    
@@ -614,9 +608,6 @@ void loop()
 
 
     case CommStates::HeaterReport2:
-      if(verboseDebug) {
-        DebugPort.print(":7");
-      }
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -643,9 +634,6 @@ void loop()
       break;
 
     case CommStates::TemperatureRead:
-      if(verboseDebug) {
-        DebugPort.print(":8");
-      }
       // update temperature reading, 
       // synchronised with serial reception as interrupts do get disabled in the OneWire library
       tDelta = timenow - lastTemperatureTime;
@@ -660,16 +648,14 @@ void loop()
         fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         TempSensor.requestTemperatures();               // prep sensor for future reading
-
-//        updateOLED(TxManage.getFrame(), HeaterFrame2);        
-        updateOLED(*pTxFrame, *pRxFrame);        
+        reqDisplayUpdate();
       }
       CommState.set(CommStates::Idle);
       break;
   }  // switch(CommState)
 
   BlueWireData.reset();   // ensure we flush any used data
-    
+
 }  // loop
 
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
@@ -789,7 +775,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
     // Bad CRC - restart blue wire Serial port
     DebugPort.print("\007Bad CRC detected for ");
     DebugPort.print(name);
-    DebugPort.println(" frame - restarting Serial1");
+    DebugPort.println(" frame - restarting blue wire's serial port");
     char header[16];
     sprintf(header, "[CRC_%s]", name);
     DebugReportFrame(header, frame, "\r\n");
@@ -798,4 +784,129 @@ bool validateFrame(const CProtocol& frame, const char* name)
     return false;
   }
   return true;
+}
+
+
+int getRunState()
+{
+  if(pRxFrame)
+    return pRxFrame->getRunState();
+  return 0;
+}
+
+int getErrState()
+{
+  if(pRxFrame)
+    return pRxFrame->getErrState();
+  return 8;  // Comms error!
+}
+
+void requestOn()
+{
+  TxManage.queueOnRequest();
+  SmartError.reset();
+  Bluetooth.setRefTime();
+}
+
+void requestOff()
+{
+  TxManage.queueOffRequest();
+  SmartError.inhibit();
+  Bluetooth.setRefTime();
+}
+
+void ToggleOnOff()
+{
+  if(getRunState()) {
+    DebugPort.println("ToggleOnOff: Heater OFF");
+    requestOff();
+  }
+  else {
+    DebugPort.println("ToggleOnOff: Heater ON");
+    requestOn();
+  }
+}
+
+
+void reqTempChange(int val)
+{
+  unsigned char curTemp = getSetTemp();
+
+  curTemp += val;
+  unsigned char max = DefaultBTCParams.getTemperature_Max();
+  unsigned char min = DefaultBTCParams.getTemperature_Min();
+  if(curTemp >= max)
+    curTemp = max;
+  if(curTemp <= min)
+    curTemp = min;
+     
+  pNVStorage->setTemperature(curTemp);
+
+  reqDisplayUpdate();
+}
+
+int getSetTemp()
+{
+//  pTxFrame->getTemperature_Desired();  // sluggish - delays until new packet goes out!
+  return pNVStorage->getTemperature();
+}
+
+float getFixedHz()
+{
+  if(pRxFrame) {
+    return float(pRxFrame->getPump_Fixed()) / 10.f;
+  }
+  return 0.0;
+}
+
+
+void reqThermoToggle()
+{
+  setThermostatMode(getThermostatMode() ? 0 : 1);
+}
+
+void setThermostatMode(unsigned char val)
+{
+  pNVStorage->setThermostatMode(val);
+}
+
+
+bool getThermostatMode()
+{
+  return pNVStorage->getThermostatMode() != 0;
+}
+
+void reqDisplayUpdate()
+{
+  bUpdateDisplay = true;
+}
+
+void checkDisplayUpdate()
+{
+  // only update OLED when not processing blue wire
+  if(bUpdateDisplay) {
+    if(pTxFrame && pRxFrame) {
+      updateOLED(*pTxFrame, *pRxFrame);        
+      bUpdateDisplay = false;
+    }
+  }
+
+  unsigned long tDelta = millis() - lastAnimationTime;
+  if(tDelta >= 100) {
+    lastAnimationTime += 100;
+    animateOLED();
+  }
+}
+
+void reqPumpPrime(bool on)
+{
+  DefaultBTCParams.setPump_Prime(on);
+}
+
+float getPumpHz()
+{
+  if(pRxFrame) {
+    return float(pRxFrame->getPump_Actual()) / 10.f;
+  }
+  return 0.0;
 }

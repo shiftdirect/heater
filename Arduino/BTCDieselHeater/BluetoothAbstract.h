@@ -37,4 +37,6 @@ public:
   virtual bool isConnected() { return false; };
 };
 
+extern CBluetoothAbstract& getBluetoothClient();
+
 #endif // __BLUETOOTHABSTRACT_H__

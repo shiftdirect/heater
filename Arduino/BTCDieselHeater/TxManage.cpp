@@ -38,20 +38,20 @@ CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) :
 void CTxManage::begin()
 {
   pinMode(m_nTxGatePin, OUTPUT);
-  digitalWrite(m_nTxGatePin, LOW);
+  digitalWrite(m_nTxGatePin, LOW);   // default to receive mode
 }
 
 void
 CTxManage::queueOnRequest(bool set)
 {
-  m_bOnReq = set;  // allow cancel via heater frame decode
+  m_bOnReq = set;  // allow cancellation via heater response frame decode
   m_bOffReq = false;
 }
 
 void 
 CTxManage::queueOffRequest(bool set)
 {
-  m_bOffReq = set;  // allow cancel via heater frame decode 
+  m_bOffReq = set;  // allow cancellation via heater response frame decode 
   m_bOnReq = false;
 }
 
