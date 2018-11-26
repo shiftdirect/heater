@@ -52,6 +52,7 @@ void initWebServer(void) {
 	webSocket.onEvent(webSocketEvent);
 	DebugPort.println("HTTP server started");
 }
+unsigned char cVal;
 
 void doWebServer(void) {
 	static unsigned long lastTx = 0;
