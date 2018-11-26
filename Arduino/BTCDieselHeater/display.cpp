@@ -16,6 +16,7 @@
 #include "KeyPad.h"
 #include "helpers.h"
 #include "clock.h"
+#include "BTCConfig.h"
 
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
@@ -39,9 +40,8 @@
 // You **MUST comment out the SPIClass SPI(VSPI);**  at the end of the ESP32 SPI library
 // then we declare "SPI" here, which will use HSPI!!!!
 
+// 128 x 64 OLED support
 SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
-//C128x64_OLED display(OLED_DC_pin,  -1, OLED_CS_pin);
-
 
 CScreenManager::CScreenManager() 
 {
@@ -68,13 +68,18 @@ CScreenManager::~CScreenManager()
 void 
 CScreenManager::init()
 {
-  SPI.setFrequency(8000000);
 
   // 128 x 64 OLED support (Hardware SPI)
-  _pDisplay = new C128x64_OLED(OLED_DC_pin, -1, OLED_CS_pin);
-
   // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
+#if OLED_HW_SPI == 1
+  SPI.setFrequency(8000000);
+  _pDisplay = new C128x64_OLED(OLED_DC_pin, -1, OLED_CS_pin);
   _pDisplay->begin(SH1106_SWITCHCAPVCC, 0, false);
+#else
+  _pDisplay = new C128x64_OLED(OLED_SDA_pin, OLED_SCL_pin);
+  _pDisplay->begin(SH1106_SWITCHCAPVCC);
+#endif
+
 
   // Show initial display buffer contents on the screen --
   _pDisplay->display();

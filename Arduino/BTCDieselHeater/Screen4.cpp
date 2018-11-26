@@ -28,6 +28,7 @@ CScreen4::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     _display.printRightJustified("Not active");
   }
 
+  _display.display();
 }
 
 

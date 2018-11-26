@@ -86,6 +86,8 @@
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
 
+#define RX_DATA_TIMOUT 50
+
 //comment this out to remove TELNET
 
 //#define TELNET
@@ -220,7 +222,6 @@ void setup() {
   lastAnimationTime = millis();
 
   ScreenManager.init();
-//  initOLED();
 
 #if USE_WIFI == 1
 
@@ -398,7 +399,7 @@ void loop()
 
   // precautionary state machine action if all 24 bytes were not received 
   // whilst expecting a frame from the blue wire
-  if(RxTimeElapsed > 50) {              
+  if(RxTimeElapsed > RX_DATA_TIMOUT) {              
     if( CommState.is(CommStates::OEMCtrlRx) || 
         CommState.is(CommStates::HeaterRx1) ||  
         CommState.is(CommStates::HeaterRx2) ) {
@@ -453,7 +454,7 @@ void loop()
       } 
 
 #if SUPPORT_OEM_CONTROLLER == 1
-      if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
+      if(BlueWireData.available() && (RxTimeElapsed > RX_DATA_TIMOUT+10)) {  
 #ifdef REPORT_OEM_RESYNC
         DebugPort.print("Re-sync'd with OEM Controller. ");
         DebugPort.print(RxTimeElapsed);
@@ -897,7 +898,6 @@ void checkDisplayUpdate()
   if(bUpdateDisplay) {
     if(pTxFrame && pRxFrame) {
       ScreenManager.update(*pTxFrame, *pRxFrame);        
-//      updateOLED(*pTxFrame, *pRxFrame);        
       bUpdateDisplay = false;
     }
   }
@@ -906,7 +906,6 @@ void checkDisplayUpdate()
   if(tDelta >= 100) {
     lastAnimationTime += 100;
     ScreenManager.animate();
-//    animateOLED();
   }
 }
 

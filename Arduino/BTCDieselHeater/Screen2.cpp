@@ -107,6 +107,8 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   if((_showMode == 0) && (_showSetMode == 0)) {
     showRunState();
   }
+
+  _display.display();
 }
 
 

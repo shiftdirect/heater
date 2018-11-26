@@ -112,6 +112,8 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     }
   }
 
+  _display.display();
+
 }
 
 

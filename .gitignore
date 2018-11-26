@@ -4,3 +4,4 @@
 *.o
 *.a
 *.cache
+/Arduino/BTCDieselHeater/.vscode/*.json

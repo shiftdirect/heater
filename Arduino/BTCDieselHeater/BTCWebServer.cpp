@@ -5,15 +5,20 @@
 #include "BTCWebServer.h"
 #include "DebugPort.h"
 #include "TxManage.h"
+#include "helpers.h"
+#include "pins.h"
+#include "Index.h"
+
+extern void Command_Interpret(const char* pLine);   // decodes received command lines, implemented in main .ino file!
 
 WebServer server(80);
+WebSocketsServer webSocket = WebSocketsServer(81);
 
 const int led = 13;
 
 void handleRoot() {
-	digitalWrite(led, 1);
-	server.send(200, "text/plain", "Chnage URL to /on to poweron heater... /off to poweroff");
-	digitalWrite(led, 0);
+	String s = MAIN_PAGE; //Read HTML contents
+	server.send(200, "text/html", s); //Send web page
 }
 
 void handleNotFound() {
@@ -38,34 +43,41 @@ void initWebServer(void) {
 	if (MDNS.begin("BTCHeater")) {
 		DebugPort.println("MDNS responder started");
 	}
-	server.on("/on", webturnOn);
-	server.on("/off", webturnOff);
+	
 	server.on("/", handleRoot);
-
-	server.on("/inline", []() {
-		server.send(200, "text/plain", "this works as well");
-	});
-
 	server.onNotFound(handleNotFound);
 
 	server.begin();
+	webSocket.begin();
+	webSocket.onEvent(webSocketEvent);
 	DebugPort.println("HTTP server started");
 }
 
 void doWebServer(void) {
+	static unsigned long lastTx = 0;
+	webSocket.loop();
 	server.handleClient();
+	if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
+		lastTx = millis() + 1000;
+		char msg[16];
+		sprintf(msg, "%.1f", getActualTemperature());
+		webSocket.broadcastTXT(msg);
+		// char c[] = { "23" };
+		// webSocket.broadcastTXT(c, sizeof(c));
 }
 
-void webturnOn() {
-
-	TxManage.queueOnRequest();
-	server.send(200, "text/plain", "Heater Turning on");
-
 }
 
-void webturnOff() {
-
-	TxManage.queueOffRequest();
-	server.send(200, "text/plan", "Turning off heater");
-
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+	if (type == WStype_TEXT) {
+		char cmd[16];
+		memset(cmd, 0, 16);
+		for (int i = 0; i < length && i < 15; i++) {
+			cmd[i] = payload[i];
+//				Serial.print((char)payload[i]);
+		}
+//			Serial.println();
+    Serial.println(cmd);
+		Command_Interpret(cmd);  // send to the main heater controller decode routine
+}
 }

@@ -56,3 +56,11 @@
   
 
 #define SUPPORT_OEM_CONTROLLER 1
+
+///////////////////////////////////////////////////////////////////////////////
+// SH1106 128x64 OLED support
+//
+// 0: I2C, 
+// 1: HW SPI
+//
+#define OLED_HW_SPI 0
