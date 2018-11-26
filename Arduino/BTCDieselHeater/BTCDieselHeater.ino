@@ -86,6 +86,8 @@
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
 
+#define RX_DATA_TIMOUT 500
+
 //comment this out to remove TELNET
 
 //#define TELNET
@@ -202,6 +204,9 @@ void setup() {
   DebugPort.begin(115200);
 
   KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
+
+//  pinMode(OLED_SDA, OUTPUT);   // debug only
+//  digitalWrite(OLED_SDA, LOW);
 
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
@@ -388,7 +393,7 @@ void loop()
 
   // precautionary state machine action if all 24 bytes were not received 
   // whilst expecting a frame from the blue wire
-  if(RxTimeElapsed > 50) {              
+  if(RxTimeElapsed > RX_DATA_TIMOUT) {              
     if( CommState.is(CommStates::OEMCtrlRx) || 
         CommState.is(CommStates::HeaterRx1) ||  
         CommState.is(CommStates::HeaterRx2) ) {
@@ -443,7 +448,7 @@ void loop()
       } 
 
 #if SUPPORT_OEM_CONTROLLER == 1
-      if(BlueWireData.available() && (RxTimeElapsed > 100)) {  
+      if(BlueWireData.available() && (RxTimeElapsed > RX_DATA_TIMOUT+10)) {  
 #ifdef REPORT_OEM_RESYNC
         DebugPort.print("Re-sync'd with OEM Controller. ");
         DebugPort.print(RxTimeElapsed);

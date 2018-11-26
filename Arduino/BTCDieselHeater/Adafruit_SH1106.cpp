@@ -350,7 +350,8 @@ void Adafruit_SH1106::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
     TWI1->TWI_CWGR = ((VARIANT_MCK / (2 * 400000)) - 4) * 0x101;
 #endif
     } else {
-       Wire.begin(sda, scl); 
+      Serial.println("Opening I2C port");
+       Wire.begin(sda, scl, 800000); 
     }
   }
 

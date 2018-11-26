@@ -5,6 +5,10 @@
 #include "BTCWebServer.h"
 #include "DebugPort.h"
 #include "TxManage.h"
+#include "helpers.h"
+#include "pins.h"
+
+extern void Command_Interpret(const char* pLine);   // decodes received command lines, implemented in main .ino file!
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -50,17 +54,30 @@ void initWebServer(void) {
 unsigned char cVal;
 
 void doWebServer(void) {
+	static unsigned long lastTx = 0;
 	webSocket.loop();
 	server.handleClient();
-	char c[] = { "23" };
-	webSocket.broadcastTXT(c, sizeof(c));
+	if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
+		lastTx = millis() + 1000;
+		char msg[16];
+		sprintf(msg, "%.1f", fFilteredTemperature);
+		webSocket.broadcastTXT(msg);
+		// char c[] = { "23" };
+		// webSocket.broadcastTXT(c, sizeof(c));
+	}
 
 }
 
-extern void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
 	if (type == WStype_TEXT) {
-			for (int i = 0; i < length; i++)
-				Serial.print((char)payload[i]);
-			Serial.println();
+		char cmd[16];
+		memset(cmd, 0, 16);
+		for (int i = 0; i < length && i < 15; i++) {
+			cmd[i] = payload[i];
+//				Serial.print((char)payload[i]);
 		}
+//			Serial.println();
+    Serial.println(cmd);
+		Command_Interpret(cmd);  // send to the main heater controller decode routine
 	}
+}

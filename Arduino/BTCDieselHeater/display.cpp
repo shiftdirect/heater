@@ -16,6 +16,7 @@
 #include "KeyPad.h"
 #include "helpers.h"
 #include "clock.h"
+#include "BTCConfig.h"
 
 #define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
@@ -49,15 +50,23 @@ const int maxScreens = 4;
 
 // 128 x 64 OLED support
 SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
-C128x64_OLED display(OLED_DC_pin,  -1, OLED_CS_pin);
+#if OLED_HW_SPI == 1
+C128x64_OLED display(OLED_DC_pin, -1, OLED_CS_pin);
+#else
+C128x64_OLED display(OLED_SDA_pin, OLED_SCL_pin);
+#endif
 
 void initOLED()
 {
   currentScreen = 1;
 
-  SPI.setFrequency(8000000);
   // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
+#if OLED_HW_SPI == 1
+  SPI.setFrequency(8000000);
   display.begin(SH1106_SWITCHCAPVCC, 0, false);
+#else
+  display.begin(SH1106_SWITCHCAPVCC);
+#endif
 
   // Show initial display buffer contents on the screen --
   display.display();

@@ -118,13 +118,15 @@ const char MAIN_PAGE[] PROGMEM = R"=====(
 	
 	if (checkBox.checked == true){
 		//Insert Code Here To Turn On The Heater
-		Socket.send("P1");
+//		Socket.send("P1");
+		Socket.send("[CMD]ON");
 		text.style.display = "block";
 		} 
 	else{
 		//Insert Code Here To Turn Off The Heater
 		text.style.display = "none";
-		Socket.send("P0");
+//		Socket.send("P0");
+		Socket.send("[CMD]OFF");
 
 	}
 }
