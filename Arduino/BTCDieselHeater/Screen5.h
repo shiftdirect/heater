@@ -28,9 +28,14 @@ class CProtocol;
 class CScreen5 : public CScreen {
   bool _bPWOK;
   int  _PWdig[4];
+  float adjPump[2];
+  short adjFan[2];
   int  _rowSel;
   int  _colSel;
   void _showPassword();
+  void _drawSelectionBox(int x, int y, const char* str, int border = 3, int radius = 4);
+  void _adjustSetting(int dir);
+
 public:
   CScreen5(C128x64_OLED& display, CScreenManager& mgr);
   void show(const CProtocol& CtlFrame, const CProtocol& HtrFrame);

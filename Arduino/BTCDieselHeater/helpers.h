@@ -35,6 +35,10 @@ extern float getFixedHz();
 extern float getPumpHz();
 extern void reqPumpPrime(bool on);
 extern float getActualTemperature();
+extern float getPumpMin();
+extern float getPumpMax();
+extern short getFanMin();
+extern short getFanMax();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

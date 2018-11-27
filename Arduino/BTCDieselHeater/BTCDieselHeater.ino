@@ -953,3 +953,24 @@ float getActualTemperature()
 {
   return fFilteredTemperature;
 }
+
+float getPumpMin()
+{
+  return DefaultBTCParams.getPump_Min();
+}
+
+float getPumpMax()
+{
+  return DefaultBTCParams.getPump_Max();
+}
+
+short getFanMin()
+{
+  return DefaultBTCParams.getFan_Min();
+}
+
+short getFanMax()
+{
+  return DefaultBTCParams.getFan_Max();
+}
+
