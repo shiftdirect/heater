@@ -90,7 +90,7 @@ CScreen1::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     if(CtlFrame.isThermostat())
       desiredT = CtlFrame.getTemperature_Desired();
     else
-      desiredT = -HtrFrame.getPump_Fixed() * 0.1f;
+      desiredT = -HtrFrame.getPump_Fixed();
   }
 
   showThermometer(desiredT,    // read values from most recently sent [BTC] frame
@@ -108,7 +108,7 @@ CScreen1::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
     showFan(HtrFrame.getFan_Actual());
 
-    showFuel(HtrFrame.getPump_Actual() * 0.1f);
+    showFuel(HtrFrame.getPump_Actual());
 
     showBodyThermometer(HtrFrame.getTemperature_HeatExchg());
   }

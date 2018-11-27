@@ -30,21 +30,23 @@ class C128x64_OLED;
 class CScreen;
 
 class CScreenManager {
-  static const int _maxScreens = 4;
+  static const int _maxScreens = 5;
   CScreen* _pScreen[_maxScreens];
   CScreen* _pActiveScreen;
   C128x64_OLED* _pDisplay;
   int _currentScreen;
+  bool _bReqUpdate;
   void _switchScreen();
 public:
   CScreenManager();
   ~CScreenManager();
   void init();
-  void update(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
+  void checkUpdate(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
   void animate();
   void nextScreen();
   void prevScreen();
   void keyHandler(uint8_t event);
+  void reqUpdate();
 };
 
 class CScreen {

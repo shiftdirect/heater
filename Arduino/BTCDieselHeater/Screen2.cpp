@@ -134,6 +134,13 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
 
 void 
+CScreen2::animate()
+{
+  // do nothing!!
+};
+
+
+void 
 CScreen2::keyHandler(uint8_t event)
 {
   static int repeatCount = -1;
@@ -146,7 +153,8 @@ CScreen2::keyHandler(uint8_t event)
       else {
         _showMode = millis() + 5000;
         _nModeSel = 0;
-        reqDisplayUpdate();
+//        reqDisplayUpdate();
+        _Manager.reqUpdate();
       }
     }
     // press RIGHT to selecxt next screen, or Thermostat mode when in mode select
@@ -156,7 +164,8 @@ CScreen2::keyHandler(uint8_t event)
       else {
         _showMode = millis() + 5000;
         _nModeSel = 1;
-        reqDisplayUpdate();
+//        reqDisplayUpdate();
+        _Manager.reqUpdate();
       }
     }
     // press UP & DOWN to toggle thermostat / fixed Hz mode
@@ -219,7 +228,8 @@ CScreen2::keyHandler(uint8_t event)
         }
         _showSetMode = millis() + 2000;
       }
-      reqDisplayUpdate();
+//        reqDisplayUpdate();
+      _Manager.reqUpdate();
     }
 
     repeatCount = -1;

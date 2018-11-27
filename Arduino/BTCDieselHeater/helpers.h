@@ -27,7 +27,7 @@ extern int  getRunState();
 extern int  getErrState();
 extern void reqTempChange(int val);
 extern int  getSetTemp();
-extern void reqDisplayUpdate();
+//extern void reqDisplayUpdate();
 extern void reqThermoToggle();
 extern void setThermostatMode(unsigned char);
 extern bool getThermostatMode();
@@ -38,3 +38,5 @@ extern float getActualTemperature();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B
+#define ROLLUPPERLIMIT(A, B, C) if(A > B) A = C        
+#define ROLLLOWERLIMIT(A, B, C) if(A < B) A = C        

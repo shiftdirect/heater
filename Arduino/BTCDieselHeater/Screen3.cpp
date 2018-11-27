@@ -29,7 +29,7 @@ const int border = 3;
 const int radius = 4;
 const int Row[] = { 52, 40, 28, 16 } ;
 const int Col[] = { border, 70, 100};
-const char* Label0 = "Prev/Next Screen"; 
+const char* Label0 = "<-             ->"; 
 const char* Label1[] = { "Thermostat",
                          "Fixed Hz" }; 
 const char* Label2[] = { "Prime pump",
@@ -51,6 +51,7 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 {
   CScreen::show(CtlFrame, HtrFrame);
   
+  // show next/prev screen navigation line
   CRect extents;
   _display.setCursor(_display.xCentre(), Row[0]);
   _display.printCentreJustified(Label0);
@@ -139,6 +140,13 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
 
 void 
+CScreen3::animate()
+{
+  // do nothing!!
+};
+
+
+void 
 CScreen3::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
@@ -203,7 +211,8 @@ CScreen3::keyHandler(uint8_t event)
       stopPump();
     }
 
-    reqDisplayUpdate();
+//        reqDisplayUpdate();
+    _Manager.reqUpdate();
   }
 }
 

@@ -165,10 +165,10 @@ public:
   void setPump_Max(unsigned short Freq) {   Controller.MaxPumpFreq = Freq; };
   void setPump_Actual(unsigned char Freq) { Heater.ActualPumpFreq = Freq; }; 
   void setPump_Fixed(unsigned char Freq) { Heater.FixedPumpFreq = Freq; };  
-  unsigned char getPump_Min() const { return Controller.MinPumpFreq; };   // Tx side, min pump freq
-  unsigned char getPump_Max() const { return Controller.MaxPumpFreq; };   // Tx side, max pump freq
-  unsigned char getPump_Actual() const { return Heater.ActualPumpFreq; };  // Rx style, actual
-  unsigned char getPump_Fixed() const { return Heater.FixedPumpFreq; };   // Fixed mode pump frequency
+  float getPump_Min() const { return float(Controller.MinPumpFreq) * 0.1f; };   // Tx side, min pump freq
+  float getPump_Max() const { return float(Controller.MaxPumpFreq) * 0.1f; };   // Tx side, max pump freq
+  float getPump_Actual() const { return float(Heater.ActualPumpFreq) * 0.1f; };  // Rx style, actual
+  float getPump_Fixed() const { return float(Heater.FixedPumpFreq) * 0.1f; };   // Fixed mode pump frequency
   void setPump_Prime(bool on) { Controller.Prime = on ? 0x5A : 0; };
   // temperature set/get
   void setTemperature_Desired(unsigned char degC) { Controller.DesiredTemperature = degC; };

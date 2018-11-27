@@ -54,6 +54,13 @@ CScreen4::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
 
 void 
+CScreen4::animate()
+{
+  // do nothing!!
+};
+
+
+void 
 CScreen4::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {

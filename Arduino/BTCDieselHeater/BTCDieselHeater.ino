@@ -681,7 +681,8 @@ void loop()
         fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         TempSensor.requestTemperatures();               // prep sensor for future reading
-        reqDisplayUpdate();
+//        reqDisplayUpdate();
+        ScreenManager.reqUpdate();
       }
       CommState.set(CommStates::Idle);
       break;
@@ -875,7 +876,8 @@ void reqTempChange(int val)
      
   pNVStorage->setTemperature(curTemp);
 
-  reqDisplayUpdate();
+//        reqDisplayUpdate();
+  ScreenManager.reqUpdate();
 }
 
 int getSetTemp()
@@ -887,7 +889,7 @@ int getSetTemp()
 float getFixedHz()
 {
   if(pRxFrame) {
-    return float(pRxFrame->getPump_Fixed()) / 10.f;
+    return pRxFrame->getPump_Fixed();
   }
   return 0.0;
 }
@@ -909,19 +911,22 @@ bool getThermostatMode()
   return pNVStorage->getThermostatMode() != 0;
 }
 
-void reqDisplayUpdate()
+/*void reqDisplayUpdate()
 {
   bUpdateDisplay = true;
-}
+}*/
 
 void checkDisplayUpdate()
 {
   // only update OLED when not processing blue wire
-  if(bUpdateDisplay) {
+/*  if(bUpdateDisplay) {
     if(pTxFrame && pRxFrame) {
       ScreenManager.update(*pTxFrame, *pRxFrame);        
       bUpdateDisplay = false;
     }
+  }*/
+  if(pTxFrame && pRxFrame) {
+    ScreenManager.checkUpdate(*pTxFrame, *pRxFrame);        
   }
 
   long tDelta = millis() - lastAnimationTime;
@@ -939,7 +944,7 @@ void reqPumpPrime(bool on)
 float getPumpHz()
 {
   if(pRxFrame) {
-    return float(pRxFrame->getPump_Actual()) / 10.f;
+    return pRxFrame->getPump_Actual();
   }
   return 0.0;
 }
