@@ -369,3 +369,29 @@ CScreen::_drawSelectionBoxRightJustified(int x, int y, const char* str, int bord
   _drawSelectionBox(x, y, str, border, radius);
 }
 
+void 
+CScreen::_drawMenuText(int x, int y, bool selected, const char* str, int border, int radius)
+{
+  _display.setCursor(x, y);
+  _display.print(str);
+  if(selected)
+    _drawSelectionBox(x, y, str, border, radius);
+}
+
+void 
+CScreen::_drawMenuTextCentreJustified(int x, int y, bool selected, const char* str, int border, int radius)
+{
+  _display.setCursor(x, y);
+  _display.printCentreJustified(str);
+  if(selected)
+    _drawSelectionBoxCentreJustified(x, y, str, border, radius);
+}
+
+void 
+CScreen::_drawMenuTextRightJustified(int x, int y, bool selected, const char* str, int border, int radius)
+{
+  _display.setCursor(x, y);
+  _display.printRightJustified(str);
+  if(selected)
+    _drawSelectionBoxRightJustified(x, y, str, border, radius);
+}

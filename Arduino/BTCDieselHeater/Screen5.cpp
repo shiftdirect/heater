@@ -55,29 +55,31 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
   switch(_rowSel) {
     case 0:
+      // show settings overview (initial screen entry)
+      // pump max/min
       yPos = 28;
       _display.setCursor(0, yPos);
       _display.print("Pump (Hz)");
-      _display.setCursor(col2, yPos);
       sprintf(str, "%.1f", getPumpMin());
+      _display.setCursor(col2, yPos);
       _display.printRightJustified(str);
-      _display.setCursor(col3, yPos);
       sprintf(str, "%.1f", getPumpMax());
+      _display.setCursor(col3, yPos);
       _display.printRightJustified(str);
+      // fan max/min
       yPos = 40;
       _display.setCursor(0, yPos);
       _display.print("Fan (RPM)");
-      _display.setCursor(col2, yPos);
       sprintf(str, "%d", getFanMin());
+      _display.setCursor(col2, yPos);
       _display.printRightJustified(str);
-      _display.setCursor(col3, yPos);
       sprintf(str, "%d", getFanMax());
+      _display.setCursor(col3, yPos);
       _display.printRightJustified(str);
+      // navigation line
       yPos = 53;
       xPos = _display.xCentre();
-      _display.setCursor(xPos, yPos);
-      _display.printCentreJustified(baseLabel);
-      _drawSelectionBoxCentreJustified(xPos, yPos, baseLabel);
+      _drawMenuTextCentreJustified(xPos, yPos, true, baseLabel);
       break;
 
     case 1:
@@ -91,48 +93,31 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     case 4:
     case 5:
       _display.clearDisplay();
-      //50, 38, 26, 14
-      yPos = border + 36;
       // Pump Minimum adjustment
+      yPos = border + 36;
       _display.setCursor(0, yPos);
       _display.print("Pump    Min");
-      _display.setCursor(col3, yPos);
       sprintf(str, "%.1f", adjPump[0]); 
-      _display.printRightJustified(str);
-      if(_rowSel == 2) {
-        _drawSelectionBoxRightJustified(col3, yPos, str);
-      }
+      _drawMenuTextRightJustified(col3, yPos, _rowSel == 2, str);
       // Pump Maximum adjustment
       yPos = border + 24;
       _display.setCursor(0, yPos);
       _display.print("Pump Hz Max");
-      _display.setCursor(col3, yPos);
       sprintf(str, "%.1f", adjPump[1]);
-      _display.printRightJustified(str);
-      if(_rowSel == 3) {
-        _drawSelectionBoxRightJustified(col3, yPos, str);
-      }
+      _drawMenuTextRightJustified(col3, yPos, _rowSel == 3, str);
       // Fan Minimum adjustment
       yPos = border + 12;
       _display.setCursor(0, yPos);
       _display.print("Fan     Min");
-      _display.setCursor(col3, yPos);
       sprintf(str, "%d", adjFan[0]);
-      _display.printRightJustified(str);
-      if(_rowSel == 4) {
-        _drawSelectionBoxRightJustified(col3, yPos, str);
-      }
+      _drawMenuTextRightJustified(col3, yPos, _rowSel == 4, str);
       // Fan Maximum adjustment
       yPos = border;
       _display.setCursor(0, yPos);
       _display.print("Fan RPM Max");
-      _display.setCursor(col3, yPos);
       sprintf(str, "%d", adjFan[1]);
-      _display.printRightJustified(str);
-      if(_rowSel == 5) {
-        _drawSelectionBoxRightJustified(col3, yPos, str);
-      }
-
+      _drawMenuTextRightJustified(col3, yPos, _rowSel == 5, str);
+      // navigation line
       yPos = 53;
       _display.setCursor(_display.xCentre(), yPos);
       _display.printCentreJustified(baseLabel);

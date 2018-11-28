@@ -59,6 +59,9 @@ protected:
   void _drawSelectionBox(int x, int y, const char* str, int border = 3, int radius = 4);
   void _drawSelectionBoxRightJustified(int x, int y, const char* str, int border = 3, int radius = 4);
   void _drawSelectionBoxCentreJustified(int x, int y, const char* str, int border = 3, int radius = 4);
+  void _drawMenuText(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
+  void _drawMenuTextCentreJustified(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
+  void _drawMenuTextRightJustified(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 
