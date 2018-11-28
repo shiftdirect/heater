@@ -40,7 +40,7 @@ class CScreen1 : public CScreen
   void showRunState();
   void showThermometer(float desired, float actual);
   void showBodyThermometer(int actual);
-  void showGlowPlug(int power);
+  void showGlowPlug(float power);
   void showFan(int RPM);
   void showFuel(float rate);
   void showRunState(int state, int errstate);

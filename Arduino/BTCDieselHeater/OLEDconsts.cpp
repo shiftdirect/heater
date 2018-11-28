@@ -215,7 +215,7 @@ const char* Runstates [] PROGMEM = {
   "Ignited",
   "Running",
   "Stopping",
-  "Shutdown",
+  "Shutting down",
   "Cooling"
 };
 

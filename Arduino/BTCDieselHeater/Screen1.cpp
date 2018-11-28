@@ -101,9 +101,9 @@ CScreen1::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   _animateGlow = false;
 
   if(runstate) {
-    float power = HtrFrame.getGlowPlug_Current() * 0.01 * HtrFrame.getGlowPlug_Voltage() * 0.1;
+    float power = HtrFrame.getGlowPlug_Current() * HtrFrame.getGlowPlug_Voltage();
     if(power > 1) {
-      showGlowPlug(int(power));
+      showGlowPlug(power);
     }
 
     showFan(HtrFrame.getFan_Actual());
@@ -274,12 +274,12 @@ CScreen1::showBodyThermometer(int actual)
 
 
 void 
-CScreen1::showGlowPlug(int power)
+CScreen1::showGlowPlug(float power)
 {
   _display.drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIcon, W_GLOW_ICON, H_GLOW_ICON, WHITE);
 //  _animateGlow = true;
   char msg[16];
-  sprintf(msg, "%dW", power);
+  sprintf(msg, "%.0fW", power);
 #ifdef MINI_GLOWLABEL  
   _display.setFontInfo(&MINIFONT);  // select Mini Font
 #endif

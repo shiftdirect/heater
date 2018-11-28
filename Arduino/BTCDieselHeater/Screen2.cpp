@@ -75,27 +75,22 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     if(tDelta < 0) {
       // display "Fixed Hz" at lower left, allowing space for a selection surrounding box
       strcpy(msg, "Fixed Hz");
-      _display.getTextExtents(msg, textRect);  // size of text to print
-      textRect.xPos = _display.width()- textRect.width - border;     // set X position to finish short of RHS
-      textRect.yPos = _display.height() - textRect.height - border;  // bottom of screen, with room for box
+      textRect.xPos = _display.width() - border;     // set X position to finish short of RHS
+      textRect.yPos = _display.height() - 8 - border;  // bottom of screen, with room for box
       _display.setCursor(textRect.xPos,            // centre text in potential box
                         textRect.yPos);     
-      _display.print(msg);                         // show the text
+      _display.printRightJustified(msg);           // show the text
       if(_nModeSel == 1) {                         // add selection box if current selection
-        textRect.Expand(border);                  // expand about text position
-        _display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
+        _drawSelectionBoxRightJustified(textRect.xPos, textRect.yPos, msg);
       }
       // display "Thermostat" at lower right, allowing space for a selection surrounding box
       strcpy(msg, "Thermostat");
-      _display.getTextExtents(msg, textRect);
       textRect.xPos = border;
-      textRect.yPos = _display.height() - textRect.height - border;  // bottom of screen, with room for box
       _display.setCursor(textRect.xPos,            // centre text in potential box
                         textRect.yPos);
       _display.print(msg);                         // show the text
       if(_nModeSel == 0) {                         // add selection box if current selection
-        textRect.Expand(border);                  // expand about text position
-        _display.drawRoundRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, radius, WHITE);
+        _drawSelectionBox(textRect.xPos, textRect.yPos, msg);
       }
       setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
     }

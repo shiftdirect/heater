@@ -56,6 +56,9 @@ protected:
   void showBTicon();
   void showWifiIcon();
   void showBatteryIcon(float voltage);
+  void _drawSelectionBox(int x, int y, const char* str, int border = 3, int radius = 4);
+  void _drawSelectionBoxRightJustified(int x, int y, const char* str, int border = 3, int radius = 4);
+  void _drawSelectionBoxCentreJustified(int x, int y, const char* str, int border = 3, int radius = 4);
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 

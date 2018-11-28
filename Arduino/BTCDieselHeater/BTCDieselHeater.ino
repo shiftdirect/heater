@@ -205,11 +205,16 @@ CBluetoothAbstract Bluetooth;           // default no bluetooth support - empty 
 // this is very much hardware dependent, we can use the ESP32's FLASH
 //
 #ifdef ESP32
-CESP32HeaterStorage NVStorage;
+CESP32HeaterStorage actualNVstore;
 #else
-CHeaterStorage NVStorage;   // dummy, for now
+CHeaterStorage actualNVstore;   // dummy, for now
 #endif
-CHeaterStorage* pNVStorage = NULL;
+
+  // create reference to CHeaterStorage
+  // via the magic of polymorphism we can use this to access whatever 
+  // storage is required for a specific platform in a uniform way
+CHeaterStorage& NVstore = actualNVstore;
+
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -272,19 +277,15 @@ void setup() {
   DefaultBTCParams.setTemperature_Desired(23);
   DefaultBTCParams.setTemperature_Actual(22);
   DefaultBTCParams.Controller.OperatingVoltage = 120;
-  DefaultBTCParams.setPump_Min(16);
-  DefaultBTCParams.setPump_Max(55);
+  DefaultBTCParams.setPump_Min(1.6f);
+  DefaultBTCParams.setPump_Max(5.5f);
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
 
   Bluetooth.init();
  
-  // create pointer to CHeaterStorage
-  // via the magic of polymorphism we can use this to access whatever 
-  // storage is required for a specifc platform in a uniform way
-  pNVStorage = &NVStorage;
-  pNVStorage->init();
-  pNVStorage->load();
+  NVstore.init();
+  NVstore.load();
 
 }
 
@@ -708,6 +709,7 @@ void Command_Interpret(const char* pLine)
 {
   unsigned char cVal;
   unsigned short sVal;
+  float fVal;
 
   if(strlen(pLine) == 0)
     return;
@@ -735,53 +737,46 @@ void Command_Interpret(const char* pLine)
     }
     else if(strncmp(pLine, "Pmin", 4) == 0) {
       pLine += 4;
-      cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
-      pNVStorage->setPmin(cVal);
-      DebugPort.print("Pump min = ");
-      DebugPort.println(cVal);
+      fVal = atof(pLine);
+      NVstore.setPmin(fVal);
+      DebugPort.print("Pump min = "); DebugPort.println(fVal);
     }
     else if(strncmp(pLine, "Pmax", 4) == 0) {
       pLine += 4;
-      cVal = (unsigned char)((atof(pLine) * 10.0) + 0.5);
-      pNVStorage->setPmax(cVal);
-      DebugPort.print("Pump max = ");
-      DebugPort.println(cVal);
+      fVal = atof(pLine);
+      NVstore.setPmax(fVal);
+      DebugPort.print("Pump max = "); DebugPort.println(fVal);
     }
     else if(strncmp(pLine, "Fmin", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
-      pNVStorage->setFmin(sVal);
-      DebugPort.print("Fan min = ");
-      DebugPort.println(sVal);
+      NVstore.setFmin(sVal);
+      DebugPort.print("Fan min = "); DebugPort.println(sVal);
     }
     else if(strncmp(pLine, "Fmax", 4) == 0) {
       pLine += 4;
       sVal = atoi(pLine);
-      pNVStorage->setFmax(sVal);
-      DebugPort.print("Fan max = ");
-      DebugPort.println(int(sVal));
+      NVstore.setFmax(sVal);
+      DebugPort.print("Fan max = "); DebugPort.println(int(sVal));
     }
     else if(strncmp(pLine, "save", 4) == 0) {
-      pNVStorage->save();
+      NVstore.save();
       DebugPort.println("NV save");
     }
     else if(strncmp(pLine, "degC", 4) == 0) {
       pLine += 4;
       cVal = atoi(pLine);
-      pNVStorage->setTemperature(cVal);
-      DebugPort.print("degC = ");
-      DebugPort.println(cVal);
+      NVstore.setTemperature(cVal);
+      DebugPort.print("degC = "); DebugPort.println(cVal);
     }
     else if(strncmp(pLine, "Mode", 4) == 0) {
       pLine += 4;
-      cVal = !pNVStorage->getThermostatMode();
-      pNVStorage->setThermostatMode(cVal);
-      DebugPort.print("Mode now ");
-      DebugPort.println(cVal ? "Thermostat" : "Fixed Hz");
+      cVal = !NVstore.getThermostatMode();
+      NVstore.setThermostatMode(cVal);
+      DebugPort.print("Mode now "); DebugPort.println(cVal ? "Thermostat" : "Fixed Hz");
     }
     else {
-      DebugPort.print(pLine);
-      DebugPort.println(" ????");
+      DebugPort.print(pLine); DebugPort.println(" ????");
     }
 
   }
@@ -874,7 +869,7 @@ void reqTempChange(int val)
   if(curTemp <= min)
     curTemp = min;
      
-  pNVStorage->setTemperature(curTemp);
+  NVstore.setTemperature(curTemp);
 
 //        reqDisplayUpdate();
   ScreenManager.reqUpdate();
@@ -883,7 +878,7 @@ void reqTempChange(int val)
 int getSetTemp()
 {
 //  pTxFrame->getTemperature_Desired();  // sluggish - delays until new packet goes out!
-  return pNVStorage->getTemperature();
+  return NVstore.getTemperature();
 }
 
 float getFixedHz()
@@ -902,13 +897,13 @@ void reqThermoToggle()
 
 void setThermostatMode(unsigned char val)
 {
-  pNVStorage->setThermostatMode(val);
+  NVstore.setThermostatMode(val);
 }
 
 
 bool getThermostatMode()
 {
-  return pNVStorage->getThermostatMode() != 0;
+  return NVstore.getThermostatMode() != 0;
 }
 
 /*void reqDisplayUpdate()
@@ -956,21 +951,57 @@ float getActualTemperature()
 
 float getPumpMin()
 {
-  return DefaultBTCParams.getPump_Min();
+  if(pTxFrame) {
+    return pTxFrame->getPump_Min();
+  }
+  return 0.0;
 }
 
 float getPumpMax()
 {
-  return DefaultBTCParams.getPump_Max();
+  if(pTxFrame) {
+    return pTxFrame->getPump_Max();
+  }
+  return 0.0;
 }
 
 short getFanMin()
 {
-  return DefaultBTCParams.getFan_Min();
+  if(pTxFrame) {
+    return pTxFrame->getFan_Min();
+  }
+  return 0.0;
 }
 
 short getFanMax()
 {
-  return DefaultBTCParams.getFan_Max();
+  if(pTxFrame) {
+    return pTxFrame->getFan_Max();
+  }
+  return 0.0;
 }
 
+void  setPumpMin(float val)
+{
+  NVstore.setPmin(val);
+}
+
+void  setPumpMax(float val)
+{
+  NVstore.setPmax(val);
+}
+
+void  setFanMin(short cVal)
+{
+  NVstore.setFmin(cVal);
+}
+
+void  setFanMax(short cVal)
+{
+  NVstore.setFmax(cVal);
+}
+
+void saveNV() 
+{
+  NVstore.save();
+}

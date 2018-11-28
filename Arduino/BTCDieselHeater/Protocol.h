@@ -161,10 +161,10 @@ public:
   void setFan_Voltage(short voltsx10);  // fan voltage
   
   // pump set/get
-  void setPump_Min(unsigned short Freq) {   Controller.MinPumpFreq = Freq; };
-  void setPump_Max(unsigned short Freq) {   Controller.MaxPumpFreq = Freq; };
-  void setPump_Actual(unsigned char Freq) { Heater.ActualPumpFreq = Freq; }; 
-  void setPump_Fixed(unsigned char Freq) { Heater.FixedPumpFreq = Freq; };  
+  void setPump_Min(float Freq) {   Controller.MinPumpFreq = (uint8_t)(Freq * 10.f + 0.5f); };
+  void setPump_Max(float Freq) {   Controller.MaxPumpFreq = (uint8_t)(Freq * 10.f + 0.5f); };
+  void setPump_Actual(float Freq) { Heater.ActualPumpFreq = (uint8_t)(Freq * 10.f + 0.5f); }; 
+  void setPump_Fixed(float Freq) { Heater.FixedPumpFreq = (uint8_t)(Freq * 10.f + 0.5f); };  
   float getPump_Min() const { return float(Controller.MinPumpFreq) * 0.1f; };   // Tx side, min pump freq
   float getPump_Max() const { return float(Controller.MaxPumpFreq) * 0.1f; };   // Tx side, max pump freq
   float getPump_Actual() const { return float(Heater.ActualPumpFreq) * 0.1f; };  // Rx style, actual
@@ -182,8 +182,8 @@ public:
   void setThermostatMode(unsigned on) { Controller.OperatingMode = on ? 0x32 : 0xCD; };
   bool isThermostat() const { return Controller.OperatingMode == 0x32; };
   // glow plug
-  short getGlowPlug_Current() const;   // glow plug current
-  short getGlowPlug_Voltage() const;   // glow plug voltage
+  float getGlowPlug_Current() const;   // glow plug current
+  float getGlowPlug_Voltage() const;   // glow plug voltage
   void setGlowPlug_Current(short ampsx100);   // glow plug current
   void setGlowPlug_Voltage(short voltsx10);   // glow plug voltage
   // heat exchanger

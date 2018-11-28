@@ -56,11 +56,7 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   _display.setCursor(_display.xCentre(), Row[0]);
   _display.printCentreJustified(Label0);
   if(_rowSel == 0) {
-    _display.getTextExtents(Label0, extents);
-    extents.xPos = Col[0];
-    extents.yPos = Row[0];
-    extents.Expand(border);
-    _display.drawRoundRect(_display.xCentre() - extents.width/2, extents.yPos, extents.width, extents.height, radius, WHITE);
+    _drawSelectionBoxCentreJustified(_display.xCentre(), Row[0], Label0);
   }
 
   // thermostat / fixed mode selection menu
@@ -71,8 +67,7 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   extents.yPos = Row[1];
   if(_rowSel == 1) {
     // draw selection box
-    extents.Expand(border);
-    _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
+    _drawSelectionBox(extents.xPos, extents.yPos, Label1[col]);
   }
   else {
     // draw white background
@@ -100,11 +95,7 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       _display.setCursor(Col[col], Row[2]);
       _display.print(Label2[col]);
     }
-    _display.getTextExtents(Label2[_colSel], extents);
-    extents.xPos = Col[_colSel];
-    extents.yPos = Row[2];
-    extents.Expand(border);
-    _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
+    _drawSelectionBox(Col[_colSel], Row[2], Label2[_colSel]);
   }
 
 

@@ -155,14 +155,14 @@ CProtocol::setFan_Actual(short Speed)  // Heater side, actual
   Heater.FanRPM_LSB = (Speed >> 0) & 0xff;
 }
 
-short 
+float 
 CProtocol::getGlowPlug_Current() const   // glow plug current
 {
-  short retval;
-  retval = Heater.GlowPlugCurrent_MSB;
-  retval <<= 8;
-  retval |= Heater.GlowPlugCurrent_LSB;
-  return retval;
+  short val;
+  val = Heater.GlowPlugCurrent_MSB;
+  val <<= 8;
+  val |= Heater.GlowPlugCurrent_LSB;
+  return float(val) * 0.01f;             // 10mA / digit
 }
 
 void 
@@ -172,14 +172,14 @@ CProtocol::setGlowPlug_Current(short ampsx100)    // glow plug current
   Heater.GlowPlugCurrent_LSB = (ampsx100 >> 0) & 0xff;
 }
 
-short 
+float 
 CProtocol::getGlowPlug_Voltage() const   // glow plug voltage
 {
-  short retval;
-  retval = Heater.GlowPlugVoltage_MSB;
-  retval <<= 8;
-  retval |= Heater.GlowPlugVoltage_LSB;
-  return retval;
+  short val;
+  val = Heater.GlowPlugVoltage_MSB;
+  val <<= 8;
+  val |= Heater.GlowPlugVoltage_LSB;
+  return float(val) * 0.1f;   // 0.1V / digit
 }
 
 
@@ -250,8 +250,8 @@ CProtocol::Init(int FrameMode)
     Controller.Command = 0;            // NOP
     setTemperature_Actual(18);  // 1degC / digit
     setTemperature_Desired(20); // 1degC / digit
-    setPump_Min(14);            // 0.1Hz/digit
-    setPump_Max(43);            // 0.1Hz/digit
+    setPump_Min(1.4f);          // Hz
+    setPump_Max(4.3f);          // Hz
     setFan_Min(1450);           // 1RPM / digit
     setFan_Max(4500);           // 1RPM / digit
     Controller.OperatingVoltage = 120;  // 0.1V/digit

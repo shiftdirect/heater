@@ -39,6 +39,11 @@ extern float getPumpMin();
 extern float getPumpMax();
 extern short getFanMin();
 extern short getFanMax();
+extern void  setPumpMin(float);
+extern void  setPumpMax(float);
+extern void  setFanMin(short);
+extern void  setFanMax(short);
+extern void saveNV();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

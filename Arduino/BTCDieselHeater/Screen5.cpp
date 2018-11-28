@@ -32,7 +32,6 @@ const char* baseLabel = "<-             ->";
 
 CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
 {
-  _bPWOK = false;
   _rowSel = 0;
   _colSel = 0;
   for(int i= 0; i < 4; i++) 
@@ -47,7 +46,7 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   
   CRect extents;
   char str[16];
-  int yPos;
+  int xPos, yPos;
   const int col2 = 90;
   const int col3 = _display.width() - border;
 
@@ -60,26 +59,33 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       _display.setCursor(0, yPos);
       _display.print("Pump (Hz)");
       _display.setCursor(col2, yPos);
-      sprintf(str, "%.1f", CtlFrame.getPump_Min());
+      sprintf(str, "%.1f", getPumpMin());
       _display.printRightJustified(str);
       _display.setCursor(col3, yPos);
-      sprintf(str, "%.1f", CtlFrame.getPump_Max());
+      sprintf(str, "%.1f", getPumpMax());
       _display.printRightJustified(str);
       yPos = 40;
       _display.setCursor(0, yPos);
       _display.print("Fan (RPM)");
       _display.setCursor(col2, yPos);
-      sprintf(str, "%d", CtlFrame.getFan_Min());
+      sprintf(str, "%d", getFanMin());
       _display.printRightJustified(str);
       _display.setCursor(col3, yPos);
-      sprintf(str, "%d", CtlFrame.getFan_Max());
+      sprintf(str, "%d", getFanMax());
       _display.printRightJustified(str);
+      yPos = 53;
+      xPos = _display.xCentre();
+      _display.setCursor(xPos, yPos);
+      _display.printCentreJustified(baseLabel);
+      _drawSelectionBoxCentreJustified(xPos, yPos, baseLabel);
       break;
+
     case 1:
-      _display.setCursor(_display.xCentre(), 30);
+      _display.setCursor(_display.xCentre(), 34);
       _display.printCentreJustified("Enter password...");
       _showPassword();
       break;
+
     case 2:
     case 3:
     case 4:
@@ -94,7 +100,7 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       sprintf(str, "%.1f", adjPump[0]); 
       _display.printRightJustified(str);
       if(_rowSel == 2) {
-        _drawSelectionBox(col3, yPos, str);
+        _drawSelectionBoxRightJustified(col3, yPos, str);
       }
       // Pump Maximum adjustment
       yPos = border + 24;
@@ -104,7 +110,7 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       sprintf(str, "%.1f", adjPump[1]);
       _display.printRightJustified(str);
       if(_rowSel == 3) {
-        _drawSelectionBox(col3, yPos, str);
+        _drawSelectionBoxRightJustified(col3, yPos, str);
       }
       // Fan Minimum adjustment
       yPos = border + 12;
@@ -114,7 +120,7 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       sprintf(str, "%d", adjFan[0]);
       _display.printRightJustified(str);
       if(_rowSel == 4) {
-        _drawSelectionBox(col3, yPos, str);
+        _drawSelectionBoxRightJustified(col3, yPos, str);
       }
       // Fan Maximum adjustment
       yPos = border;
@@ -124,12 +130,19 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       sprintf(str, "%d", adjFan[1]);
       _display.printRightJustified(str);
       if(_rowSel == 5) {
-        _drawSelectionBox(col3, yPos, str);
+        _drawSelectionBoxRightJustified(col3, yPos, str);
       }
 
       yPos = 53;
       _display.setCursor(_display.xCentre(), yPos);
       _display.printCentreJustified(baseLabel);
+      break;
+
+    case 6:
+      _display.setCursor(_display.xCentre(), 35);
+      _display.printCentreJustified("Press UP to");
+      _display.setCursor(_display.xCentre(), 43);
+      _display.printCentreJustified("confirm save");
       break;
   }
   
@@ -150,28 +163,34 @@ CScreen5::keyHandler(uint8_t event)
   if(event & keyPressed) {
     // press CENTRE
     if(event & key_Centre) {
-      if(_rowSel == 1) {
-        // match "1688"
-        if((_PWdig[0] == 1) && 
-           (_PWdig[1] == 6) && 
-           (_PWdig[2] == 8) && 
-           (_PWdig[3] == 8)) {
-          _bPWOK = true;
-          _rowSel = 2;
-          _colSel = 0;
-          adjPump[0] = getPumpMin();
-          adjPump[1] = getPumpMax();
-          adjFan[0] = getFanMin();
-          adjFan[1] = getFanMax();
-        }
-        else {
+      switch(_rowSel) {
+        case 1:
+          // match "1688"
+          if((_PWdig[0] == 1) && 
+             (_PWdig[1] == 6) && 
+             (_PWdig[2] == 8) && 
+             (_PWdig[3] == 8)) {
+            _rowSel = 2;
+            _colSel = 0;
+            // grab current settings upon entry to edit mode
+            adjPump[0] = getPumpMin();
+            adjPump[1] = getPumpMax();
+            adjFan[0] = getFanMin();
+            adjFan[1] = getFanMax();
+          }
+          // reset PW digits
           for(int i= 0; i < 4; i++) 
             _PWdig[i] = -1;
-        }
-      }
-      else {
-        _bPWOK = false;
-        _rowSel = 0;
+          break;
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+          _rowSel = 6;  // enter save confirm mode
+          break;
+        case 6:
+          _rowSel = 0;
+          break;
       }
       return;
     }
@@ -191,6 +210,9 @@ CScreen5::keyHandler(uint8_t event)
         case 5:
           _adjustSetting(-1);
           break;
+        case 6:
+          _rowSel = 0;
+          break;
       }
     }
     // press RIGHT 
@@ -209,6 +231,9 @@ CScreen5::keyHandler(uint8_t event)
         case 5:
           _adjustSetting(+1);
           break;
+        case 6:
+          _rowSel = 0;
+          break;
       }
     }
     // press UP 
@@ -222,16 +247,24 @@ CScreen5::keyHandler(uint8_t event)
           _colSel = 0;
           UPPERLIMIT(_rowSel, 5);
           break;
-        case 1:
+        case 1:  // password entry
           _PWdig[_colSel]++; 
           ROLLUPPERLIMIT(_PWdig[_colSel], 9, 0);
+          break;
+        case 6:
+          setPumpMin(adjPump[0]);
+          setPumpMax(adjPump[1]);
+          setFanMin(adjFan[0]);
+          setFanMax(adjFan[1]);
+          saveNV();
+          _rowSel = 0;
           break;
       }
     }
     // press DOWN
     if(event & key_Down) {
       switch(_rowSel) {
-        case 1:
+        case 1:  // password entry
           _PWdig[_colSel]--; 
           ROLLLOWERLIMIT(_PWdig[_colSel], 0, 9);
           break;
@@ -244,17 +277,34 @@ CScreen5::keyHandler(uint8_t event)
           _rowSel--;
           _colSel = 0;
           break;
+        case 6:
+          _rowSel = 0;
+          break;
       }
     }
-    _Manager.reqUpdate();
   }
 
-  // escape PW entry by holding centre button
+  
   if(event & keyRepeat) {
-    if(event & key_Centre) {
-      _rowSel == 0;
+    switch(_rowSel) {
+      case 1:
+        if(event & key_Centre)
+          _rowSel = 0;    // escape PW entry by holding centre button
+        break;
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+        int adj = 0;
+        if(event & key_Right) adj = +1;
+        if(event & key_Left) adj = -1;
+        if(adj) {
+          _adjustSetting(adj);
+        }
+        break;
     }
   }
+  _Manager.reqUpdate();
 }
 
 void
@@ -267,12 +317,11 @@ CScreen5::_showPassword()
   _display.getTextExtents(" ", extents);
   int spaceWidth = extents.width;
 
-  const int border = 3;
-  const int radius = 4;
-
   for(int i =0 ; i < 4; i++) {
 
-    int xPos = _display.xCentre() - (2 - i) * (charWidth + spaceWidth);
+    extents.xPos = _display.xCentre() - (2 - i) * (charWidth * 1.5); 
+    extents.yPos = 50;
+
     char str[8];
 
     if(_PWdig[i] < 0) {
@@ -281,29 +330,13 @@ CScreen5::_showPassword()
     else {
       sprintf(str, "%d", _PWdig[i]);
     }
-    _display.getTextExtents(str, extents);
-    extents.xPos = xPos;
-    extents.yPos = 46;
     if(_rowSel == 1 && _colSel == i) {
       // draw selection box
-      extents.Expand(border);
-      _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
-      extents.Expand(-border);
+      _drawSelectionBox(extents.xPos, extents.yPos, str);
     }
     _display.setCursor(extents.xPos, extents.yPos);
     _display.print(str);
   }
-}
-
-void
-CScreen5::_drawSelectionBox(int x, int y, const char* str, int border, int radius)
-{
-  CRect extents;
-  _display.getTextExtents(str, extents);
-  extents.xPos = x - extents.width;
-  extents.yPos = y;
-  extents.Expand(border);
-  _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
 }
 
 void
@@ -312,23 +345,19 @@ CScreen5::_adjustSetting(int dir)
   switch(_rowSel) {
     case 2:
       adjPump[0] += (float(dir) * 0.1f);
-      LOWERLIMIT(adjPump[0], 0.5f);
-      UPPERLIMIT(adjPump[0], 10.f);
       break;
     case 3:
       adjPump[1] += (float(dir) * 0.1f);
-      LOWERLIMIT(adjPump[1], 0.5f);
-      UPPERLIMIT(adjPump[1], 10.f);
       break;
     case 4:
       adjFan[0] += dir * 10;
-      LOWERLIMIT(adjFan[0], 1000);
-      UPPERLIMIT(adjFan[0], 5000);
       break;
     case 5:
       adjFan[1] += dir * 10;
-      LOWERLIMIT(adjFan[1], 1000);
-      UPPERLIMIT(adjFan[1], 5000);
       break;
   }
+  LOWERLIMIT(adjPump[0], 0.5f);
+  UPPERLIMIT(adjPump[0], 10.f);
+  LOWERLIMIT(adjFan[1], 1000);
+  UPPERLIMIT(adjFan[1], 5000);
 }

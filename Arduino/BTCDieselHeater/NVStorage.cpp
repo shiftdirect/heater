@@ -33,16 +33,16 @@ CHeaterStorage::CHeaterStorage()
   calValues.setTemperature = 22;
 }
 
-unsigned char
+float
 CHeaterStorage::getPmin()
 {
-  return calValues.Pmin;
+  return float(calValues.Pmin) * 0.1f;
 }
 
-unsigned char
+float
 CHeaterStorage::getPmax()
 {
-  return calValues.Pmax;
+  return float(calValues.Pmax) * 0.1f;
 }
 
 unsigned short
@@ -70,15 +70,17 @@ CHeaterStorage::getThermostatMode()
 }
 
 void
-CHeaterStorage::setPmin(unsigned char val)
+CHeaterStorage::setPmin(float val)
 {
-  calValues.Pmin = val;
+  uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
+  calValues.Pmin = cVal;
 }
 
 void
-CHeaterStorage::setPmax(unsigned char val)
+CHeaterStorage::setPmax(float val)
 {
-  calValues.Pmax = val;
+  uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
+  calValues.Pmax = cVal;
 }
 
 void

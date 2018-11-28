@@ -113,12 +113,12 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
   // heater is happy either way, the OEM controller has set the max/min stuff already
   if(isBTCmaster) {
     m_TxFrame.setActiveMode();   // this allows heater to save the tuning params to EEPROM
-    m_TxFrame.setFan_Min(pNVStorage->getFmin());
-    m_TxFrame.setFan_Max(pNVStorage->getFmax());
-    m_TxFrame.setPump_Min(pNVStorage->getPmin());
-    m_TxFrame.setPump_Max(pNVStorage->getPmax());
-    m_TxFrame.setThermostatMode(pNVStorage->getThermostatMode());
-    m_TxFrame.setTemperature_Desired(pNVStorage->getTemperature());
+    m_TxFrame.setFan_Min(NVstore.getFmin());
+    m_TxFrame.setFan_Max(NVstore.getFmax());
+    m_TxFrame.setPump_Min(NVstore.getPmin());
+    m_TxFrame.setPump_Max(NVstore.getPmax());
+    m_TxFrame.setThermostatMode(NVstore.getThermostatMode());
+    m_TxFrame.setTemperature_Desired(NVstore.getTemperature());
   }
   else {
     m_TxFrame.setPassiveMode();    // this prevents the tuning parameters being saved by heater

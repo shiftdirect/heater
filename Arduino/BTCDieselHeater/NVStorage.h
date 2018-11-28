@@ -54,15 +54,15 @@ public:
   void save() {};
 
 
-    unsigned char getPmin();
-    unsigned char getPmax();
+    float getPmin();
+    float getPmax();
     unsigned short getFmin();
     unsigned short getFmax();
     unsigned char getTemperature();
     unsigned char getThermostatMode();
 
-    void setPmin(unsigned char val);
-    void setPmax(unsigned char val);
+    void setPmin(float);
+    void setPmax(float);
     void setFmin(unsigned short val);
     void setFmax(unsigned short val);
     void setTemperature(unsigned char val);
@@ -86,5 +86,6 @@ public:
 
 #endif
 
-extern CHeaterStorage* pNVStorage;
+extern CHeaterStorage& NVstore;
+
 
