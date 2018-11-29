@@ -261,7 +261,7 @@ CScreenManager::keyHandler(uint8_t event)
 
 CScreen::CScreen(C128x64_OLED& disp, CScreenManager& mgr) : 
   _display(disp), 
-  _Manager(mgr) 
+  _ScreenManager(mgr) 
 {
 }
 
@@ -307,10 +307,9 @@ CScreen::showWifiIcon()
   _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
 #ifdef DEMO_AP_MODE
   _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
-  _display.setFontInfo(&MINIFONT);  // select Mini Font
+  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
   _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
   _display.print("AP");
-  _display.setFontInfo(NULL);  
 #endif
 }
 
@@ -318,20 +317,14 @@ void
 CScreen::showBatteryIcon(float voltage)
 {
   _display.drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIcon, W_BATT_ICON, H_BATT_ICON, WHITE);
-#ifdef MINI_BATTLABEL
   char msg[16];
   sprintf(msg, "%.1fV", voltage);
-  int xPos = X_BATT_ICON + 7 - strlen(msg) * 2;
-  _display.setCursor(xPos, Y_BATT_ICON+H_BATT_ICON+2);
-  _display.setFontInfo(&MINIFONT);  // select Mini Font
-  _display.print(msg);
-  _display.setFontInfo(NULL);  
-#else
-  _display.setCursor(85, 12);
-  _display.setTextColor(WHITE);
-  _display.print(voltage, 1);
-  _display.print("V");
+#ifdef MINI_BATTLABEL
+  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
+  _display.setCursor(X_BATT_ICON + W_BATT_ICON/2, 
+                     Y_BATT_ICON + H_BATT_ICON + 2);
+  _display.printCentreJustified(msg);
 
   // nominal 10.5 -> 13.5V bargraph
   int Capacity = (voltage - 10.7) * 4;
@@ -370,28 +363,84 @@ CScreen::_drawSelectionBoxRightJustified(int x, int y, const char* str, int bord
 }
 
 void 
-CScreen::_drawMenuText(int x, int y, bool selected, const char* str, int border, int radius)
+CScreen::_drawMenuText(int x, int y, const char* str)
 {
   _display.setCursor(x, y);
   _display.print(str);
+}
+
+void 
+CScreen::_drawMenuText(int x, int y, bool selected, const char* str, int border, int radius)
+{
+  _drawMenuText(x, y, str);
   if(selected)
     _drawSelectionBox(x, y, str, border, radius);
 }
 
 void 
-CScreen::_drawMenuTextCentreJustified(int x, int y, bool selected, const char* str, int border, int radius)
+CScreen::_drawMenuTextCentreJustified(int x, int y, const char* str)
 {
   _display.setCursor(x, y);
   _display.printCentreJustified(str);
+}
+
+void 
+CScreen::_drawMenuTextCentreJustified(int x, int y, bool selected, const char* str, int border, int radius)
+{
+  _drawMenuTextCentreJustified(x, y, str);
   if(selected)
     _drawSelectionBoxCentreJustified(x, y, str, border, radius);
 }
 
 void 
-CScreen::_drawMenuTextRightJustified(int x, int y, bool selected, const char* str, int border, int radius)
+CScreen::_drawMenuTextRightJustified(int x, int y, const char* str)
 {
   _display.setCursor(x, y);
   _display.printRightJustified(str);
+}
+
+void 
+CScreen::_drawMenuTextRightJustified(int x, int y, bool selected, const char* str, int border, int radius)
+{
+  _drawMenuTextRightJustified(x, y, str);
   if(selected)
     _drawSelectionBoxRightJustified(x, y, str, border, radius);
+}
+
+void
+CScreen::_printInverted(int x, int y, const char* str)
+{
+  _display.setCursor(x, y);
+  _display.setTextColor(BLACK);
+  _display.print(str);
+  _display.setTextColor(WHITE);
+}
+
+void
+CScreen::_printInvertedConditional(int x, int y, bool selected, const char* str)
+{
+  if(selected) {
+    _display.setTextColor(BLACK);
+    CRect extents;
+    _display.getTextExtents(str, extents);
+    extents.xPos = x;
+    extents.yPos = y;
+    extents.Expand(1);
+    _display.fillRect(extents.xPos, extents.yPos, extents.width, extents.height, WHITE);
+  }
+  _display.setCursor(x, y);
+  _display.print(str);
+  _display.setTextColor(WHITE);
+}
+
+CAutoFont::CAutoFont(C128x64_OLED& disp, const FONT_INFO* pFont) :
+  _display(disp)
+{
+  _display.setFontInfo(pFont);
+  _display.setTextColor(WHITE, BLACK);
+}
+
+CAutoFont::~CAutoFont() 
+{
+  _display.setFontInfo(NULL);
 }

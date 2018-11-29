@@ -61,21 +61,17 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       _display.setCursor(0, yPos);
       _display.print("Pump (Hz)");
       sprintf(str, "%.1f", getPumpMin());
-      _display.setCursor(col2, yPos);
-      _display.printRightJustified(str);
+      _drawMenuTextRightJustified(col2, yPos, str);
       sprintf(str, "%.1f", getPumpMax());
-      _display.setCursor(col3, yPos);
-      _display.printRightJustified(str);
+      _drawMenuTextRightJustified(col3, yPos, str);
       // fan max/min
       yPos = 40;
       _display.setCursor(0, yPos);
       _display.print("Fan (RPM)");
       sprintf(str, "%d", getFanMin());
-      _display.setCursor(col2, yPos);
-      _display.printRightJustified(str);
+      _drawMenuTextRightJustified(col2, yPos, str);
       sprintf(str, "%d", getFanMax());
-      _display.setCursor(col3, yPos);
-      _display.printRightJustified(str);
+      _drawMenuTextRightJustified(col3, yPos, str);
       // navigation line
       yPos = 53;
       xPos = _display.xCentre();
@@ -83,8 +79,7 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       break;
 
     case 1:
-      _display.setCursor(_display.xCentre(), 34);
-      _display.printCentreJustified("Enter password...");
+      _drawMenuTextCentreJustified(_display.xCentre(), 34, "Enter password...");
       _showPassword();
       break;
 
@@ -124,10 +119,8 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       break;
 
     case 6:
-      _display.setCursor(_display.xCentre(), 35);
-      _display.printCentreJustified("Press UP to");
-      _display.setCursor(_display.xCentre(), 43);
-      _display.printCentreJustified("confirm save");
+      _drawMenuTextCentreJustified(_display.xCentre(), 35, "Press UP to");
+      _drawMenuTextCentreJustified(_display.xCentre(), 43, "confirm save");
       break;
   }
   
@@ -183,7 +176,7 @@ CScreen5::keyHandler(uint8_t event)
     if(event & key_Left) {
       switch(_rowSel) {
         case 0:
-          _Manager.prevScreen(); 
+          _ScreenManager.prevScreen(); 
           break;
         case 1:
           _colSel--;
@@ -204,7 +197,7 @@ CScreen5::keyHandler(uint8_t event)
     if(event & key_Right) {
       switch(_rowSel) {
         case 0:
-          _Manager.nextScreen(); 
+          _ScreenManager.nextScreen(); 
           break;
         case 1:
           _colSel++;
@@ -289,7 +282,7 @@ CScreen5::keyHandler(uint8_t event)
         break;
     }
   }
-  _Manager.reqUpdate();
+  _ScreenManager.reqUpdate();
 }
 
 void

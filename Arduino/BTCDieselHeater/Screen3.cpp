@@ -51,16 +51,13 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 {
   CScreen::show(CtlFrame, HtrFrame);
   
-  // show next/prev screen navigation line
   CRect extents;
-  _display.setCursor(_display.xCentre(), Row[0]);
-  _display.printCentreJustified(Label0);
-  if(_rowSel == 0) {
-    _drawSelectionBoxCentreJustified(_display.xCentre(), Row[0], Label0);
-  }
+
+  // show next/prev screen navigation line
+  _drawMenuTextCentreJustified(_display.xCentre(), Row[0], _rowSel == 0, Label0);
 
   // thermostat / fixed mode selection menu
-  // highlight active state
+  // highlight active state - depends if line is active whetehr this is an open box, or inverse text
   int col = getThermostatMode() ? 0 : 1;              // follow actual heater settings
   _display.getTextExtents(Label1[col], extents);
   extents.xPos = (col == 0) ? border : _display.width() - extents.width - border;
@@ -70,12 +67,12 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     _drawSelectionBox(extents.xPos, extents.yPos, Label1[col]);
   }
   else {
-    // draw white background
+    // draw white background, expanded about usual text size
     extents.Expand(1);
     _display.fillRect(extents.xPos, extents.yPos, extents.width, extents.height, WHITE);
   }
   
-  if(col == 0 && _rowSel != 1)
+  if(col == 0 && _rowSel != 1)   
     _display.setTextColor(BLACK);
   _display.setCursor(border, Row[1]);
   _display.print(Label1[0]);
@@ -88,40 +85,32 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   _display.setTextColor(WHITE);
 
   // fuel pump priming menu
-  _display.setCursor(Col[0], Row[2]);
-  _display.print(Label2[0]);
+  _drawMenuText(Col[0], Row[2], "Prime pump");
   if(_rowSel == 2) {
-    for(int col = 1; col < 3; col++) {
-      _display.setCursor(Col[col], Row[2]);
-      _display.print(Label2[col]);
+    _drawMenuText(Col[1], Row[2], _colSel == 1, "OFF");
+    if(_colSel != 2) {
+      if(!getRunState()) {                    // prevent option if heater is running
+        _drawMenuText(Col[2], Row[2], "ON");  // becomes Hz when actually priming 
+      }
     }
-    _drawSelectionBox(Col[_colSel], Row[2], Label2[_colSel]);
-  }
+    else {
+      float pumpHz = getPumpHz();
+      // recognise if heater has stopped pump, after an initial holdoff upon first starting
+      long tDelta = millis() - _PrimeCheck;
+      if(_PrimeCheck && tDelta > 0 && pumpHz < 0.1) {
+        stopPump();
+      }
+      // test if time is up, stop priming if so
+      tDelta = millis() - _PrimeStop;
+      if(_PrimeStop && tDelta > 0) {
+        stopPump();
+      }
 
-
-  if(_rowSel == 2 && _colSel == 2) {
-    float pumpHz = getPumpHz();
-    long tDelta = millis() - _PrimeCheck;
-    if(_PrimeCheck && tDelta > 0 && pumpHz < 0.1) {
-      stopPump();
-    }
-    tDelta = millis() - _PrimeStop;
-    if(_PrimeStop && tDelta > 0) {
-      stopPump();
-    }
-
-    if(_PrimeStop) {
-      char msg[16];
-      sprintf(msg, "%.1fHz", pumpHz);
-      _display.getTextExtents(msg, extents);
-      extents.xPos = _display.width() - extents.width - border;
-      extents.yPos = Row[2];
-      extents.Expand(border);
-      _display.fillRect(extents.xPos, extents.yPos, extents.width, extents.height, BLACK);
-      _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
-      extents.Expand(-border);
-      _display.setCursor(extents.xPos, extents.yPos);
-      _display.print(msg);
+      if(_PrimeStop) {
+        char msg[16];
+        sprintf(msg, "%.1fHz", pumpHz);
+        _drawMenuTextRightJustified(_display.width()-border, Row[2], true, msg);
+      }
     }
   }
 
@@ -149,7 +138,7 @@ CScreen3::keyHandler(uint8_t event)
     if(event & key_Left) {
       switch(_rowSel) {
         case 0: 
-          _Manager.prevScreen(); 
+          _ScreenManager.prevScreen(); 
           break;
         case 1: 
           _colSel = 0; 
@@ -165,7 +154,7 @@ CScreen3::keyHandler(uint8_t event)
     if(event & key_Right) {
       switch(_rowSel) {
         case 0: 
-          _Manager.nextScreen(); 
+          _ScreenManager.nextScreen(); 
           break;
         case 1: 
           _colSel = 1; 
@@ -202,8 +191,7 @@ CScreen3::keyHandler(uint8_t event)
       stopPump();
     }
 
-//        reqDisplayUpdate();
-    _Manager.reqUpdate();
+    _ScreenManager.reqUpdate();
   }
 }
 

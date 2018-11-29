@@ -27,7 +27,6 @@ extern int  getRunState();
 extern int  getErrState();
 extern void reqTempChange(int val);
 extern int  getSetTemp();
-//extern void reqDisplayUpdate();
 extern void reqThermoToggle();
 extern void setThermostatMode(unsigned char);
 extern bool getThermostatMode();
@@ -43,7 +42,7 @@ extern void  setPumpMin(float);
 extern void  setPumpMax(float);
 extern void  setFanMin(short);
 extern void  setFanMax(short);
-extern void saveNV();
+extern void  saveNV();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

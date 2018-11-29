@@ -23,6 +23,7 @@
 #define __DISPLAY_H__
 
 #include <Arduino.h>
+#include "FontTypes.h"
 
 
 class CProtocol;
@@ -52,22 +53,34 @@ public:
 class CScreen {
 protected:
   C128x64_OLED& _display;
-  CScreenManager& _Manager;
+  CScreenManager& _ScreenManager;
   void showBTicon();
   void showWifiIcon();
   void showBatteryIcon(float voltage);
   void _drawSelectionBox(int x, int y, const char* str, int border = 3, int radius = 4);
   void _drawSelectionBoxRightJustified(int x, int y, const char* str, int border = 3, int radius = 4);
   void _drawSelectionBoxCentreJustified(int x, int y, const char* str, int border = 3, int radius = 4);
+  void _drawMenuText(int x, int y, const char* str);
   void _drawMenuText(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
+  void _drawMenuTextCentreJustified(int x, int y, const char* str);
   void _drawMenuTextCentreJustified(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
+  void _drawMenuTextRightJustified(int x, int y, const char* str);
   void _drawMenuTextRightJustified(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
+  void _printInverted(int x, int y, const char* str);
+  void _printInvertedConditional(int x, int y, bool selected, const char* str);
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 
   virtual void animate();
   virtual void show(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
   virtual void keyHandler(uint8_t event) {};
+};
+
+class CAutoFont {
+  C128x64_OLED& _display;
+public:
+  CAutoFont(C128x64_OLED& disp, const FONT_INFO* pFont);
+  ~CAutoFont(); 
 };
 
 #endif // __DISPLAY_H__

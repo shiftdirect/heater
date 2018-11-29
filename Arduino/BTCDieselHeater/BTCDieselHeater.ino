@@ -906,20 +906,9 @@ bool getThermostatMode()
   return NVstore.getThermostatMode() != 0;
 }
 
-/*void reqDisplayUpdate()
-{
-  bUpdateDisplay = true;
-}*/
-
 void checkDisplayUpdate()
 {
   // only update OLED when not processing blue wire
-/*  if(bUpdateDisplay) {
-    if(pTxFrame && pRxFrame) {
-      ScreenManager.update(*pTxFrame, *pRxFrame);        
-      bUpdateDisplay = false;
-    }
-  }*/
   if(pTxFrame && pRxFrame) {
     ScreenManager.checkUpdate(*pTxFrame, *pRxFrame);        
   }

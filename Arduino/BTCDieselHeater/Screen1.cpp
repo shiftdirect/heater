@@ -162,10 +162,10 @@ CScreen1::keyHandler(uint8_t event)
   if(event & keyPressed) {
     _keyRepeatCount = 0;     // unlock tracking of repeat events
     if(event & key_Left) {
-      _Manager.prevScreen();
+      _ScreenManager.prevScreen();
     }
     if(event & key_Right) {
-      _Manager.nextScreen();
+      _ScreenManager.nextScreen();
     }
     if(event & key_Up) {
       reqTempChange(+1);
@@ -215,15 +215,15 @@ CScreen1::showThermometer(float desired, float actual)
   _display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
   _display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);  
   // print actual temperature
+  {
 #ifdef MINI_TEMPLABEL  
-  sprintf(msg, "%.1f`C", actual);
-  _display.setFontInfo(&MINIFONT);  // select Mini Font
+    CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    sprintf(msg, "%.1f`C", actual);
 #else
-  sprintf(msg, "%.1f", actual);
+    sprintf(msg, "%.1f", actual);
 #endif
-  _display.setCursor(0, Y_BASELINE);
-  _display.print(msg);
-  _display.setFontInfo(NULL);  
+    _drawMenuText(0, Y_BASELINE, msg);
+  }
 
   // draw target setting
   if(desired) {
@@ -238,12 +238,9 @@ CScreen1::showThermometer(float desired, float actual)
       sprintf(msg, "%.1fHz", -desired);
     }
 #ifdef MINI_TARGETLABEL
-    _display.setFontInfo(&MINIFONT);  // select Mini Font
+    CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-    _display.setCursor(X_TARGET_ICON + (W_TARGET_ICON/2), 
-                      Y_BASELINE);   // set centre position of text
-    _display.printCentreJustified(msg);
-    _display.setFontInfo(NULL);  
+    _drawMenuTextCentreJustified(X_TARGET_ICON + (W_TARGET_ICON/2), Y_BASELINE, msg);
   }
 }
 
@@ -262,14 +259,12 @@ CScreen1::showBodyThermometer(int actual)
   char label[16];
   // determine width and position right justified
 #ifdef MINI_BODYLABEL
+  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
   sprintf(label, "%d`C", actual);
-  _display.setFontInfo(&MINIFONT);  // select Mini Font
 #else
   sprintf(label, "%d", actual);
 #endif
-  _display.setCursor(_display.width(), Y_BASELINE);
-  _display.printRightJustified(label);
-  _display.setFontInfo(NULL);  
+  _drawMenuTextRightJustified(_display.width(), Y_BASELINE, label);
 }
 
 
@@ -281,12 +276,11 @@ CScreen1::showGlowPlug(float power)
   char msg[16];
   sprintf(msg, "%.0fW", power);
 #ifdef MINI_GLOWLABEL  
-  _display.setFontInfo(&MINIFONT);  // select Mini Font
+  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _display.setCursor(X_GLOW_ICON + (W_GLOW_ICON/2), 
-                    Y_GLOW_ICON + H_GLOW_ICON + 3); // set centre position of text
-  _display.printCentreJustified(msg);
-  _display.setFontInfo(NULL);  
+  _drawMenuTextCentreJustified(X_GLOW_ICON + (W_GLOW_ICON/2), 
+                               Y_GLOW_ICON + H_GLOW_ICON + 3,
+                               msg);
 }
 
 void 
@@ -299,12 +293,9 @@ CScreen1::showFan(int RPM)
   char msg[16];
   sprintf(msg, "%d", RPM);
 #ifdef MINI_FANLABEL  
-  _display.setFontInfo(&MINIFONT);  // select Mini Font
+  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _display.setCursor(X_FAN_ICON + (W_FAN_ICON/2), 
-                    Y_BASELINE);
-  _display.printCentreJustified(msg);
-  _display.setFontInfo(NULL);  
+  _drawMenuTextCentreJustified(X_FAN_ICON + (W_FAN_ICON/2), Y_BASELINE, msg);
 }
 
 void 
@@ -316,12 +307,9 @@ CScreen1::showFuel(float rate)
     char msg[16];
     sprintf(msg, "%.1f", rate);
 #ifdef MINI_FUELLABEL
-    _display.setFontInfo(&MINIFONT);  // select Mini Font
+    CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-    _display.setCursor(X_FUEL_ICON + (W_FUEL_ICON/2),
-                      Y_BASELINE);
-    _display.printCentreJustified(msg);
-    _display.setFontInfo(NULL);  // select Mini Font
+    _drawMenuTextCentreJustified(X_FUEL_ICON + (W_FUEL_ICON/2), Y_BASELINE, msg);
   }
 }
 
@@ -340,7 +328,6 @@ CScreen1::showRunState(int runstate, int errstate)
       if(runstate > 5)
         yPos -= 8;
       _display.setCursor(_display.xCentre(), yPos);
-      yPos += 8;
       // flash error code
       toggle = !toggle;
       if(toggle)
@@ -348,6 +335,7 @@ CScreen1::showRunState(int runstate, int errstate)
       else {
         _display.printCentreJustified("          ");
       }
+      yPos += 8;
       // bounds limit error and gather message
       if(errstate > 10) errstate = 11;
       toPrint = Errstates[errstate-1];
@@ -357,8 +345,7 @@ CScreen1::showRunState(int runstate, int errstate)
     }
   }
   if(toPrint) {
-    _display.setCursor(_display.xCentre(), yPos);
-    _display.printCentreJustified(toPrint);
+    _drawMenuTextCentreJustified(_display.xCentre(), yPos, toPrint);
   }
 }
 

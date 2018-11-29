@@ -70,11 +70,11 @@ CScreen4::keyHandler(uint8_t event)
     }
     // press LEFT 
     if(event & key_Left) {
-      _Manager.prevScreen(); 
+      _ScreenManager.prevScreen(); 
     }
     // press RIGHT 
     if(event & key_Right) {
-      _Manager.nextScreen(); 
+      _ScreenManager.nextScreen(); 
     }
   }
 }

@@ -53,9 +53,9 @@ void showTime(C128x64_OLED& display)
     sprintf(msg, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
   else
     sprintf(msg, "%02d %02d", timeinfo.tm_hour, timeinfo.tm_min);
-  display.setFontInfo(&franklinGothicMediumCond_8ptFontInfo);
-
-  display.setCursor(display.xCentre(), 0);
-  display.printCentreJustified(msg);
-  display.setFontInfo(NULL);
+  {
+    CAutoFont AF(display, &franklinGothicMediumCond_8ptFontInfo);
+    display.setCursor(display.xCentre(), 0);
+    display.printCentreJustified(msg);
+  }
 }

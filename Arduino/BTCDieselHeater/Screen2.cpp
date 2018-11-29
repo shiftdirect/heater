@@ -49,17 +49,13 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   CScreen::show(CtlFrame, HtrFrame);
   
   char msg[20];
-  CRect textRect;
+  int xPos, yPos;
 
   sprintf(msg, "%.1f`", getActualTemperature());
-  _display.setFontInfo(&MAXIFONT);  // Dot Factory Font
-  _display.getTextExtents(msg, textRect);
-  textRect.xPos = (_display.width()- textRect.width) / 2;
-  textRect.yPos = 25;
-  _display.fillRect(textRect.xPos, textRect.yPos, textRect.width, textRect.height, BLACK);
-  _display.setCursor(textRect.xPos, textRect.yPos);
-  _display.print(msg);
-  _display.setFontInfo(NULL);  // standard 5x7 font
+  {
+    CAutoFont AF(_display, &MAXIFONT);  // temporarily use a large font
+    _drawMenuTextCentreJustified(_display.xCentre(), 25, false, msg);
+  }
 
 
   // at bottom of screen show either:
@@ -73,25 +69,19 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     // Show selection between Fixed or Thermostat mode
     long tDelta = millis() - _showMode;
     if(tDelta < 0) {
+
+      yPos = _display.height() - 8 - border;  // bottom of screen, with room for box
+
       // display "Fixed Hz" at lower left, allowing space for a selection surrounding box
       strcpy(msg, "Fixed Hz");
-      textRect.xPos = _display.width() - border;     // set X position to finish short of RHS
-      textRect.yPos = _display.height() - 8 - border;  // bottom of screen, with room for box
-      _display.setCursor(textRect.xPos,            // centre text in potential box
-                        textRect.yPos);     
-      _display.printRightJustified(msg);           // show the text
-      if(_nModeSel == 1) {                         // add selection box if current selection
-        _drawSelectionBoxRightJustified(textRect.xPos, textRect.yPos, msg);
-      }
+      xPos = _display.width() - border;     // set X position to finish short of RHS
+      _drawMenuTextRightJustified(xPos, yPos, _nModeSel == 1, msg);
+
       // display "Thermostat" at lower right, allowing space for a selection surrounding box
       strcpy(msg, "Thermostat");
-      textRect.xPos = border;
-      _display.setCursor(textRect.xPos,            // centre text in potential box
-                        textRect.yPos);
-      _display.print(msg);                         // show the text
-      if(_nModeSel == 0) {                         // add selection box if current selection
-        _drawSelectionBox(textRect.xPos, textRect.yPos, msg);
-      }
+      xPos = border;
+      _drawMenuText(xPos, yPos, _nModeSel == 0, msg);
+
       setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
     }
     else {
@@ -111,10 +101,7 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
         sprintf(msg, "Setpoint = %.1fHz", getFixedHz());
       }
       // centre message at bottom of screen
-      _display.getTextExtents(msg, textRect);
-      _display.setCursor(_display.xCentre(), 
-                        _display.height() - textRect.height);
-      _display.printCentreJustified(msg);
+      _drawMenuTextCentreJustified(_display.xCentre(), _display.height() - 8, msg);
     }
     else {
       _showSetMode = 0;
@@ -144,23 +131,21 @@ CScreen2::keyHandler(uint8_t event)
     // press LEFT to select previous screen, or Fixed Hz mode when in mode select
     if(event & key_Left) {
       if(!_showMode)
-        _Manager.prevScreen();
+        _ScreenManager.prevScreen();
       else {
         _showMode = millis() + 5000;
         _nModeSel = 0;
-//        reqDisplayUpdate();
-        _Manager.reqUpdate();
+        _ScreenManager.reqUpdate();
       }
     }
     // press RIGHT to selecxt next screen, or Thermostat mode when in mode select
     if(event & key_Right) {
       if(!_showMode)
-        _Manager.nextScreen();
+        _ScreenManager.nextScreen();
       else {
         _showMode = millis() + 5000;
         _nModeSel = 1;
-//        reqDisplayUpdate();
-        _Manager.reqUpdate();
+        _ScreenManager.reqUpdate();
       }
     }
     // press UP & DOWN to toggle thermostat / fixed Hz mode
@@ -223,8 +208,7 @@ CScreen2::keyHandler(uint8_t event)
         }
         _showSetMode = millis() + 2000;
       }
-//        reqDisplayUpdate();
-      _Manager.reqUpdate();
+      _ScreenManager.reqUpdate();
     }
 
     repeatCount = -1;
