@@ -377,6 +377,14 @@ CScreen::_drawMenuText(int x, int y, bool selected, const char* str, int border,
     _drawSelectionBox(x, y, str, border, radius);
 }
 
+/*void 
+CScreen::_drawMenuText(int x, int y, bool selected, const char* str, eJUSTIFY justify, int border, int radius)
+{
+  _drawMenuText(x, y, str);
+  if(selected)
+    _drawSelectionBox(x, y, str, border, radius);
+}*/
+
 void 
 CScreen::_drawMenuTextCentreJustified(int x, int y, const char* str)
 {
@@ -408,29 +416,29 @@ CScreen::_drawMenuTextRightJustified(int x, int y, bool selected, const char* st
 }
 
 void
-CScreen::_printInverted(int x, int y, const char* str)
+CScreen::_printInverted(int x, int y, const char* str, eJUSTIFY justify)
 {
-  _display.setCursor(x, y);
-  _display.setTextColor(BLACK);
-  _display.print(str);
-  _display.setTextColor(WHITE);
+  _printInverted( x, y, true, str, justify);
 }
 
 void
-CScreen::_printInvertedConditional(int x, int y, bool selected, const char* str)
+CScreen::_printInverted(int x, int y, bool selected, const char* str, eJUSTIFY justify)
 {
+  // position output, according to justification
+  CRect extents;
+  extents.xPos = x;
+  extents.yPos = y;
+  _adjustExtents(extents, justify, str);
+
   if(selected) {
-    _display.setTextColor(BLACK);
-    CRect extents;
-    _display.getTextExtents(str, extents);
-    extents.xPos = x;
-    extents.yPos = y;
+    _display.setTextColor(BLACK, WHITE);
     extents.Expand(1);
     _display.fillRect(extents.xPos, extents.yPos, extents.width, extents.height, WHITE);
+    extents.Expand(-1);
   }
-  _display.setCursor(x, y);
+  _display.setCursor(extents.xPos, extents.yPos);
   _display.print(str);
-  _display.setTextColor(WHITE);
+  _display.setTextColor(WHITE, BLACK);
 }
 
 CAutoFont::CAutoFont(C128x64_OLED& disp, const FONT_INFO* pFont) :
@@ -443,4 +451,18 @@ CAutoFont::CAutoFont(C128x64_OLED& disp, const FONT_INFO* pFont) :
 CAutoFont::~CAutoFont() 
 {
   _display.setFontInfo(NULL);
+}
+
+void
+CScreen::_adjustExtents(CRect& extents, eJUSTIFY justify, const char* str)
+{
+  _display.getTextExtents(str, extents);
+  switch(justify) {
+    case eCentreJustify:
+      extents.xPos -= extents.width/2;
+      break;
+    case eRightJustify:
+      extents.xPos -= extents.width;
+      break;
+  }
 }

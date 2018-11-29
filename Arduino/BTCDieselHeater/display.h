@@ -24,11 +24,17 @@
 
 #include <Arduino.h>
 #include "FontTypes.h"
+#include "UtilClasses.h"
 
 
 class CProtocol;
 class C128x64_OLED;
 class CScreen;
+struct CRect;
+
+enum eJUSTIFY { 
+   eLeftJustify, eCentreJustify, eRightJustify 
+};
 
 class CScreenManager {
   static const int _maxScreens = 5;
@@ -66,8 +72,9 @@ protected:
   void _drawMenuTextCentreJustified(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
   void _drawMenuTextRightJustified(int x, int y, const char* str);
   void _drawMenuTextRightJustified(int x, int y, bool selected, const char* str, int border = 3, int radius = 4);
-  void _printInverted(int x, int y, const char* str);
-  void _printInvertedConditional(int x, int y, bool selected, const char* str);
+  void _printInverted(int x, int y, const char* str, eJUSTIFY justify = eLeftJustify);
+  void _printInverted(int x, int y, bool selected, const char* str, eJUSTIFY justify = eLeftJustify);
+  void _adjustExtents(CRect& rect, eJUSTIFY justify, const char* str);
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 

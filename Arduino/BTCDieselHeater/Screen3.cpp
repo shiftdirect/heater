@@ -56,33 +56,15 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   // show next/prev screen navigation line
   _drawMenuTextCentreJustified(_display.xCentre(), Row[0], _rowSel == 0, Label0);
 
-  // thermostat / fixed mode selection menu
-  // highlight active state - depends if line is active whetehr this is an open box, or inverse text
   int col = getThermostatMode() ? 0 : 1;              // follow actual heater settings
-  _display.getTextExtents(Label1[col], extents);
-  extents.xPos = (col == 0) ? border : _display.width() - extents.width - border;
-  extents.yPos = Row[1];
   if(_rowSel == 1) {
-    // draw selection box
-    _drawSelectionBox(extents.xPos, extents.yPos, Label1[col]);
+    _drawMenuText(border, Row[1], col == 0, Label1[0]);
+    _drawMenuTextRightJustified(_display.width()-border, Row[1], col == 1, Label1[1]);
   }
   else {
-    // draw white background, expanded about usual text size
-    extents.Expand(1);
-    _display.fillRect(extents.xPos, extents.yPos, extents.width, extents.height, WHITE);
+    _printInverted(border, Row[1], col == 0, Label1[0]);
+    _printInverted(_display.width()-border, Row[1], col == 1, Label1[1], eRightJustify);
   }
-  
-  if(col == 0 && _rowSel != 1)   
-    _display.setTextColor(BLACK);
-  _display.setCursor(border, Row[1]);
-  _display.print(Label1[0]);
-  _display.setTextColor(WHITE);
-
-  if(col == 1 && _rowSel != 1)
-    _display.setTextColor(BLACK);
-  _display.setCursor(_display.width() - border, Row[1]);
-  _display.printRightJustified(Label1[1]);
-  _display.setTextColor(WHITE);
 
   // fuel pump priming menu
   _drawMenuText(Col[0], Row[2], "Prime pump");
