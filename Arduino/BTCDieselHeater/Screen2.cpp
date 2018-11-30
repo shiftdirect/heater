@@ -54,7 +54,7 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   sprintf(msg, "%.1f`", getActualTemperature());
   {
     CAutoFont AF(_display, &MAXIFONT);  // temporarily use a large font
-    _drawMenuTextCentreJustified(_display.xCentre(), 25, false, msg);
+    _drawMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
   }
 
 
@@ -72,15 +72,15 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
       yPos = _display.height() - 8 - border;  // bottom of screen, with room for box
 
-      // display "Fixed Hz" at lower left, allowing space for a selection surrounding box
+      // display "Fixed Hz" at lower right, allowing space for a selection surrounding box
       strcpy(msg, "Fixed Hz");
       xPos = _display.width() - border;     // set X position to finish short of RHS
-      _drawMenuTextRightJustified(xPos, yPos, _nModeSel == 1, msg);
+      _drawMenuText(xPos, yPos, msg, _nModeSel == 1, eRightJustify);
 
-      // display "Thermostat" at lower right, allowing space for a selection surrounding box
+      // display "Thermostat" at lower left, allowing space for a selection surrounding box
       strcpy(msg, "Thermostat");
       xPos = border;
-      _drawMenuText(xPos, yPos, _nModeSel == 0, msg);
+      _drawMenuText(xPos, yPos, msg, _nModeSel == 0);
 
       setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
     }
@@ -101,7 +101,7 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
         sprintf(msg, "Setpoint = %.1fHz", getFixedHz());
       }
       // centre message at bottom of screen
-      _drawMenuTextCentreJustified(_display.xCentre(), _display.height() - 8, msg);
+      _drawMenuText(_display.xCentre(), _display.height() - 8, msg, false, eCentreJustify);
     }
     else {
       _showSetMode = 0;

@@ -54,22 +54,22 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   CRect extents;
 
   // show next/prev screen navigation line
-  _drawMenuTextCentreJustified(_display.xCentre(), Row[0], _rowSel == 0, Label0);
+  _drawMenuText(_display.xCentre(), Row[0], Label0, _rowSel == 0, eCentreJustify);
 
   int col = getThermostatMode() ? 0 : 1;              // follow actual heater settings
   if(_rowSel == 1) {
-    _drawMenuText(border, Row[1], col == 0, Label1[0]);
-    _drawMenuTextRightJustified(_display.width()-border, Row[1], col == 1, Label1[1]);
+    _drawMenuText(border, Row[1], Label1[0], col == 0);
+    _drawMenuText(_display.width()-border, Row[1], Label1[1], col == 1, eRightJustify);
   }
   else {
-    _printInverted(border, Row[1], col == 0, Label1[0]);
-    _printInverted(_display.width()-border, Row[1], col == 1, Label1[1], eRightJustify);
+    _printInverted(border, Row[1], Label1[0], col == 0);
+    _printInverted(_display.width()-border, Row[1], Label1[1], col == 1, eRightJustify);
   }
 
   // fuel pump priming menu
   _drawMenuText(Col[0], Row[2], "Prime pump");
   if(_rowSel == 2) {
-    _drawMenuText(Col[1], Row[2], _colSel == 1, "OFF");
+    _drawMenuText(Col[1], Row[2], "OFF", _colSel == 1);
     if(_colSel != 2) {
       if(!getRunState()) {                    // prevent option if heater is running
         _drawMenuText(Col[2], Row[2], "ON");  // becomes Hz when actually priming 
@@ -91,7 +91,7 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       if(_PrimeStop) {
         char msg[16];
         sprintf(msg, "%.1fHz", pumpHz);
-        _drawMenuTextRightJustified(_display.width()-border, Row[2], true, msg);
+        _drawMenuText(_display.width()-border, Row[2], msg, true, eRightJustify);
       }
     }
   }

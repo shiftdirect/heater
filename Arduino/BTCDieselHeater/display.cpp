@@ -333,96 +333,28 @@ CScreen::showBatteryIcon(float voltage)
   _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
 }
 
-void
-CScreen::_drawSelectionBox(int x, int y, const char* str, int border, int radius)
+
+void 
+CScreen::_drawMenuText(int x, int y, const char* str, bool selected, eJUSTIFY justify, int border, int radius)
 {
+  // position output, according to justification
   CRect extents;
-  _display.getTextExtents(str, extents);
   extents.xPos = x;
   extents.yPos = y;
-  extents.Expand(border);
-  _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
-}
-
-void
-CScreen::_drawSelectionBoxCentreJustified(int x, int y, const char* str, int border, int radius)
-{
-  CRect extents;
   _display.getTextExtents(str, extents);
-  x -= extents.width / 2;
-  _drawSelectionBox(x, y, str, border, radius);
-}
+  _adjustExtents(extents, justify, str);
 
-void
-CScreen::_drawSelectionBoxRightJustified(int x, int y, const char* str, int border, int radius)
-{
-  CRect extents;
-  _display.getTextExtents(str, extents);
-  x -= extents.width;
-  _drawSelectionBox(x, y, str, border, radius);
-}
-
-void 
-CScreen::_drawMenuText(int x, int y, const char* str)
-{
-  _display.setCursor(x, y);
+  _display.setCursor(extents.xPos, extents.yPos);
   _display.print(str);
+  if(selected) {
+    extents.Expand(border);
+    _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
+  }
 }
 
-void 
-CScreen::_drawMenuText(int x, int y, bool selected, const char* str, int border, int radius)
-{
-  _drawMenuText(x, y, str);
-  if(selected)
-    _drawSelectionBox(x, y, str, border, radius);
-}
-
-/*void 
-CScreen::_drawMenuText(int x, int y, bool selected, const char* str, eJUSTIFY justify, int border, int radius)
-{
-  _drawMenuText(x, y, str);
-  if(selected)
-    _drawSelectionBox(x, y, str, border, radius);
-}*/
-
-void 
-CScreen::_drawMenuTextCentreJustified(int x, int y, const char* str)
-{
-  _display.setCursor(x, y);
-  _display.printCentreJustified(str);
-}
-
-void 
-CScreen::_drawMenuTextCentreJustified(int x, int y, bool selected, const char* str, int border, int radius)
-{
-  _drawMenuTextCentreJustified(x, y, str);
-  if(selected)
-    _drawSelectionBoxCentreJustified(x, y, str, border, radius);
-}
-
-void 
-CScreen::_drawMenuTextRightJustified(int x, int y, const char* str)
-{
-  _display.setCursor(x, y);
-  _display.printRightJustified(str);
-}
-
-void 
-CScreen::_drawMenuTextRightJustified(int x, int y, bool selected, const char* str, int border, int radius)
-{
-  _drawMenuTextRightJustified(x, y, str);
-  if(selected)
-    _drawSelectionBoxRightJustified(x, y, str, border, radius);
-}
 
 void
-CScreen::_printInverted(int x, int y, const char* str, eJUSTIFY justify)
-{
-  _printInverted( x, y, true, str, justify);
-}
-
-void
-CScreen::_printInverted(int x, int y, bool selected, const char* str, eJUSTIFY justify)
+CScreen::_printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify)
 {
   // position output, according to justification
   CRect extents;

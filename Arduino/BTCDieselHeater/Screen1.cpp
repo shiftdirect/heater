@@ -240,7 +240,7 @@ CScreen1::showThermometer(float desired, float actual)
 #ifdef MINI_TARGETLABEL
     CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-    _drawMenuTextCentreJustified(X_TARGET_ICON + (W_TARGET_ICON/2), Y_BASELINE, msg);
+    _drawMenuText(X_TARGET_ICON + (W_TARGET_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
   }
 }
 
@@ -264,7 +264,7 @@ CScreen1::showBodyThermometer(int actual)
 #else
   sprintf(label, "%d", actual);
 #endif
-  _drawMenuTextRightJustified(_display.width(), Y_BASELINE, label);
+  _drawMenuText(_display.width(), Y_BASELINE, label, false, eRightJustify);
 }
 
 
@@ -278,9 +278,9 @@ CScreen1::showGlowPlug(float power)
 #ifdef MINI_GLOWLABEL  
   CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _drawMenuTextCentreJustified(X_GLOW_ICON + (W_GLOW_ICON/2), 
-                               Y_GLOW_ICON + H_GLOW_ICON + 3,
-                               msg);
+  _drawMenuText(X_GLOW_ICON + (W_GLOW_ICON/2), 
+                Y_GLOW_ICON + H_GLOW_ICON + 3,
+                msg, false, eCentreJustify);
 }
 
 void 
@@ -295,7 +295,7 @@ CScreen1::showFan(int RPM)
 #ifdef MINI_FANLABEL  
   CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _drawMenuTextCentreJustified(X_FAN_ICON + (W_FAN_ICON/2), Y_BASELINE, msg);
+  _drawMenuText(X_FAN_ICON + (W_FAN_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
 }
 
 void 
@@ -309,7 +309,7 @@ CScreen1::showFuel(float rate)
 #ifdef MINI_FUELLABEL
     CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-    _drawMenuTextCentreJustified(X_FUEL_ICON + (W_FUEL_ICON/2), Y_BASELINE, msg);
+    _drawMenuText(X_FUEL_ICON + (W_FUEL_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
   }
 }
 
@@ -345,7 +345,7 @@ CScreen1::showRunState(int runstate, int errstate)
     }
   }
   if(toPrint) {
-    _drawMenuTextCentreJustified(_display.xCentre(), yPos, toPrint);
+    _drawMenuText(_display.xCentre(), yPos, toPrint, false, eCentreJustify);
   }
 }
 
