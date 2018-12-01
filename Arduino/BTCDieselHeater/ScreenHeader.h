@@ -29,9 +29,8 @@
 
 
 class CScreenHeader : public CScreen {
-  int  _animateState;
-  int  _animationHold;
-  bool _needAnimationClear;
+  int  _animationHold[2];        // [0] out, [1] in
+  bool _needAnimationClear[2];
 protected:
   void showBTicon();
   void showWifiIcon();

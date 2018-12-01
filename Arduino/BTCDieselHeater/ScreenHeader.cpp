@@ -20,13 +20,12 @@
 
 #define MINI_BATTLABEL
 
-#define DEMO_AP_MODE
+//#define DEMO_AP_MODE
 
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
 {
-  _animateState = 0;
-  _animationHold = 0;
-  _needAnimationClear = false;
+  _animationHold[0] = _animationHold[1] = 0;
+  _needAnimationClear[0] = _needAnimationClear[1] = false;
 }
 
 void 
@@ -35,7 +34,7 @@ CScreenHeader::show()
   _display.clearDisplay();
 
   // standard header items
-  //Bluetooth
+  // Bluetooth
   if(getBluetoothClient().isConnected())
     showBTicon();
   // WiFi
@@ -48,16 +47,19 @@ CScreenHeader::show()
   showTime(_display);
 }
 
-// Animate IN/OUT arrows against the WiFi icon, according to actual web server traffic
-//   an IN arrow is drawn if incoming data has been detected
-//   an OUT arrow is drawn if outgoing data has been sent
+// Animate IN/OUT arrows against the WiFi icon, according to actual web server traffic:
+//   an IN (down) arrow is drawn if incoming data has been detected.
+//   an OUT (up) arrow is drawn if outgoing data has been sent.
 //
-// Each arrow is drawn standalone, with a clear interval for a clean flash on the display
+// Each arrow is drawn for one animation interval with a minimum of one clear interval 
+// creating a clean flash on the display.
+// Both arrows may appear in the same interval.
 // The following is a typical sequence, relative to animation ticks, note the gap
-// always appears in the animation interval between any arrow shown
+// that always appears in the animation interval between either arrow shown:
 //   
-//    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
-// ________^^^^^^____vvvvv_______________vvvvv__________^^^^^_____vvvvv_____________________
+//    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
+// _________^^^^^________________________________________^^^^^_________________________
+// ______________vvvvv_____vvvvv_______________vvvvv_____vvvvv_____vvvvv_______________
 
 bool 
 CScreenHeader::animate()
@@ -68,36 +70,46 @@ CScreenHeader::animate()
 #ifdef DEMO_AP_MODE
     xPos += 4;
 #endif
-    int yPos = H_WIFI_ICON - H_WIFIIN_ICON + 1;
-    // animation hold ensures our arrow indications always have a clear 
-    // period between them, otherwise they just visibly mush together
-    if(_animationHold) 
-      _animationHold--;
-    // as we control (moderate) the delivery, check for any data we have sent first 
-    // An over enthusiastic client would otherwise block the out arrow animation!
-    if(!_animationHold && hasWebServerSpoken(true)) {
+    int yPos = 0;
+    
+    // OUT arrow animation
+    //
+    // animation hold ensures our arrow indications are always erased in the next
+    // period, otherwise they just mush together
+    if(_animationHold[0])  _animationHold[0]--;
+    if(!_animationHold[0] && hasWebServerSpoken(true)) {
       // we have emitted data to the web client, show an OUT arrow
-//      _display.drawBitmap(xPos, yPos, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
-      _display.drawBitmap(xPos, 0, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
-      _needAnimationClear = true;  // clear arrow upon next iteration
-      _animationHold = 2;          // prevent anotehr arrow appearing before previous arrow has been scrubbed
+      _display.drawBitmap(xPos, yPos, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
+      _needAnimationClear[0] = true;  // clear arrow upon next iteration
+      _animationHold[0] = 2;          // prevent anotehr arrow appearing before previous arrow has been scrubbed
       retval = true;
     }
-    else if(!_animationHold && hasWebClientSpoken(true)) {
+    else if(_needAnimationClear[0]) { // an arrow was drawn in the prior iteration, now erase it 
+      _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
+      retval = true;
+      _needAnimationClear[0] = false;
+    }
+    
+    // IN arrow animation
+    //
+    // animation hold ensures our arrow indications are always erased in the next
+    // period, otherwise they just mush together
+    yPos = H_WIFI_ICON - H_WIFIIN_ICON + 1;
+    if(_animationHold[1])  _animationHold[1]--;
+    if(!_animationHold[1] && hasWebClientSpoken(true)) {
       // we have receievd data from the web client, show an IN arrow
       _display.drawBitmap(xPos, yPos, wifiInIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
-      _needAnimationClear = true;  // clear arrow upon next iteration
-      _animationHold = 2;          // prevent another arrow appearing before previous arrow has been scrubbed 
+      _needAnimationClear[1] = true;  // clear arrow upon next iteration
+      _animationHold[1] = 2;          // prevent another arrow appearing before previous arrow has been scrubbed 
       retval = true;
     }
-    else if(_needAnimationClear) { // an arrow was drawn in the prior iteration, now erase it 
+    else if(_needAnimationClear[1]) { // an arrow was drawn in the prior iteration, now erase it 
       _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
-      _display.fillRect(xPos, 0, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
       retval = true;
-      _needAnimationClear = false;
+      _needAnimationClear[1] = false;
     }
   }
-  return retval;                    // true if we have updated the display contents
+  return retval;                    // true if we need to update the physical display
 }
 
 void 
