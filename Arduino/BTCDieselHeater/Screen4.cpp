@@ -20,22 +20,30 @@
  */
 
 #include "128x64OLED.h"
-#include "display.h"
 #include "KeyPad.h"
 #include "helpers.h"
 #include "Screen4.h"
 #include "BTCWifi.h"
 
+///////////////////////////////////////////////////////////////////////////
+//
+// CScreen4
+//
+// This screen presents sundry information
+// eg WiFi status
+//
+///////////////////////////////////////////////////////////////////////////
 
-CScreen4::CScreen4(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+
+CScreen4::CScreen4(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
 }
 
 
 void 
-CScreen4::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+CScreen4::show()
 {
-  CScreen::show(CtlFrame, HtrFrame);
+  CScreenHeader::show();
   
   CRect extents;
 

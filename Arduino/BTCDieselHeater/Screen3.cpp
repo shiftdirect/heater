@@ -20,24 +20,21 @@
  */
 
 #include "128x64OLED.h"
-#include "display.h"
 #include "KeyPad.h"
 #include "helpers.h"
 #include "Screen3.h"
 
-const int border = 3;
-const int radius = 4;
-const int Row[] = { 52, 40, 28, 16 } ;
-const int Col[] = { border, 70, 100};
-const char* Label0 = "<-             ->"; 
-const char* Label1[] = { "Thermostat",
-                         "Fixed Hz" }; 
-const char* Label2[] = { "Prime pump",
-                          "OFF",
-                          "ON" }; 
+///////////////////////////////////////////////////////////////////////////
+//
+// CScreen3
+//
+// This screen allows the temeprature control mode to be selected and
+// allows pump priming
+//
+///////////////////////////////////////////////////////////////////////////
 
 
-CScreen3::CScreen3(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+CScreen3::CScreen3(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _PrimeStop = 0;
   _PrimeCheck = 0;
@@ -47,36 +44,39 @@ CScreen3::CScreen3(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display
 
 
 void 
-CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+CScreen3::show()
 {
-  CScreen::show(CtlFrame, HtrFrame);
+  CScreenHeader::show();
   
   CRect extents;
+  int yPos = 52;
 
   // show next/prev screen navigation line
-  _drawMenuText(_display.xCentre(), Row[0], Label0, _rowSel == 0, eCentreJustify);
+  _drawMenuText(_display.xCentre(), yPos, "<-             ->", _rowSel == 0, eCentreJustify);
 
-  int col = getThermostatMode() ? 0 : 1;              // follow actual heater settings
+  yPos = 40;
+  int col = getHeaterInfo().isThermostat() ? 0 : 1;              // follow actual heater settings
   if(_rowSel == 1) {
-    _drawMenuText(border, Row[1], Label1[0], col == 0);
-    _drawMenuText(_display.width()-border, Row[1], Label1[1], col == 1, eRightJustify);
+    _drawMenuText(border, yPos, "Thermostat", col == 0);
+    _drawMenuText(_display.width()-border, yPos, "Fixed Hz", col == 1, eRightJustify);
   }
   else {
-    _printInverted(border, Row[1], Label1[0], col == 0);
-    _printInverted(_display.width()-border, Row[1], Label1[1], col == 1, eRightJustify);
+    _printInverted(border, yPos, "Thermostat", col == 0);
+    _printInverted(_display.width()-border, yPos, "Fixed Hz", col == 1, eRightJustify);
   }
 
   // fuel pump priming menu
-  _drawMenuText(Col[0], Row[2], "Prime pump");
+  yPos = 28;
+  _drawMenuText(border, yPos, "Prime pump");
   if(_rowSel == 2) {
-    _drawMenuText(Col[1], Row[2], "OFF", _colSel == 1);
+    _drawMenuText(70, yPos, "OFF", _colSel == 1);
     if(_colSel != 2) {
-      if(!getRunState()) {                    // prevent option if heater is running
-        _drawMenuText(Col[2], Row[2], "ON");  // becomes Hz when actually priming 
+      if(!getHeaterInfo().getRunState()) {                    // prevent option if heater is running
+        _drawMenuText(100, yPos, "ON");  // becomes Hz when actually priming 
       }
     }
     else {
-      float pumpHz = getPumpHz();
+      float pumpHz = getHeaterInfo().getPump_Actual();
       // recognise if heater has stopped pump, after an initial holdoff upon first starting
       long tDelta = millis() - _PrimeCheck;
       if(_PrimeCheck && tDelta > 0 && pumpHz < 0.1) {
@@ -91,7 +91,7 @@ CScreen3::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       if(_PrimeStop) {
         char msg[16];
         sprintf(msg, "%.1fHz", pumpHz);
-        _drawMenuText(_display.width()-border, Row[2], msg, true, eRightJustify);
+        _drawMenuText(_display.width()-border, yPos, msg, true, eRightJustify);
       }
     }
   }
@@ -111,6 +111,7 @@ CScreen3::animate()
 void 
 CScreen3::keyHandler(uint8_t event)
 {
+  
   if(event & keyPressed) {
     // press CENTRE
     if(event & key_Centre) {
@@ -143,7 +144,7 @@ CScreen3::keyHandler(uint8_t event)
           setThermostatMode(0);
           break;
         case 2: 
-          if(!getRunState()) 
+          if(!getHeaterInfo().getRunState()) 
             _colSel = 2; 
           break;
         case 3: break;

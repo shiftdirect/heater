@@ -19,18 +19,23 @@
  * 
  */
 
+
+///////////////////////////////////////////////////////////////////////////
+//
+// CScreen5
+//
+// This screen allows the fuel mixture endpoints to be adjusted
+//
+///////////////////////////////////////////////////////////////////////////
+
 #include "128x64OLED.h"
-#include "display.h"
 #include "KeyPad.h"
 #include "helpers.h"
 #include "Screen5.h"
 #include "BTCWifi.h"
 
-const int border = 4;
-const int radius = 4;
-const char* baseLabel = "<-             ->"; 
 
-CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _rowSel = 0;
   _colSel = 0;
@@ -40,9 +45,9 @@ CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display
 
 
 void 
-CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+CScreen5::show()
 {
-  CScreen::show(CtlFrame, HtrFrame);
+  CScreenHeader::show();
   
   CRect extents;
   char str[16];
@@ -60,22 +65,22 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       yPos = 28;
       _display.setCursor(0, yPos);
       _display.print("Pump (Hz)");
-      sprintf(str, "%.1f", getPumpMin());
+      sprintf(str, "%.1f", getHeaterInfo().getPump_Min());
       _drawMenuText(col2, yPos, str, false, eRightJustify);
-      sprintf(str, "%.1f", getPumpMax());
+      sprintf(str, "%.1f", getHeaterInfo().getPump_Max());
       _drawMenuText(col3, yPos, str, false, eRightJustify);
       // fan max/min
       yPos = 40;
       _display.setCursor(0, yPos);
       _display.print("Fan (RPM)");
-      sprintf(str, "%d", getFanMin());
+      sprintf(str, "%d", getHeaterInfo().getFan_Min());
       _drawMenuText(col2, yPos, str, false, eRightJustify);
-      sprintf(str, "%d", getFanMax());
+      sprintf(str, "%d", getHeaterInfo().getFan_Max());
       _drawMenuText(col3, yPos, str, false, eRightJustify);
       // navigation line
       yPos = 53;
       xPos = _display.xCentre();
-      _drawMenuText(xPos, yPos, baseLabel, true, eCentreJustify);
+      _drawMenuText(xPos, yPos, "<-             ->", true, eCentreJustify);
       break;
 
     case 1:
@@ -114,7 +119,7 @@ CScreen5::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
       _drawMenuText(col3, yPos, str, _rowSel == 5, eRightJustify);
       // navigation line
       yPos = 53;
-      _drawMenuText(_display.xCentre(), yPos, baseLabel, false, eCentreJustify);
+      _drawMenuText(_display.xCentre(), yPos, "<-             ->", false, eCentreJustify);
       break;
 
     case 6:
@@ -137,6 +142,7 @@ CScreen5::animate()
 void 
 CScreen5::keyHandler(uint8_t event)
 {
+
   if(event & keyPressed) {
     // press CENTRE
     if(event & key_Centre) {
@@ -150,10 +156,10 @@ CScreen5::keyHandler(uint8_t event)
             _rowSel = 2;
             _colSel = 0;
             // grab current settings upon entry to edit mode
-            adjPump[0] = getPumpMin();
-            adjPump[1] = getPumpMax();
-            adjFan[0] = getFanMin();
-            adjFan[1] = getFanMax();
+            adjPump[0] = getHeaterInfo().getPump_Min();
+            adjPump[1] = getHeaterInfo().getPump_Max();
+            adjFan[0] = getHeaterInfo().getFan_Min();
+            adjFan[1] = getHeaterInfo().getFan_Max();
           }
           // reset PW digits
           for(int i= 0; i < 4; i++) 

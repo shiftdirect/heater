@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __128x64OLED_H__
+#define __128x64OLED_H__
+
 #include "Adafruit_SH1106.h"
 
 #include "FontTypes.h"
@@ -45,3 +48,5 @@ public:
 
   size_t write(uint8_t c);
 };
+
+#endif  // __128x64OLED_H__

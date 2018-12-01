@@ -20,12 +20,13 @@
  */
 
 #include "stdint.h"
+#include "ScreenHeader.h"
 
 class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CScreen5 : public CScreen {
+class CScreen5 : public CScreenHeader {
   int  _PWdig[4];
   float adjPump[2];
   short adjFan[2];
@@ -36,7 +37,7 @@ class CScreen5 : public CScreen {
 
 public:
   CScreen5(C128x64_OLED& display, CScreenManager& mgr);
-  void show(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
+  void show();
   void animate();
   void keyHandler(uint8_t event);
 };

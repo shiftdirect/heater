@@ -231,14 +231,15 @@ CProtocol::setVoltage_Supply(short voltsx10)
   Heater.SupplyV_LSB = (voltsx10 >> 0) & 0xff;
 }
 
-short
+float
 CProtocol::getVoltage_Supply() const
 {
-  short retval = 0;
-  retval = Heater.SupplyV_MSB & 0xff;
-  retval <<= 8;
-  retval |= Heater.SupplyV_LSB & 0xff;
-  return retval;
+  short val = 0;
+  val = Heater.SupplyV_MSB & 0xff;
+  val <<= 8;
+  val |= Heater.SupplyV_LSB & 0xff;
+  float voltage = float(val) * 0.1f;
+  return voltage;
 }
 
 void 
@@ -303,3 +304,10 @@ CProtocol::DebugReport(const char* hdr, const char* ftr)
   DebugPort.print(ftr);                     // footer
 }
 
+void 
+CProtocol::setThermostatMode(unsigned on) 
+{ 
+  Controller.OperatingMode = on ? 0x32 : 0xCD; 
+  if(!on)
+    setTemperature_Actual(0);   // if using fixed mode, actual must be reported as 0
+};

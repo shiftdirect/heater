@@ -23,7 +23,7 @@
 #include <sys/time.h>                   /* gettimeofday(), settimeofday() */
 #include "stdint.h"
 #include "128x64OLED.h"
-#include "display.h"
+#include "Screen.h"
 #include "OCRfont.h"
 #include "FranklinGothic.h"
 
@@ -54,7 +54,7 @@ void showTime(C128x64_OLED& display)
   else
     sprintf(msg, "%02d %02d", timeinfo.tm_hour, timeinfo.tm_min);
   {
-    CAutoFont AF(display, &franklinGothicMediumCond_8ptFontInfo);
+    CTransientFont AF(display, &franklinGothicMediumCond_8ptFontInfo);
     display.setCursor(display.xCentre(), 0);
     display.printCentreJustified(msg);
   }

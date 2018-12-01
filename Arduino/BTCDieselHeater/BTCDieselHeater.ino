@@ -98,7 +98,8 @@
 #include "UtilClasses.h"
 #include "BTCota.h"
 #include "BTCWebServer.h"
-#include "display.h"
+//#include "display.h"
+#include "ScreenManager.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "keypad.h"
@@ -162,8 +163,9 @@ sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool hasOEMController = false;
 
-const CProtocol* pRxFrame = NULL;
-const CProtocol* pTxFrame = NULL;
+//const CProtocol* pRxFrame = NULL;
+//const CProtocol* pTxFrame = NULL;
+CProtocolPackage HeaterData;
 
 unsigned long moderator;
 bool bUpdateDisplay = false;
@@ -595,8 +597,9 @@ void loop()
       }
       else {
 //        CommState.set(CommStates::Idle);    // "Listen Only" input is  held low, don't send out Tx
-        pRxFrame = &HeaterFrame1;
-        pTxFrame = &OEMCtrlFrame;
+        HeaterData.set(HeaterFrame1, OEMCtrlFrame);
+//        pRxFrame = &HeaterFrame1;
+//        pTxFrame = &OEMCtrlFrame;
         CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send out Tx
       }
       break;
@@ -663,8 +666,9 @@ void loop()
         Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
       }
       CommState.set(CommStates::TemperatureRead);
-      pRxFrame = &HeaterFrame2;
-      pTxFrame = &TxManage.getFrame();
+      HeaterData.set(HeaterFrame2, TxManage.getFrame());
+//      pRxFrame = &HeaterFrame2;
+//      pTxFrame = &TxManage.getFrame();
       break;
 
     case CommStates::TemperatureRead:
@@ -682,7 +686,6 @@ void loop()
         fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         TempSensor.requestTemperatures();               // prep sensor for future reading
-//        reqDisplayUpdate();
         ScreenManager.reqUpdate();
       }
       CommState.set(CommStates::Idle);
@@ -816,7 +819,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
 }
 
 
-int getRunState()
+/*int getRunState()
 {
   if(pRxFrame)
     return pRxFrame->getRunState();
@@ -828,7 +831,7 @@ int getErrState()
   if(pRxFrame)
     return pRxFrame->getErrState();
   return 8;  // Comms error!
-}
+}*/
 
 void requestOn()
 {
@@ -846,7 +849,7 @@ void requestOff()
 
 void ToggleOnOff()
 {
-  if(getRunState()) {
+  if(HeaterData.getRunState()) {
     DebugPort.println("ToggleOnOff: Heater OFF");
     requestOff();
   }
@@ -881,14 +884,14 @@ int getSetTemp()
   return NVstore.getTemperature();
 }
 
-float getFixedHz()
+/*float getFixedHz()
 {
   if(pRxFrame) {
     return pRxFrame->getPump_Fixed();
   }
   return 0.0;
 }
-
+*/
 
 void reqThermoToggle()
 {
@@ -909,9 +912,9 @@ bool getThermostatMode()
 void checkDisplayUpdate()
 {
   // only update OLED when not processing blue wire
-  if(pTxFrame && pRxFrame) {
-    ScreenManager.checkUpdate(*pTxFrame, *pRxFrame);        
-  }
+//  if(pTxFrame && pRxFrame) {
+    ScreenManager.checkUpdate();        
+//  }
 
   long tDelta = millis() - lastAnimationTime;
   if(tDelta >= 100) {
@@ -925,20 +928,20 @@ void reqPumpPrime(bool on)
   DefaultBTCParams.setPump_Prime(on);
 }
 
-float getPumpHz()
+/*float getPumpHz()
 {
   if(pRxFrame) {
     return pRxFrame->getPump_Actual();
   }
   return 0.0;
 }
-
+*/
 float getActualTemperature()
 {
   return fFilteredTemperature;
 }
 
-float getPumpMin()
+/*float getPumpMin()
 {
   if(pTxFrame) {
     return pTxFrame->getPump_Min();
@@ -968,7 +971,7 @@ short getFanMax()
     return pTxFrame->getFan_Max();
   }
   return 0.0;
-}
+}*/
 
 void  setPumpMin(float val)
 {
@@ -993,4 +996,9 @@ void  setFanMax(short cVal)
 void saveNV() 
 {
   NVstore.save();
+}
+
+const CProtocolPackage& getHeaterInfo()
+{
+  return HeaterData;
 }

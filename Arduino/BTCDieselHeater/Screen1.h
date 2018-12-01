@@ -20,12 +20,12 @@
  */
 
 #include "stdint.h"
+#include "ScreenHeader.h"
 
 class C128x64_OLED;
-class CProtocol;
 class CScreenManager;
 
-class CScreen1 : public CScreen
+class CScreen1 : public CScreenHeader
 {
   bool _animatePump;
   bool _animateRPM;
@@ -46,7 +46,7 @@ class CScreen1 : public CScreen
   void showRunState(int state, int errstate);
 public:
   CScreen1(C128x64_OLED& display, CScreenManager& mgr);
-  void show(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
+  void show();
   void animate();
   void keyHandler(uint8_t event);
 };

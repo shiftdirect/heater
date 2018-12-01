@@ -147,7 +147,7 @@ public:
   unsigned char getStoredErrCode() const { return Heater.StoredErrorCode; };
   void setStoredErrCode(unsigned char state) { Heater.StoredErrorCode = state; };
   //
-  short getVoltage_Supply() const;
+  float getVoltage_Supply() const;
   void setVoltage_Supply(short voltsx10);
   
   // fan set/get
@@ -179,7 +179,7 @@ public:
   unsigned char getTemperature_Min() const { return Controller.MinTemperature; };
   unsigned char getTemperature_Max() const { return Controller.MaxTemperature; };
   unsigned char getTemperature_Actual() const { return Controller.ActualTemperature; };
-  void setThermostatMode(unsigned on) { Controller.OperatingMode = on ? 0x32 : 0xCD; };
+  void setThermostatMode(unsigned on);
   bool isThermostat() const { return Controller.OperatingMode == 0x32; };
   // glow plug
   float getGlowPlug_Current() const;   // glow plug current
@@ -203,5 +203,25 @@ public:
   long elapsedTime() { return millis() - lastTime; };
 };
 
+class CProtocolPackage {
+  CProtocol Heater;
+  CProtocol Controller;
+public:
+  void set(const CProtocol& htr, const CProtocol& ctl) { Heater = htr; Controller = ctl; };
+  int getRunState() const { return Heater.getRunState(); };
+  int getErrState() const { return Heater.getErrState(); };
+  float getBattVoltage() const { return Heater.getVoltage_Supply(); };
+  bool isThermostat() const { return Controller.isThermostat(); };
+  float getTemperature_Desired() const { return Controller.getTemperature_Desired(); };
+  float getTemperature_HeatExchg() const { return Heater.getTemperature_HeatExchg(); };
+  float getPump_Fixed() const { return Heater.getPump_Fixed(); };
+  float getPump_Actual() const { return Heater.getPump_Actual(); };
+  float getPump_Min() const { return Controller.getPump_Min(); };
+  float getPump_Max() const { return Controller.getPump_Max(); };
+  float getFan_Actual() const { return Heater.getFan_Actual(); };
+  short getFan_Min() const { return Controller.getFan_Min(); };
+  short getFan_Max() const { return Controller.getFan_Max(); };
+  float getGlowPlug_Power() const { return Heater.getGlowPlug_Current() * Heater.getGlowPlug_Voltage(); };
+};
 
 #endif

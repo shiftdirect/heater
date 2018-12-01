@@ -20,29 +20,22 @@
  * 
  */
 
+class CProtocolPackage;
+
 extern void ToggleOnOff();
 extern void requestOn();
 extern void requestOff();
-extern int  getRunState();
-extern int  getErrState();
 extern void reqTempChange(int val);
-extern int  getSetTemp();
 extern void reqThermoToggle();
 extern void setThermostatMode(unsigned char);
-extern bool getThermostatMode();
-extern float getFixedHz();
-extern float getPumpHz();
 extern void reqPumpPrime(bool on);
 extern float getActualTemperature();
-extern float getPumpMin();
-extern float getPumpMax();
-extern short getFanMin();
-extern short getFanMax();
 extern void  setPumpMin(float);
 extern void  setPumpMax(float);
 extern void  setFanMin(short);
 extern void  setFanMax(short);
 extern void  saveNV();
+extern const CProtocolPackage& getHeaterInfo();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

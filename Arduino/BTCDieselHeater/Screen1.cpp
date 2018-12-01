@@ -21,8 +21,6 @@
 
 #include "128x64OLED.h"
 #include "MiniFont.h"
-#include "display.h"
-#include "tahoma16.h"
 #include "OLEDconsts.h"
 #include "BluetoothAbstract.h" 
 #include "Screen1.h"
@@ -32,7 +30,6 @@
 #include "Protocol.h"
 
 
-#define MAXIFONT tahoma_16ptFontInfo
 #define MINIFONT miniFontInfo
 
 #define X_FAN_ICON     55 
@@ -48,7 +45,6 @@
 #define X_BULB          1  // >= 1
 #define Y_BULB          4
 
-#define MINI_BATTLABEL
 #define MINI_TEMPLABEL
 #define MINI_TARGETLABEL
 #define MINI_FANLABEL
@@ -56,7 +52,15 @@
 #define MINI_FUELLABEL
 #define MINI_BODYLABEL
 
-CScreen1::CScreen1(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+///////////////////////////////////////////////////////////////////////////
+//
+// CScreen1
+//
+// This screen provides a detailed control/status function
+//
+///////////////////////////////////////////////////////////////////////////
+
+CScreen1::CScreen1(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _animatePump = false;
   _animateRPM = false;
@@ -70,14 +74,14 @@ CScreen1::CScreen1(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display
 
 
 void 
-CScreen1::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+CScreen1::show()
 {
-  CScreen::show(CtlFrame, HtrFrame);
+  CScreenHeader::show();
 
   const char* c = String(getActualTemperature()).c_str();
   
-  int runstate = HtrFrame.getRunState(); 
-  int errstate = HtrFrame.getErrState(); 
+  int runstate = getHeaterInfo().getRunState();//HtrFrame.getRunState(); 
+  int errstate = getHeaterInfo().getErrState(); //HtrFrame.getErrState(); 
   if(errstate) errstate--;  // correct for +1 biased return value
   
   long tDelta = millis() - _showTarget;
@@ -87,10 +91,14 @@ CScreen1::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
 
   float desiredT = 0;
   if((runstate && (runstate <= 5)) || _showTarget) {
-    if(CtlFrame.isThermostat())
-      desiredT = CtlFrame.getTemperature_Desired();
+    // if(CtlFrame.isThermostat())
+    //   desiredT = CtlFrame.getTemperature_Desired();
+    // else
+    //   desiredT = -HtrFrame.getPump_Fixed();
+    if(getHeaterInfo().isThermostat())
+      desiredT = getHeaterInfo().getTemperature_Desired();
     else
-      desiredT = -HtrFrame.getPump_Fixed();
+      desiredT = -getHeaterInfo().getPump_Fixed();
   }
 
   showThermometer(desiredT,    // read values from most recently sent [BTC] frame
@@ -101,16 +109,20 @@ CScreen1::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
   _animateGlow = false;
 
   if(runstate) {
-    float power = HtrFrame.getGlowPlug_Current() * HtrFrame.getGlowPlug_Voltage();
+//    float power = HtrFrame.getGlowPlug_Current() * HtrFrame.getGlowPlug_Voltage();
+    float power = getHeaterInfo().getGlowPlug_Power();
     if(power > 1) {
       showGlowPlug(power);
     }
 
-    showFan(HtrFrame.getFan_Actual());
+//    showFan(HtrFrame.getFan_Actual());
+    showFan(getHeaterInfo().getFan_Actual());
 
-    showFuel(HtrFrame.getPump_Actual());
+//    showFuel(HtrFrame.getPump_Actual());
+    showFuel(getHeaterInfo().getPump_Actual());
 
-    showBodyThermometer(HtrFrame.getTemperature_HeatExchg());
+//    showBodyThermometer(HtrFrame.getTemperature_HeatExchg());
+    showBodyThermometer(getHeaterInfo().getTemperature_HeatExchg());
   }
 
   showRunState(runstate, errstate);
@@ -159,6 +171,7 @@ CScreen1::animate()
 void 
 CScreen1::keyHandler(uint8_t event)
 {
+  
   if(event & keyPressed) {
     _keyRepeatCount = 0;     // unlock tracking of repeat events
     if(event & key_Left) {
@@ -181,7 +194,7 @@ CScreen1::keyHandler(uint8_t event)
     if(_keyRepeatCount >= 0) {
       _keyRepeatCount++;
       if(event & key_Centre) {
-        if(getRunState()) {
+        if(getHeaterInfo().getRunState()) {
           if(_keyRepeatCount > 5) {
             _keyRepeatCount = -1;        // prevent double handling
             requestOff();
@@ -217,7 +230,7 @@ CScreen1::showThermometer(float desired, float actual)
   // print actual temperature
   {
 #ifdef MINI_TEMPLABEL  
-    CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
     sprintf(msg, "%.1f`C", actual);
 #else
     sprintf(msg, "%.1f", actual);
@@ -238,7 +251,7 @@ CScreen1::showThermometer(float desired, float actual)
       sprintf(msg, "%.1fHz", -desired);
     }
 #ifdef MINI_TARGETLABEL
-    CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
     _drawMenuText(X_TARGET_ICON + (W_TARGET_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
   }
@@ -259,7 +272,7 @@ CScreen1::showBodyThermometer(int actual)
   char label[16];
   // determine width and position right justified
 #ifdef MINI_BODYLABEL
-  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
+  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
   sprintf(label, "%d`C", actual);
 #else
   sprintf(label, "%d", actual);
@@ -276,7 +289,7 @@ CScreen1::showGlowPlug(float power)
   char msg[16];
   sprintf(msg, "%.0fW", power);
 #ifdef MINI_GLOWLABEL  
-  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
+  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
   _drawMenuText(X_GLOW_ICON + (W_GLOW_ICON/2), 
                 Y_GLOW_ICON + H_GLOW_ICON + 3,
@@ -293,7 +306,7 @@ CScreen1::showFan(int RPM)
   char msg[16];
   sprintf(msg, "%d", RPM);
 #ifdef MINI_FANLABEL  
-  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
+  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
   _drawMenuText(X_FAN_ICON + (W_FAN_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
 }
@@ -307,7 +320,7 @@ CScreen1::showFuel(float rate)
     char msg[16];
     sprintf(msg, "%.1f", rate);
 #ifdef MINI_FUELLABEL
-    CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
     _drawMenuText(X_FUEL_ICON + (W_FUEL_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
   }

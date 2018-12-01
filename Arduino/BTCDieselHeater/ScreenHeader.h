@@ -19,22 +19,23 @@
  * 
  */
 
-#include "stdint.h"
-#include "ScreenHeader.h"
+#ifndef __SCREEN_HEADER_H__
+#define __SCREEN_HEADER_H__
 
-class C128x64_OLED;
-class CScreenManager;
-class CProtocolPackage;
+#include <Arduino.h>
+#include "FontTypes.h"
+#include "UtilClasses.h"
+#include "Screen.h"
 
-class CScreen2 : public CScreenHeader
-{
-  unsigned long _showSetMode;
-  unsigned long _showMode;
-  unsigned char _nModeSel;
-  void showRunState();
+
+class CScreenHeader : public CScreen {
+protected:
+  void showBTicon();
+  void showWifiIcon();
+  void showBatteryIcon(float voltage);
 public:
-  CScreen2(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
-  void animate();
-  void keyHandler(uint8_t event);
+  CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
+  virtual void show();
 };
+
+#endif // __SCREEN_HEADER_H__

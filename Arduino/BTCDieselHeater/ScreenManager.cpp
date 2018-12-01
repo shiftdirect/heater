@@ -1,57 +1,14 @@
-/*
- * This file is part of the "bluetoothheater" distribution 
- * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
- *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- * 
- */
-
+#include "ScreenManager.h"
 #include <SPI.h>
 #include <Wire.h>
 #include "128x64OLED.h"
-#include "MiniFont.h"
-#include "tahoma16.h"
-#include "protocol.h" 
-#include "display.h"
 #include "pins.h"
-#include "BluetoothAbstract.h" 
-#include "OLEDconsts.h"
-#include "BTCWifi.h"
 #include "BluetoothAbstract.h" 
 #include "Screen1.h"
 #include "Screen2.h"
 #include "Screen3.h"
 #include "Screen4.h"
 #include "Screen5.h"
-#include "KeyPad.h"
-#include "helpers.h"
-#include "clock.h"
-#include "BTCConfig.h"
-
-#define MAXIFONT tahoma_16ptFontInfo
-#define MINIFONT miniFontInfo
-
-#define X_BATT_ICON    95
-#define Y_BATT_ICON     0
-#define X_WIFI_ICON    22
-#define Y_WIFI_ICON     0
-#define X_BT_ICON      12
-#define Y_BT_ICON       0
-
-#define MINI_BATTLABEL
 
 //
 // **** NOTE: There are two very lame libaries conspiring to make life difficult ****
@@ -143,6 +100,7 @@ const unsigned char DieselSplash [] PROGMEM = {
 	0x11, 0x39, 0x8e, 0x93, 0x18, 0xe1, 0x13, 0x1c, 0xcc, 0x80, 0x78, 0xc9, 0x34, 0x19, 0x4c, 0x80
 };
 
+
 CScreenManager::CScreenManager() 
 {
   _pDisplay = NULL;
@@ -199,11 +157,11 @@ CScreenManager::init()
 }
 
 void 
-CScreenManager::checkUpdate(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+CScreenManager::checkUpdate()
 {
   if(_bReqUpdate) {
     if(_pActiveScreen) {
-      _pActiveScreen->show(CtlFrame, HtrFrame);
+      _pActiveScreen->show();
       _bReqUpdate = false;
     }
   }
@@ -258,143 +216,3 @@ CScreenManager::keyHandler(uint8_t event)
 }
 
 
-
-CScreen::CScreen(C128x64_OLED& disp, CScreenManager& mgr) : 
-  _display(disp), 
-  _ScreenManager(mgr) 
-{
-}
-
-CScreen::~CScreen()
-{
-}
-
-void
-CScreen::animate()
-{
-  _display.display();
-}
-
-void 
-CScreen::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
-{
-  _display.clearDisplay();
-
-  // standard header items
-  //Bluetooth
-  if(getBluetoothClient().isConnected())
-    showBTicon();
-  // WiFi
-  if(isWifiConnected()) {
-    showWifiIcon();
-  }
-  // battery
-  float voltage = HtrFrame.getVoltage_Supply() * 0.1f;
-  showBatteryIcon(voltage);
-
-  showTime(_display);
-}
-
-void 
-CScreen::showBTicon()
-{
-  _display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
-}
-
-void 
-CScreen::showWifiIcon()
-{
-  _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
-#ifdef DEMO_AP_MODE
-  _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
-  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
-  _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
-  _display.print("AP");
-#endif
-}
-
-void
-CScreen::showBatteryIcon(float voltage)
-{
-  _display.drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIcon, W_BATT_ICON, H_BATT_ICON, WHITE);
-  char msg[16];
-  sprintf(msg, "%.1fV", voltage);
-#ifdef MINI_BATTLABEL
-  CAutoFont AF(_display, &MINIFONT);  // temporarily use a mini font
-#endif
-  _display.setCursor(X_BATT_ICON + W_BATT_ICON/2, 
-                     Y_BATT_ICON + H_BATT_ICON + 2);
-  _display.printCentreJustified(msg);
-
-  // nominal 10.5 -> 13.5V bargraph
-  int Capacity = (voltage - 10.7) * 4;
-  if(Capacity < 0)   Capacity = 0;
-  if(Capacity > 11)  Capacity = 11;
-  _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
-}
-
-
-void 
-CScreen::_drawMenuText(int x, int y, const char* str, bool selected, eJUSTIFY justify, int border, int radius)
-{
-  // position output, according to justification
-  CRect extents;
-  extents.xPos = x;
-  extents.yPos = y;
-  _display.getTextExtents(str, extents);
-  _adjustExtents(extents, justify, str);
-
-  _display.setCursor(extents.xPos, extents.yPos);
-  _display.print(str);
-  if(selected) {
-    extents.Expand(border);
-    _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
-  }
-}
-
-
-void
-CScreen::_printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify)
-{
-  // position output, according to justification
-  CRect extents;
-  extents.xPos = x;
-  extents.yPos = y;
-  _adjustExtents(extents, justify, str);
-
-  if(selected) {
-    _display.setTextColor(BLACK, WHITE);
-    extents.Expand(1);
-    _display.fillRect(extents.xPos, extents.yPos, extents.width, extents.height, WHITE);
-    extents.Expand(-1);
-  }
-  _display.setCursor(extents.xPos, extents.yPos);
-  _display.print(str);
-  _display.setTextColor(WHITE, BLACK);
-}
-
-CAutoFont::CAutoFont(C128x64_OLED& disp, const FONT_INFO* pFont) :
-  _display(disp)
-{
-  _display.setFontInfo(pFont);
-  _display.setTextColor(WHITE, BLACK);
-}
-
-CAutoFont::~CAutoFont() 
-{
-  _display.setFontInfo(NULL);
-}
-
-void
-CScreen::_adjustExtents(CRect& extents, eJUSTIFY justify, const char* str)
-{
-  _display.getTextExtents(str, extents);
-  switch(justify) {
-    case eCentreJustify:
-      extents.xPos -= extents.width/2;
-      break;
-    case eRightJustify:
-      extents.xPos -= extents.width;
-      break;
-  }
-}

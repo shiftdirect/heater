@@ -19,22 +19,14 @@
  * 
  */
 
-#ifndef __DISPLAY_H__
-#define __DISPLAY_H__
+#ifndef __SCREEN_MANAGER_H__
+#define __SCREEN_MANAGER_H__
 
 #include <Arduino.h>
-#include "FontTypes.h"
-#include "UtilClasses.h"
-
 
 class CProtocol;
 class C128x64_OLED;
 class CScreen;
-struct CRect;
-
-enum eJUSTIFY { 
-   eLeftJustify, eCentreJustify, eRightJustify 
-};
 
 class CScreenManager {
   static const int _maxScreens = 5;
@@ -48,7 +40,7 @@ public:
   CScreenManager();
   ~CScreenManager();
   void init();
-  void checkUpdate(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
+  void checkUpdate();
   void animate();
   void nextScreen();
   void prevScreen();
@@ -56,29 +48,4 @@ public:
   void reqUpdate();
 };
 
-class CScreen {
-protected:
-  C128x64_OLED& _display;
-  CScreenManager& _ScreenManager;
-  void showBTicon();
-  void showWifiIcon();
-  void showBatteryIcon(float voltage);
-  void _drawMenuText(int x, int y, const char* str, bool selected = false, eJUSTIFY justify = eLeftJustify, int border = 3, int radius = 4);
-  void _printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify = eLeftJustify);
-  void _adjustExtents(CRect& rect, eJUSTIFY justify, const char* str);
-public:
-  CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
-  virtual ~CScreen(); 
-  virtual void animate();
-  virtual void show(const CProtocol& CtlFrame, const CProtocol& HtrFrame);
-  virtual void keyHandler(uint8_t event) {};
-};
-
-class CAutoFont {
-  C128x64_OLED& _display;
-public:
-  CAutoFont(C128x64_OLED& disp, const FONT_INFO* pFont);
-  ~CAutoFont(); 
-};
-
-#endif // __DISPLAY_H__
+#endif // __SCREEN_MANAGER_H__

@@ -20,23 +20,25 @@
  */
 
 #include "128x64OLED.h"
-#include "display.h"
-#include "MiniFont.h"
 #include "tahoma16.h"
 #include "OLEDconsts.h"
-#include "BluetoothAbstract.h" 
 #include "Screen2.h"
-#include "BTCWifi.h"
 #include "KeyPad.h"
 #include "helpers.h"
-#include "Protocol.h"
 #include "UtilClasses.h"
 
 
 #define MAXIFONT tahoma_16ptFontInfo
-#define MINIFONT miniFontInfo
 
-CScreen2::CScreen2(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+///////////////////////////////////////////////////////////////////////////
+//
+// CScreen2
+//
+// This screen provides a basic control function
+//
+///////////////////////////////////////////////////////////////////////////
+
+CScreen2::CScreen2(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _showSetMode = 0;
   _showMode = 0;
@@ -44,16 +46,16 @@ CScreen2::CScreen2(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display
 }
 
 void 
-CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
+CScreen2::show()
 {
-  CScreen::show(CtlFrame, HtrFrame);
-  
+  CScreenHeader::show();
+
   char msg[20];
   int xPos, yPos;
 
   sprintf(msg, "%.1f`", getActualTemperature());
   {
-    CAutoFont AF(_display, &MAXIFONT);  // temporarily use a large font
+    CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
     _drawMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
   }
 
@@ -94,11 +96,11 @@ CScreen2::show(const CProtocol& CtlFrame, const CProtocol& HtrFrame)
     long tDelta = millis() - _showSetMode;  
     if(tDelta < 0) {
       // Show current heat demand setting
-      if(getThermostatMode()) {
-        sprintf(msg, "Setpoint = %d`C", getSetTemp());
+      if(getHeaterInfo().isThermostat()) {
+        sprintf(msg, "Setpoint = %d`C", getHeaterInfo().getTemperature_Desired());
       }
       else {
-        sprintf(msg, "Setpoint = %.1fHz", getFixedHz());
+        sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
       }
       // centre message at bottom of screen
       _drawMenuText(_display.xCentre(), _display.height() - 8, msg, false, eCentreJustify);
@@ -126,6 +128,7 @@ void
 CScreen2::keyHandler(uint8_t event)
 {
   static int repeatCount = -1;
+
   if(event & keyPressed) {
     repeatCount = 0;     // unlock tracking of repeat events
     // press LEFT to select previous screen, or Fixed Hz mode when in mode select
@@ -165,12 +168,12 @@ CScreen2::keyHandler(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
           _showMode = millis() + 5000;
-          _nModeSel = getThermostatMode() ? 0 : 1;
+          _nModeSel = getHeaterInfo().isThermostat() ? 0 : 1;
         }
       }
       // hold CENTRE to turn ON or OFF
       if(event & key_Centre) {
-        if(getRunState()) {
+        if(getHeaterInfo().getRunState()) {
           // running, request OFF
           if(repeatCount > 5) {
             repeatCount = -2;        // prevent double handling
@@ -218,8 +221,8 @@ CScreen2::keyHandler(uint8_t event)
 void 
 CScreen2::showRunState()
 {
-  int runstate = getRunState(); 
-  int errstate = getErrState(); 
+  int runstate = getHeaterInfo().getRunState(); 
+  int errstate = getHeaterInfo().getErrState(); 
 
   if(errstate) errstate--;  // correct for +1 biased return value
 
