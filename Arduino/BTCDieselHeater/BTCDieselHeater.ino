@@ -169,6 +169,7 @@ CProtocolPackage HeaterData;
 
 unsigned long moderator;
 bool bUpdateDisplay = false;
+bool bHaveWebClient = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
@@ -310,7 +311,7 @@ void loop()
   DoOTA();
 #endif // USE_OTA 
 #if USE_WEBSERVER == 1
-  doWebServer();
+  bHaveWebClient = doWebServer();
 #endif //USE_WEBSERVER
 
 #endif // USE_WIFI
@@ -819,20 +820,6 @@ bool validateFrame(const CProtocol& frame, const char* name)
 }
 
 
-/*int getRunState()
-{
-  if(pRxFrame)
-    return pRxFrame->getRunState();
-  return 0;
-}
-
-int getErrState()
-{
-  if(pRxFrame)
-    return pRxFrame->getErrState();
-  return 8;  // Comms error!
-}*/
-
 void requestOn()
 {
   TxManage.queueOnRequest();
@@ -874,24 +861,13 @@ void reqTempChange(int val)
      
   NVstore.setTemperature(curTemp);
 
-//        reqDisplayUpdate();
   ScreenManager.reqUpdate();
 }
 
 int getSetTemp()
 {
-//  pTxFrame->getTemperature_Desired();  // sluggish - delays until new packet goes out!
   return NVstore.getTemperature();
 }
-
-/*float getFixedHz()
-{
-  if(pRxFrame) {
-    return pRxFrame->getPump_Fixed();
-  }
-  return 0.0;
-}
-*/
 
 void reqThermoToggle()
 {
@@ -912,14 +888,18 @@ bool getThermostatMode()
 void checkDisplayUpdate()
 {
   // only update OLED when not processing blue wire
-//  if(pTxFrame && pRxFrame) {
-    ScreenManager.checkUpdate();        
-//  }
+  if(ScreenManager.checkUpdate()) {
+    lastAnimationTime = millis() + 100;
+    ScreenManager.animate();
+    ScreenManager.refresh();   // always refresh post major update
+  }
+ 
 
   long tDelta = millis() - lastAnimationTime;
   if(tDelta >= 100) {
-    lastAnimationTime += 100;
-    ScreenManager.animate();
+    lastAnimationTime = millis() + 100;
+    if(ScreenManager.animate())
+      ScreenManager.refresh();
   }
 }
 
@@ -928,50 +908,10 @@ void reqPumpPrime(bool on)
   DefaultBTCParams.setPump_Prime(on);
 }
 
-/*float getPumpHz()
-{
-  if(pRxFrame) {
-    return pRxFrame->getPump_Actual();
-  }
-  return 0.0;
-}
-*/
 float getActualTemperature()
 {
   return fFilteredTemperature;
 }
-
-/*float getPumpMin()
-{
-  if(pTxFrame) {
-    return pTxFrame->getPump_Min();
-  }
-  return 0.0;
-}
-
-float getPumpMax()
-{
-  if(pTxFrame) {
-    return pTxFrame->getPump_Max();
-  }
-  return 0.0;
-}
-
-short getFanMin()
-{
-  if(pTxFrame) {
-    return pTxFrame->getFan_Min();
-  }
-  return 0.0;
-}
-
-short getFanMax()
-{
-  if(pTxFrame) {
-    return pTxFrame->getFan_Max();
-  }
-  return 0.0;
-}*/
 
 void  setPumpMin(float val)
 {
@@ -1001,4 +941,9 @@ void saveNV()
 const CProtocolPackage& getHeaterInfo()
 {
   return HeaterData;
+}
+
+bool isWebClientConnected()
+{
+  return bHaveWebClient;
 }

@@ -21,7 +21,7 @@
 
 #include "128x64OLED.h"
 #include "tahoma16.h"
-#include "OLEDconsts.h"
+#include "Icons.h"
 #include "Screen2.h"
 #include "KeyPad.h"
 #include "helpers.h"
@@ -72,7 +72,7 @@ CScreen2::show()
     long tDelta = millis() - _showMode;
     if(tDelta < 0) {
 
-      yPos = _display.height() - 8 - border;  // bottom of screen, with room for box
+      yPos = _display.height() - _display.textHeight() - border;  // bottom of screen, with room for box
 
       // display "Fixed Hz" at lower right, allowing space for a selection surrounding box
       strcpy(msg, "Fixed Hz");
@@ -103,7 +103,7 @@ CScreen2::show()
         sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
       }
       // centre message at bottom of screen
-      _drawMenuText(_display.xCentre(), _display.height() - 8, msg, false, eCentreJustify);
+      _drawMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
     }
     else {
       _showSetMode = 0;
@@ -112,16 +112,7 @@ CScreen2::show()
   if((_showMode == 0) && (_showSetMode == 0)) {
     showRunState();
   }
-
-  _display.display();
 }
-
-
-void 
-CScreen2::animate()
-{
-  // do nothing!!
-};
 
 
 void 
@@ -231,24 +222,22 @@ CScreen2::showRunState()
   _display.setTextColor(WHITE, BLACK);
   if(runstate >= 0 && runstate <= 8) {
     if(((runstate == 0) || (runstate > 5)) && errstate) {
-      // create an "E-XX" message to display
-      char msg[16];
-      sprintf(msg, "E-%02d", errstate);
-      // determine height of font
-      CRect textRect;
-      _display.getTextExtents(msg, textRect);
-      _display.setCursor(_display.xCentre(),    // locate at bottom centre, 1 line up
-                        _display.height() - 2*textRect.height);
+
       // flash error code
+      char msg[16];
       toggle = !toggle;
-      if(toggle)
-        _display.printCentreJustified(msg);
-      else {
-        _display.printCentreJustified("          ");
+      if(toggle) {
+        // create an "E-XX" message to display
+        sprintf(msg, "E-%02d", errstate);
       }
-      // bounds limit error and gather message
-      if(errstate > 10) errstate = 11;
-      toPrint = Errstates[errstate-1];
+      else {
+        strcpy(msg, "          ");
+      }
+      int xPos = _display.xCentre();
+      int yPos = _display.height() - 2*_display.textHeight();
+      _drawMenuText(xPos, yPos, msg, false, eCentreJustify);
+
+      toPrint = getHeaterInfo().getErrStateStr();
     }
     else {
       if(runstate) {
@@ -260,11 +249,7 @@ CScreen2::showRunState()
     }
   }
   if(toPrint) {
-    // determine height of font
-    CRect textRect;
-    _display.getTextExtents(toPrint, textRect);
-    _display.setCursor(_display.xCentre(),                   // locate at bottom centre
-                      _display.height() - textRect.height);
-    _display.printCentreJustified(toPrint);
+    // locate at bottom centre
+    _drawMenuText(_display.xCentre(), _display.height() - _display.textHeight(), toPrint, false, eCentreJustify);
   }
 }

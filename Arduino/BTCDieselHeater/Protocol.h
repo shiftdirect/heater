@@ -207,13 +207,15 @@ class CProtocolPackage {
   CProtocol Heater;
   CProtocol Controller;
 public:
-  void set(const CProtocol& htr, const CProtocol& ctl) { Heater = htr; Controller = ctl; };
-  int getRunState() const { return Heater.getRunState(); };
-  int getErrState() const { return Heater.getErrState(); };
+  void  set(const CProtocol& htr, const CProtocol& ctl) { Heater = htr; Controller = ctl; };
+  int   getRunState() const { return Heater.getRunState(); };
+  const char* getRunStateStr() const;
+  int   getErrState() const { return Heater.getErrState(); };
+  const char* getErrStateStr() const;
   float getBattVoltage() const { return Heater.getVoltage_Supply(); };
-  bool isThermostat() const { return Controller.isThermostat(); };
-  float getTemperature_Desired() const { return Controller.getTemperature_Desired(); };
-  float getTemperature_HeatExchg() const { return Heater.getTemperature_HeatExchg(); };
+  bool  isThermostat() const { return Controller.isThermostat(); };
+  float getTemperature_Desired() const { return float(Controller.getTemperature_Desired()); };
+  float getTemperature_HeatExchg() const { return float(Heater.getTemperature_HeatExchg()); };
   float getPump_Fixed() const { return Heater.getPump_Fixed(); };
   float getPump_Actual() const { return Heater.getPump_Actual(); };
   float getPump_Min() const { return Controller.getPump_Min(); };
@@ -223,5 +225,6 @@ public:
   short getFan_Max() const { return Controller.getFan_Max(); };
   float getGlowPlug_Power() const { return Heater.getGlowPlug_Current() * Heater.getGlowPlug_Voltage(); };
 };
+
 
 #endif

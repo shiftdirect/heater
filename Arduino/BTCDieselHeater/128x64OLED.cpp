@@ -191,3 +191,11 @@ C128x64_OLED::printCentreJustified(const char* str)
   setCursor(textRect.xPos, textRect.yPos);
   print(str);
 }
+
+int  
+C128x64_OLED::textHeight()
+{
+  CRect extents;
+  getTextExtents("H", extents);
+  return extents.height;
+}

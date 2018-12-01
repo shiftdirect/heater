@@ -21,7 +21,7 @@
 
 #include "128x64OLED.h"
 #include "MiniFont.h"
-#include "OLEDconsts.h"
+#include "Icons.h"
 #include "BluetoothAbstract.h" 
 #include "Screen1.h"
 #include "BTCWifi.h"
@@ -91,10 +91,6 @@ CScreen1::show()
 
   float desiredT = 0;
   if((runstate && (runstate <= 5)) || _showTarget) {
-    // if(CtlFrame.isThermostat())
-    //   desiredT = CtlFrame.getTemperature_Desired();
-    // else
-    //   desiredT = -HtrFrame.getPump_Fixed();
     if(getHeaterInfo().isThermostat())
       desiredT = getHeaterInfo().getTemperature_Desired();
     else
@@ -109,19 +105,15 @@ CScreen1::show()
   _animateGlow = false;
 
   if(runstate) {
-//    float power = HtrFrame.getGlowPlug_Current() * HtrFrame.getGlowPlug_Voltage();
     float power = getHeaterInfo().getGlowPlug_Power();
     if(power > 1) {
       showGlowPlug(power);
     }
 
-//    showFan(HtrFrame.getFan_Actual());
     showFan(getHeaterInfo().getFan_Actual());
 
-//    showFuel(HtrFrame.getPump_Actual());
     showFuel(getHeaterInfo().getPump_Actual());
 
-//    showBodyThermometer(HtrFrame.getTemperature_HeatExchg());
     showBodyThermometer(getHeaterInfo().getTemperature_HeatExchg());
   }
 
@@ -129,9 +121,10 @@ CScreen1::show()
 }
 
 
-void 
+bool 
 CScreen1::animate()
 {
+  bool retval = CScreenHeader::animate();
 
   if(_animatePump || _animateRPM || _animateGlow) {
 
@@ -163,8 +156,9 @@ CScreen1::animate()
       _heatAnimationState -= 2;
       _heatAnimationState &= 0x07;
     }
+    return retval |= true;
   }
-  _display.display();
+  return retval;
 }
 
 
@@ -339,7 +333,7 @@ CScreen1::showRunState(int runstate, int errstate)
       char msg[16];
       sprintf(msg, "E-%02d", errstate);
       if(runstate > 5)
-        yPos -= 8;
+        yPos -= _display.textHeight();
       _display.setCursor(_display.xCentre(), yPos);
       // flash error code
       toggle = !toggle;
@@ -348,13 +342,11 @@ CScreen1::showRunState(int runstate, int errstate)
       else {
         _display.printCentreJustified("          ");
       }
-      yPos += 8;
-      // bounds limit error and gather message
-      if(errstate > 10) errstate = 11;
-      toPrint = Errstates[errstate-1];
+      yPos += _display.textHeight();
+      toPrint = getHeaterInfo().getErrStateStr();
     }
     else {
-      toPrint = Runstates[runstate];
+      toPrint = getHeaterInfo().getRunStateStr();
     }
   }
   if(toPrint) {

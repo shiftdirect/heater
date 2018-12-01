@@ -96,16 +96,9 @@ CScreen3::show()
     }
   }
 
-  _display.display();
+//  _display.display();
 
 }
-
-
-void 
-CScreen3::animate()
-{
-  // do nothing!!
-};
 
 
 void 

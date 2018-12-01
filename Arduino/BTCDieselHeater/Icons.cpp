@@ -19,7 +19,8 @@
  * 
  */
 
-#include "OLEDconsts.h"
+#include <Arduino.h>
+#include "Icons.h"
 
 // 'Thermometer', 8x50px
 const unsigned char thermometerBitmap [] PROGMEM = {
@@ -45,6 +46,15 @@ const unsigned char wifiIcon [] PROGMEM = {
 	0x07, 0x00, 0x08, 0x80, 0x00, 0x00, 0x02, 0x00
 };
 
+// 'wifiInIcon, 5x5px
+const unsigned char wifiInIcon [] PROGMEM = {
+	0x70, 0x70, 0xf8, 0x70, 0x20
+};
+
+// 'wifiOutIcon, 5x5px
+const unsigned char wifiOutIcon [] PROGMEM = {
+	0x20, 0x70, 0xf8, 0x70, 0x70
+};
 
 // 'BatteryIcon', 15x10px
 const unsigned char BatteryIcon [] PROGMEM = {
@@ -97,134 +107,3 @@ const unsigned char TargetIcon [] PROGMEM = {
 };
 
 
-
-//  #    #   ##   ###  # #  ###   ##  ###  ###  ###
-// # #  ##     #    #  # #  #    #      #  # #  # #
-// # #   #    #    ##  ###  ##   ###    #  ###  ###
-// # #   #   #      #    #    #  # #    #  # #    # 
-//  #   ###  ###  ###    #  ##   ###    #  ###  ##
-// '0', 3x5px
-const unsigned char Mini0 [] PROGMEM = {
-  0x40, 0xb0, 0xb0, 0xb0, 0x40
-};
-
-// '1', 3x5px
-const unsigned char Mini1 [] PROGMEM = {
-  0x40, 0xc0, 0x40, 0x40, 0xe0
-};
-
-// '2', 3x5px
-const unsigned char Mini2 [] PROGMEM = {
-  0xc0, 0x20, 0x40, 0x80, 0xe0
-};
-
-// '3', 3x5px
-const unsigned char Mini3 [] PROGMEM = {
-  0xe0, 0x20, 0x60, 0x20, 0xe0
-};
-
-// '4', 3x5px
-const unsigned char Mini4 [] PROGMEM = {
-  0xb0, 0xb0, 0xe0, 0x20, 0x20
-};
-
-// '5', 3x5px
-const unsigned char Mini5 [] PROGMEM = {
-  0xe0, 0x80, 0xc0, 0x20, 0xc0
-};
-
-// '6', 3x5px
-const unsigned char Mini6 [] PROGMEM = {
-  0x60, 0x80, 0xe0, 0xb0, 0xe0
-};
-
-// '7', 3x5px
-const unsigned char Mini7 [] PROGMEM = {
-  0xe0, 0x20, 0x20, 0x20, 0x20
-};
-
-// '8', 3x5px
-const unsigned char Mini8 [] PROGMEM = {
-  0xe0, 0xb0, 0xe0, 0xb0, 0xe0
-};
-
-// '9', 3x5px
-const unsigned char Mini9 [] PROGMEM = {
-  0xe0, 0xb0, 0xe0, 0x20, 0xc0
-};
-
-// 'DP', 3x5px
-const unsigned char MiniDP [] PROGMEM = {
-  0x00, 0x00, 0x00, 0x00, 0x40
-};
-
-// 'Deg', 3x5px
-const unsigned char MiniDeg [] PROGMEM = {
-  0xc0, 0xc0, 0x00, 0x00, 0x00
-};
-
-// 'C', 3x5px
-const unsigned char MiniC [] PROGMEM = {
-  0xe0, 0x80, 0x80, 0x80, 0xe0
-};
-
-// 'H', 3x5px
-const unsigned char MiniH [] PROGMEM = {
-  0xb0, 0xb0, 0xe0, 0xb0, 0xb0
-};
-
-// 'z', 3x5px
-const unsigned char Miniz [] PROGMEM = {
-  0x00, 0x00, 0xe0, 0x40, 0xe0
-};
-
-// ' ', 3x5px
-const unsigned char MiniSpc [] PROGMEM = {
-  0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-// 'A', 3x5px
-const unsigned char MiniA [] PROGMEM = {
-  0xe0, 0xb0, 0xe0, 0xb0, 0xb0
-};
-
-// 'P', 3x5px
-const unsigned char MiniP [] PROGMEM = {
-  0xe0, 0xb0, 0xe0, 0x80, 0x80
-};
-
-// 'V', 3x5px
-const unsigned char MiniV [] PROGMEM = {
-  0xb0, 0xb0, 0xb0, 0xb0, 0x40
-};
-
-// 'W', 3x5px
-const unsigned char MiniW [] PROGMEM = {
-  0xb0, 0xb0, 0xb0, 0xe0, 0xb0
-};
-
-const char* Runstates [] PROGMEM = {
-  " Stopped/Ready ",
-  "Starting...",
-  "Igniting...",
-  " Ignition retry ",
-  "Ignited",
-  "Running",
-  "Stopping",
-  "Shutting down",
-  "Cooling"
-};
-
-const char* Errstates [] PROGMEM = {
-  "Low voltage",     // E-01
-  "High voltage",    // E-02
-  "Glow plug fault", // E-03
-  "Pump fault",      // E-04
-  "Overheat",        // E-05
-  "Motor fault",     // E-06
-  "Comms fault",     // E-07
-  "Flame out",       // E-08
-  "Temp sense",      // E-09
-  "Ignition fail",   // E-10
-  "Unknown error?"   // mystery code!
-};

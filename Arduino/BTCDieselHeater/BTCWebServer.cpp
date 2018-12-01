@@ -32,6 +32,8 @@ extern void Command_Interpret(const char* pLine);   // decodes received command 
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
+bool bRxWebData = false;
+bool bTxWebData = false;
 
 const int led = 13;
 
@@ -73,19 +75,22 @@ void initWebServer(void) {
 }
 unsigned char cVal;
 
-void doWebServer(void) {
+bool doWebServer(void) {
 	static unsigned long lastTx = 0;
 	webSocket.loop();
 	server.handleClient();
-	if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
-		lastTx = millis() + 1000;
-		char msg[16];
-		sprintf(msg, "%.1f", getActualTemperature());
-		webSocket.broadcastTXT(msg);
-		// char c[] = { "23" };
-		// webSocket.broadcastTXT(c, sizeof(c));
-}
-
+	int numClients = webSocket.connectedClients();
+	if(numClients) {
+		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
+			lastTx = millis() + 1000;
+			char msg[16];
+			sprintf(msg, "%.1f", getActualTemperature());
+			webSocket.broadcastTXT(msg);
+			bTxWebData = true;
+		}
+		return true;
+	}
+  return false;
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
@@ -94,10 +99,25 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 		memset(cmd, 0, 16);
 		for (int i = 0; i < length && i < 15; i++) {
 			cmd[i] = payload[i];
-//				Serial.print((char)payload[i]);
 		}
-//			Serial.println();
-    Serial.println(cmd);
+//    Serial.println(cmd);
 		Command_Interpret(cmd);  // send to the main heater controller decode routine
+		bRxWebData = true;
+  }
 }
+
+bool hasWebClientSpoken(bool reset)
+{
+	bool retval = bRxWebData;
+	if(reset)
+  	bRxWebData = false;
+	return retval;
+}
+
+bool hasWebServerSpoken(bool reset)
+{
+	bool retval = bTxWebData;
+	if(reset)
+		bTxWebData = false;
+	return retval;
 }

@@ -57,15 +57,8 @@ CScreen4::show()
     _display.printRightJustified("Not active");
   }
 
-  _display.display();
+//  _display.display();
 }
-
-
-void 
-CScreen4::animate()
-{
-  // do nothing!!
-};
 
 
 void 

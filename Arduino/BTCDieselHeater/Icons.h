@@ -19,8 +19,6 @@
  * 
  */
 
-#include <Arduino.h>
-
 // 'Thermometer', 8x50px
 #define W_BULB_ICON 8
 #define H_BULB_ICON 50
@@ -40,6 +38,16 @@ extern const unsigned char BTicon [];
 #define W_WIFI_ICON 13
 #define H_WIFI_ICON 10
 extern const unsigned char wifiIcon [];
+
+// 'wifiInIcon', 5x5px
+#define W_WIFIIN_ICON 5
+#define H_WIFIIN_ICON 5
+extern const unsigned char wifiInIcon [];
+
+// 'wifiOutIcon', 5x5px
+#define W_WIFIOUT_ICON 5
+#define H_WIFIOUT_ICON 5
+extern const unsigned char wifiOutIcon [];
 
 // 'BatteryIcon', 15x10px
 #define W_BATT_ICON 15
@@ -79,6 +87,3 @@ extern const unsigned char FuelIcon [];
 extern const unsigned char TargetIcon [];
 
 
-extern const char* Runstates [];
-
-extern const char* Errstates [];

@@ -128,15 +128,8 @@ CScreen5::show()
       break;
   }
   
-  _display.display();
+//  _display.display();
 }
-
-
-void 
-CScreen5::animate()
-{
-  // do nothing!!
-};
 
 
 void 

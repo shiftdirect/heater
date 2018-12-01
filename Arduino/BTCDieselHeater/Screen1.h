@@ -47,6 +47,6 @@ class CScreen1 : public CScreenHeader
 public:
   CScreen1(C128x64_OLED& display, CScreenManager& mgr);
   void show();
-  void animate();
+  bool animate();
   void keyHandler(uint8_t event);
 };

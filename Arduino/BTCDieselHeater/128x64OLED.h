@@ -45,6 +45,7 @@ public:
   void printCentreJustified(const char* str); 
 
   int  xCentre() { return width() / 2; };
+  int  textHeight();
 
   size_t write(uint8_t c);
 };

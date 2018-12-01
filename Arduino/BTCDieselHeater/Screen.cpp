@@ -17,9 +17,10 @@ CScreen::~CScreen()
 }
 
 
-void
+bool
 CScreen::animate()
 {
+  return false;
 }
 
 

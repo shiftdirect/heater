@@ -34,5 +34,8 @@
   void initWifi(int initpin,const char *failedssid, const char *failedpassword);
   const char* getWifiAddrStr(); 
   bool isWifiConnected();
+  bool isWebClientConnected();
+  bool hasWebClientSpoken(bool reset = false);
+  bool hasWebServerSpoken(bool reset = false);
 
 #endif __BTCWIFI_H__

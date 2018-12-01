@@ -40,8 +40,9 @@ public:
   CScreenManager();
   ~CScreenManager();
   void init();
-  void checkUpdate();
-  void animate();
+  bool checkUpdate();
+  bool animate();
+  void refresh();
   void nextScreen();
   void prevScreen();
   void keyHandler(uint8_t event);

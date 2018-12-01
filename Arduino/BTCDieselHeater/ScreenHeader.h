@@ -29,6 +29,9 @@
 
 
 class CScreenHeader : public CScreen {
+  int  _animateState;
+  int  _animationHold;
+  bool _needAnimationClear;
 protected:
   void showBTicon();
   void showWifiIcon();
@@ -36,6 +39,7 @@ protected:
 public:
   CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual void show();
+  virtual bool animate();
 };
 
 #endif // __SCREEN_HEADER_H__

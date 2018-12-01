@@ -156,15 +156,17 @@ CScreenManager::init()
   _switchScreen();
 }
 
-void 
+bool 
 CScreenManager::checkUpdate()
 {
   if(_bReqUpdate) {
     if(_pActiveScreen) {
       _pActiveScreen->show();
       _bReqUpdate = false;
+			return true;
     }
   }
+  return false;
 }
   
 void 
@@ -173,10 +175,19 @@ CScreenManager::reqUpdate()
   _bReqUpdate = true;
 }
 
-void 
+bool 
 CScreenManager::animate()
 {
-  if(_pActiveScreen) _pActiveScreen->animate();
+  if(_pActiveScreen) 
+	  return _pActiveScreen->animate();
+	return false;
+}
+
+void
+CScreenManager::refresh()
+{
+	if(_pDisplay)
+		_pDisplay->display();
 }
 
 void 

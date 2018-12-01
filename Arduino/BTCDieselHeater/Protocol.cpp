@@ -22,6 +22,7 @@
 #include <Arduino.h>
 #include "Protocol.h"
 #include "debugport.h"
+#include "helpers.h"
 
 #ifdef TELNET
 #define DebugPort Debug
@@ -31,7 +32,6 @@
 #define DebugPort Serial
 #endif
 
- 
 unsigned short 
 CProtocol::CalcCRC(int len) const
 {
@@ -311,3 +311,51 @@ CProtocol::setThermostatMode(unsigned on)
   if(!on)
     setTemperature_Actual(0);   // if using fixed mode, actual must be reported as 0
 };
+
+const char* Runstates [] PROGMEM = {
+  " Stopped/Ready ",
+  "Starting...",
+  "Igniting...",
+  " Ignition retry ",
+  "Ignited",
+  "Running",
+  "Stopping",
+  "Shutting down",
+  "Cooling",
+  "Unknown run state"
+};
+
+ 
+
+const char* 
+CProtocolPackage::getRunStateStr() const 
+{ 
+  uint8_t runstate = Heater.getRunState();
+  UPPERLIMIT(runstate, 9);
+  return Runstates[runstate]; 
+}
+
+
+const char* Errstates [] PROGMEM = {
+  "",
+  "",
+  "Low voltage",     // E-01
+  "High voltage",    // E-02
+  "Glow plug fault", // E-03
+  "Pump fault",      // E-04
+  "Overheat",        // E-05
+  "Motor fault",     // E-06
+  "Comms fault",     // E-07
+  "Flame out",       // E-08
+  "Temp sense",      // E-09
+  "Ignition fail",   // E-10
+  "Unknown error?"   // mystery code!
+};
+
+const char* 
+CProtocolPackage::getErrStateStr() const 
+{ 
+  uint8_t errstate = Heater.getErrState();
+  UPPERLIMIT(errstate, 12);
+  return Errstates[errstate]; 
+}

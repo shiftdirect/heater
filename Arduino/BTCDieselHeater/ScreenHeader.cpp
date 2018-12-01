@@ -5,7 +5,7 @@
 #include "BTCWifi.h"
 #include "BluetoothAbstract.h" 
 #include "clock.h"
-#include "OLEDconsts.h"
+#include "Icons.h"
 #include "MiniFont.h"
 #include "helpers.h"
 
@@ -20,9 +20,13 @@
 
 #define MINI_BATTLABEL
 
+#define DEMO_AP_MODE
 
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
 {
+  _animateState = 0;
+  _animationHold = 0;
+  _needAnimationClear = false;
 }
 
 void 
@@ -42,6 +46,58 @@ CScreenHeader::show()
   showBatteryIcon(getHeaterInfo().getBattVoltage());
 
   showTime(_display);
+}
+
+// Animate IN/OUT arrows against the WiFi icon, according to actual web server traffic
+//   an IN arrow is drawn if incoming data has been detected
+//   an OUT arrow is drawn if outgoing data has been sent
+//
+// Each arrow is drawn standalone, with a clear interval for a clean flash on the display
+// The following is a typical sequence, relative to animation ticks, note the gap
+// always appears in the animation interval between any arrow shown
+//   
+//    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
+// ________^^^^^^____vvvvv_______________vvvvv__________^^^^^_____vvvvv_____________________
+
+bool 
+CScreenHeader::animate()
+{
+  bool retval = false;
+  if(isWifiConnected() && isWebClientConnected()) {
+    int xPos = X_WIFI_ICON + W_WIFI_ICON;
+#ifdef DEMO_AP_MODE
+    xPos += 4;
+#endif
+    int yPos = H_WIFI_ICON - H_WIFIIN_ICON + 1;
+    // animation hold ensures our arrow indications always have a clear 
+    // period between them, otherwise they just visibly mush together
+    if(_animationHold) 
+      _animationHold--;
+    // as we control (moderate) the delivery, check for any data we have sent first 
+    // An over enthusiastic client would otherwise block the out arrow animation!
+    if(!_animationHold && hasWebServerSpoken(true)) {
+      // we have emitted data to the web client, show an OUT arrow
+//      _display.drawBitmap(xPos, yPos, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
+      _display.drawBitmap(xPos, 0, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
+      _needAnimationClear = true;  // clear arrow upon next iteration
+      _animationHold = 2;          // prevent anotehr arrow appearing before previous arrow has been scrubbed
+      retval = true;
+    }
+    else if(!_animationHold && hasWebClientSpoken(true)) {
+      // we have receievd data from the web client, show an IN arrow
+      _display.drawBitmap(xPos, yPos, wifiInIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
+      _needAnimationClear = true;  // clear arrow upon next iteration
+      _animationHold = 2;          // prevent another arrow appearing before previous arrow has been scrubbed 
+      retval = true;
+    }
+    else if(_needAnimationClear) { // an arrow was drawn in the prior iteration, now erase it 
+      _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
+      _display.fillRect(xPos, 0, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
+      retval = true;
+      _needAnimationClear = false;
+    }
+  }
+  return retval;                    // true if we have updated the display contents
 }
 
 void 
