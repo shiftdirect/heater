@@ -24,6 +24,9 @@
 #include "helpers.h"
 #include "Screen4.h"
 #include "BTCWifi.h"
+#include "Tahoma8.h"
+#include "FranklinGothic.h"
+#include "Arial.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -45,19 +48,25 @@ CScreen4::show()
 {
   CScreenHeader::show();
   
-  CRect extents;
+//  CTransientFont tmp(_display, &tahoma_8ptFontInfo);
+//  CTransientFont tmp(_display, &franklinGothicMediumCond_8ptFontInfo);
+//  CTransientFont tmp(_display, &arial_8ptFontInfo);
 
-  _display.setCursor(0, 24);
-  _display.print("IP addr:");
-  _display.setCursor(_display.width(), 24);
-  if(isWifiConnected()) {
-    _display.printRightJustified(getWifiAddrStr());
+  int yPos = 16;
+  if(isWifiConnected() || isWifiAP()) {
+    if(isWifiAP()) {
+      _printInverted(0, yPos, " WiFi Access Point ", true);
+    }
+    else {
+      _printInverted(0, yPos, " WiFi Client ", true);
+    }
+    yPos += _display.textHeight() + 2;
+    _drawMenuText(0, yPos, "IP addr.");
+    _drawMenuText(_display.width(), yPos, getWifiAddrStr(), false, eRightJustify);
   }
   else {
-    _display.printRightJustified("Not active");
+    _printInverted(0, yPos, " WiFi Inactive ", true);
   }
-
-//  _display.display();
 }
 
 

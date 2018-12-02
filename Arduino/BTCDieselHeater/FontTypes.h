@@ -35,7 +35,7 @@
 typedef struct  {
   uint8_t Width;                  // Char width in bits
   uint8_t Height;
-  uint8_t Offset;                 // Offset into bitmap array bytes)
+  uint16_t Offset;                 // Offset into bitmap array bytes)
 } FONT_CHAR_INFO;
 
 typedef struct  {

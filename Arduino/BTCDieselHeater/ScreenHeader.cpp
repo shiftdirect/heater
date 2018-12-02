@@ -35,15 +35,15 @@ CScreenHeader::show()
 
   // standard header items
   // Bluetooth
-  if(getBluetoothClient().isConnected())
-    showBTicon();
+  showBTicon();
+
   // WiFi
-  if(isWifiConnected()) {
-    showWifiIcon();
-  }
+  showWifiIcon();
+
   // battery
   showBatteryIcon(getHeaterInfo().getBattVoltage());
 
+  // clock
   showTime(_display);
 }
 
@@ -65,12 +65,14 @@ bool
 CScreenHeader::animate()
 {
   bool retval = false;
-  if(isWifiConnected() && isWebClientConnected()) {
+  if((isWifiConnected() || isWifiAP()) && isWebClientConnected()) {
 
     int xPos = X_WIFI_ICON + W_WIFI_ICON;
-#ifdef DEMO_AP_MODE
-    xPos += 4;
-#endif
+//#ifdef DEMO_AP_MODE
+    if(isWifiAP()) {
+      xPos += 4;
+    }
+//#endif
     
     // UP arrow animation
     //
@@ -110,19 +112,25 @@ CScreenHeader::animate()
 void 
 CScreenHeader::showBTicon()
 {
-  _display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
+  if(getBluetoothClient().isConnected()) {
+    _display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
+  }
 }
 
 void 
 CScreenHeader::showWifiIcon()
 {
-  _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
-#ifdef DEMO_AP_MODE
-  _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
-  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-  _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
-  _display.print("AP");
-#endif
+  if(isWifiConnected() || isWifiAP()) {
+    _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
+//#ifdef DEMO_AP_MODE
+    if(isWifiAP()) {
+      _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
+      CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+      _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
+      _display.print("AP");
+    }
+//#endif
+  }
 }
 
 void

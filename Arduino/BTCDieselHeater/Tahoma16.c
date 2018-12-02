@@ -1,4 +1,3 @@
-#include "tahoma16.h"
 // 
 //  Font data for Tahoma 16pt
 //
@@ -10,23 +9,27 @@
 // Dot Factory Settings
 // 
 // Flip/Rotate      Padding Removal           Line Wrap         Descriptors
-//   [X] Flip X       Height(Y): Tightest       (O) At column     [X] Generate descriptor array
-//   [ ] Flip Y       Width(X):  Tightest       ( ) At bitmap     Char Width:  In Bits
-//                                                                Char Height: In Bits
-// Comments              Byte                                     Font Height: In Bits
-//   [X] Variable Name     Bit layout: RowMajor                   [ ] Multiple descriptor arrays
-//   [X] BMP visualise     Order:      MSBfirst
-//   [X] Char descriptor   Format:     Hex                        Create new when exceeds [80]
-//    Style: Cpp           Leading:    0x                         
-//                                                                Image width:  In Bits
-//  Variable name format                                          Image height: In Bits
-//    Bitmaps:   const uint8_t PROGMEM {0}Bitmaps
-//    Char Info: const FONT_CHAR_INFO PROGMEM {0}Descriptors    Space char generation
-//    Font Info: const FONT_INFO {0}FontInfo                      [X] Generate space bitmap     
-//    Width:     const uint8_t {0}Width                           [2] pixels for space char
+//   [X] Flip X       Height(Y): None           (O) At column     [X] Generate descriptor array
+//   [ ] Flip Y       Width(X):  Tightest       ( ) At bitmap       Char Width:  In Bits
+//       90deg                                                      Char Height: In Bits
+//                                                                  Font Height: In Bits
+// Comments                  Byte                                     [ ] Multiple descriptor arrays
+//   [X] Variable Name         Bit layout: RowMajor                   
+//   [X] BMP visualise   [#]   Order:      MSBfirst                 Create new when exceeds [80]
+//   [X] Char descriptor       Format:     Hex                        
+//    Style: Cpp               Leading:    0x                       Image width:  In Bits
+//                                                                  Image height: In Bits
+//  Variable name format                                          
+//    Bitmaps:   const uint8_t PROGMEM {0}Bitmaps               Space char generation
+//    Char Info: const FONT_CHAR_INFO PROGMEM {0}Descriptors      [ ] Generate space bitmap
+//    Font Info: const FONT_INFO {0}FontInfo                      [2] pixels for space char     
+//    Width:     const uint8_t {0}Width                           
 //    Height:    const uint8_t {0}Height
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+#include "tahoma16.h"
 
 // Character bitmaps for Tahoma 16pt
 const uint8_t tahoma_16ptBitmaps[] PROGMEM =

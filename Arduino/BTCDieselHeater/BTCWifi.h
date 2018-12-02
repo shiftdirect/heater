@@ -26,14 +26,11 @@
 #include <WiFiManager.h>
 #include <WiFi.h>
 
-/*
-  const char *failedssid;
-  const char *failedpassword;
-  */
   void doWiFiManager();
   void initWifi(int initpin,const char *failedssid, const char *failedpassword);
   const char* getWifiAddrStr(); 
   bool isWifiConnected();
+  bool isWifiAP();
   bool isWebClientConnected();
   bool hasWebClientSpoken(bool reset = false);
   bool hasWebServerSpoken(bool reset = false);

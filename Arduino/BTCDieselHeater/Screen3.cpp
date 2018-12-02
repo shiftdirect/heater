@@ -55,12 +55,14 @@ CScreen3::show()
   _drawMenuText(_display.xCentre(), yPos, "<-             ->", _rowSel == 0, eCentreJustify);
 
   yPos = 40;
-  int col = getHeaterInfo().isThermostat() ? 0 : 1;              // follow actual heater settings
   if(_rowSel == 1) {
-    _drawMenuText(border, yPos, "Thermostat", col == 0);
-    _drawMenuText(_display.width()-border, yPos, "Fixed Hz", col == 1, eRightJustify);
+    // follow user desired setting, heater info is laggy
+    _drawMenuText(border, yPos, "Thermostat", _colSel == 0);
+    _drawMenuText(_display.width()-border, yPos, "Fixed Hz", _colSel == 1, eRightJustify);
   }
   else {
+    // follow actual heater settings
+    int col = getHeaterInfo().isThermostat() ? 0 : 1;              
     _printInverted(border, yPos, "Thermostat", col == 0);
     _printInverted(_display.width()-border, yPos, "Fixed Hz", col == 1, eRightJustify);
   }
@@ -149,12 +151,16 @@ CScreen3::keyHandler(uint8_t event)
       UPPERLIMIT(_rowSel, 2);
       if(_rowSel == 2)
         _colSel = 1;       // select OFF upon entry to priming menu
+      if(_rowSel == 1)
+        _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
     }
     // press DOWN
     if(event & key_Down) {
       _rowSel--;
       LOWERLIMIT(_rowSel, 0);
       _colSel = 0;
+      if(_rowSel == 1)
+        _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
     }
 
     // check if fuel priming was selected

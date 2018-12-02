@@ -33,20 +33,21 @@
 // Dot Factory Settings
 // 
 // Flip/Rotate      Padding Removal           Line Wrap         Descriptors
-//   [X] Flip X       Height(Y): Tightest       (O) At column     [X] Generate descriptor array
-//   [ ] Flip Y       Width(X):  Tightest       ( ) At bitmap     Char Width:  In Bits
-//                                                                Char Height: In Bits
-// Comments              Byte                                     Font Height: In Bits
-//   [X] Variable Name     Bit layout: RowMajor                   [ ] Multiple descriptor arrays
-//   [X] BMP visualise     Order:      MSBfirst
-//   [X] Char descriptor   Format:     Hex                        Create new when exceeds [80]
-//    Style: Cpp           Leading:    0x                         
-//                                                                Image width:  In Bits
-//  Variable name format                                          Image height: In Bits
-//    Bitmaps:   const uint8_t PROGMEM {0}Bitmaps
-//    Char Info: const FONT_CHAR_INFO PROGMEM {0}Descriptors    Space char generation
-//    Font Info: const FONT_INFO {0}FontInfo                      [X] Generate space bitmap     
-//    Width:     const uint8_t {0}Width                           [2] pixels for space char
+//   [X] Flip X       Height(Y): None           (O) At column     [X] Generate descriptor array
+//   [ ] Flip Y       Width(X):  Tightest       ( ) At bitmap       Char Width:  In Bits
+//       90deg                                                      Char Height: In Bits
+//                                                                  Font Height: In Bits
+// Comments                  Byte                                     [ ] Multiple descriptor arrays
+//   [X] Variable Name         Bit layout: RowMajor                   
+//   [X] BMP visualise   [#]   Order:      MSBfirst                 Create new when exceeds [80]
+//   [X] Char descriptor       Format:     Hex                        
+//    Style: Cpp               Leading:    0x                       Image width:  In Bits
+//                                                                  Image height: In Bits
+//  Variable name format                                          
+//    Bitmaps:   const uint8_t PROGMEM {0}Bitmaps               Space char generation
+//    Char Info: const FONT_CHAR_INFO PROGMEM {0}Descriptors      [X] Generate space bitmap
+//    Font Info: const FONT_INFO {0}FontInfo                      [2] pixels for space char     
+//    Width:     const uint8_t {0}Width                           
 //    Height:    const uint8_t {0}Height
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +138,11 @@ C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t
 	  // point to info for selected character
 	  const FONT_CHAR_INFO* pCharInfo = &pFontDescriptor->pCharInfo[c - pFontDescriptor->StartChar];
     // and extract info from flash (program) storage
-	  int BmpOffset = pgm_read_byte(&pCharInfo->Offset);
+    unsigned char* addr = (unsigned char*)&pCharInfo->Offset;
+//	  uint8_t LSB = pgm_read_byte(&pCharInfo->Offset);
+	  uint8_t LSB = pgm_read_byte(addr++);
+	  uint8_t MSB = pgm_read_byte(addr);
+    int BmpOffset = (MSB << 8) | LSB;
     xsize = pgm_read_byte(&pCharInfo->Width);
     ysize = pgm_read_byte(&pCharInfo->Height);
 

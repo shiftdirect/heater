@@ -28,10 +28,10 @@ WiFiManager wm;
 
 unsigned int  timeout   = 120; // seconds to run for
 unsigned int  startTime = millis();
+bool isAP               = false;
 bool portalRunning      = false;
 bool startCP            = false; // start AP and webserver if true, else start only webserver
 int TRIG_PIN;
-bool res;
 
 
 
@@ -51,12 +51,16 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
 
-  res = wm.autoConnect(); // auto generated AP name from chipid
+  bool res = wm.autoConnect(); // auto generated AP name from chipid
+//  bool res = false;
 
   if(!res) {
     DebugPort.println("Failed to connect");
     DebugPort.println("Setting up ESP as AP");
-    WiFi.softAP(failedssid, failedpassword);
+    isAP = WiFi.softAP(failedssid, failedpassword);
+    if(isAP) {
+      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 0), IPAddress(255,255,255,0));
+    }
   } 
   else {
     //if you get here you have connected to the WiFi    
@@ -104,12 +108,20 @@ void doWiFiManager(){
 
 const char* getWifiAddrStr()
 { 
-  return WiFi.localIP().toString().c_str(); 
+  if(isAP)
+    return WiFi.softAPIP().toString().c_str(); 
+  else
+    return WiFi.localIP().toString().c_str(); 
 };
   
 
 bool isWifiConnected()
 {
   return WiFi.status() == WL_CONNECTED;
+}
+
+bool isWifiAP()
+{
+  return isAP;
 }
 

@@ -33,6 +33,7 @@
 #include "helpers.h"
 #include "Screen5.h"
 #include "BTCWifi.h"
+#include "Arial.h"
 
 
 CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
@@ -48,31 +49,27 @@ void
 CScreen5::show()
 {
   CScreenHeader::show();
-  
-  CRect extents;
+
   char str[16];
   int xPos, yPos;
   const int col2 = 90;
   const int col3 = _display.width() - border;
 
-  _display.setCursor(0, 16);
-  _display.print("Fuel Settings:");
+  _printInverted(0, 16, " Fuel Settings ", true);
 
   switch(_rowSel) {
     case 0:
       // show settings overview (initial screen entry)
       // pump max/min
       yPos = 28;
-      _display.setCursor(0, yPos);
-      _display.print("Pump (Hz)");
+      _drawMenuText(0, yPos, "Pump (Hz)");
       sprintf(str, "%.1f", getHeaterInfo().getPump_Min());
       _drawMenuText(col2, yPos, str, false, eRightJustify);
       sprintf(str, "%.1f", getHeaterInfo().getPump_Max());
       _drawMenuText(col3, yPos, str, false, eRightJustify);
       // fan max/min
       yPos = 40;
-      _display.setCursor(0, yPos);
-      _display.print("Fan (RPM)");
+      _drawMenuText(0, yPos, "Fan (RPM)");
       sprintf(str, "%d", getHeaterInfo().getFan_Min());
       _drawMenuText(col2, yPos, str, false, eRightJustify);
       sprintf(str, "%d", getHeaterInfo().getFan_Max());
@@ -95,26 +92,22 @@ CScreen5::show()
       _display.clearDisplay();
       // Pump Minimum adjustment
       yPos = border + 36;
-      _display.setCursor(0, yPos);
-      _display.print("Pump    Min");
+      _drawMenuText(80, yPos, "Min", false, eRightJustify);
       sprintf(str, "%.1f", adjPump[0]); 
       _drawMenuText(col3, yPos, str, _rowSel == 2, eRightJustify);
       // Pump Maximum adjustment
       yPos = border + 24;
-      _display.setCursor(0, yPos);
-      _display.print("Pump Hz Max");
+      _drawMenuText(80, yPos, "Pump Hz Max", false, eRightJustify);
       sprintf(str, "%.1f", adjPump[1]);
       _drawMenuText(col3, yPos, str, _rowSel == 3, eRightJustify);
       // Fan Minimum adjustment
       yPos = border + 12;
-      _display.setCursor(0, yPos);
-      _display.print("Fan     Min");
+      _drawMenuText(80, yPos, "Min", false, eRightJustify);
       sprintf(str, "%d", adjFan[0]);
       _drawMenuText(col3, yPos, str, _rowSel == 4, eRightJustify);
       // Fan Maximum adjustment
       yPos = border;
-      _display.setCursor(0, yPos);
-      _display.print("Fan RPM Max");
+      _drawMenuText(80, yPos, "Fan RPM Max", false, eRightJustify);
       sprintf(str, "%d", adjFan[1]);
       _drawMenuText(col3, yPos, str, _rowSel == 5, eRightJustify);
       // navigation line
