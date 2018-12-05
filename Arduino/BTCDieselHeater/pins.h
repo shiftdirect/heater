@@ -39,10 +39,10 @@ const uint8_t OLED_DC_pin = 26;
 const uint8_t OLED_CS_pin = 27;
 
 const uint8_t keyLeft_pin = 25;
-const uint8_t keyRight_pin = 33;
-const uint8_t keyCentre_pin = 32;
+const uint8_t keyRight_pin = 34;
+const uint8_t keyCentre_pin = 33;
 const uint8_t keyUp_pin = 35;
-const uint8_t keyDown_pin = 34;
+const uint8_t keyDown_pin = 32;
 
 const uint8_t ListenOnlyPin = 36;    // input only, no chip pullup
 const uint8_t WiFi_TriggerPin = 39;  // input only, no chip pullup
