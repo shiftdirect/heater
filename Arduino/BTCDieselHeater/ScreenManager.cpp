@@ -129,17 +129,11 @@ void
 CScreenManager::init()
 {
 
-  // 128 x 64 OLED support (Hardware SPI)
+  // 128 x 64 OLED support (I2C)
   // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
-#if OLED_HW_SPI == 1
-  SPI.setFrequency(8000000);
-  _pDisplay = new C128x64_OLED(OLED_DC_pin, -1, OLED_CS_pin);
-  _pDisplay->begin(SH1106_SWITCHCAPVCC, 0, false);
-#else
   _pDisplay = new C128x64_OLED(OLED_SDA_pin, OLED_SCL_pin);
   _pDisplay->begin(SH1106_SWITCHCAPVCC);
   Wire.begin(OLED_SDA_pin, OLED_SCL_pin, 800000);   // speed up I2C from the default crappy 100kHz set via the adafruit begin!
-#endif
 
   // replace adafruit splash screen
   _pDisplay->clearDisplay();
