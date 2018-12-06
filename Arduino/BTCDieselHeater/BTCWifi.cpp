@@ -39,7 +39,7 @@ int TRIG_PIN;
 void initWifi(int initpin,const char *failedssid, const char *failedpassword) 
 {
   TRIG_PIN = initpin;
-  pinMode(TRIG_PIN, INPUT);
+  pinMode(TRIG_PIN, INPUT_PULLUP);
 
   //reset settings - wipe credentials for testing
   //wm.resetSettings();

@@ -9,6 +9,7 @@
 #include "Screen3.h"
 #include "Screen4.h"
 #include "Screen5.h"
+#include "Screen6.h"
 
 //
 // **** NOTE: There are two very lame libaries conspiring to make life difficult ****
@@ -152,6 +153,7 @@ CScreenManager::init()
   _pScreen[2] = new CScreen3(*_pDisplay, *this);
   _pScreen[3] = new CScreen4(*_pDisplay, *this);
   _pScreen[4] = new CScreen5(*_pDisplay, *this);
+	_pScreen[5] = new CScreen6(*_pDisplay, *this);
 
   _switchScreen();
 }

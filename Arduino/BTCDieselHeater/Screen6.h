@@ -19,34 +19,23 @@
  * 
  */
 
-#ifndef __SCREEN_MANAGER_H__
-#define __SCREEN_MANAGER_H__
+#include "stdint.h"
+#include "ScreenHeader.h"
 
-#include <Arduino.h>
-
-class CProtocol;
 class C128x64_OLED;
-class CScreen;
+class CScreenManager;
+class CProtocol;
 
-class CScreenManager {
-  static const int _maxScreens = 6;
-  CScreen* _pScreen[_maxScreens];
-  CScreen* _pActiveScreen;
-  C128x64_OLED* _pDisplay;
-  int _currentScreen;
-  bool _bReqUpdate;
-  void _switchScreen();
+class CScreen6 : public CScreenHeader {
+  int  _rowSel;
+  int  _colSel;
+  unsigned long _nextT;
+  int _month, _year, _day, _hour, _min, _sec;
+
+  void adjTimeDate(int dir);
+
 public:
-  CScreenManager();
-  ~CScreenManager();
-  void init();
-  bool checkUpdate();
-  bool animate();
-  void refresh();
-  void nextScreen();
-  void prevScreen();
+  CScreen6(C128x64_OLED& display, CScreenManager& mgr);
+  void show();
   void keyHandler(uint8_t event);
-  void reqUpdate();
 };
-
-#endif // __SCREEN_MANAGER_H__

@@ -105,6 +105,7 @@
 #include "keypad.h"
 #include "helpers.h"
 #include <time.h>
+#include "RTClib.h"
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -158,6 +159,7 @@ CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default paramet
 CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
+RTC_DS3231 rtc;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -243,7 +245,9 @@ void setup() {
   KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
   KeyPad.setCallback(parentKeyHandler);
 
-
+  // Initialize the rtc object
+  rtc.begin();
+  
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
   TempSensor.setWaitForConversion(false);
@@ -469,7 +473,7 @@ void loop()
       // The heater always responds to a controller frame, but otherwise never by itself
       if(RxTimeElapsed >= 970) {
         // have not seen any receive data for a second.
-        // OEM controller is probably not connected. 6
+        // OEM controller is probably not connected. 
         // Skip state machine immediately to BTC_Tx, sending our own settings.
         hasOEMController = false;
         bool isBTCmaster = true;

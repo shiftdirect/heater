@@ -607,7 +607,7 @@ const uint8_t PROGMEM franklinGothicMediumCond_8ptBitmaps [] =
 // { [Char width in bits], [Char height in bits], [Offset into franklinGothicMediumCond_8ptCharBitmaps in bytes] }
 const FONT_CHAR_INFO PROGMEM franklinGothicMediumCond_8ptDescriptors[] = 
 {
-	{2, 15, 0}, 		//   
+	{1, 15, 0}, 		//   
 	{1, 15, 4}, 		// ! 
 	{3, 15, 6}, 		// " 
 	{6, 15, 12}, 		// # 
