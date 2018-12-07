@@ -41,7 +41,7 @@ class CScreen {
 protected:
   C128x64_OLED& _display;
   CScreenManager& _ScreenManager;
-  void _drawMenuText(int x, int y, const char* str, bool selected = false, eJUSTIFY justify = eLeftJustify, int border = 3, int radius = 4);
+  void _printMenuText(int x, int y, const char* str, bool selected = false, eJUSTIFY justify = eLeftJustify, int border = 3, int radius = 4);
   void _printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify = eLeftJustify);
   void _adjustExtents(CRect& rect, eJUSTIFY justify, const char* str);
 public:

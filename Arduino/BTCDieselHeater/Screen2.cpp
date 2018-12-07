@@ -56,7 +56,7 @@ CScreen2::show()
   sprintf(msg, "%.1f`", getActualTemperature());
   {
     CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
-    _drawMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
+    _printMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
   }
 
 
@@ -77,12 +77,12 @@ CScreen2::show()
       // display "Fixed Hz" at lower right, allowing space for a selection surrounding box
       strcpy(msg, "Fixed Hz");
       xPos = _display.width() - border;     // set X position to finish short of RHS
-      _drawMenuText(xPos, yPos, msg, _nModeSel == 1, eRightJustify);
+      _printMenuText(xPos, yPos, msg, _nModeSel == 1, eRightJustify);
 
       // display "Thermostat" at lower left, allowing space for a selection surrounding box
       strcpy(msg, "Thermostat");
       xPos = border;
-      _drawMenuText(xPos, yPos, msg, _nModeSel == 0);
+      _printMenuText(xPos, yPos, msg, _nModeSel == 0);
 
       setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
     }
@@ -103,7 +103,7 @@ CScreen2::show()
         sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
       }
       // centre message at bottom of screen
-      _drawMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
+      _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
     }
     else {
       _showSetMode = 0;
@@ -235,7 +235,7 @@ CScreen2::showRunState()
       }
       int xPos = _display.xCentre();
       int yPos = _display.height() - 2*_display.textHeight();
-      _drawMenuText(xPos, yPos, msg, false, eCentreJustify);
+      _printMenuText(xPos, yPos, msg, false, eCentreJustify);
 
       toPrint = getHeaterInfo().getErrStateStr();
     }
@@ -250,6 +250,6 @@ CScreen2::showRunState()
   }
   if(toPrint) {
     // locate at bottom centre
-    _drawMenuText(_display.xCentre(), _display.height() - _display.textHeight(), toPrint, false, eCentreJustify);
+    _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), toPrint, false, eCentreJustify);
   }
 }

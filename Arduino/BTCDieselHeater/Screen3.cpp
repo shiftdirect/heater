@@ -52,13 +52,13 @@ CScreen3::show()
   int yPos = 52;
 
   // show next/prev screen navigation line
-  _drawMenuText(_display.xCentre(), yPos, "<-             ->", _rowSel == 0, eCentreJustify);
+  _printMenuText(_display.xCentre(), yPos, "<-             ->", _rowSel == 0, eCentreJustify);
 
   yPos = 40;
   if(_rowSel == 1) {
     // follow user desired setting, heater info is laggy
-    _drawMenuText(border, yPos, "Thermostat", _colSel == 0);
-    _drawMenuText(_display.width()-border, yPos, "Fixed Hz", _colSel == 1, eRightJustify);
+    _printMenuText(border, yPos, "Thermostat", _colSel == 0);
+    _printMenuText(_display.width()-border, yPos, "Fixed Hz", _colSel == 1, eRightJustify);
   }
   else {
     // follow actual heater settings
@@ -69,12 +69,12 @@ CScreen3::show()
 
   // fuel pump priming menu
   yPos = 28;
-  _drawMenuText(border, yPos, "Prime pump");
+  _printMenuText(border, yPos, "Prime pump");
   if(_rowSel == 2) {
-    _drawMenuText(70, yPos, "OFF", _colSel == 1);
+    _printMenuText(70, yPos, "OFF", _colSel == 1);
     if(_colSel != 2) {
       if(!getHeaterInfo().getRunState()) {                    // prevent option if heater is running
-        _drawMenuText(100, yPos, "ON");  // becomes Hz when actually priming 
+        _printMenuText(100, yPos, "ON");  // becomes Hz when actually priming 
       }
     }
     else {
@@ -93,7 +93,7 @@ CScreen3::show()
       if(_PrimeStop) {
         char msg[16];
         sprintf(msg, "%.1fHz", pumpHz);
-        _drawMenuText(_display.width()-border, yPos, msg, true, eRightJustify);
+        _printMenuText(_display.width()-border, yPos, msg, true, eRightJustify);
       }
     }
   }

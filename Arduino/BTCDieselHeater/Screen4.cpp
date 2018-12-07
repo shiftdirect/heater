@@ -61,8 +61,8 @@ CScreen4::show()
       _printInverted(0, yPos, " WiFi Client ", true);
     }
     yPos += _display.textHeight() + 2;
-    _drawMenuText(0, yPos, "IP addr.");
-    _drawMenuText(_display.width(), yPos, getWifiAddrStr(), false, eRightJustify);
+    _printMenuText(0, yPos, "IP addr.");
+    _printMenuText(_display.width(), yPos, getWifiAddrStr(), false, eRightJustify);
   }
   else {
     _printInverted(0, yPos, " WiFi Inactive ", true);

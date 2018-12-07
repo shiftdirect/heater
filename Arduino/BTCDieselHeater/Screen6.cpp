@@ -85,38 +85,38 @@ CScreen6::show()
         // date
         if(_rowSel==0) {
           xPos = 20;
-          _drawMenuText(xPos, yPos, daysOfTheWeek[now.dayOfTheWeek()]);
+          _printMenuText(xPos, yPos, daysOfTheWeek[now.dayOfTheWeek()]);
         }          
 
         sprintf(str, "%d", _day);
         xPos += 20 + 12;
-        _drawMenuText(xPos, yPos, str, _rowSel==1 && _colSel==0, eRightJustify);
+        _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==0, eRightJustify);
         xPos += 4;
-        _drawMenuText(xPos, yPos, months[_month-1], _rowSel==1 && _colSel==1);
+        _printMenuText(xPos, yPos, months[_month-1], _rowSel==1 && _colSel==1);
         xPos += 22;
         sprintf(str, "%d", _year);
-        _drawMenuText(xPos, yPos, str, _rowSel==1 && _colSel==2);
+        _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==2);
         // time
         yPos = 40;
         xPos = 26;
         sprintf(str, "%02d", _hour);
-        _drawMenuText(xPos, yPos, str, _rowSel==1 && _colSel==3);
+        _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==3);
         xPos += 16;
-        _drawMenuText(xPos, yPos, ":");
+        _printMenuText(xPos, yPos, ":");
         xPos += 8;
         sprintf(str, "%02d", _min);
-        _drawMenuText(xPos, yPos, str, _rowSel==1 && _colSel==4);
+        _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==4);
         xPos += 16;
-        _drawMenuText(xPos, yPos, ":");
+        _printMenuText(xPos, yPos, ":");
         sprintf(str, "%02d", _sec);
         xPos += 8;
-        _drawMenuText(xPos, yPos, str, _rowSel==1 && _colSel==5);
+        _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==5);
         if(_rowSel==1)
-          _drawMenuText(_display.width()-border, yPos, "SET", _colSel==6, eRightJustify);
+          _printMenuText(_display.width()-border, yPos, "SET", _colSel==6, eRightJustify);
         // navigation line
         yPos = 53;
         xPos = _display.xCentre();
-        _drawMenuText(xPos, yPos, "<-             ->", _rowSel==0, eCentreJustify);
+        _printMenuText(xPos, yPos, "<-             ->", _rowSel==0, eCentreJustify);
         break;
 
     }

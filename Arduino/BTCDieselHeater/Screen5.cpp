@@ -62,26 +62,26 @@ CScreen5::show()
       // show settings overview (initial screen entry)
       // pump max/min
       yPos = 28;
-      _drawMenuText(0, yPos, "Pump (Hz)");
+      _printMenuText(0, yPos, "Pump (Hz)");
       sprintf(str, "%.1f", getHeaterInfo().getPump_Min());
-      _drawMenuText(col2, yPos, str, false, eRightJustify);
+      _printMenuText(col2, yPos, str, false, eRightJustify);
       sprintf(str, "%.1f", getHeaterInfo().getPump_Max());
-      _drawMenuText(col3, yPos, str, false, eRightJustify);
+      _printMenuText(col3, yPos, str, false, eRightJustify);
       // fan max/min
       yPos = 40;
-      _drawMenuText(0, yPos, "Fan (RPM)");
+      _printMenuText(0, yPos, "Fan (RPM)");
       sprintf(str, "%d", getHeaterInfo().getFan_Min());
-      _drawMenuText(col2, yPos, str, false, eRightJustify);
+      _printMenuText(col2, yPos, str, false, eRightJustify);
       sprintf(str, "%d", getHeaterInfo().getFan_Max());
-      _drawMenuText(col3, yPos, str, false, eRightJustify);
+      _printMenuText(col3, yPos, str, false, eRightJustify);
       // navigation line
       yPos = 53;
       xPos = _display.xCentre();
-      _drawMenuText(xPos, yPos, "<-             ->", true, eCentreJustify);
+      _printMenuText(xPos, yPos, "<-             ->", true, eCentreJustify);
       break;
 
     case 1:
-      _drawMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
       _showPassword();
       break;
 
@@ -92,32 +92,32 @@ CScreen5::show()
       _display.clearDisplay();
       // Pump Minimum adjustment
       yPos = border + 36;
-      _drawMenuText(80, yPos, "Min", false, eRightJustify);
+      _printMenuText(80, yPos, "Min", false, eRightJustify);
       sprintf(str, "%.1f", adjPump[0]); 
-      _drawMenuText(col3, yPos, str, _rowSel == 2, eRightJustify);
+      _printMenuText(col3, yPos, str, _rowSel == 2, eRightJustify);
       // Pump Maximum adjustment
       yPos = border + 24;
-      _drawMenuText(80, yPos, "Pump Hz Max", false, eRightJustify);
+      _printMenuText(80, yPos, "Pump Hz Max", false, eRightJustify);
       sprintf(str, "%.1f", adjPump[1]);
-      _drawMenuText(col3, yPos, str, _rowSel == 3, eRightJustify);
+      _printMenuText(col3, yPos, str, _rowSel == 3, eRightJustify);
       // Fan Minimum adjustment
       yPos = border + 12;
-      _drawMenuText(80, yPos, "Min", false, eRightJustify);
+      _printMenuText(80, yPos, "Min", false, eRightJustify);
       sprintf(str, "%d", adjFan[0]);
-      _drawMenuText(col3, yPos, str, _rowSel == 4, eRightJustify);
+      _printMenuText(col3, yPos, str, _rowSel == 4, eRightJustify);
       // Fan Maximum adjustment
       yPos = border;
-      _drawMenuText(80, yPos, "Fan RPM Max", false, eRightJustify);
+      _printMenuText(80, yPos, "Fan RPM Max", false, eRightJustify);
       sprintf(str, "%d", adjFan[1]);
-      _drawMenuText(col3, yPos, str, _rowSel == 5, eRightJustify);
+      _printMenuText(col3, yPos, str, _rowSel == 5, eRightJustify);
       // navigation line
       yPos = 53;
-      _drawMenuText(_display.xCentre(), yPos, "<-             ->", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), yPos, "<-             ->", false, eCentreJustify);
       break;
 
     case 6:
-      _drawMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _drawMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
       break;
   }
   
@@ -299,7 +299,7 @@ CScreen5::_showPassword()
     else {
       sprintf(str, "%d", _PWdig[idx]);
     }
-    _drawMenuText(extents.xPos, extents.yPos, str, _colSel == idx);
+    _printMenuText(extents.xPos, extents.yPos, str, _colSel == idx);
   }
 }
 

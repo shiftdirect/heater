@@ -25,87 +25,104 @@
 
 CHeaterStorage::CHeaterStorage()
 {
-  calValues.Pmin = 14;
-  calValues.Pmax = 40;
-  calValues.Fmin = 1500;
-  calValues.Fmax = 4500;
-  calValues.ThermostatMode = 1;
-  calValues.setTemperature = 22;
+  calValues.Heater.Pmin = 14;
+  calValues.Heater.Pmax = 40;
+  calValues.Heater.Fmin = 1500;
+  calValues.Heater.Fmax = 4500;
+  calValues.Heater.ThermostatMode = 1;
+  calValues.Heater.setTemperature = 22;
 }
 
 float
 CHeaterStorage::getPmin()
 {
-  return float(calValues.Pmin) * 0.1f;
+  return float(calValues.Heater.Pmin) * 0.1f;
 }
 
 float
 CHeaterStorage::getPmax()
 {
-  return float(calValues.Pmax) * 0.1f;
+  return float(calValues.Heater.Pmax) * 0.1f;
 }
 
 unsigned short
 CHeaterStorage::getFmin()
 {
-  return calValues.Fmin;
+  return calValues.Heater.Fmin;
 }
 
 unsigned short
 CHeaterStorage::getFmax()
 {
-  return calValues.Fmax;
+  return calValues.Heater.Fmax;
 }
 
 unsigned char
 CHeaterStorage::getTemperature()
 {
-  return calValues.setTemperature;
+  return calValues.Heater.setTemperature;
 }
 
 unsigned char
 CHeaterStorage::getThermostatMode()
 {
-  return calValues.ThermostatMode;
+  return calValues.Heater.ThermostatMode;
 }
 
 void
 CHeaterStorage::setPmin(float val)
 {
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
-  calValues.Pmin = cVal;
+  calValues.Heater.Pmin = cVal;
 }
 
 void
 CHeaterStorage::setPmax(float val)
 {
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
-  calValues.Pmax = cVal;
+  calValues.Heater.Pmax = cVal;
 }
 
 void
 CHeaterStorage::setFmin(unsigned short val)
 {
-  calValues.Fmin = val;
+  calValues.Heater.Fmin = val;
 }
 
 void
 CHeaterStorage::setFmax(unsigned short val)
 {
-  calValues.Fmax = val;
+  calValues.Heater.Fmax = val;
 }
 
 void
 CHeaterStorage::setTemperature(unsigned char val)
 {
-  calValues.setTemperature = val;
+  calValues.Heater.setTemperature = val;
 }
 
 void
 CHeaterStorage::setThermostatMode(unsigned char val)
 {
-  calValues.ThermostatMode = val;
+  calValues.Heater.ThermostatMode = val;
 }
+
+void 
+CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
+{
+  if(idx >= 0 && idx <=1) {
+    timerInfo = calValues.timer[idx];
+  }
+}
+
+void 
+CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
+{
+  if(idx >= 0 && idx <=1) {
+    calValues.timer[idx] = timerInfo;
+  }
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////

@@ -31,7 +31,7 @@ CScreen::show()
 
 
 void 
-CScreen::_drawMenuText(int x, int y, const char* str, bool selected, eJUSTIFY justify, int border, int radius)
+CScreen::_printMenuText(int x, int y, const char* str, bool selected, eJUSTIFY justify, int border, int radius)
 {
   // position output, according to justification
   CRect extents;

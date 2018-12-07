@@ -19,14 +19,39 @@
  * 
  */
 
+struct sHeater { 
+  uint8_t   Pmin;
+  uint8_t   Pmax;
+  uint16_t  Fmin;
+  uint16_t  Fmax;
+  uint8_t   ThermostatMode;
+  uint8_t   setTemperature;
+};
 
+struct sHourMin {
+  uint8_t hour;
+  uint8_t min;
+  sHourMin() {
+    hour = 0;
+    min = 0;
+  };
+};
+
+struct sTimer {
+  sHourMin start;      // start time
+  sHourMin stop;       // stop time
+  uint8_t enabled;     // timer enabled
+  uint8_t repeat;      // repeating timer
+  sTimer() {
+    enabled = false;
+    repeat = false;
+  };
+};
+
+// the actual data stored to NV memory
 struct sNVStore {
-  unsigned char Pmin;
-  unsigned char Pmax;
-  unsigned short Fmin;
-  unsigned short Fmax;
-  unsigned char ThermostatMode;
-  unsigned char setTemperature;
+  sHeater Heater;
+  sTimer timer[2];
 };
 
 class CNVStorage {
@@ -67,6 +92,9 @@ public:
     void setFmax(unsigned short val);
     void setTemperature(unsigned char val);
     void setThermostatMode(unsigned char val);
+
+    void getTimerInfo(int idx, sTimer& timerInfo);
+    void setTimerInfo(int idx, const sTimer& timerInfo);
 };
 
 
