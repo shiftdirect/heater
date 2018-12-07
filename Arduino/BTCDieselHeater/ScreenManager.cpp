@@ -10,6 +10,7 @@
 #include "Screen4.h"
 #include "Screen5.h"
 #include "Screen6.h"
+#include "Screen7.h"
 
 //
 // **** NOTE: If trying use hardware SPI on the ESP32 there are two very lame 
@@ -108,8 +109,8 @@ CScreenManager::CScreenManager()
 {
   _pDisplay = NULL;
   _pActiveScreen = NULL;
-  for(int i = 0; i < _maxScreens; i++)
-    _pScreen[i] = NULL;
+//  for(int i = 0; i < _maxScreens; i++)
+//    _pScreen[i] = NULL;
   _currentScreen = 1;
   _bReqUpdate = false;
 }
@@ -117,11 +118,17 @@ CScreenManager::CScreenManager()
 CScreenManager::~CScreenManager()
 {
   _pActiveScreen = NULL;      
-  for(int i=0; i<_maxScreens; i++) {
+/*  for(int i=0; i<_maxScreens; i++) {
     if(_pScreen[i]) {
       delete _pScreen[i]; _pScreen[i] = NULL;
     }
-  }
+  }*/
+	for(int i=0; i<_Screens.size(); i++) {
+		if(_Screens[i]) {
+			delete _Screens[i];
+			_Screens[i] = NULL;
+		}
+	}
   if(_pDisplay) {
     delete _pDisplay; _pDisplay = NULL;
   }
@@ -144,12 +151,19 @@ CScreenManager::init()
   // Show initial display buffer contents on the screen --
   _pDisplay->display();
 
-  _pScreen[0] = new CScreen1(*_pDisplay, *this);
+  _Screens.push_back(new CScreen1(*_pDisplay, *this));
+  _Screens.push_back(new CScreen2(*_pDisplay, *this));
+  _Screens.push_back(new CScreen3(*_pDisplay, *this));
+  _Screens.push_back(new CScreen4(*_pDisplay, *this));
+  _Screens.push_back(new CScreen5(*_pDisplay, *this));
+	_Screens.push_back(new CScreen6(*_pDisplay, *this));
+	_Screens.push_back(new CScreen7(*_pDisplay, *this));
+/*  _pScreen[0] = new CScreen1(*_pDisplay, *this);
   _pScreen[1] = new CScreen2(*_pDisplay, *this);
   _pScreen[2] = new CScreen3(*_pDisplay, *this);
   _pScreen[3] = new CScreen4(*_pDisplay, *this);
   _pScreen[4] = new CScreen5(*_pDisplay, *this);
-	_pScreen[5] = new CScreen6(*_pDisplay, *this);
+	_pScreen[5] = new CScreen6(*_pDisplay, *this);*/
 
   _switchScreen();
 }
@@ -191,8 +205,10 @@ CScreenManager::refresh()
 void 
 CScreenManager::_switchScreen()
 {
-  if(_currentScreen < _maxScreens)
-    _pActiveScreen = _pScreen[_currentScreen]; 
+/*  if(_currentScreen < _maxScreens)
+    _pActiveScreen = _pScreen[_currentScreen]; */
+  if(_currentScreen < _Screens.size())
+    _pActiveScreen = _Screens[_currentScreen]; 
   
   //        reqDisplayUpdate();
   reqUpdate();
@@ -202,7 +218,8 @@ void
 CScreenManager::nextScreen()
 {
   _currentScreen++;
-  if(_currentScreen >= _maxScreens) {
+//  if(_currentScreen >= _maxScreens) {
+  if(_currentScreen >= _Screens.size()) {
     _currentScreen = 0;
   }
   _switchScreen();
@@ -213,7 +230,8 @@ CScreenManager::prevScreen()
 {
   _currentScreen--;
   if(_currentScreen < 0) {
-    _currentScreen = _maxScreens-1;
+//    _currentScreen = _maxScreens-1;
+    _currentScreen = _Screens.size()-1;
   }
   _switchScreen();
 }
