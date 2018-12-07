@@ -30,10 +30,7 @@ class C128x64_OLED;
 class CScreen;
 
 class CScreenManager {
-//  static const int _maxScreens = 6;
-//  CScreen* _pScreen[_maxScreens];
   std::vector<CScreen*> _Screens;
-  CScreen* _pActiveScreen;
   C128x64_OLED* _pDisplay;
   int _currentScreen;
   bool _bReqUpdate;

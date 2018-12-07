@@ -86,4 +86,9 @@ extern const unsigned char FuelIcon [];
 #define H_TARGET_ICON 13
 extern const unsigned char TargetIcon [];
 
+#define W_TIMER_ICON 15
+#define H_TIMER_ICON 15
+extern const unsigned char repeatIcon [];
+extern const unsigned char timerID1Icon [];
+extern const unsigned char timerID2Icon [];
 

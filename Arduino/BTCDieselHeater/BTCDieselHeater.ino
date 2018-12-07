@@ -94,11 +94,9 @@
 #include "SmartError.h"
 #include "BTCWifi.h"
 #include "BTCConfig.h"
-
 #include "UtilClasses.h"
 #include "BTCota.h"
 #include "BTCWebServer.h"
-//#include "display.h"
 #include "ScreenManager.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -242,6 +240,9 @@ void setup() {
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   DebugPort.begin(115200);
 
+  NVstore.init();
+  NVstore.load();
+
   KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
   KeyPad.setCallback(parentKeyHandler);
 
@@ -291,9 +292,6 @@ void setup() {
 
   Bluetooth.init();
  
-  NVstore.init();
-  NVstore.load();
-
 }
 
 

@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __BTC_NV_STORAGE_H__
+#define __BTC_NV_STORAGE_H__
+
 struct sHeater { 
   uint8_t   Pmin;
   uint8_t   Pmax;
@@ -29,11 +32,15 @@ struct sHeater {
 };
 
 struct sHourMin {
-  uint8_t hour;
-  uint8_t min;
+  int8_t hour;
+  int8_t min;
   sHourMin() {
     hour = 0;
     min = 0;
+  };
+  sHourMin& operator=(const sHourMin& rhs) {
+    hour = rhs.hour;
+    min = rhs.min;
   };
 };
 
@@ -46,12 +53,20 @@ struct sTimer {
     enabled = false;
     repeat = false;
   };
+  sTimer& operator=(const sTimer& rhs) {
+    start = rhs.start;
+    stop = rhs.stop;
+    enabled = rhs.enabled;
+    repeat = rhs.repeat;
+  };
 };
 
 // the actual data stored to NV memory
 struct sNVStore {
   sHeater Heater;
   sTimer timer[2];
+  bool valid();
+  void init();
 };
 
 class CNVStorage {
@@ -66,7 +81,7 @@ class CNVStorage {
 
 class CHeaterStorage : public CNVStorage {
 protected:
-  sNVStore calValues;
+  sNVStore _calValues;
 public:
     CHeaterStorage();
     virtual ~CHeaterStorage() {};
@@ -116,4 +131,5 @@ public:
 
 extern CHeaterStorage& NVstore;
 
+#endif // __BTC_NV_STORAGE_H__
 

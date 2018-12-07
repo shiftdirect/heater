@@ -22,96 +22,135 @@
 #include "Arduino.h"
 #include "NVStorage.h"
 
+bool 
+sNVStore::valid()
+{
+  bool retval = true;
+  for(int i=0; i<2; i++) {
+    retval &= (timer[i].start.hour >= 0 && timer[i].start.hour < 24);
+    retval &= (timer[i].start.min >= 0 && timer[i].start.min < 60);
+    retval &= (timer[i].stop.hour >= 0 && timer[i].stop.hour < 24);
+    retval &= (timer[i].stop.min >= 0 && timer[i].stop.min < 60);
+    retval &= timer[i].enabled < 2;
+    retval &= timer[i].repeat < 2;
+  }
+  retval &= Heater.Pmin < 100;
+  retval &= Heater.Pmax < 150;
+  retval &= Heater.Fmin < 5000;
+  retval &= Heater.Fmax < 6000;
+  retval &= Heater.ThermostatMode < 2;
+  retval &= Heater.setTemperature < 40;
+  return retval;  
+}
+
+void 
+sNVStore::init()
+{
+  for(int i=0; i<2; i++) {
+    timer[i].start.hour = 0;
+    timer[i].start.min = 0;
+    timer[i].stop.hour = 0;
+    timer[i].stop.min = 0;
+    timer[i].enabled = 0;
+    timer[i].repeat = 0;
+  }
+  Heater.Pmin = 14;
+  Heater.Pmax = 45;
+  Heater.Fmin = 1500;
+  Heater.Fmax = 4500;
+  Heater.ThermostatMode = 1;
+  Heater.setTemperature = 23;
+}
 
 CHeaterStorage::CHeaterStorage()
 {
-  calValues.Heater.Pmin = 14;
-  calValues.Heater.Pmax = 40;
-  calValues.Heater.Fmin = 1500;
-  calValues.Heater.Fmax = 4500;
-  calValues.Heater.ThermostatMode = 1;
-  calValues.Heater.setTemperature = 22;
+  _calValues.Heater.Pmin = 14;
+  _calValues.Heater.Pmax = 40;
+  _calValues.Heater.Fmin = 1500;
+  _calValues.Heater.Fmax = 4500;
+  _calValues.Heater.ThermostatMode = 1;
+  _calValues.Heater.setTemperature = 22;
 }
 
 float
 CHeaterStorage::getPmin()
 {
-  return float(calValues.Heater.Pmin) * 0.1f;
+  return float(_calValues.Heater.Pmin) * 0.1f;
 }
 
 float
 CHeaterStorage::getPmax()
 {
-  return float(calValues.Heater.Pmax) * 0.1f;
+  return float(_calValues.Heater.Pmax) * 0.1f;
 }
 
 unsigned short
 CHeaterStorage::getFmin()
 {
-  return calValues.Heater.Fmin;
+  return _calValues.Heater.Fmin;
 }
 
 unsigned short
 CHeaterStorage::getFmax()
 {
-  return calValues.Heater.Fmax;
+  return _calValues.Heater.Fmax;
 }
 
 unsigned char
 CHeaterStorage::getTemperature()
 {
-  return calValues.Heater.setTemperature;
+  return _calValues.Heater.setTemperature;
 }
 
 unsigned char
 CHeaterStorage::getThermostatMode()
 {
-  return calValues.Heater.ThermostatMode;
+  return _calValues.Heater.ThermostatMode;
 }
 
 void
 CHeaterStorage::setPmin(float val)
 {
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
-  calValues.Heater.Pmin = cVal;
+  _calValues.Heater.Pmin = cVal;
 }
 
 void
 CHeaterStorage::setPmax(float val)
 {
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
-  calValues.Heater.Pmax = cVal;
+  _calValues.Heater.Pmax = cVal;
 }
 
 void
 CHeaterStorage::setFmin(unsigned short val)
 {
-  calValues.Heater.Fmin = val;
+  _calValues.Heater.Fmin = val;
 }
 
 void
 CHeaterStorage::setFmax(unsigned short val)
 {
-  calValues.Heater.Fmax = val;
+  _calValues.Heater.Fmax = val;
 }
 
 void
 CHeaterStorage::setTemperature(unsigned char val)
 {
-  calValues.Heater.setTemperature = val;
+  _calValues.Heater.setTemperature = val;
 }
 
 void
 CHeaterStorage::setThermostatMode(unsigned char val)
 {
-  calValues.Heater.ThermostatMode = val;
+  _calValues.Heater.ThermostatMode = val;
 }
 
 void 
 CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
 {
   if(idx >= 0 && idx <=1) {
-    timerInfo = calValues.timer[idx];
+    timerInfo = _calValues.timer[idx];
   }
 }
 
@@ -119,7 +158,7 @@ void
 CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
 {
   if(idx >= 0 && idx <=1) {
-    calValues.timer[idx] = timerInfo;
+    _calValues.timer[idx] = timerInfo;
   }
 }
 
@@ -147,12 +186,19 @@ CESP32HeaterStorage::init()
 
 void CESP32HeaterStorage::load()
 {
-  preferences.getBytes("calValues", &calValues, sizeof(sNVStore));
+  Serial.println("Reading from NV storage");
+  preferences.getBytes("calValues", &_calValues, sizeof(sNVStore));
+  if(!_calValues.valid()) {
+    Serial.println("Invalid NV storage, initialising");
+    _calValues.init();
+    save();
+  }
 }
 
 void CESP32HeaterStorage::save()
 {
-  preferences.putBytes("calValues", &calValues, sizeof(sNVStore));
+  Serial.println("Saving to NV storage");
+  preferences.putBytes("calValues", &_calValues, sizeof(sNVStore));
 }
 
 #endif  // ESP32

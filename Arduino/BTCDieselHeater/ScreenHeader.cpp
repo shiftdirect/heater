@@ -4,23 +4,31 @@
 #include "128x64OLED.h"
 #include "BTCWifi.h"
 #include "BluetoothAbstract.h" 
-#include "clock.h"
 #include "Icons.h"
 #include "MiniFont.h"
 #include "helpers.h"
+#include "NVStorage.h"
+#include "RTClib.h"
+#include "Arial.h"
+
 
 #define MINIFONT miniFontInfo
 
-#define X_BATT_ICON    95
+#define X_BATT_ICON   103
 #define Y_BATT_ICON     0
-#define X_WIFI_ICON    22
+#define X_WIFI_ICON    19
 #define Y_WIFI_ICON     0
-#define X_BT_ICON      12
+#define X_BT_ICON      10
 #define Y_BT_ICON       0
+#define X_TIMER1_ICON  69
+#define X_TIMER2_ICON  85
+#define Y_TIMER_ICON    0
+#define X_CLOCK        52  
+#define Y_CLOCK         0
 
-#define MINI_BATTLABEL
 
-//#define DEMO_AP_MODE
+extern RTC_DS3231 rtc;
+
 
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
 {
@@ -43,8 +51,11 @@ CScreenHeader::show()
   // battery
   showBatteryIcon(getHeaterInfo().getBattVoltage());
 
+  // timers
+  int numTimers = showTimers();
+
   // clock
-  showTime(_display);
+  showTime(numTimers);
 }
 
 // Animate IN/OUT arrows against the WiFi icon, according to actual web server traffic:
@@ -68,11 +79,9 @@ CScreenHeader::animate()
   if((isWifiConnected() || isWifiAP()) && isWebClientConnected()) {
 
     int xPos = X_WIFI_ICON + W_WIFI_ICON;
-//#ifdef DEMO_AP_MODE
     if(isWifiAP()) {
       xPos += 4;
     }
-//#endif
     
     // UP arrow animation
     //
@@ -122,14 +131,12 @@ CScreenHeader::showWifiIcon()
 {
   if(isWifiConnected() || isWifiAP()) {
     _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
-//#ifdef DEMO_AP_MODE
     if(isWifiAP()) {
       _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
       CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
       _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
       _display.print("AP");
     }
-//#endif
   }
 }
 
@@ -139,9 +146,7 @@ CScreenHeader::showBatteryIcon(float voltage)
   _display.drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIcon, W_BATT_ICON, H_BATT_ICON, WHITE);
   char msg[16];
   sprintf(msg, "%.1fV", voltage);
-#ifdef MINI_BATTLABEL
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-#endif
   _display.setCursor(X_BATT_ICON + W_BATT_ICON/2, 
                      Y_BATT_ICON + H_BATT_ICON + 2);
   _display.printCentreJustified(msg);
@@ -153,4 +158,60 @@ CScreenHeader::showBatteryIcon(float voltage)
   _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
 }
 
+int
+CScreenHeader::showTimers()
+{
+  sTimer timerInfo1;
+  sTimer timerInfo2;
 
+  NVstore.getTimerInfo(0, timerInfo1);
+  NVstore.getTimerInfo(1, timerInfo2);
+
+  int drawn = 0;
+  int xPos = X_TIMER2_ICON;   // initially assume a single timer, locate to right of screen
+
+  if(timerInfo1.enabled) {
+    drawn++;
+    if(timerInfo2.enabled)    // check if other timer is also enabled
+      xPos = X_TIMER1_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
+    _display.drawBitmap(xPos, Y_TIMER_ICON, timerID1Icon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
+    if(timerInfo1.repeat) 
+      _display.drawBitmap(xPos, Y_TIMER_ICON+1, repeatIcon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
+  }
+  xPos = X_TIMER2_ICON;        // logically the second icon attempt is always to the right!
+  if(timerInfo2.enabled) {     
+    drawn++;
+    _display.drawBitmap(xPos, Y_TIMER_ICON, timerID2Icon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
+    if(timerInfo2.repeat) 
+      _display.drawBitmap(xPos, Y_TIMER_ICON+1, repeatIcon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
+  }
+
+  return drawn;
+}
+
+
+
+void 
+CScreenHeader::showTime(int numTimers)
+{
+  DateTime now = rtc.now();
+
+  char msg[16];
+  if(now.second() & 0x01)
+    sprintf(msg, "%02d:%02d", now.hour(), now.minute());
+  else
+    sprintf(msg, "%02d %02d", now.hour(), now.minute());
+  {
+    CTransientFont AF(_display, &arial_8ptFontInfo);
+    // determine centre position of remaining real estate
+    int xPos = X_WIFI_ICON + W_WIFI_ICON + W_WIFIIN_ICON;  // rhs of wifi conglomeration
+    if(isWifiAP())  xPos += 4;                             // add more if an Access Point
+    
+    switch(numTimers) {
+      case 0: xPos += (X_BATT_ICON - xPos) / 2;   break;
+      case 1: xPos += (X_TIMER2_ICON - xPos) / 2; break;
+      case 2: xPos += (X_TIMER1_ICON - xPos) / 2; break;
+    }
+    _printMenuText(xPos, Y_CLOCK, msg, false, eCentreJustify);
+  }
+}

@@ -32,11 +32,14 @@
 #include "KeyPad.h"
 #include "helpers.h"
 #include "Screen7.h"
+#include "NVStorage.h"
 
-CScreen7::CScreen7(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CScreen7::CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
 {
   _rowSel = 0;
   _colSel = 0;
+  _instance = instance;
+  NVstore.getTimerInfo(_instance, _timer);
 }
 
 
@@ -48,7 +51,8 @@ CScreen7::show()
   char str[16];
   int xPos, yPos;
 
-  _printInverted(0, 16, " Timer ", true);
+  sprintf(str, " Timer %d ", _instance + 1);
+  _printInverted(0, 16, str, true);
 
   switch(_rowSel) {
     case 0:
@@ -58,50 +62,48 @@ CScreen7::show()
 
       // start
       _printMenuText(xPos, yPos, "Start", false, eRightJustify);
+      _printMenuText(xPos+18, yPos, ":");
       xPos += 6;
-      sprintf(str, "%02d", _startHour);
+      sprintf(str, "%02d", _timer.start.hour);
       _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==0);
-      xPos += 16;
-      _printMenuText(xPos, yPos, ":");
-      xPos += 8;
-      sprintf(str, "%02d", _startMin);
+      xPos += 17;
+      sprintf(str, "%02d", _timer.start.min);
       _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==1);
 
       // stop
       xPos = 32;
       yPos = 40;
       _printMenuText(xPos, yPos, "Stop", false, eRightJustify);
+      _printMenuText(xPos+18, yPos, ":");
       xPos += 6;
-      sprintf(str, "%02d", _stopHour);
+      sprintf(str, "%02d", _timer.stop.hour);
       _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==2);
-      xPos += 16;
-      _printMenuText(xPos, yPos, ":");
-      xPos += 8;
-      sprintf(str, "%02d", _stopMin);
+      xPos += 17;
+      sprintf(str, "%02d", _timer.stop.min);
       _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==3);
       
       // control
-      xPos = _display.width() - 8 * 6;
-      yPos = 32;
+      xPos = _display.width() - border;
+      yPos = 28;
       const char* msg;
-      if(_bEnabled)
+      if(_timer.enabled)
         msg = "Enabled";
       else 
         msg = "Disabled";
       if(_rowSel == 1) 
         _printMenuText(xPos, yPos, msg, _colSel==4, eRightJustify);
       else 
-        _printInverted(xPos, yPos, msg, _bEnabled, eRightJustify);
+        _printInverted(xPos, yPos, msg, _timer.enabled, eRightJustify);
       
       yPos = 40;
-      if(_bRepeat)
+      if(_timer.repeat)
         msg = "Repeat";
       else
-        msg = "One time";
+        msg = "Once";
       if(_rowSel == 1) 
         _printMenuText(xPos, yPos, msg, _colSel==5, eRightJustify);
       else
-        _printInverted(xPos, yPos, msg, _bRepeat, eRightJustify);
+        _printInverted(xPos, yPos, msg, _timer.repeat, eRightJustify);
 
       // navigation line
       yPos = 53;
@@ -121,7 +123,8 @@ CScreen7::keyHandler(uint8_t event)
     // press CENTRE
     if(event & key_Centre) {
       if(_rowSel == 1) {
-        // TODO: save settings
+        NVstore.setTimerInfo(_instance, _timer);
+        NVstore.save();
         _rowSel = 0;
       }
       return;
@@ -175,7 +178,7 @@ CScreen7::keyHandler(uint8_t event)
   if(event & keyRepeat) {
     if(_rowSel == 1) {
       if(event & key_Down) adjust(-1);
-      if(event & key_Up) adjust(-1);
+      if(event & key_Up) adjust(+1);
     }
   }
 
@@ -189,30 +192,30 @@ CScreen7::adjust(int dir)
   int days;
   switch(_colSel) {
     case 0:
-      _startHour += dir;
-      ROLLUPPERLIMIT(_startHour, 23, 0);
-      ROLLLOWERLIMIT(_startHour, 0, 23);
+      _timer.start.hour += dir;
+      ROLLUPPERLIMIT(_timer.start.hour, 23, 0);
+      ROLLLOWERLIMIT(_timer.start.hour, 0, 23);
       break;
     case 1:
-      _startMin += dir;
-      ROLLUPPERLIMIT(_startMin, 59, 0);
-      ROLLLOWERLIMIT(_startMin, 0, 59);
+      _timer.start.min += dir;
+      ROLLUPPERLIMIT(_timer.start.min, 59, 0);
+      ROLLLOWERLIMIT(_timer.start.min, 0, 59);
       break;
     case 2:
-      _stopHour += dir;
-      ROLLUPPERLIMIT(_stopHour, 23, 0);
-      ROLLLOWERLIMIT(_stopHour, 0, 23);
+      _timer.stop.hour += dir;
+      ROLLUPPERLIMIT(_timer.stop.hour, 23, 0);
+      ROLLLOWERLIMIT(_timer.stop.hour, 0, 23);
       break;
     case 3:
-      _stopMin += dir;
-      ROLLUPPERLIMIT(_stopMin, 59, 0);
-      ROLLLOWERLIMIT(_stopMin, 0, 59);
+      _timer.stop.min += dir;
+      ROLLUPPERLIMIT(_timer.stop.min, 59, 0);
+      ROLLLOWERLIMIT(_timer.stop.min, 0, 59);
       break;
     case 4:
-      _bEnabled = !_bEnabled;
+      _timer.enabled = !_timer.enabled;
       break;
     case 5:
-      _bRepeat = !_bRepeat;
+      _timer.repeat = !_timer.repeat;
       break;
   }
 }

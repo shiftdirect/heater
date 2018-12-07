@@ -21,6 +21,7 @@
 
 #include "stdint.h"
 #include "ScreenHeader.h"
+#include "NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
@@ -29,14 +30,12 @@ class CProtocol;
 class CScreen7 : public CScreenHeader {
   int  _rowSel;
   int  _colSel;
-  int _startHour, _startMin;
-  int _stopHour, _stopMin;
-  bool _bEnabled;
-  bool _bRepeat;
+  int  _instance;
+  sTimer _timer;
   void adjust(int dir);
 
 public:
-  CScreen7(C128x64_OLED& display, CScreenManager& mgr);
+  CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance);
   void show();
   void keyHandler(uint8_t event);
 };
