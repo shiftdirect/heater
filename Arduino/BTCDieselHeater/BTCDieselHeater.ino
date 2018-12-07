@@ -138,6 +138,9 @@ static HardwareSerial& BlueWireSerial(Serial1);
 void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
+void checkTimer();
+void checkTimer(const DateTime& now, sTimer timerInfo);
+void checkDebugCommands();
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -147,6 +150,7 @@ float fFilteredTemperature = -100;   // -100: force direct update uopn first pas
 const float fAlpha = 0.95;           // exponential mean alpha
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
+unsigned long nextRTCfetch;
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
@@ -166,6 +170,7 @@ bool hasOEMController = false;
 //const CProtocol* pRxFrame = NULL;
 //const CProtocol* pTxFrame = NULL;
 CProtocolPackage HeaterData;
+DateTime currentTime;
 
 unsigned long moderator;
 bool bUpdateDisplay = false;
@@ -255,6 +260,7 @@ void setup() {
   TempSensor.requestTemperatures();
   lastTemperatureTime = millis();
   lastAnimationTime = millis();
+  nextRTCfetch = millis();
 
   ScreenManager.init();
 
@@ -318,87 +324,9 @@ void loop()
 
 #endif // USE_WIFI
 
-  // check for test commands received from PC Over USB
-  if(DebugPort.available()) {
-    static int mode = 0;
-    static int val = 0;
+  checkDebugCommands();
 
-    char rxVal = DebugPort.read();
-
-    bool bSendVal = false;
-    if(isControl(rxVal)) {    // "End of Line"
-      String convert(PCline.Line);
-      val = convert.toInt();
-      bSendVal = true;
-      PCline.clear();
-    }
-    else {
-      if(isDigit(rxVal)) {
-        PCline.append(rxVal);
-      }
-      else if((rxVal == 'p') || (rxVal == 'P')) {
-        DebugPort.println("Test Priming Byte... ");
-        mode = 1;
-      }
-      else if((rxVal == 'g') || (rxVal == 'G')) {
-        DebugPort.println("Test glow power byte... ");
-        mode = 2;
-      }
-      else if((rxVal == 'i') || (rxVal == 'I')) {
-        DebugPort.println("Test fan bytes");
-        mode = 3;
-      }
-      else if(rxVal  == '+') {
-        TxManage.queueOnRequest();
-        Bluetooth.setRefTime();             // reset time reference "run time"
-      }
-      else if(rxVal  == '-') {
-        TxManage.queueOffRequest();
-        Bluetooth.setRefTime();
-      }
-      else if(rxVal == ']') {
-        val++;
-        bSendVal = true;
-      }
-      else if(rxVal == '[') {
-        val--;
-        bSendVal = true;
-      }
-      else if(rxVal == '=') {
-        int hour = 0;
-        int min = 0;
-
-        char buffer[16];
-        DebugPort.readBytesUntil('\n', buffer, 15);
-        sscanf(buffer, "%d:%d", &hour, &min);
-        DebugPort.print("New time=");
-        DebugPort.print(hour);DebugPort.print(":");DebugPort.println(min);
-
-        struct timeval tv = {1543030148, 0};
-        settimeofday(&tv, 0);
-      }
-    }
-    if(bSendVal) {
-      switch(mode) {
-        case 1:
-          DefaultBTCParams.Controller.Prime = val & 0xff;     // always  0x32:Thermostat, 0xCD:Fixed
-          break;
-        case 2:
-          DefaultBTCParams.Controller.MinTempRise = val & 0xff;     // always 0x05
-          break;
-        case 3:
-          DefaultBTCParams.Controller.Unknown2_MSB = (val >> 8) & 0xff;     // always 0x0d
-          DefaultBTCParams.Controller.Unknown2_LSB = (val >> 0) & 0xff;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
-          break;
-      }
-    }
-  }
-
-  uint8_t key = KeyPad.update();
-/*  if(key) {
-    Serial.print("\007Key event=0x");
-    Serial.println(key, HEX);
-  }*/
+  KeyPad.update();      // scan keypad - key presses handler via callback functions!
 
   Bluetooth.check();    // check for Bluetooth activity
 
@@ -496,10 +424,12 @@ void loop()
       }
       else {
         checkDisplayUpdate();    
+        checkRTC();
         break;  // only break if we fail all Idle state tests
       }
 #else
       checkDisplayUpdate();
+      checkRTC();
       break;  
 #endif
 
@@ -948,4 +878,121 @@ const CProtocolPackage& getHeaterInfo()
 bool isWebClientConnected()
 {
   return bHaveWebClient;
+}
+
+void checkDebugCommands()
+{
+  // check for test commands received from PC Over USB
+  if(DebugPort.available()) {
+    static int mode = 0;
+    static int val = 0;
+
+    char rxVal = DebugPort.read();
+
+    bool bSendVal = false;
+    if(isControl(rxVal)) {    // "End of Line"
+      String convert(PCline.Line);
+      val = convert.toInt();
+      bSendVal = true;
+      PCline.clear();
+    }
+    else {
+      if(isDigit(rxVal)) {
+        PCline.append(rxVal);
+      }
+      else if((rxVal == 'p') || (rxVal == 'P')) {
+        DebugPort.println("Test Priming Byte... ");
+        mode = 1;
+      }
+      else if((rxVal == 'g') || (rxVal == 'G')) {
+        DebugPort.println("Test glow power byte... ");
+        mode = 2;
+      }
+      else if((rxVal == 'i') || (rxVal == 'I')) {
+        DebugPort.println("Test fan bytes");
+        mode = 3;
+      }
+      else if(rxVal  == '+') {
+        TxManage.queueOnRequest();
+        Bluetooth.setRefTime();             // reset time reference "run time"
+      }
+      else if(rxVal  == '-') {
+        TxManage.queueOffRequest();
+        Bluetooth.setRefTime();
+      }
+      else if(rxVal == ']') {
+        val++;
+        bSendVal = true;
+      }
+      else if(rxVal == '[') {
+        val--;
+        bSendVal = true;
+      }
+    }
+    if(bSendVal) {
+      switch(mode) {
+        case 1:
+          DefaultBTCParams.Controller.Prime = val & 0xff;     // always  0x32:Thermostat, 0xCD:Fixed
+          break;
+        case 2:
+          DefaultBTCParams.Controller.MinTempRise = val & 0xff;     // always 0x05
+          break;
+        case 3:
+          DefaultBTCParams.Controller.Unknown2_MSB = (val >> 8) & 0xff;     // always 0x0d
+          DefaultBTCParams.Controller.Unknown2_LSB = (val >> 0) & 0xff;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
+          break;
+      }
+    }
+  }
+}
+
+void checkTimer()
+{
+  const DateTime& now = getCurrentTime();
+
+  sTimer timerInfo;
+  // test timer 1
+  NVstore.getTimerInfo(0, timerInfo);
+  checkTimer(now, timerInfo);
+  // test timer 2
+  NVstore.getTimerInfo(1, timerInfo);
+  checkTimer(now, timerInfo);
+}
+
+void checkTimer(const DateTime& now, sTimer timerInfo)
+{
+  int maskDOW = 0x01 << now.dayOfTheWeek();
+  if(timerInfo.enabled & (maskDOW | 0x80) ) {  // specific day, or next day
+    // check start
+    if(now.hour() == timerInfo.start.hour && now.minute() == timerInfo.start.min) {
+      requestOn();
+    }
+    // check stop
+    if(now.hour() == timerInfo.stop.hour && now.minute() == timerInfo.stop.min) {
+      requestOff();
+      if(!timerInfo.repeat) {            // cancel timer if non repeating
+        if(timerInfo.enabled & 0x80)     // next day start flag?
+          timerInfo.enabled = 0;         // outright cancel
+        else
+          timerInfo.enabled &= ~maskDOW; // otherwise clear particular day
+        NVstore.setTimerInfo(0, timerInfo);
+        NVstore.save();
+      }
+    }
+  }
+}
+
+void checkRTC()
+{
+  long deltaT = millis() - nextRTCfetch;
+  if(deltaT >= 0) {
+    currentTime = rtc.now();             // moderate I2C accesses
+    nextRTCfetch = millis() + 500;
+    checkTimer();
+  }
+}
+
+const DateTime& getCurrentTime()
+{
+  return currentTime;
 }

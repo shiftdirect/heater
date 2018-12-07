@@ -47,10 +47,10 @@ struct sHourMin {
 struct sTimer {
   sHourMin start;      // start time
   sHourMin stop;       // stop time
-  uint8_t enabled;     // timer enabled
+  uint8_t enabled;     // timer enabled - each bit is a day of week flag
   uint8_t repeat;      // repeating timer
   sTimer() {
-    enabled = false;
+    enabled = 0;     
     repeat = false;
   };
   sTimer& operator=(const sTimer& rhs) {

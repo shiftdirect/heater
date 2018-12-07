@@ -21,6 +21,7 @@
  */
 
 class CProtocolPackage;
+class DateTime;
 
 extern void ToggleOnOff();
 extern void requestOn();
@@ -36,6 +37,7 @@ extern void  setFanMin(short);
 extern void  setFanMax(short);
 extern void  saveNV();
 extern const CProtocolPackage& getHeaterInfo();
+extern const DateTime& getCurrentTime();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

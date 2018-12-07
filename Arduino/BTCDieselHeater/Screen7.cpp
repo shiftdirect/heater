@@ -33,6 +33,7 @@
 #include "helpers.h"
 #include "Screen7.h"
 #include "NVStorage.h"
+#include "RTClib.h"
 
 CScreen7::CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
 {
@@ -190,6 +191,8 @@ void
 CScreen7::adjust(int dir)
 {
   int days;
+  int maskDOW = 0x01 << _colSel;  // if doing Day of Week - (_rowSel == 2)  
+
   switch(_colSel) {
     case 0:
       _timer.start.hour += dir;
@@ -212,7 +215,14 @@ CScreen7::adjust(int dir)
       ROLLLOWERLIMIT(_timer.stop.min, 0, 59);
       break;
     case 4:
-      _timer.enabled = !_timer.enabled;
+      if(_rowSel == 1) {
+        _timer.enabled &= 0x80;      // ensure specific day flags are cleared
+        _timer.enabled ^= 0x80;      // toggle next day flag
+      }
+      if(_rowSel == 2) {
+        _timer.enabled &= 0x7f;      // ensure next day flag is cleared
+        _timer.enabled ^= maskDOW;   // toggle flag for day of week
+      }
       break;
     case 5:
       _timer.repeat = !_timer.repeat;

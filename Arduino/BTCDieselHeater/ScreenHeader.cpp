@@ -194,7 +194,9 @@ CScreenHeader::showTimers()
 void 
 CScreenHeader::showTime(int numTimers)
 {
-  DateTime now = rtc.now();
+  const DateTime& now = getCurrentTime();
+
+//  DateTime now = rtc.now();
 
   char msg[16];
   if(now.second() & 0x01)
@@ -208,7 +210,7 @@ CScreenHeader::showTime(int numTimers)
     if(isWifiAP())  xPos += 4;                             // add more if an Access Point
     
     switch(numTimers) {
-      case 0: xPos += (X_BATT_ICON - xPos) / 2;   break;
+      case 0: xPos = _display.xCentre(); break;
       case 1: xPos += (X_TIMER2_ICON - xPos) / 2; break;
       case 2: xPos += (X_TIMER1_ICON - xPos) / 2; break;
     }

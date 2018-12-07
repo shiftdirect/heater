@@ -31,7 +31,7 @@ sNVStore::valid()
     retval &= (timer[i].start.min >= 0 && timer[i].start.min < 60);
     retval &= (timer[i].stop.hour >= 0 && timer[i].stop.hour < 24);
     retval &= (timer[i].stop.min >= 0 && timer[i].stop.min < 60);
-    retval &= timer[i].enabled < 2;
+//    retval &= (timer[i].enabled & 0x80) == 0;
     retval &= timer[i].repeat < 2;
   }
   retval &= Heater.Pmin < 100;

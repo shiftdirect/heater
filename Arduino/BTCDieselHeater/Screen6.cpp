@@ -40,7 +40,6 @@ extern RTC_DS3231 rtc;
 static char daysOfTheWeek[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 static char months[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 static char monthDays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-void readClock(DateTime& now);
 int daysInMonth(int month, int year);
 
 CScreen6::CScreen6(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
@@ -67,11 +66,10 @@ CScreen6::show()
 
     _printInverted(0, 16, " Clock ", true);
 
-    DateTime now;
+    const DateTime& now = getCurrentTime();
     switch(_rowSel) {
       case 0:
         // update printable values
-        readClock(now);
         _month = now.month();
         _year = now.year();
         _day = now.day();
@@ -190,11 +188,6 @@ CScreen6::keyHandler(uint8_t event)
   _nextT = millis();
   _ScreenManager.reqUpdate();
 }
-
-void readClock(DateTime& now)
-{
-    now = rtc.now();
-}   
 
 int daysInMonth(int month, int year)
 {
