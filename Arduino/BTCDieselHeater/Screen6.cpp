@@ -184,6 +184,18 @@ CScreen6::keyHandler(uint8_t event)
       }
     }
   }
+  if(event & keyRepeat) {
+    if(_rowSel==1) {
+      // press UP 
+      if(event & key_Up) {
+        adjTimeDate(+1);
+      }
+      // press DOWN
+      if(event & key_Down) {
+        adjTimeDate(-1);
+      }
+    }
+  }
 
   _nextT = millis();
   _ScreenManager.reqUpdate();

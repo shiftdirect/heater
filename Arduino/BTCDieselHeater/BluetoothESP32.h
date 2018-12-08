@@ -37,6 +37,7 @@ public:
   virtual void init();
   virtual void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true);
   virtual void check();
+  virtual bool isConnected();
 };
 
 #include <BLEDevice.h>
@@ -59,4 +60,6 @@ public:
   virtual void init();
   virtual void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true);
   virtual void check();
+  virtual bool isConnected();
+
 };

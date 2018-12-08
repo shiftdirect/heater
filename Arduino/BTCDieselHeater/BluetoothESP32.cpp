@@ -102,7 +102,7 @@ CBluetoothESP32Classic::sendFrame(const char* pHdr, const CProtocol& Frame, bool
   CBluetoothAbstract::sendFrame(pHdr, Frame, lineterm);
   
   delay(40);
-  if(SerialBT.hasClient()) {
+  if(isConnected()) {
 
     if(Frame.verifyCRC()) {
 #if BT_LED == 1     
@@ -128,7 +128,13 @@ CBluetoothESP32Classic::sendFrame(const char* pHdr, const CProtocol& Frame, bool
 #endif
   }
 }
- 
+
+bool 
+CBluetoothESP32Classic::isConnected()
+{
+  return SerialBT.hasClient();
+}
+
 //                              ^
 //                              |
 //                  CLASSIC BLUETOOTH on ESP32
@@ -254,7 +260,7 @@ CBluetoothESP32BLE::sendFrame(const char* pHdr, const CProtocol& Frame, bool lin
   CBluetoothAbstract::sendFrame(pHdr, Frame, lineterm);
 
   delay(40);
-  if(_deviceConnected) {
+  if(isConnected()) {
 
     if(Frame.verifyCRC()) {
 #if BT_LED == 1     
@@ -276,6 +282,12 @@ CBluetoothESP32BLE::sendFrame(const char* pHdr, const CProtocol& Frame, bool lin
     digitalWrite(LED_Pin, 0);
 #endif
   }
+}
+
+bool
+CBluetoothESP32BLE::isConnected()
+{
+  return _deviceConnected;
 }
 
 void 
