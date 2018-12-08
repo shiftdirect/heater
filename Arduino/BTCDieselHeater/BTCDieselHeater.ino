@@ -102,10 +102,8 @@
 #include <DallasTemperature.h>
 #include "keypad.h"
 #include "helpers.h"
-#include <time.h>
-#include "RTClib.h"
 #include "Wire.h"
-#include "BTCDateTime.h"
+#include "Clock.h"
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -140,7 +138,6 @@ static HardwareSerial& BlueWireSerial(Serial1);
 void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
-void checkTimer();
 void checkDebugCommands();
 
 // DS18B20 temperature sensor support
@@ -151,7 +148,6 @@ float fFilteredTemperature = -100;   // -100: force direct update uopn first pas
 const float fAlpha = 0.95;           // exponential mean alpha
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
-unsigned long nextRTCfetch;
 
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
@@ -163,15 +159,13 @@ CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
 RTC_DS3231 rtc;
+CClock Clock(rtc);
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool hasOEMController = false;
 
-//const CProtocol* pRxFrame = NULL;
-//const CProtocol* pTxFrame = NULL;
 CProtocolPackage HeaterData;
-BTCDateTime currentTime;
 
 unsigned long moderator;
 bool bUpdateDisplay = false;
@@ -253,7 +247,7 @@ void setup() {
   KeyPad.setCallback(parentKeyHandler);
 
   // Initialize the rtc object
-  rtc.begin();
+  Clock.begin();
   
   // initialise DS18B20 temperature sensor(s)
   TempSensor.begin();
@@ -261,8 +255,7 @@ void setup() {
   TempSensor.requestTemperatures();
   lastTemperatureTime = millis();
   lastAnimationTime = millis();
-  nextRTCfetch = millis();
-
+  
   ScreenManager.init();
 
 #if USE_WIFI == 1
@@ -424,13 +417,13 @@ void loop()
         //
       }
       else {
+        Clock.update();
         checkDisplayUpdate();    
-        checkRTC();
         break;  // only break if we fail all Idle state tests
       }
 #else
+      Clock.update();
       checkDisplayUpdate();
-      checkRTC();
       break;  
 #endif
 
@@ -945,70 +938,4 @@ void checkDebugCommands()
       }
     }
   }
-}
-
-void checkTimer()
-{
-  const DateTime& now = getCurrentTime();
-
-  checkTimer(0, now);   // test timer 1
-  checkTimer(1, now);   // test timer 2
-}
-
-void checkTimer(int timer, const DateTime& now)
-{
-  sTimer Info;
-  NVstore.getTimerInfo(timer, Info);
-  int DOW = now.dayOfTheWeek();
-  int timeNow = now.hour() * 60 + now.minute();
-  int timeStart = Info.start.hour * 60 + Info.start.min;
-  int timeStop = Info.stop.hour * 60 + Info.stop.min;
-
-  // ensure DOW tracks expected start day should timer straddle midnight
-  if(timeStop < timeStart) {   // true if stop is next morning
-    if(timeNow <= timeStop) {  // current time has passed midnight - enable flag is based upon prior day
-      DOW--;
-      ROLLLOWERLIMIT(DOW, 0, 6);   // fixup for saturday night!
-    }
-  }
-  // DOW of week is now correct for the day this timer started
-  int maskDOW = 0x01 << DOW;
-
-  if(Info.enabled & (maskDOW | 0x80) ) {  // specific day of week, or next day
-    
-    if(timeNow == timeStart && now.second() < 3) {  // check start, within 2 seconds of the minute rollover
-      requestOn();
-    }
-    
-    if(timeNow == timeStop) {            // check stop
-      requestOff();
-      if(!Info.repeat) {            // cancel timer if non repeating
-        if(Info.enabled & 0x80)     // next day start flag set?
-          Info.enabled = 0;         // outright cancel
-        else {
-          Info.enabled &= ~maskDOW; // otherwise clear specific day
-        }
-        NVstore.setTimerInfo(timer, Info);
-        NVstore.save();
-      }
-    }
-  }
-}
-
-void checkRTC()
-{
-  long deltaT = millis() - nextRTCfetch;
-  if(deltaT >= 0) {
-    uint32_t origClock = Wire.getClock();
-    Wire.setClock(400000);
-    currentTime = rtc.now();             // moderate I2C accesses
-    Wire.setClock(origClock);
-    nextRTCfetch = millis() + 500;
-    checkTimer();
-  }
-}
-
-const BTCDateTime& getCurrentTime()
-{
-  return currentTime;
 }

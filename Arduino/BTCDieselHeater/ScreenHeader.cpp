@@ -8,9 +8,8 @@
 #include "MiniFont.h"
 #include "helpers.h"
 #include "NVStorage.h"
-#include "RTClib.h"
+#include "Clock.h"
 #include "Arial.h"
-#include "BTCDateTime.h"
 
 
 #define MINIFONT miniFontInfo
@@ -192,7 +191,7 @@ CScreenHeader::showTimers()
 void 
 CScreenHeader::showTime(int numTimers)
 {
-  const BTCDateTime& now = getCurrentTime();
+  const BTCDateTime& now = Clock.get();
 
   char msg[16];
   if(now.second() & 0x01)

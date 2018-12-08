@@ -24,7 +24,7 @@
 //
 // CScreen5
 //
-// This screen allows the fuel mixture endpoints to be adjusted
+// This screen allows the real time clock to be adjusted
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -32,9 +32,8 @@
 #include "KeyPad.h"
 #include "helpers.h"
 #include "Screen6.h"
-#include "RTClib.h"
 #include "Arial.h"
-#include "BTCDateTime.h"
+#include "Clock.h"
 
 extern RTC_DS3231 rtc;
 
@@ -68,7 +67,7 @@ CScreen6::show()
 
     _printInverted(0, 16, " Clock ", true);
 
-    const BTCDateTime& now = getCurrentTime();
+    const BTCDateTime& now = Clock.get();
     switch(_rowSel) {
       case 0:
         // update printable values
@@ -130,7 +129,7 @@ CScreen6::keyHandler(uint8_t event)
         case 1:
           _rowSel = 0;
           if(_colSel == 6) {  // set the RTC!
-            rtc.adjust(working);
+            Clock.set(working);
           }
           break;
       }
