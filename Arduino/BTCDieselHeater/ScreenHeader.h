@@ -36,7 +36,7 @@ protected:
   void showWifiIcon();
   void showBatteryIcon(float voltage);
   int  showTimers();
-  void showTime(int numTimers);  // x location depends upon how many timers are active
+  virtual void showTime(int numTimers);  // x location depends upon how many timers are active
 public:
   CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual void show();

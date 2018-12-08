@@ -105,6 +105,7 @@
 #include <time.h>
 #include "RTClib.h"
 #include "Wire.h"
+#include "BTCDateTime.h"
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -170,7 +171,7 @@ bool hasOEMController = false;
 //const CProtocol* pRxFrame = NULL;
 //const CProtocol* pTxFrame = NULL;
 CProtocolPackage HeaterData;
-DateTime currentTime;
+BTCDateTime currentTime;
 
 unsigned long moderator;
 bool bUpdateDisplay = false;
@@ -1007,7 +1008,7 @@ void checkRTC()
   }
 }
 
-const DateTime& getCurrentTime()
+const BTCDateTime& getCurrentTime()
 {
   return currentTime;
 }

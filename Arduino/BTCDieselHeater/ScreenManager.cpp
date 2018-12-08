@@ -11,6 +11,7 @@
 #include "Screen5.h"
 #include "Screen6.h"
 #include "Screen7.h"
+#include "Screen8.h"
 
 //
 // **** NOTE: If trying use hardware SPI on the ESP32 there are two very lame 
@@ -143,12 +144,13 @@ CScreenManager::init()
   _pDisplay->display();
 
   DebugPort.println("Creating Screens");
-  _Screens.push_back(new CScreen1(*_pDisplay, *this));
-  _Screens.push_back(new CScreen2(*_pDisplay, *this));
-  _Screens.push_back(new CScreen3(*_pDisplay, *this));
-  _Screens.push_back(new CScreen4(*_pDisplay, *this));
-  _Screens.push_back(new CScreen5(*_pDisplay, *this));
-	_Screens.push_back(new CScreen6(*_pDisplay, *this));
+  _Screens.push_back(new CScreen1(*_pDisplay, *this));      // detail control
+  _Screens.push_back(new CScreen2(*_pDisplay, *this));      // basic control
+  _Screens.push_back(new CScreen8(*_pDisplay, *this));      // clock
+  _Screens.push_back(new CScreen3(*_pDisplay, *this));      // mode / priming
+  _Screens.push_back(new CScreen4(*_pDisplay, *this));      // comms info
+  _Screens.push_back(new CScreen5(*_pDisplay, *this));      // tuning
+	_Screens.push_back(new CScreen6(*_pDisplay, *this));      // clock set
 	_Screens.push_back(new CScreen7(*_pDisplay, *this, 0));   // timer 1
 	_Screens.push_back(new CScreen7(*_pDisplay, *this, 1));   // timer 2
 	_currentScreen = 1;

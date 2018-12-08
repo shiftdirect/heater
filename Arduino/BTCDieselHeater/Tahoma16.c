@@ -193,12 +193,39 @@ const uint8_t tahoma_16ptBitmaps[] PROGMEM =
 	0xE0, 0x07, // ###          ###
 	0x70, 0x0E, //  ###        ### 
 	0x78, 0x1E, //  ####      #### 
+
+	// @268 ':' (4 pixels wide)
+	0x3C, 0x3C, //   ####    ####
+	0x3C, 0x3C, //   ####    ####
+	0x3C, 0x3C, //   ####    ####
+	0x3C, 0x3C, //   ####    ####
+
+	// @276 ' ' (4 pixels wide)
+	0x00, 0x00, //             
+	0x00, 0x00, //             
+	0x00, 0x00, //             
+	0x00, 0x00, //             
+
 };
 
 // Character descriptors for Tahoma 16pt
 // { [Char width in bits], [Char height in bits], [Offset into tahoma_16ptCharBitmaps in bytes] }
 const FONT_CHAR_INFO tahoma_16ptDescriptors[] PROGMEM =
 {
+	{4, 16, 276},    // ' '
+	{0, 0, 0},       // '!' 
+	{0, 0, 0},       // '"' 
+	{0, 0, 0},       // '#' 
+	{0, 0, 0},       // '$' 
+	{0, 0, 0},       // '%' 
+	{0, 0, 0},       // '&' 
+	{0, 0, 0},       // ''' 
+	{0, 0, 0},       // '(' 
+	{0, 0, 0},       // ')' 
+	{0, 0, 0},       // '*' 
+	{0, 0, 0},       // '+' 
+	{0, 0, 0},       // , 
+	{0, 0, 0},       // - 
 	{4, 16, 0},      // '.' 
 	{0, 0, 0},       // '/' 
 	{11, 16, 8},     // '0' 
@@ -211,7 +238,7 @@ const FONT_CHAR_INFO tahoma_16ptDescriptors[] PROGMEM =
 	{11, 16, 162},   // '7' 
 	{11, 16, 184},   // '8' 
 	{11, 16, 206},   // '9' 
-	{0, 0, 0},       // ':' 
+	{4, 16, 268},    // ':' 
 	{0, 0, 0},       // ';' 
 	{0, 0, 0},       // '<' 
 	{0, 0, 0},       // '='
@@ -257,7 +284,7 @@ const FONT_CHAR_INFO tahoma_16ptDescriptors[] PROGMEM =
 const FONT_INFO tahoma_16ptFontInfo =
 {
 	16,   //  Character height
-	'.',  //  Start character
+	' ',  //  Start character
   '`',  // End character
 	2,    //  Width, in pixels, of space character
 	tahoma_16ptDescriptors, //  Character descriptor array

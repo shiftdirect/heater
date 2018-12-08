@@ -34,13 +34,10 @@
 #include "Screen6.h"
 #include "RTClib.h"
 #include "Arial.h"
+#include "BTCDateTime.h"
 
 extern RTC_DS3231 rtc;
 
-static char daysOfTheWeek[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-static char months[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-static char monthDays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-int daysInMonth(int month, int year);
 
 CScreen6::CScreen6(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
@@ -49,6 +46,11 @@ CScreen6::CScreen6(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(d
   _nextT = millis();
 }
 
+void
+CScreen6::showTime(int)
+{
+  // override and DO NOTHING!
+}
 
 void 
 CScreen6::show()
@@ -66,16 +68,11 @@ CScreen6::show()
 
     _printInverted(0, 16, " Clock ", true);
 
-    const DateTime& now = getCurrentTime();
+    const BTCDateTime& now = getCurrentTime();
     switch(_rowSel) {
       case 0:
         // update printable values
-        _month = now.month();
-        _year = now.year();
-        _day = now.day();
-        _hour = now.hour();
-        _min = now.minute();
-        _sec = now.second();
+        working = now;
         // DELIBERATE DROP THROUGH HERE
       case 1:
         yPos = 28;
@@ -83,30 +80,30 @@ CScreen6::show()
         // date
         if(_rowSel==0) {
           xPos = 20;
-          _printMenuText(xPos, yPos, daysOfTheWeek[now.dayOfTheWeek()]);
+          _printMenuText(xPos, yPos, working.dowStr());
         }          
 
-        sprintf(str, "%d", _day);
+        sprintf(str, "%d", working.day());
         xPos += 20 + 12;
         _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==0, eRightJustify);
         xPos += 4;
-        _printMenuText(xPos, yPos, months[_month-1], _rowSel==1 && _colSel==1);
+        _printMenuText(xPos, yPos, working.monthStr(), _rowSel==1 && _colSel==1);
         xPos += 22;
-        sprintf(str, "%d", _year);
+        sprintf(str, "%d", working.year());
         _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==2);
         // time
         yPos = 40;
         xPos = 26;
-        sprintf(str, "%02d", _hour);
+        sprintf(str, "%02d", working.hour());
         _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==3);
         xPos += 16;
         _printMenuText(xPos, yPos, ":");
         xPos += 8;
-        sprintf(str, "%02d", _min);
+        sprintf(str, "%02d", working.minute());
         _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==4);
         xPos += 16;
         _printMenuText(xPos, yPos, ":");
-        sprintf(str, "%02d", _sec);
+        sprintf(str, "%02d", working.second());
         xPos += 8;
         _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==5);
         if(_rowSel==1)
@@ -133,7 +130,7 @@ CScreen6::keyHandler(uint8_t event)
         case 1:
           _rowSel = 0;
           if(_colSel == 6) {  // set the RTC!
-            rtc.adjust(DateTime(_year, _month, _day, _hour, _min, _sec));
+            rtc.adjust(working);
           }
           break;
       }
@@ -201,54 +198,28 @@ CScreen6::keyHandler(uint8_t event)
   _ScreenManager.reqUpdate();
 }
 
-int daysInMonth(int month, int year)
-{
-  if(month >= 1 && month <= 12) {
-    int days = monthDays[month-1];
-    if((month == 2) && ((year & 0x03) == 0))
-      days++;
-    return days;
-  }
-  return -1;
-}
-
 void 
 CScreen6::adjTimeDate(int dir)
 {
   int days;
   switch(_colSel) {
     case 0:
-      _day += dir;
-      days = daysInMonth(_month, _year);
-      ROLLUPPERLIMIT(_day, days, 1);
-      ROLLLOWERLIMIT(_day, 1, days);
+      working.adjustDay(dir);
       break;
     case 1:
-      _month += dir;
-      ROLLUPPERLIMIT(_month, 12, 1);
-      ROLLLOWERLIMIT(_month, 1, 12);
-      days = daysInMonth(_month, _year);   // trap shorter months
-      UPPERLIMIT(_day, days);
+      working.adjustMonth(dir);
       break;
     case 2:
-      _year += dir;
-      days = daysInMonth(_month, _year);
-      UPPERLIMIT(_day, days);              // pick up 29 Feb
+      working.adjustYear(dir);
       break;
     case 3:
-      _hour += dir;
-      ROLLUPPERLIMIT(_hour, 23, 0);
-      ROLLLOWERLIMIT(_hour, 0, 23);
+      working.adjustHour(dir);
       break;
     case 4:
-      _min += dir;
-      ROLLUPPERLIMIT(_min, 59, 0);
-      ROLLLOWERLIMIT(_min, 0, 59);
+      working.adjustMinute(dir);
       break;
     case 5:
-      _sec += dir;
-      ROLLUPPERLIMIT(_sec, 59, 0);
-      ROLLLOWERLIMIT(_sec, 0, 59);
+      working.adjustSecond(dir);
       break;
   }
 }

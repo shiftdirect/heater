@@ -21,6 +21,7 @@
 
 #include "stdint.h"
 #include "ScreenHeader.h"
+#include "BTCDateTime.h"
 
 class C128x64_OLED;
 class CScreenManager;
@@ -30,12 +31,13 @@ class CScreen6 : public CScreenHeader {
   int  _rowSel;
   int  _colSel;
   unsigned long _nextT;
-  int _month, _year, _day, _hour, _min, _sec;
+  BTCDateTime working;
 
   void adjTimeDate(int dir);
 
 public:
   CScreen6(C128x64_OLED& display, CScreenManager& mgr);
   void show();
+  void showTime(int);
   void keyHandler(uint8_t event);
 };
