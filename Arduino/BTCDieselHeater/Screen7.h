@@ -37,6 +37,7 @@ class CScreen7 : public CScreenHeader {
 
 public:
   CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance);
+  void onSelect();
   void show();
   void keyHandler(uint8_t event);
 };

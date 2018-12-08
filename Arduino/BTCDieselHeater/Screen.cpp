@@ -29,6 +29,11 @@ CScreen::show()
 {
 }
 
+void 
+CScreen::onSelect()
+{
+}
+
 
 void 
 CScreen::_printMenuText(int x, int y, const char* str, bool selected, eJUSTIFY justify, int border, int radius)

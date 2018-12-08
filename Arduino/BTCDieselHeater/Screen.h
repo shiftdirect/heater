@@ -48,6 +48,7 @@ protected:
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 
+  virtual void onSelect();
   virtual bool animate();
   virtual void show();
   virtual void keyHandler(uint8_t event) {};

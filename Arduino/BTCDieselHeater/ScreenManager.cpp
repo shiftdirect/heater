@@ -193,6 +193,9 @@ CScreenManager::refresh()
 void 
 CScreenManager::_switchScreen()
 {
+	if(_currentScreen >= 0)
+		_Screens[_currentScreen]->onSelect();
+		
   reqUpdate();
 }
 

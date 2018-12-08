@@ -139,7 +139,7 @@ void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkTimer();
-void checkTimer(const DateTime& now, sTimer timerInfo);
+void checkTimer(int timer, const DateTime& now);
 void checkDebugCommands();
 
 // DS18B20 temperature sensor support
@@ -950,32 +950,44 @@ void checkTimer()
 {
   const DateTime& now = getCurrentTime();
 
-  sTimer timerInfo;
-  // test timer 1
-  NVstore.getTimerInfo(0, timerInfo);
-  checkTimer(now, timerInfo);
-  // test timer 2
-  NVstore.getTimerInfo(1, timerInfo);
-  checkTimer(now, timerInfo);
+  checkTimer(0, now);   // test timer 1
+  checkTimer(1, now);   // test timer 2
 }
 
-void checkTimer(const DateTime& now, sTimer timerInfo)
+void checkTimer(int timer, const DateTime& now)
 {
-  int maskDOW = 0x01 << now.dayOfTheWeek();
-  if(timerInfo.enabled & (maskDOW | 0x80) ) {  // specific day, or next day
-    // check start
-    if(now.hour() == timerInfo.start.hour && now.minute() == timerInfo.start.min) {
+  sTimer Info;
+  NVstore.getTimerInfo(timer, Info);
+  int DOW = now.dayOfTheWeek();
+  int timeNow = now.hour() * 60 + now.minute();
+  int timeStart = Info.start.hour * 60 + Info.start.min;
+  int timeStop = Info.stop.hour * 60 + Info.stop.min;
+
+  // ensure DOW tracks expected start day should timer straddle midnight
+  if(timeStop < timeStart) {   // true if stop is next morning
+    if(timeNow <= timeStop) {  // current time has passed midnight - enable flag is based upon prior day
+      DOW--;
+      ROLLLOWERLIMIT(DOW, 0, 6);   // fixup for saturday night!
+    }
+  }
+  // DOW of week is now correct for the day this timer started
+  int maskDOW = 0x01 << DOW;
+
+  if(Info.enabled & (maskDOW | 0x80) ) {  // specific day of week, or next day
+    
+    if(timeNow == timeStart && now.second() < 3) {  // check start, within 2 seconds of the minute rollover
       requestOn();
     }
-    // check stop
-    if(now.hour() == timerInfo.stop.hour && now.minute() == timerInfo.stop.min) {
+    
+    if(timeNow == timeStop) {            // check stop
       requestOff();
-      if(!timerInfo.repeat) {            // cancel timer if non repeating
-        if(timerInfo.enabled & 0x80)     // next day start flag?
-          timerInfo.enabled = 0;         // outright cancel
-        else
-          timerInfo.enabled &= ~maskDOW; // otherwise clear particular day
-        NVstore.setTimerInfo(0, timerInfo);
+      if(!Info.repeat) {            // cancel timer if non repeating
+        if(Info.enabled & 0x80)     // next day start flag set?
+          Info.enabled = 0;         // outright cancel
+        else {
+          Info.enabled &= ~maskDOW; // otherwise clear specific day
+        }
+        NVstore.setTimerInfo(timer, Info);
         NVstore.save();
       }
     }

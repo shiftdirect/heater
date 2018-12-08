@@ -42,9 +42,13 @@ CScreen7::CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance) : C
   _rowSel = 0;
   _colSel = 0;
   _instance = instance;
-  NVstore.getTimerInfo(_instance, _timer);
 }
 
+void 
+CScreen7::onSelect()
+{
+  NVstore.getTimerInfo(_instance, _timer);
+}
 
 void 
 CScreen7::show()
