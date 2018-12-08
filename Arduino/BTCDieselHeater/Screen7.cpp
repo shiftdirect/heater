@@ -35,6 +35,8 @@
 #include "NVStorage.h"
 #include "RTClib.h"
 
+const char* briefDOW[] = { "S", "M", "T", "W", "T", "F", "S" };
+
 CScreen7::CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
 {
   _rowSel = 0;
@@ -55,75 +57,62 @@ CScreen7::show()
   sprintf(str, " Timer %d ", _instance + 1);
   _printInverted(0, 16, str, true);
 
-  switch(_rowSel) {
-    case 0:
-    case 1:
-      yPos = 28;
-      xPos = 32;
+  // start
+  xPos = 18;
+  yPos = 28;
+  _printMenuText(xPos, yPos, "On", false, eRightJustify);
+  _printMenuText(xPos+18, yPos, ":");
+  xPos += 6;
+  sprintf(str, "%02d", _timer.start.hour);
+  _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==0);
+  xPos += 17;
+  sprintf(str, "%02d", _timer.start.min);
+  _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==1);
 
-      // start
-      _printMenuText(xPos, yPos, "Start", false, eRightJustify);
-      _printMenuText(xPos+18, yPos, ":");
-      xPos += 6;
-      sprintf(str, "%02d", _timer.start.hour);
-      _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==0);
-      xPos += 17;
-      sprintf(str, "%02d", _timer.start.min);
-      _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==1);
+  // stop
+  xPos = 18;
+  yPos = 40;
+  _printMenuText(xPos, yPos, "Off", false, eRightJustify);
+  _printMenuText(xPos+18, yPos, ":");
+  xPos += 6;
+  sprintf(str, "%02d", _timer.stop.hour);
+  _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==2);
+  xPos += 17;
+  sprintf(str, "%02d", _timer.stop.min);
+  _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==3);
+  
+  // control
+  const char* msg;
+  xPos = _display.width() - border;
+  _printEnabledTimers();
+  
+  yPos = 40;
+  if(_timer.repeat)
+    msg = "Repeat";
+  else
+    msg = "Once";
+  if(_rowSel == 1) 
+    _printMenuText(xPos, yPos, msg, _colSel==5, eRightJustify);
+  else
+    _printInverted(xPos, yPos, msg, _timer.repeat, eRightJustify);
 
-      // stop
-      xPos = 32;
-      yPos = 40;
-      _printMenuText(xPos, yPos, "Stop", false, eRightJustify);
-      _printMenuText(xPos+18, yPos, ":");
-      xPos += 6;
-      sprintf(str, "%02d", _timer.stop.hour);
-      _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==2);
-      xPos += 17;
-      sprintf(str, "%02d", _timer.stop.min);
-      _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==3);
-      
-      // control
-      xPos = _display.width() - border;
-      yPos = 28;
-      const char* msg;
-      if(_timer.enabled)
-        msg = "Enabled";
-      else 
-        msg = "Disabled";
-      if(_rowSel == 1) 
-        _printMenuText(xPos, yPos, msg, _colSel==4, eRightJustify);
-      else 
-        _printInverted(xPos, yPos, msg, _timer.enabled, eRightJustify);
-      
-      yPos = 40;
-      if(_timer.repeat)
-        msg = "Repeat";
-      else
-        msg = "Once";
-      if(_rowSel == 1) 
-        _printMenuText(xPos, yPos, msg, _colSel==5, eRightJustify);
-      else
-        _printInverted(xPos, yPos, msg, _timer.repeat, eRightJustify);
-
-      // navigation line
-      yPos = 53;
-      xPos = _display.xCentre();
-      _printMenuText(xPos, yPos, "<-             ->", _rowSel==0, eCentreJustify);
-      break;
-
-  }
+  // navigation line
+  yPos = 53;
+  xPos = _display.xCentre();
+  _printMenuText(xPos, yPos, "<-             ->", _rowSel==0, eCentreJustify);
 }
 
 
 void 
 CScreen7::keyHandler(uint8_t event)
 {
+  static bool bHeld = false;
   // handle initial key press
   if(event & keyPressed) {
+    bHeld = false;
     // press CENTRE
     if(event & key_Centre) {
-      if(_rowSel == 1) {
+      if(_rowSel != 0) {
         NVstore.setTimerInfo(_instance, _timer);
         NVstore.save();
         _rowSel = 0;
@@ -140,6 +129,10 @@ CScreen7::keyHandler(uint8_t event)
           _colSel--;
           ROLLLOWERLIMIT(_colSel, 0, 5);
           break;
+        case 2:
+          _colSel--;
+          ROLLLOWERLIMIT(_colSel, 0, 6);
+          break;
       }
     }
     // press RIGHT - navigate fields, or screens
@@ -152,34 +145,71 @@ CScreen7::keyHandler(uint8_t event)
           _colSel++;
           ROLLUPPERLIMIT(_colSel, 5, 0);
           break;
-      }
-    }
-    // press UP 
-    if(event & key_Up) {
-      switch(_rowSel) {
-        case 0:
-          // move from screen navigation to field select & adjust
-          _rowSel = 1;
-          _colSel = 0;
-          break;
-        case 1:
-          // adjust selected item
-          adjust(+1);
+        case 2:
+          _colSel++;
+          ROLLUPPERLIMIT(_colSel, 6, 0);
           break;
       }
-    }
-    // press DOWN - can only leave adjustment by using OK (centre button)
-    if(event & key_Down) {
-      // adjust selected item
-      if(_rowSel == 1) adjust(-1);
     }
   }
 
   // handle held down keys
   if(event & keyRepeat) {
+    bHeld = true;
     if(_rowSel == 1) {
-      if(event & key_Down) adjust(-1);
-      if(event & key_Up) adjust(+1);
+      if(_colSel < 4) {
+        if(event & key_Down) adjust(-1);
+        if(event & key_Up) adjust(+1);
+      }
+      else if(_colSel == 4) {
+        if(event & key_Up) {
+          _timer.enabled &= 0x7f;   // strip next day flag
+          _rowSel = 2;
+          _colSel = 0;
+        }
+      }
+    }
+    if(_rowSel==2) {
+      if(event & key_Down) {
+        _rowSel = 1;
+        _colSel = 4;
+      }
+    }
+  }
+
+  if(event & keyReleased) {
+    if(!bHeld) {
+      // released DOWN - can only leave adjustment by using OK (centre button)
+      int maskDOW = 0x01 << _colSel;
+      if(event & key_Down) {
+        // adjust selected item
+        if(_rowSel == 1) 
+          adjust(-1);
+        if(_rowSel == 2) {
+          // adjust selected item
+          _timer.enabled ^= maskDOW;
+          _timer.enabled &= 0x7f;
+        }
+      }
+      // released UP 
+      if(event & key_Up) {
+        switch(_rowSel) {
+          case 0:
+            // move from screen navigation to field select & adjust
+            _rowSel = 1;
+            _colSel = 0;
+            break;
+          case 1:
+            // adjust selected item
+            adjust(+1);
+            break;
+          case 2:
+            // adjust selected item
+            _timer.enabled ^= maskDOW;
+            _timer.enabled &= 0x7f;
+            break;
+        }
+      }
     }
   }
 
@@ -229,3 +259,42 @@ CScreen7::adjust(int dir)
       break;
   }
 }
+
+void
+CScreen7::_printEnabledTimers()
+{
+  const int dayWidth = 8;
+  int xPos = _display.width() - border;
+  int yPos = 28;
+
+  if(_timer.enabled == 0x00 && _rowSel != 2) {
+    _printMenuText(xPos, yPos, "Disabled", _colSel==4, eRightJustify);
+  }
+  else if(_timer.enabled & 0x80) {
+    if(_rowSel==1 && _colSel==4)
+      _printMenuText(xPos, yPos, "Enabled", true, eRightJustify);
+    else 
+      _printInverted(xPos, yPos, "Enabled", true, eRightJustify);
+  }
+  else {
+    if(_rowSel==1 && _colSel==4) {
+      _printMenuText(xPos, yPos, "Hold UP", true, eRightJustify);
+    }
+    else {
+      xPos -= 7 * dayWidth;  // back step 7 day entries
+      int xSel = xPos + _colSel * dayWidth;
+      for(int i=0; i<7; i++) {
+        int dayMask = 0x01 << i;
+        _printInverted(xPos, yPos, briefDOW[i], _timer.enabled & dayMask);
+        xPos += dayWidth;
+      }
+      if(_rowSel == 2) {
+        CRect extents;
+        extents.xPos = xSel;
+        extents.yPos = yPos;
+        _drawMenuSelection(extents, briefDOW[_colSel]);
+      }
+    }
+  }
+}
+      

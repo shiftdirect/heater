@@ -148,6 +148,7 @@ public:
   void setStoredErrCode(unsigned char state) { Heater.StoredErrorCode = state; };
   //
   float getVoltage_Supply() const;
+  float getVoltage_SupplyRaw() const;
   void setVoltage_Supply(short voltsx10);
   
   // fan set/get

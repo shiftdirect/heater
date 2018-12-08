@@ -48,6 +48,13 @@ CScreen::_printMenuText(int x, int y, const char* str, bool selected, eJUSTIFY j
   }
 }
 
+void
+CScreen::_drawMenuSelection(CRect extents, const char* str, int border, int radius)
+{
+  _display.getTextExtents(str, extents);
+  extents.Expand(border);
+  _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
+}
 
 void
 CScreen::_printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify)

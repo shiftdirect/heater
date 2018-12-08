@@ -232,7 +232,7 @@ CProtocol::setVoltage_Supply(short voltsx10)
 }
 
 float
-CProtocol::getVoltage_Supply() const
+CProtocol::getVoltage_SupplyRaw() const
 {
   short val = 0;
   val = Heater.SupplyV_MSB & 0xff;
@@ -240,6 +240,12 @@ CProtocol::getVoltage_Supply() const
   val |= Heater.SupplyV_LSB & 0xff;
   float voltage = float(val) * 0.1f;
   return voltage;
+}
+
+float
+CProtocol::getVoltage_Supply() const
+{
+  return getVoltage_SupplyRaw() + 0.6; // compensate for series protection diode
 }
 
 void 

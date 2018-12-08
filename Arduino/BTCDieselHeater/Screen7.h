@@ -33,6 +33,7 @@ class CScreen7 : public CScreenHeader {
   int  _instance;
   sTimer _timer;
   void adjust(int dir);
+  void _printEnabledTimers();
 
 public:
   CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance);
