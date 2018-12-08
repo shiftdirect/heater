@@ -170,7 +170,7 @@ const uint8_t tahoma_16ptBitmaps[] PROGMEM =
 	0x3F, 0xF8, //   ###########   
 	0x0F, 0xE0, //     #######     
 
-	// @228 '�' (8 pixels wide)
+	// @228 '`' (8 pixels wide)
 	0x3C, 0x00, //   ####          
 	0x7E, 0x00, //  ######         
 	0xE7, 0x00, // ###  ###        
@@ -263,4 +263,3 @@ const FONT_INFO tahoma_16ptFontInfo =
 	tahoma_16ptDescriptors, //  Character descriptor array
 	tahoma_16ptBitmaps,     //  Character bitmap array
 };
-

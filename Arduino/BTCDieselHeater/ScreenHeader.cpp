@@ -27,9 +27,6 @@
 #define Y_CLOCK         0
 
 
-extern RTC_DS3231 rtc;
-
-
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
 {
   _clearUpAnimation = false;
@@ -195,8 +192,6 @@ void
 CScreenHeader::showTime(int numTimers)
 {
   const DateTime& now = getCurrentTime();
-
-//  DateTime now = rtc.now();
 
   char msg[16];
   if(now.second() & 0x01)

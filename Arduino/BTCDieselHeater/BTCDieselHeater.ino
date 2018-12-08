@@ -104,6 +104,7 @@
 #include "helpers.h"
 #include <time.h>
 #include "RTClib.h"
+#include "Wire.h"
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -139,7 +140,6 @@ void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkTimer();
-void checkTimer(int timer, const DateTime& now);
 void checkDebugCommands();
 
 // DS18B20 temperature sensor support
@@ -998,7 +998,10 @@ void checkRTC()
 {
   long deltaT = millis() - nextRTCfetch;
   if(deltaT >= 0) {
+    uint32_t origClock = Wire.getClock();
+    Wire.setClock(400000);
     currentTime = rtc.now();             // moderate I2C accesses
+    Wire.setClock(origClock);
     nextRTCfetch = millis() + 500;
     checkTimer();
   }
