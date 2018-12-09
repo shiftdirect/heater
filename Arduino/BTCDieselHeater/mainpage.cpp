@@ -10,28 +10,25 @@ const char* MAIN_PAGE PROGMEM = R"=====(
         Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
       
         Socket.onmessage = function(event){
-          document.getElementById("TempCurrent").innerHTML = event.data;
-          // console.log("msg rec", evt.data);
-          // var rawMsg = evt.data;
-          // var msgArray = evt.data.split(","); // split message by delimiter into a string array
-          // console.log("msgArray", msgArray[0]);
-          // console.log("msgArray", msgArray[1]);
-          // console.log("msgArray", msgArray[2]);
-          // console.log("msgArray", msgArray[3]);
-          // var indicator = msgArray[1]; // the first element in the message array is the ID of the object to update
-          // console.log("indiactor", indicator);
-          // if (SensorRead) // if an object by the name of the message exists, update its value or its attributes
-          // {
-          //   switch (msgArray[1])
-          //   {
-          //     case "CurrentTemp":
-          //       document.getElementById("TempCurrent").innerHTML = event.data;
-          //       break;
-          //   }
-          // }
+          console.log("msg rec", event.data);
+          var msgArray = event.data.split(","); // split message by delimiter into a string array
+          console.log("msgArray", msgArray[0]);
+          console.log("msgArray", msgArray[1]);
+          console.log("msgArray", msgArray[2]);
+          console.log("msgArray", msgArray[3]);
+          var indicator = msgArray[1]; // the first element in the message array is the ID of the object to update
+          console.log("indiactor", indicator);
+          if (SensorRead) // if an object by the name of the message exists, update its value or its attributes
+          {
+            switch (msgArray[1])
+            {
+              case "CurrentTemp":
+                document.getElementById("TempCurrent").innerHTML = event.data;
+                break;
+            }
+          }
         }
       }
-
 
       </script>
 
