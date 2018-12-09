@@ -210,13 +210,13 @@ CScreen1::keyHandler(uint8_t event)
 }
 
 
-#define TEMP_YPOS(A) ((((20 - A) * 3) / 2) + 22)
+#define TEMP_YPOS(A) ((20 - int(A)) + 27)  // 26 is location of 20deg tick
 void 
 CScreen1::showThermometer(float desired, float actual) 
 {
   char msg[16];
   // draw bulb design
-  _display.drawBitmap(X_BULB, Y_BULB, thermometerBitmap, W_BULB_ICON, H_BULB_ICON, WHITE);
+  _display.drawBitmap(X_BULB, Y_BULB, ambientThermometerIcon, W_BULB_ICON, H_BULB_ICON, WHITE);
   // draw mercury
   int yPos = Y_BULB + TEMP_YPOS(actual);
   _display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
@@ -256,7 +256,7 @@ void
 CScreen1::showBodyThermometer(int actual) 
 {
   // draw bulb design
-  _display.drawBitmap(X_BODY_BULB, Y_BULB, thermometerBitmap, 8, 50, WHITE);
+  _display.drawBitmap(X_BODY_BULB, Y_BULB, bodyThermometerIcon, 8, 50, WHITE);
   // draw mercury
   int yPos = Y_BULB + BODY_YPOS(actual);
   _display.drawLine(X_BODY_BULB + 3, yPos, X_BODY_BULB + 3, Y_BULB + 42, WHITE);

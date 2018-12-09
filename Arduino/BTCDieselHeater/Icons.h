@@ -22,7 +22,8 @@
 // 'Thermometer', 8x50px
 #define W_BULB_ICON 8
 #define H_BULB_ICON 50
-extern const unsigned char thermometerBitmap [];
+extern const unsigned char ambientThermometerIcon [];
+extern const unsigned char bodyThermometerIcon [];
 
 // 'ThermoPtr', 3x5px
 #define W_PTR_ICON 3
