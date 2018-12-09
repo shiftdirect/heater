@@ -16,9 +16,29 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           console.log("JSON run state", heater.RunState);
           console.log("JSON desired temp", heater.DesiredTemp);
           document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
+          if (heater.RunState == 0){
+                  document.getElementById("myonoffswitch").checked = false;
+               } else {
+                  document.getElementById("myonoffswitch").checked = true;
+               
+             }
           document.getElementById("RunState").innerHTML = heater.RunState;
-          document.getElementById("TempDesired").innerHTML = heater.DesiredTemp;
-          
+          document.getElementById("slide").value = heater.DesiredTemp;
+          }
+      }
+
+
+
+//        Socket.onmessage = function(event){
+//          console.log("msg rec", event.data);
+//          var heater = JSON.parse(event.data);
+//          console.log("JSON current temp", heater.CurrentTemp);
+//          console.log("JSON run state", heater.RunState);
+//          console.log("JSON desired temp", heater.DesiredTemp);
+//         document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
+//          document.getElementById("RunState").innerHTML = heater.RunState;
+//          document.getElementById("TempDesired").innerHTML = heater.DesiredTemp;
+//          
 //          var msgArray = event.data.split(","); // split message by delimiter into a string array
 //          console.log("msgArray", msgArray[0]);
 //          console.log("msgArray", msgArray[1]);
@@ -49,6 +69,71 @@ const char* MAIN_PAGE PROGMEM = R"=====(
         }
       }
 
+function funcNavLinks() {
+  var x = document.getElementById("myLinks");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function funcdispSettings() {
+    document.getElementById("Settings").style.display = "block";
+    document.getElementById("Home").style.display = "none";
+    document.getElementById("Advanced").style.display = "none"; 
+    document.getElementById("myLinks").style.display ="none";    
+}
+function funcdispHome(){
+    document.getElementById("Settings").style.display = "none";
+    document.getElementById("Home").style.display = "block";
+    document.getElementById("Advanced").style.display = "none";     
+    document.getElementById("myLinks").style.display ="none";    
+
+}
+
+function funcdispAdvanced(){
+    document.getElementById("Settings").style.display = "none";
+    document.getElementById("Home").style.display = "none";
+    document.getElementById("Advanced").style.display = "block";   
+    document.getElementById("myLinks").style.display ="none";    
+
+}
+
+
+
+// Function to check the power on/off slide switch.
+function OnOffCheck(){
+
+  // Get the checkbox status and place in the checkbox variable
+//  var checkBox = document.getElementById("myonoffswitch").value;
+  var checkBox = document.getElementById("myonoffswitch");
+
+  // Send a message to the Devel console of web browser for debugging
+  console.log(document.getElementById("myonoffswitch").checked);  
+ 
+  // If the checkbox is checked, display the output text
+  // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
+  
+  if (checkBox.checked == true){
+    //Insert Code Here To Turn On The Heater
+    console.log("Turning On Heater");
+    Socket.send("[CMD]ON");
+  } 
+  else{
+    //Insert Code Here To Turn Off The Heater
+    console.log("Turning Off Heater");
+    Socket.send("[CMD]OFF");
+  }
+}
+
+var slide = document.getElementById("slide");
+    sliderDiv = document.getElementById("sliderAmount");
+
+slide.oninput = function() {
+    sliderDiv.innerHTML = this.value;
+    Socket.send("TempDesired," + document.getElementById("slide").value);
+}
       </script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -258,77 +343,6 @@ Place holder for ADVANCED SETTINGS page
 <Div ID="Settings">
 Place hold for SETTINGS page
 </Div>
-
-
-<script>
-
-function funcNavLinks() {
-  var x = document.getElementById("myLinks");
-  if (x.style.display === "block") {
-    x.style.display = "none";
-  } else {
-    x.style.display = "block";
-  }
-}
-
-function funcdispSettings() {
-    document.getElementById("Settings").style.display = "block";
-    document.getElementById("Home").style.display = "none";
-    document.getElementById("Advanced").style.display = "none"; 
-    document.getElementById("myLinks").style.display ="none";    
-}
-function funcdispHome(){
-    document.getElementById("Settings").style.display = "none";
-    document.getElementById("Home").style.display = "block";
-    document.getElementById("Advanced").style.display = "none";     
-    document.getElementById("myLinks").style.display ="none";    
-
-}
-
-function funcdispAdvanced(){
-    document.getElementById("Settings").style.display = "none";
-    document.getElementById("Home").style.display = "none";
-    document.getElementById("Advanced").style.display = "block";   
-    document.getElementById("myLinks").style.display ="none";    
-
-}
-
-
-
-// Function to check the power on/off slide switch.
-function OnOffCheck(){
-
-  // Get the checkbox status and place in the checkbox variable
-//  var checkBox = document.getElementById("myonoffswitch").value;
-  var checkBox = document.getElementById("myonoffswitch");
-
-  // Send a message to the Devel console of web browser for debugging
-  console.log(document.getElementById("myonoffswitch").checked);  
- 
-  // If the checkbox is checked, display the output text
-  // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
-  
-  if (checkBox.checked == true){
-    //Insert Code Here To Turn On The Heater
-    console.log("Turning On Heater");
-    Socket.send("[CMD]ON");
-  } 
-  else{
-    //Insert Code Here To Turn Off The Heater
-    console.log("Turning Off Heater");
-    Socket.send("[CMD]OFF");
-  }
-}
-
-var slide = document.getElementById("slide");
-    sliderDiv = document.getElementById("sliderAmount");
-
-slide.oninput = function() {
-    sliderDiv.innerHTML = this.value;
-    Socket.send("TempDesired," + document.getElementById("slide").value);
-}
-
-</script>
 </body>
 </html> 
 
