@@ -16,7 +16,7 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           console.log("JSON run state", heater.RunState);
           console.log("JSON desired temp", heater.DesiredTemp);
           document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
-          document.getElementById("RunState").innerHTML = heater.CurrentTemp;
+          document.getElementById("RunState").innerHTML = heater.RunState;
           document.getElementById("TempDesired").innerHTML = heater.DesiredTemp;
           
 //          var msgArray = event.data.split(","); // split message by delimiter into a string array
