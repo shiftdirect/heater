@@ -26,7 +26,7 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           }
         }
       }
-
+      }
 
 
       </script>
