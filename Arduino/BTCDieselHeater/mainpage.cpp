@@ -7,25 +7,28 @@ const char* MAIN_PAGE PROGMEM = R"=====(
     <script>
       var Socket;
       function init() {
-      Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
-      }
+        Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
       
-      Socket.onmessage = function(event){
-      console.log("msg rec", evt.data);
-      var msgArray = evt.data.split(","); // split message by delimiter into a string array
-      console.log("msgArray", msgArray[0]);
-      console.log("msgArray", msgArray[1]);
-      console.log("msgArray", msgArray[2]);
-      console.log("msgArray", msgArray[3]);
-      var indicator = msgArray[1]; // the first element in the message array is the ID of the object to update
-      console.log("indiactor", indicator);
-      if (SensorRead) // if an object by the name of the message exists, update its value or its attributes
-      {
-        switch (msgArray[1])
-        {
-          case "CurrentTemp":
+        Socket.onmessage = function(event){
           document.getElementById("TempCurrent").innerHTML = event.data;
-          }
+          // console.log("msg rec", evt.data);
+          // var rawMsg = evt.data;
+          // var msgArray = evt.data.split(","); // split message by delimiter into a string array
+          // console.log("msgArray", msgArray[0]);
+          // console.log("msgArray", msgArray[1]);
+          // console.log("msgArray", msgArray[2]);
+          // console.log("msgArray", msgArray[3]);
+          // var indicator = msgArray[1]; // the first element in the message array is the ID of the object to update
+          // console.log("indiactor", indicator);
+          // if (SensorRead) // if an object by the name of the message exists, update its value or its attributes
+          // {
+          //   switch (msgArray[1])
+          //   {
+          //     case "CurrentTemp":
+          //       document.getElementById("TempCurrent").innerHTML = event.data;
+          //       break;
+          //   }
+          // }
         }
       }
 
@@ -211,7 +214,7 @@ MainPage {
 <div><H2>Power Control</H2></div>
 
 <div class="onoffswitch">
-    <input type="checkbox" onclick="OnOffCheck()" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch" checked>
+    <input type="checkbox" onclick="OnOffCheck()" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch" clicked>
     <label class="onoffswitch-label" for="myonoffswitch">
         <span class="onoffswitch-inner"></span>
         <span class="onoffswitch-switch"></span>
@@ -221,7 +224,7 @@ MainPage {
 <div>
 <h2>Temperature Control</h2>
 </div>
-<input id="slide" type="range" min="1" max="100" step="1" value="10">
+<input id="slide" type="range" min="8" max="35" step="1" value="22">
 <div>
 <b>Desired Temp: </b>
 <Span id="sliderAmount"></Span>
@@ -276,29 +279,32 @@ function funcdispAdvanced(){
 
 
 
-  // Function to check the power on/off slide switch.
-  function OnOffCheck(){
+// Function to check the power on/off slide switch.
+function OnOffCheck(){
+
   // Get the checkbox status and place in the checkbox variable
-  var checkBox = document.getElementById("myonoffswitch").value;
+//  var checkBox = document.getElementById("myonoffswitch").value;
+  var checkBox = document.getElementById("myonoffswitch");
+
   // Send a message to the Devel console of web browser for debugging
   console.log(document.getElementById("myonoffswitch").checked);  
+ 
   // If the checkbox is checked, display the output text
   // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
   
   if (checkBox.checked == true){
     //Insert Code Here To Turn On The Heater
-    Console.log("Turning On Heater");
+    console.log("Turning On Heater");
     Socket.send("[CMD]ON");
-    } 
+  } 
   else{
     //Insert Code Here To Turn Off The Heater
-    Console.log("Turning Off Heater");
+    console.log("Turning Off Heater");
     Socket.send("[CMD]OFF");
-
   }
 }
 
-var slide = document.getElementById('slide');
+var slide = document.getElementById("slide");
     sliderDiv = document.getElementById("sliderAmount");
 
 slide.oninput = function() {
