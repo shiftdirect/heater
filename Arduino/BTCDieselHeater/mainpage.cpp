@@ -266,7 +266,6 @@ function funcdispAdvanced(){
   // Get the checkbox status and place in the checkbox variable
   var checkBox = document.getElementById("myonoffswitch");
   // Send a message to the Devel console of web browser for debugging
-
   console.log(document.getElementById("myonoffswitch").checked);  
   // Get the output text
   var text = document.getElementById("text");
@@ -275,14 +274,10 @@ function funcdispAdvanced(){
   
   if (checkBox.checked == true){
     //Insert Code Here To Turn On The Heater
-//    Socket.send("P1");
     Socket.send("[CMD]ON");
-    text.style.display = "block";
     } 
   else{
     //Insert Code Here To Turn Off The Heater
-    text.style.display = "none";
-//    Socket.send("P0");
     Socket.send("[CMD]OFF");
 
   }
