@@ -22,7 +22,6 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                   document.getElementById("myonoffswitch").checked = true;
                
              }
-          document.getElementById("RunState").innerHTML = heater.RunState;
           document.getElementById("slide").value = heater.DesiredTemp;
           }
       }
