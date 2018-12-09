@@ -11,8 +11,8 @@ const char* MAIN_PAGE PROGMEM = R"=====(
       }
       
       Socket.onmessage = function(event){
-      console.log("msg rec", evt.data);
-      var msgArray = evt.data.split(","); // split message by delimiter into a string array
+      console.log("msg rec", event.data);
+      var msgArray = event.data.split(","); // split message by delimiter into a string array
       console.log("msgArray", msgArray[0]);
       console.log("msgArray", msgArray[1]);
       console.log("msgArray", msgArray[2]);
