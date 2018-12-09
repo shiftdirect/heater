@@ -31,6 +31,7 @@
 class CScreenHeader : public CScreen {
   bool _clearUpAnimation;
   bool _clearDnAnimation;
+  bool _colon;
 protected:
   void showBTicon();
   void showWifiIcon();

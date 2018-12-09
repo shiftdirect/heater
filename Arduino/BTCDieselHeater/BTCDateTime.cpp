@@ -112,7 +112,7 @@ BTCDateTime::adjustSecond(int dir)
 }
 
 int 
-BTCDateTime::daysInMonth(int month, int year)
+BTCDateTime::daysInMonth(int month, int year) const
 {
   if(month >= 1 && month <= 12) {
     int days = monthDays[month-1];

@@ -31,6 +31,7 @@ CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(
 {
   _clearUpAnimation = false;
   _clearDnAnimation = false;
+  _colon = false;
 }
 
 void 
@@ -194,10 +195,12 @@ CScreenHeader::showTime(int numTimers)
   const BTCDateTime& now = Clock.get();
 
   char msg[16];
-  if(now.second() & 0x01)
+  if(_colon)
     sprintf(msg, "%02d:%02d", now.hour(), now.minute());
   else
     sprintf(msg, "%02d %02d", now.hour(), now.minute());
+  _colon = !_colon;
+
   {
     CTransientFont AF(_display, &arial_8ptFontInfo);
     // determine centre position of remaining real estate

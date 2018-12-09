@@ -1,9 +1,7 @@
 #include "ScreenManager.h"
-#include <SPI.h>
 #include <Wire.h>
 #include "128x64OLED.h"
 #include "pins.h"
-#include "BluetoothAbstract.h" 
 #include "Screen1.h"
 #include "Screen2.h"
 #include "Screen3.h"
@@ -12,21 +10,8 @@
 #include "Screen6.h"
 #include "Screen7.h"
 #include "Screen8.h"
+#include "BTCConfig.h"
 
-//
-// **** NOTE: If trying use hardware SPI on the ESP32 there are two very lame 
-// ****       libaries conspiring to make life difficult 
-//
-// A/ The ESP32 SPI.cpp library instatiates an instance of SPI, using the VSPI port (and pins)
-// B/ The Adfruit_SH1106 library hard codes "SPI" as the SPI port instance
-//
-// As an ESP32 has a pin multiplexer, this is very bad form.
-// The actual design here uses the defacto HSPI pins (and port), 
-// You **MUST comment out the SPIClass SPI(VSPI);**  at the end of the ESP32 SPI library
-// then we declare "SPI" here, which will use HSPI!!!!
-
-// 128 x 64 OLED support
-//SPIClass SPI;    // default constructor opens HSPI on standard pins : MOSI=13,CLK=14,MISO=12(unused)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // splash creen created using image2cpp http://javl.github.io/image2cpp/
@@ -144,16 +129,21 @@ CScreenManager::init()
   _pDisplay->display();
 
   DebugPort.println("Creating Screens");
-  _Screens.push_back(new CScreen1(*_pDisplay, *this));      // detail control
-  _Screens.push_back(new CScreen2(*_pDisplay, *this));      // basic control
-  _Screens.push_back(new CScreen8(*_pDisplay, *this));      // clock
-  _Screens.push_back(new CScreen3(*_pDisplay, *this));      // mode / priming
-  _Screens.push_back(new CScreen4(*_pDisplay, *this));      // comms info
-  _Screens.push_back(new CScreen5(*_pDisplay, *this));      // tuning
-	_Screens.push_back(new CScreen6(*_pDisplay, *this));      // clock set
-	_Screens.push_back(new CScreen7(*_pDisplay, *this, 0));   // timer 1
-	_Screens.push_back(new CScreen7(*_pDisplay, *this, 1));   // timer 2
-	_currentScreen = 1;
+  _Screens.push_back(new CScreen1(*_pDisplay, *this));      // 0: detail control
+  _Screens.push_back(new CScreen2(*_pDisplay, *this));      // 1: basic control
+  _Screens.push_back(new CScreen8(*_pDisplay, *this));      // 2: clock
+  _Screens.push_back(new CScreen3(*_pDisplay, *this));      // 3: mode / priming
+  _Screens.push_back(new CScreen4(*_pDisplay, *this));      // 4: comms info
+  _Screens.push_back(new CScreen5(*_pDisplay, *this));      // 5: tuning
+  _Screens.push_back(new CScreen6(*_pDisplay, *this));      // 6: clock set
+  _Screens.push_back(new CScreen7(*_pDisplay, *this, 0));   // 7: set timer 1
+  _Screens.push_back(new CScreen7(*_pDisplay, *this, 1));   // 8: set timer 2
+
+#if RTC_USE_DS3231==0 && RTC_USE_DS1307==0 && RTC_USE_PCF8523==0
+  _currentScreen = 6;   // bring up clock set screen first if using millis based RTC!
+#else
+	_currentScreen = 1;   // basic control screen
+#endif
 
   _switchScreen();
 }

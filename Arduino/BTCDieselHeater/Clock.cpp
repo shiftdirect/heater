@@ -5,15 +5,45 @@
 #include "RTClib.h"
 #include "helpers.h"
 #include "NVStorage.h"
+#include "DebugPort.h"
 
-CClock::CClock(RTC_DS3231& rtc) : _rtc(rtc)
-{
-}
+
+// create ONE of the RTClib supported real time clock classes
+#if RTC_USE_DS3231 == 1
+RTC_DS3231 rtc;
+#elif RTC_USE_DS1307 == 1
+RTC_DS1307 rtc;
+#elif RTC_USE_PCF8523 == 1
+RTC_PCF8523 rtc;
+#else
+RTC_Millis rtc;
+#endif
+
+CClock Clock(rtc);
+
 
 void 
 CClock::begin()
 {
+  // announce which sort of RTC is being used
+#if RTC_USE_DS3231 == 1
+DebugPort.println("Using DS3231 Real Time Clock");
+#elif RTC_USE_DS1307 == 1
+DebugPort.println("Using DS1307 Real Time Clock");
+#elif RTC_USE_PCF8523 == 1
+DebugPort.println("Using PCF8523 Real Time Clock");
+#else
+#define SW_RTC    // enable different begin() call for the millis() based RTC
+DebugPort.println("Using millis() based psuedo \"Real Time Clock\"");
+#endif
+
+#ifdef SW_RTC
+  DateTime zero(2019, 1, 1);   // can be pushed along as seen fit!
+  _rtc.begin(zero);
+#else
   _rtc.begin();
+#endif
+
   _nextRTCfetch = millis();
 }
 

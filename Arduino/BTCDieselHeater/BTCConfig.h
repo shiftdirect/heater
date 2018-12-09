@@ -75,7 +75,20 @@
 //  DS18B20 temperature sensing
 //
 #define TEMPERATURE_INTERVAL 1000
+
+///////////////////////////////////////////////////////////////////////////////
+// Real Time Clock support
+//
+// only select one option to use the indicated hardware
+// if none are selected, RTC_Millis will be used, which is volatile (based upon millis())
+//
+#define RTC_USE_DS3231  1
+#define RTC_USE_DS1307  0
+#define RTC_USE_PCF8523 0
   
 
+///////////////////////////////////////////////////////////////////////////////
+// Blue wire handling
+//
 #define SUPPORT_OEM_CONTROLLER 1
 

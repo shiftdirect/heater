@@ -35,8 +35,6 @@
 #include "Arial.h"
 #include "Clock.h"
 
-extern RTC_DS3231 rtc;
-
 
 CScreen6::CScreen6(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {

@@ -10,8 +10,7 @@ class BTCDateTime : public DateTime {
 public:
   const char* monthStr() const;
   const char* dowStr() const;
-  const char* briefDowStr() const;
-  int daysInMonth(int month, int year);
+  int  daysInMonth(int month, int year) const;
   void adjustDay(int val);
   void adjustMonth(int val);
   void adjustYear(int dir);

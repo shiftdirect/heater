@@ -158,8 +158,6 @@ CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default paramet
 CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
-RTC_DS3231 rtc;
-CClock Clock(rtc);
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
