@@ -3,92 +3,206 @@
 const char* MAIN_PAGE PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
-	<head>
-		<script>
-			var Socket;
-			function init() {
-			Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
-			Socket.onmessage = function(event){
-			document.getElementById("TempCurrent").innerHTML = event.data;
-			}
-		}
+  <head>
+    <script>
+      var Socket;
+      function init() {
+      Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+      Socket.onmessage = function(event){
+      document.getElementById("TempCurrent").innerHTML = event.data;
+      }
+    }
 
 
 
-			</script>
+      </script>
 
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-	<style>
-	.switch {
-		position: relative;
-		display: inline-block;
-		width: 60px;
-		height: 34px;
-	}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+  
 
-	.switch input { 
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+  }
 
-	.slider {
-		position: absolute;
-		cursor: pointer;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: #ccc;
-		-webkit-transition: .4s;
-		transition: .4s;
-	}
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+  }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
 
-	.slider:before {
-		position: absolute;
-		content: "";
-		height: 26px;
-		width: 26px;
-		left: 4px;
-		bottom: 4px;
-		background-color: white;
-		-webkit-transition: .4s;
-		transition: .4s;
-	}
+.onoffswitch {
+    position: relative; width: 90px;
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+}
+.onoffswitch-checkbox {
+    display: none;
+}
+.onoffswitch-label {
+    display: block; overflow: hidden; cursor: pointer;
+    border: 2px solid #999999; border-radius: 20px;
+}
+.onoffswitch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    transition: margin 0.3s ease-in 0s;
+}
+.onoffswitch-inner:before, .onoffswitch-inner:after {
+    display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+    font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+    box-sizing: border-box;
+}
+.onoffswitch-inner:before {
+    content: "ON";
+    padding-left: 10px;
+    background-color: #34A7C1; color: #FFFFFF;
+}
+.onoffswitch-inner:after {
+    content: "OFF";
+    padding-right: 10px;
+    background-color: #EEEEEE; color: #999999;
+    text-align: right;
+}
+.onoffswitch-switch {
+    display: block; width: 18px; margin: 6px;
+    background: #FFFFFF;
+    position: absolute; top: 0; bottom: 0;
+    right: 56px;
+    border: 2px solid #999999; border-radius: 20px;
+    transition: all 0.3s ease-in 0s; 
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+    margin-left: 0;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+    right: 0px; 
+}
 
-	input:checked + .slider {
-		background-color: #2196F3;
-	}
+.mobile-container {
+  
+  margin: auto;
+  background-color: #555;
+  height: 500px;
+  color: white;
+  border-radius: 10px;
+}
 
-	input:focus + .slider {
-		box-shadow: 0 0 1px #2196F3;
-	}
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+  position: relative;
+}
 
-	input:checked + .slider:before {
-		-webkit-transform: translateX(26px);
-		-ms-transform: translateX(26px);
-		transform: translateX(26px);
-	}
+.topnav #myLinks {
+  display: none;
+}
 
-	.slider.round {
-		border-radius: 34px;
-	}
+.topnav a {
+  color: white;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+  display: block;
+}
 
-	.slider.round:before {
-		border-radius: 50%;
-	}
+.topnav a.icon {
+  background: black;
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+  input:checked + .slider {
+    background-color: #2196F3;
+  }
+
+  input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+  }
+
+  input:checked + .slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+  }
+
+  .slider.round {
+    border-radius: 34px;
+  }
+
+  .slider.round:before {
+    border-radius: 50%;
+  }
+
+MainPage {
+   display: block
+}
+#Advanced {
+  display: none
+}
+#Settings {
+  display: none
+}
+
+}
+
 </style>
 <title>Chinese Diesel Heater Web Controller Interface</title>
 </head>
 <body onload="javascript:init()">
+<div class="mobile-container">
 
-<h1>Chinese Diesel Heater Web Control</h1>
-<div>OFF <label class="switch">
-<input type="checkbox" id="onofftoggle" onclick="OnOffCheck()">
-<span class="slider round"></span>
-</label> ON 
+<!-- Top Navigation Menu -->
+<div class="topnav">
+  <div style="padding-left:30px"><a href="javascript:void(0);" onclick="funcdispHome()" class="active">Chinese Diesel Heater Web Control</a></div>
+  <div id="myLinks">
+    <a href="javascript:void(0);" onclick="funcdispHome()">Home</a>
+    <a href="javascript:void(0);" onclick="funcdispSettings()">Settings</a>
+    <a href="javascript:void(0);" onclick="funcdispAdvanced()">Advanced Settings</a>
+  </div>
+  <a href="javascript:void(0);" class="icon" onclick="funcNavLinks()">
+    </i>=
+  </a>
 </div>
-<p id="text" style="display:none">Heater Is ON</p>
+<div style="padding-left:16px">
+<span class="MaingPage" id="Home">
+<div><H2>Power Control</H2></div>
+
+<div class="onoffswitch">
+    <input type="checkbox" onclick="OnOffCheck()" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch" checked>
+    <label class="onoffswitch-label" for="myonoffswitch">
+        <span class="onoffswitch-inner"></span>
+        <span class="onoffswitch-switch"></span>
+    </label>
+</div>
+
 <div>
 <h2>Temperature Control</h2>
 </div>
@@ -99,38 +213,79 @@ const char* MAIN_PAGE PROGMEM = R"=====(
 <div>
 </div>
 <b>Current Temp: </b><span id="TempCurrent">
+</div>
+</span>
+
+<div id="Advanced" class="AdvSettings">
+Place holder for ADVANCED SETTINGS page
+</div>
 
 
+<Div ID="Settings">
+Place hold for SETTINGS page
+</Div>
 
 
 <script>
 
+function funcNavLinks() {
+  var x = document.getElementById("myLinks");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
 
-	// Function to check the power on/off slide switch.
-	function OnOffCheck(){
-	// Get the checkbox status and place in the checkbox variable
-	var checkBox = document.getElementById("onofftoggle");
-	// Send a message to the Devel console of web browser for debugging
+function funcdispSettings() {
+    document.getElementById("Settings").style.display = "block";
+    document.getElementById("Home").style.display = "none";
+    document.getElementById("Advanced").style.display = "none"; 
+    document.getElementById("myLinks").style.display ="none";    
+}
+function funcdispHome(){
+    document.getElementById("Settings").style.display = "none";
+    document.getElementById("Home").style.display = "block";
+    document.getElementById("Advanced").style.display = "none";     
+    document.getElementById("myLinks").style.display ="none";    
 
-	console.log(document.getElementById("onofftoggle").checked);  
-	// Get the output text
-	var text = document.getElementById("text");
-	// If the checkbox is checked, display the output text
-	// We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
-	
-	if (checkBox.checked == true){
-		//Insert Code Here To Turn On The Heater
-//		Socket.send("P1");
-		Socket.send("[CMD]ON");
-		text.style.display = "block";
-		} 
-	else{
-		//Insert Code Here To Turn Off The Heater
-		text.style.display = "none";
-//		Socket.send("P0");
-		Socket.send("[CMD]OFF");
+}
 
-	}
+function funcdispAdvanced(){
+    document.getElementById("Settings").style.display = "none";
+    document.getElementById("Home").style.display = "none";
+    document.getElementById("Advanced").style.display = "block";   
+    document.getElementById("myLinks").style.display ="none";    
+
+}
+
+
+
+  // Function to check the power on/off slide switch.
+  function OnOffCheck(){
+  // Get the checkbox status and place in the checkbox variable
+  var checkBox = document.getElementById("myonoffswitch");
+  // Send a message to the Devel console of web browser for debugging
+
+  console.log(document.getElementById("myonoffswitch").checked);  
+  // Get the output text
+  var text = document.getElementById("text");
+  // If the checkbox is checked, display the output text
+  // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
+  
+  if (checkBox.checked == true){
+    //Insert Code Here To Turn On The Heater
+//    Socket.send("P1");
+    Socket.send("[CMD]ON");
+    text.style.display = "block";
+    } 
+  else{
+    //Insert Code Here To Turn Off The Heater
+    text.style.display = "none";
+//    Socket.send("P0");
+    Socket.send("[CMD]OFF");
+
+  }
 }
 
 var slide = document.getElementById('slide');
@@ -145,4 +300,5 @@ slide.oninput = function() {
 </html> 
 
 )=====";
+
 
