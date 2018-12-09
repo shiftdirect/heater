@@ -18,10 +18,14 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
           if (heater.RunState == 0){
                   document.getElementById("myonoffswitch").checked = false;
-               } else {
+                  document.getElementById("myonoffswitch").style = "block";
+              } else if(heater.RunState === 7){
+                  document.getElementById("myonoffswitch").checked = false;
+                  document.getElementById("myonoffswitch").style = "none";
+              } else {
                   document.getElementById("myonoffswitch").checked = true;
-               
-             }
+                  document.getElementById("myonoffswitch").style = "block";               
+              }
           document.getElementById("slide").value = heater.DesiredTemp;
           }
       }
