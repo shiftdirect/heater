@@ -27,6 +27,7 @@
 #include "helpers.h"
 #include "pins.h"
 #include "Index.h"
+#include <ArduinoJson.h>
 
 extern void Command_Interpret(const char* pLine);   // decodes received command lines, implemented in main .ino file!
 
@@ -34,6 +35,8 @@ WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 bool bRxWebData = false;
 bool bTxWebData = false;
+
+DynamicJsonBuffer jsonBuffer(512);   // create a JSON buffer on the heap
 
 const int led = 13;
 
@@ -60,6 +63,7 @@ void handleNotFound() {
 }
 
 void initWebServer(void) {
+
 	
 	if (MDNS.begin("BTCHeater")) {
 		DebugPort.println("MDNS responder started");
@@ -72,6 +76,7 @@ void initWebServer(void) {
 	webSocket.begin();
 	webSocket.onEvent(webSocketEvent);
 	DebugPort.println("HTTP server started");
+
 }
 unsigned char cVal;
 
@@ -83,14 +88,24 @@ bool doWebServer(void) {
 	if(numClients) {
 		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
 			lastTx = millis() + 1000;
-			char msg[16];
+
+			JsonObject& root = jsonBuffer.createObject();
+			root["CurrentTemp"] = getActualTemperature();
+			root["RunState"] = getHeaterInfo().getRunState();
+			root["DesiredTemp"] = getHeaterInfo().getTemperature_Desired();
+
+      String jsonToSend;
+			root.printTo(jsonToSend);
+      webSocket.broadcastTXT(jsonToSend);
+
+/*			char msg[16];
 			sprintf(msg, "CurrentTemp,%d",getActualTemperature());
 			webSocket.broadcastTXT(msg);
 			bTxWebData = true;
       sprintf(msg, "PowerState,%i",getHeaterInfo().getRunState());
       webSocket.broadcastTXT(msg);
 		 sprintf(msg, "TempDesired,%i",getHeaterInfo().getTemperature_Desired());
-      webSocket.broadcastTXT(msg);
+      webSocket.broadcastTXT(msg);*/
 		}
 		return true;
 	}
