@@ -27,48 +27,6 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           }
       }
 
-
-
-//        Socket.onmessage = function(event){
-//          console.log("msg rec", event.data);
-//          var heater = JSON.parse(event.data);
-//          console.log("JSON current temp", heater.CurrentTemp);
-//          console.log("JSON run state", heater.RunState);
-//          console.log("JSON desired temp", heater.DesiredTemp);
-//         document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
-//          document.getElementById("RunState").innerHTML = heater.RunState;
-//          document.getElementById("TempDesired").innerHTML = heater.DesiredTemp;
-//          
-//          var msgArray = event.data.split(","); // split message by delimiter into a string array
-//          console.log("msgArray", msgArray[0]);
-//          console.log("msgArray", msgArray[1]);
-//          console.log("msgArray", msgArray[2]);
-//          console.log("msgArray", msgArray[3]);
-//          var indicator = msgArray[1]; // the first element in the message array is the ID of the object to update
-//          console.log("indicator", indicator);
-//          if (indicator) // if an object by the name of the message exists, update its value or its attributes
-//          {
-//            switch (msgArray[0])
-//            {
-//              case "CurrentTemp":
-//                document.getElementById("TempCurrent").innerHTML = msgArray[1];
-//                break;
-//              case "PowerState":
-//                if (msgArray[1] == 0){
-//                  document.getElementById("myonoffswitch").checked = false;
-//                  break;
-//                } else {
-//                  document.getElementById("myonoffswitch").checked = true;
-//                  break;
-//                }
-//               case "TempDesired":
-//                document.getElementById("slide").value = msgArray[1];
-//                break;
-//            }
-//          }
-        }
-      }
-
 function funcNavLinks() {
   var x = document.getElementById("myLinks");
   if (x.style.display === "block") {
