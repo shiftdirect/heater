@@ -17,13 +17,24 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           console.log("msgArray", msgArray[2]);
           console.log("msgArray", msgArray[3]);
           var indicator = msgArray[1]; // the first element in the message array is the ID of the object to update
-          console.log("indiactor", indicator);
-          if (SensorRead) // if an object by the name of the message exists, update its value or its attributes
+          console.log("indicator", indicator);
+          if (indicator) // if an object by the name of the message exists, update its value or its attributes
           {
-            switch (msgArray[1])
+            switch (msgArray[0])
             {
               case "CurrentTemp":
-                document.getElementById("TempCurrent").innerHTML = event.data;
+                document.getElementById("TempCurrent").innerHTML = msgArray[1];
+                break;
+              case "PowerState":
+                if (msgArray[1] == 0){
+                  document.getElementById("myonoffswitch").checked = false;
+                  break;
+                } else {
+                  document.getElementById("myonoffswitch").checked = true;
+                  break;
+                }
+               case "TempDesired":
+                document.getElementById("slide").value = msgArray[1];
                 break;
             }
           }
@@ -306,6 +317,7 @@ var slide = document.getElementById("slide");
 
 slide.oninput = function() {
     sliderDiv.innerHTML = this.value;
+    Socket.send("TempDesired," + document.getElementById("slide").value);
 }
 
 </script>

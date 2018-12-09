@@ -84,9 +84,13 @@ bool doWebServer(void) {
 		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
 			lastTx = millis() + 1000;
 			char msg[16];
-			sprintf(msg, "%.1f", getActualTemperature());
+			sprintf(msg, "CurrentTemp,%d",getActualTemperature());
 			webSocket.broadcastTXT(msg);
 			bTxWebData = true;
+      sprintf(msg, "PowerState,%i",getHeaterInfo().getRunState());
+      webSocket.broadcastTXT(msg);
+		 sprintf(msg, "TempDesired,%i",getHeaterInfo().getTemperature_Desired());
+      webSocket.broadcastTXT(msg);
 		}
 		return true;
 	}
