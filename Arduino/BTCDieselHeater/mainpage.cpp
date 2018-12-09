@@ -8,6 +8,8 @@ const char* MAIN_PAGE PROGMEM = R"=====(
       var Socket;
       function init() {
       Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+      }
+      
       Socket.onmessage = function(event){
       console.log("msg rec", evt.data);
       var msgArray = evt.data.split(","); // split message by delimiter into a string array
@@ -25,7 +27,6 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           document.getElementById("TempCurrent").innerHTML = event.data;
           }
         }
-      }
       }
 
 
