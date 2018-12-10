@@ -97,7 +97,7 @@ CScreen2::show()
     if(tDelta < 0) {
       // Show current heat demand setting
       if(getHeaterInfo().isThermostat()) {
-        sprintf(msg, "Setpoint = %d`C", getHeaterInfo().getTemperature_Desired());
+        sprintf(msg, "Setpoint = %.0f`C", getHeaterInfo().getTemperature_Desired());
       }
       else {
         sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());

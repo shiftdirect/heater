@@ -17,17 +17,18 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           console.log("JSON desired temp", heater.DesiredTemp);
           document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
           if (heater.RunState == 0){
-                  document.getElementById("myonoffswitch").checked = false;
-                  document.getElementById("myonoffswitch").style = "block";
-              } else if(heater.RunState === 7){
-                  document.getElementById("myonoffswitch").checked = false;
-                  document.getElementById("myonoffswitch").style = "none";
-              } else {
-                  document.getElementById("myonoffswitch").checked = true;
-                  document.getElementById("myonoffswitch").style = "block";               
-              }
-          document.getElementById("slide").value = heater.DesiredTemp;
+            document.getElementById("myonoffswitch").checked = false;
+            document.getElementById("myonoffswitch").style = "block";
+          } else if(heater.RunState >= 7){
+            document.getElementById("myonoffswitch").checked = false;
+            document.getElementById("myonoffswitch").style = "none";
+          } else {
+            document.getElementById("myonoffswitch").checked = true;
+            document.getElementById("myonoffswitch").style = "block";               
           }
+          document.getElementById("slide").value = heater.DesiredTemp;
+          document.getElementById("sliderAmount").innerHTML = heater.DesiredTemp;
+        }
       }
 
 function funcNavLinks() {
@@ -88,13 +89,21 @@ function OnOffCheck(){
   }
 }
 
-var slide = document.getElementById("slide");
-    sliderDiv = document.getElementById("sliderAmount");
-
-slide.oninput = function() {
-    sliderDiv.innerHTML = this.value;
-    Socket.send("TempDesired," + document.getElementById("slide").value);
+function onSlide(newVal) {
+  Socket.send("[CMD]degC" + newVal);
+  console.log("Sending desired temp", newVal);
+  document.getElementById("sliderAmount").innerHTML = newVal;
 }
+
+// var slide = document.getElementById("slide");
+//     sliderDiv = document.getElementById("sliderAmount");
+
+// slide.oninput = function() {
+//     sliderDiv.innerHTML = this.value;
+// //    Socket.send("TempDesired," + document.getElementById("slide").value);
+//     Socket.send("[CMD]degC" + document.getElementById("slide").value);
+//     console.log("Sending desired temp", document.getElementById("slide").value, this.value);
+// }
       </script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -286,10 +295,10 @@ MainPage {
 <div>
 <h2>Temperature Control</h2>
 </div>
-<input id="slide" type="range" min="8" max="35" step="1" value="22">
+<input type="range" id="slide" min="8" max="35" step="1" value="22" oninput="onSlide(this.value)" onchange="onSlide(this.value)">
 <div>
 <b>Desired Temp: </b>
-<Span id="sliderAmount"></Span>
+<span id="sliderAmount"></span>
 <div>
 </div>
 <b>Current Temp: </b><span id="TempCurrent">
