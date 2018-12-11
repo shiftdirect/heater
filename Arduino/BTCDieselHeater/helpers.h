@@ -26,7 +26,8 @@ class CProtocolPackage;
 extern void ToggleOnOff();
 extern void requestOn();
 extern void requestOff();
-extern void reqTempChange(int val);
+extern void reqTempDelta(int delta);
+extern void reqTemp(unsigned char newTemp);
 extern void reqThermoToggle();
 extern void setThermostatMode(unsigned char);
 extern void reqPumpPrime(bool on);
@@ -37,6 +38,8 @@ extern void  setFanMin(short);
 extern void  setFanMax(short);
 extern void  saveNV();
 extern const CProtocolPackage& getHeaterInfo();
+extern void interpretCommand(const char* pLine);
+extern void interpretJsonCommand(char* pLine);
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

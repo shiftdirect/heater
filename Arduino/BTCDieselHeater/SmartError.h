@@ -33,3 +33,5 @@ public:
   void monitor(unsigned char runstate);
   unsigned char getError();
 };
+
+extern CSmartError SmartError;

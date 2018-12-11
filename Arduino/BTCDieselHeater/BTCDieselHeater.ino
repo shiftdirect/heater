@@ -633,7 +633,7 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 }
 
 
-void Command_Interpret(const char* pLine)
+void interpretCommand(const char* pLine)
 {
   unsigned char cVal;
   unsigned short sVal;
@@ -771,21 +771,25 @@ void ToggleOnOff()
 }
 
 
-void reqTempChange(int val)
+void reqTemp(unsigned char newTemp)
 {
-  unsigned char curTemp = getSetTemp();
-
-  curTemp += val;
   unsigned char max = DefaultBTCParams.getTemperature_Max();
   unsigned char min = DefaultBTCParams.getTemperature_Min();
-  if(curTemp >= max)
-    curTemp = max;
-  if(curTemp <= min)
-    curTemp = min;
+  if(newTemp >= max)
+    newTemp = max;
+  if(newTemp <= min)
+    newTemp = min;
      
-  NVstore.setTemperature(curTemp);
+  NVstore.setTemperature(newTemp);
 
   ScreenManager.reqUpdate();
+}
+
+void reqTempDelta(int delta)
+{
+  unsigned char newTemp = getSetTemp() + delta;
+
+  reqTemp(newTemp);
 }
 
 int getSetTemp()

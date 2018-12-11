@@ -175,11 +175,11 @@ CScreen1::keyHandler(uint8_t event)
       _ScreenManager.nextScreen();
     }
     if(event & key_Up) {
-      reqTempChange(+1);
+      reqTempDelta(+1);
       _showTarget = millis() + 3500;
     }
     if(event & key_Down) {
-      reqTempChange(-1);
+      reqTempDelta(-1);
       _showTarget = millis() + 3500;
     }
   }
