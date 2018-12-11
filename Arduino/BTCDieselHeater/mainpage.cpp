@@ -13,7 +13,6 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           var heater = JSON.parse(event.data);
           var key;
           for(key in heater) {
-            i++;
             switch(key) {
               case "CurrentTemp":
                 console.log("Actual temp = ", heater.CurrentTemp);
