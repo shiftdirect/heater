@@ -28,6 +28,7 @@
 #include "pins.h"
 #include "Index.h"
 #include <ArduinoJson.h>
+#include <map>
 
 
 WebServer server(80);
@@ -37,23 +38,54 @@ bool bTxWebData = false;
 
 DynamicJsonBuffer jsonBuffer(512);   // create a JSON buffer on the heap
 
-struct sHistory {
-	float actualTemp;
-	float desiredTemp;
-	int   runState;
-	int   errState;
-	sHistory() {
-		reset();
-	};
-	void reset() {
-		actualTemp = -1000;
-		desiredTemp = -1000;
-		runState = -1;
-		errState = -1;
-	};
+class CModerator {
+  std::map<const char*, float> fMemory;
+  std::map<const char*, int> iMemory;
+public:
+  bool check(const char* name, float value);
+  bool check(const char* name, int value);
+	void reset();
 };
 
-sHistory History;
+void
+CModerator::reset() 
+{
+  // install invalid values, retain maps (memory defrag reasons)
+	for(auto it = fMemory.begin(); it != fMemory.end(); ++it)  it->second = -100;
+	for(auto it = iMemory.begin(); it != iMemory.end(); ++it)  it->second = -100;
+}
+
+bool
+CModerator::check(const char* name, float value) 
+{
+	bool retval = true;
+	auto it = fMemory.find(name);
+  if(it != fMemory.end()) {
+		retval = it->second != value;
+		it->second = value;
+	}
+	else {
+		fMemory[name] = value;
+	}
+	return retval;
+}
+
+bool
+CModerator::check(const char* name, int value) 
+{
+	bool retval = true;
+	auto it = iMemory.find(name);
+  if(it != iMemory.end()) {
+		retval = it->second != value;
+		it->second = value;
+	}
+	else {
+		iMemory[name] = value;
+	}
+	return retval;
+}
+
+CModerator Moderator;
 
 const int led = 13;
 
@@ -106,7 +138,7 @@ bool doWebServer(void) {
 	int numClients = webSocket.connectedClients();
 	if(numClients != prevNumClients) {
 		prevNumClients = numClients;
-		History.reset();   // force full update of params if number of clients change
+		Moderator.reset();   // force full update of params if number of clients change
 		DebugPort.println("Changed number of web clients, resetting history");
 	}
 
@@ -117,18 +149,15 @@ bool doWebServer(void) {
 
 			JsonObject& root = jsonBuffer.createObject();
 			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution (hopefully!)
-			if(History.actualTemp != tidyTemp) {                       // only send actual changes
-				History.actualTemp = tidyTemp;
+			if(Moderator.check("CurrentTemp", tidyTemp)) {
 				root.set("CurrentTemp", tidyTemp);
 				bSend = true;
 			}
-			if(History.runState != getHeaterInfo().getRunState()) {    // only send actual changes
-				History.runState = getHeaterInfo().getRunState();
+			if(Moderator.check("RunState", getHeaterInfo().getRunState())) {
 				root.set("RunState", getHeaterInfo().getRunState());
 				bSend = true;
 			}
-			if(History.desiredTemp != getHeaterInfo().getTemperature_Desired()) {   // only send actual changes
-				History.desiredTemp = getHeaterInfo().getTemperature_Desired();
+			if(Moderator.check("DesiredTemp", getHeaterInfo().getTemperature_Desired())) {
 				root.set("DesiredTemp", getHeaterInfo().getTemperature_Desired());
 				bSend = true;
 			}
