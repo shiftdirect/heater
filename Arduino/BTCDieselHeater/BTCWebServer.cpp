@@ -37,6 +37,24 @@ bool bTxWebData = false;
 
 DynamicJsonBuffer jsonBuffer(512);   // create a JSON buffer on the heap
 
+struct sHistory {
+	float actualTemp;
+	float desiredTemp;
+	int   runState;
+	int   errState;
+	sHistory() {
+		reset();
+	};
+	void reset() {
+		actualTemp = -1000;
+		desiredTemp = -1000;
+		runState = -1;
+		errState = -1;
+	};
+};
+
+sHistory History;
+
 const int led = 13;
 
 void handleRoot() {
@@ -81,20 +99,36 @@ unsigned char cVal;
 
 bool doWebServer(void) {
 	static unsigned long lastTx = 0;
+	static int prevNumClients;
 	webSocket.loop();
 	server.handleClient();
+
 	int numClients = webSocket.connectedClients();
+	if(numClients != prevNumClients) {
+		prevNumClients = numClients;
+		History.reset();   // force full update of params if number of clients change
+		DebugPort.println("Changed number of web clients, resetting history");
+	}
+
 	if(numClients) {
 		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
 			lastTx = millis() + 1000;
 			bTxWebData = true;
 
 			JsonObject& root = jsonBuffer.createObject();
-			char str[16];
-			sprintf(str, "%.1f", getActualTemperature());
-			root.set("CurrentTemp", str);
-			root.set("RunState", getHeaterInfo().getRunState());
-			root.set("DesiredTemp", getHeaterInfo().getTemperature_Desired());
+			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution (hopefully!)
+			if(History.actualTemp != tidyTemp) {                       // only send actual changes
+				History.actualTemp = tidyTemp;
+				root.set("CurrentTemp", tidyTemp);
+			}
+			if(History.runState != getHeaterInfo().getRunState()) {    // only send actual changes
+				History.runState = getHeaterInfo().getRunState();
+				root.set("RunState", getHeaterInfo().getRunState());
+			}
+			if(History.desiredTemp != getHeaterInfo().getTemperature_Desired()) {   // only send actual changes
+				History.desiredTemp = getHeaterInfo().getTemperature_Desired();
+				root.set("DesiredTemp", getHeaterInfo().getTemperature_Desired());
+			}
 
       String jsonToSend;
 			root.printTo(jsonToSend);
