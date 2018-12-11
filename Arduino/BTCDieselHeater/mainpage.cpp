@@ -10,24 +10,35 @@ const char* MAIN_PAGE PROGMEM = R"=====(
         Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
       
         Socket.onmessage = function(event){
-//          console.log("msg rec", event.data);
           var heater = JSON.parse(event.data);
-//          console.log("JSON current temp", heater.CurrentTemp);
-//          console.log("JSON run state", heater.RunState);
-//          console.log("JSON desired temp", heater.DesiredTemp);
-          document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
-          if (heater.RunState == 0){
-            document.getElementById("myonoffswitch").checked = false;
-            document.getElementById("myonoffswitch").style = "block";
-          } else if(heater.RunState >= 7){
-            document.getElementById("myonoffswitch").checked = false;
-            document.getElementById("myonoffswitch").style = "none";
-          } else {
-            document.getElementById("myonoffswitch").checked = true;
-            document.getElementById("myonoffswitch").style = "block";               
+          var key;
+          for(key in heater) {
+            i++;
+            switch(key) {
+              case "CurrentTemp":
+                console.log("Actual temp = ", heater.CurrentTemp);
+                document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
+                break;
+              case "RunState":
+                console.log("Runstate = ", heater.RunState);
+                if (heater.RunState == 0) {
+                  document.getElementById("myonoffswitch").checked = false;
+                  document.getElementById("myonoffswitch").style = "block";
+                } else if(heater.RunState >= 7) {
+                  document.getElementById("myonoffswitch").checked = false;
+                  document.getElementById("myonoffswitch").style = "none";
+                } else {
+                  document.getElementById("myonoffswitch").checked = true;
+                  document.getElementById("myonoffswitch").style = "block";               
+                }
+                break;
+              case "DesiredTemp":
+                console.log("Desired temp = ", heater.DesiredTemp);
+                document.getElementById("slide").value = heater.DesiredTemp;
+                document.getElementById("sliderAmount").innerHTML = heater.DesiredTemp;
+                break;
+            }
           }
-          document.getElementById("slide").value = heater.DesiredTemp;
-          document.getElementById("sliderAmount").innerHTML = heater.DesiredTemp;
         }
       }
 
