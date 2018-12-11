@@ -10,11 +10,11 @@ const char* MAIN_PAGE PROGMEM = R"=====(
         Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
       
         Socket.onmessage = function(event){
-          console.log("msg rec", event.data);
+//          console.log("msg rec", event.data);
           var heater = JSON.parse(event.data);
-          console.log("JSON current temp", heater.CurrentTemp);
-          console.log("JSON run state", heater.RunState);
-          console.log("JSON desired temp", heater.DesiredTemp);
+//          console.log("JSON current temp", heater.CurrentTemp);
+//          console.log("JSON run state", heater.RunState);
+//          console.log("JSON desired temp", heater.DesiredTemp);
           document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
           if (heater.RunState == 0){
             document.getElementById("myonoffswitch").checked = false;
@@ -80,19 +80,36 @@ function OnOffCheck(){
   if (checkBox.checked == true){
     //Insert Code Here To Turn On The Heater
     console.log("Turning On Heater");
-    Socket.send("[CMD]ON");
+
+    const cmd = { RunState: 1 };
+    var str = JSON.stringify(cmd);
+    
+    console.log("Sending: ", str);
+    Socket.send(str);
   } 
   else{
     //Insert Code Here To Turn Off The Heater
     console.log("Turning Off Heater");
-    Socket.send("[CMD]OFF");
+
+    const cmd = { RunState: 0 };
+    var str = JSON.stringify(cmd);
+    
+    console.log("Sending: ", str);
+    Socket.send(str);
   }
 }
 
 function onSlide(newVal) {
-  Socket.send("[CMD]degC" + newVal);
-  console.log("Sending desired temp", newVal);
   document.getElementById("sliderAmount").innerHTML = newVal;
+
+  console.log("Sending desired temp", newVal);
+
+  const cmd = { DesiredTemp: 0 };
+  cmd.DesiredTemp = newVal;
+  var str = JSON.stringify(cmd);
+
+  console.log("Sending: ", str);
+  Socket.send(str);
 }
 
 // var slide = document.getElementById("slide");

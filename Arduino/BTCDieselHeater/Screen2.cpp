@@ -185,12 +185,12 @@ CScreen2::keyHandler(uint8_t event)
     if(!_showMode) {
       // release DOWN key to reduce set demand, provided we are not in mode select
       if(event & key_Down) {
-        reqTempChange(-1);
+        reqTempDelta(-1);
         _showSetMode = millis() + 2000;
       }
       // release UP key to increase set demand, provided we are not in mode select
       if(event & key_Up) {
-        reqTempChange(+1);
+        reqTempDelta(+1);
         _showSetMode = millis() + 2000;
       }
     }

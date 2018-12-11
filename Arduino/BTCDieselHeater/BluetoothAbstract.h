@@ -25,11 +25,9 @@
 #include <Arduino.h>
 #include "UtilClasses.h"
 #include "Debugport.h"
+#include "helpers.h"
 
 class CProtocol;
-
-extern void Command_Interpret(const char* pLine);   // decodes received command lines, implemented in main .ino file!
-
 
 class CBluetoothAbstract {
 protected:
@@ -48,7 +46,7 @@ public:
   virtual void collectRxData(char rxVal) {
     // provide common behviour for bytes received from a bluetooth client
     if(isControl(rxVal)) {    // "End of Line"
-      Command_Interpret(_rxLine.Line);
+      interpretCommand(_rxLine.Line);
       _rxLine.clear();
     }
     else {

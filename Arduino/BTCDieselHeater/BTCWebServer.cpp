@@ -29,7 +29,6 @@
 #include "Index.h"
 #include <ArduinoJson.h>
 
-extern void Command_Interpret(const char* pLine);   // decodes received command lines, implemented in main .ino file!
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -91,21 +90,15 @@ bool doWebServer(void) {
 			bTxWebData = true;
 
 			JsonObject& root = jsonBuffer.createObject();
-			root["CurrentTemp"] = getActualTemperature();
-			root["RunState"] = getHeaterInfo().getRunState();
-			root["DesiredTemp"] = getHeaterInfo().getTemperature_Desired();
+			char str[16];
+			sprintf(str, "%.1f", getActualTemperature());
+			root.set("CurrentTemp", str);
+			root.set("RunState", getHeaterInfo().getRunState());
+			root.set("DesiredTemp", getHeaterInfo().getTemperature_Desired());
 
       String jsonToSend;
 			root.printTo(jsonToSend);
       webSocket.broadcastTXT(jsonToSend);
-
-/*			char msg[16];
-			sprintf(msg, "CurrentTemp,%d",getActualTemperature());
-			webSocket.broadcastTXT(msg);
-      sprintf(msg, "PowerState,%i",getHeaterInfo().getRunState());
-      webSocket.broadcastTXT(msg);
-		 sprintf(msg, "TempDesired,%i",getHeaterInfo().getTemperature_Desired());
-      webSocket.broadcastTXT(msg);*/
 		}
 		return true;
 	}
@@ -114,14 +107,14 @@ bool doWebServer(void) {
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
 	if (type == WStype_TEXT) {
-		char cmd[16];
-		memset(cmd, 0, 16);
-		for (int i = 0; i < length && i < 15; i++) {
+		bRxWebData = true;
+		char cmd[256];
+		memset(cmd, 0, 256);
+		for (int i = 0; i < length && i < 256; i++) {
 			cmd[i] = payload[i];
 		}
-//    Serial.println(cmd);
-		Command_Interpret(cmd);  // send to the main heater controller decode routine
-		bRxWebData = true;
+//    DebugPort.println(cmd);
+		interpretJsonCommand(cmd);  // send to the main heater controller decode routine
   }
 }
 
@@ -140,3 +133,51 @@ bool hasWebServerSpoken(bool reset)
 		bTxWebData = false;
 	return retval;
 }
+
+
+void interpretJsonCommand(char* pLine)
+{
+  if(strlen(pLine) == 0)
+    return;
+
+  DebugPort.print("JSON parse... "); Serial.print(pLine);
+
+	JsonObject& obj = jsonBuffer.parseObject(pLine);
+	if(!obj.success()) {
+		DebugPort.println(" FAILED");
+		return;
+	}
+	DebugPort.println(" OK"); 
+
+	JsonObject::iterator it;
+	for(it = obj.begin(); it != obj.end(); ++it) {
+
+		if(strcmp("DesiredTemp", it->key) == 0) {
+      reqTemp(it->value.as<unsigned char>());
+		}
+		else if(strcmp("RunState", it->key) == 0) {
+			if(it->value.as<unsigned char>()) {
+	      requestOn();
+			}
+			else {
+	      requestOff();
+			}
+		}
+		else if(strcmp("PumpMin", it->key) == 0) {
+			setPumpMin(it->value.as<float>());
+		}
+		else if(strcmp("PumpMax", it->key) == 0) {
+			setPumpMax(it->value.as<float>());
+		}
+		else if(strcmp("FanMin", it->key) == 0) {
+			setFanMin(it->value.as<short>());
+		}
+		else if(strcmp("FanMax", it->key) == 0) {
+			setFanMax(it->value.as<short>());
+		}
+		else if(strcmp("Thermostat", it->key) == 0) {
+			setThermostatMode(it->value.as<unsigned char>());
+		}
+	}
+}
+
