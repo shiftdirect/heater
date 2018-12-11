@@ -113,27 +113,28 @@ bool doWebServer(void) {
 	if(numClients) {
 		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
 			lastTx = millis() + 100;
-			bTxWebData = false;
+			bool bSend = false;
 
 			JsonObject& root = jsonBuffer.createObject();
 			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution (hopefully!)
 			if(History.actualTemp != tidyTemp) {                       // only send actual changes
 				History.actualTemp = tidyTemp;
 				root.set("CurrentTemp", tidyTemp);
-				bTxWebData = true;
+				bSend = true;
 			}
 			if(History.runState != getHeaterInfo().getRunState()) {    // only send actual changes
 				History.runState = getHeaterInfo().getRunState();
 				root.set("RunState", getHeaterInfo().getRunState());
-				bTxWebData = true;
+				bSend = true;
 			}
 			if(History.desiredTemp != getHeaterInfo().getTemperature_Desired()) {   // only send actual changes
 				History.desiredTemp = getHeaterInfo().getTemperature_Desired();
 				root.set("DesiredTemp", getHeaterInfo().getTemperature_Desired());
-				bTxWebData = true;
+				bSend = true;
 			}
 
-			if(bTxWebData) {
+			if(bSend) {
+				bTxWebData = true;
       	String jsonToSend;
 				root.printTo(jsonToSend);
       	webSocket.broadcastTXT(jsonToSend);
