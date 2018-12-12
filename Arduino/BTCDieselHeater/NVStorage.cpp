@@ -21,6 +21,7 @@
 
 #include "Arduino.h"
 #include "NVStorage.h"
+#include "DebugPort.h"
 
 bool 
 sNVStore::valid()
@@ -31,7 +32,6 @@ sNVStore::valid()
     retval &= (timer[i].start.min >= 0 && timer[i].start.min < 60);
     retval &= (timer[i].stop.hour >= 0 && timer[i].stop.hour < 24);
     retval &= (timer[i].stop.min >= 0 && timer[i].stop.min < 60);
-//    retval &= (timer[i].enabled & 0x80) == 0;
     retval &= timer[i].repeat < 2;
   }
   retval &= Heater.Pmin < 100;
@@ -186,10 +186,10 @@ CESP32HeaterStorage::init()
 
 void CESP32HeaterStorage::load()
 {
-  Serial.println("Reading from NV storage");
+  DebugPort.println("Reading from NV storage");
   preferences.getBytes("calValues", &_calValues, sizeof(sNVStore));
   if(!_calValues.valid()) {
-    Serial.println("Invalid NV storage, initialising");
+    DebugPort.println("Invalid NV storage, initialising");
     _calValues.init();
     save();
   }
@@ -197,7 +197,7 @@ void CESP32HeaterStorage::load()
 
 void CESP32HeaterStorage::save()
 {
-  Serial.println("Saving to NV storage");
+  DebugPort.println("Saving to NV storage");
   preferences.putBytes("calValues", &_calValues, sizeof(sNVStore));
 }
 

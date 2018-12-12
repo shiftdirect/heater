@@ -110,13 +110,6 @@
 
 #define RX_DATA_TIMOUT 50
 
-//comment this out to remove TELNET
-
-//#define TELNET
-
-#ifdef TELNET
-#define DebugPort Debug
-#endif
 
 
 #ifdef ESP32
@@ -158,6 +151,8 @@ CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default paramet
 CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
+TelnetSpy DebugPort;
+
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -233,10 +228,12 @@ void parentKeyHandler(uint8_t event)
 
 void setup() {
 
-  // initialise serial monitor on serial port 0
-  // this is the usual USB connection to a PC
+  // initialise TelnetSpy (port 23) as well as Serial to 115200 
+  // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
+  
   DebugPort.begin(115200);
+
 
   NVstore.init();
   NVstore.load();
@@ -303,6 +300,8 @@ void loop()
 
   float fTemperature;
   unsigned long timenow = millis();
+
+  DebugPort.handle();    // keep telnet spy alive
 
 #if USE_WIFI == 1
 

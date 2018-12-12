@@ -26,13 +26,6 @@
 #include "BluetoothESP32.h"
 #include "BTCConfig.h"
 
-#ifdef TELNET
-#define DebugPort Debug
-#endif
-
-#ifndef TELNET
-#define DebugPort Serial
-#endif
 
 
 #ifdef ESP32

@@ -24,13 +24,6 @@
 #include "debugport.h"
 #include "helpers.h"
 
-#ifdef TELNET
-#define DebugPort Debug
-#endif
-
-#ifndef TELNET
-#define DebugPort Serial
-#endif
 
 unsigned short 
 CProtocol::CalcCRC(int len) const

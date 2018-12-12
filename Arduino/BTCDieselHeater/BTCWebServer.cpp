@@ -163,7 +163,7 @@ void interpretJsonCommand(char* pLine)
   if(strlen(pLine) == 0)
     return;
 
-  DebugPort.print("JSON parse... "); Serial.print(pLine);
+  DebugPort.print("JSON parse... "); DebugPort.print(pLine);
 
 	JsonObject& obj = jsonBuffer.parseObject(pLine);
 	if(!obj.success()) {
