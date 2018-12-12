@@ -34,7 +34,7 @@ protected:
 class CBluetoothESP32Classic : public CBluetoothAbstract {
   BluetoothSerial SerialBT;
 public:
-  virtual void init();
+  virtual void begin();
   virtual void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true);
   virtual void check();
   virtual bool isConnected();
@@ -57,7 +57,7 @@ class CBluetoothESP32BLE : public CBluetoothAbstract {
 public:
   CBluetoothESP32BLE();
   virtual ~CBluetoothESP32BLE();
-  virtual void init();
+  virtual void begin();
   virtual void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true);
   virtual void check();
   virtual bool isConnected();

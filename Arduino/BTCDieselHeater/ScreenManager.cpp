@@ -112,7 +112,7 @@ CScreenManager::~CScreenManager()
 }
 
 void 
-CScreenManager::init()
+CScreenManager::begin()
 {
 
   // 128 x 64 OLED support (I2C)

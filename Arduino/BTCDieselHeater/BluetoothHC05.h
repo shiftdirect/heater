@@ -40,7 +40,7 @@ class CBluetoothHC05 : public CBluetoothAbstract {
   int _sensePin, _keyPin;
 public:
   CBluetoothHC05(int keyPin, int sensePin);
-  void init();
+  void begin();
   void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true);
   void check();
   virtual bool isConnected();

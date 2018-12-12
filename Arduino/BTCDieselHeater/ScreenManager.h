@@ -38,7 +38,7 @@ class CScreenManager {
 public:
   CScreenManager();
   ~CScreenManager();
-  void init();
+  void begin();
   bool checkUpdate();
   bool animate();
   void refresh();

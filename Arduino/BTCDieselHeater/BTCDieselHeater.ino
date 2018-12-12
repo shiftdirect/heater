@@ -238,7 +238,7 @@ void setup() {
   NVstore.init();
   NVstore.load();
 
-  KeyPad.init(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
+  KeyPad.begin(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
   KeyPad.setCallback(parentKeyHandler);
 
   // Initialize the rtc object
@@ -251,7 +251,7 @@ void setup() {
   lastTemperatureTime = millis();
   lastAnimationTime = millis();
   
-  ScreenManager.init();
+  ScreenManager.begin();
 
 #if USE_WIFI == 1
 
@@ -285,7 +285,7 @@ void setup() {
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
 
-  Bluetooth.init();
+  Bluetooth.begin();
  
 }
 

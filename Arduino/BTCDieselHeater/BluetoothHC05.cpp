@@ -43,7 +43,7 @@ CBluetoothHC05::CBluetoothHC05(int keyPin, int sensePin)
 
 
 void 
-CBluetoothHC05::init()
+CBluetoothHC05::begin()
 {
   const int BTRates[] = {
     9600, 38400, 115200, 19200, 57600, 2400, 4800, 1200

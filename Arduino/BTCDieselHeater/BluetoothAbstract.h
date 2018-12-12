@@ -34,7 +34,7 @@ protected:
   sRxLine _rxLine;
   CContextTimeStamp _timeStamp;
 public:
-  virtual void init() {};
+  virtual void begin() {};
   virtual void setRefTime() { 
     _timeStamp.setRefTime(); 
   };

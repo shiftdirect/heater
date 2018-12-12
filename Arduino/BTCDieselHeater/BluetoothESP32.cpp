@@ -67,7 +67,7 @@ CBluetoothESP32HC05::openSerial(int baudrate)
 //                              V
 
 void
-CBluetoothESP32Classic::init()
+CBluetoothESP32Classic::begin()
 {
   _rxLine.clear();
   DebugPort.println("Initialising ESP32 Classic Bluetooth");
@@ -210,7 +210,7 @@ CBluetoothESP32BLE::~CBluetoothESP32BLE()
 }
 
 void 
-CBluetoothESP32BLE::init()
+CBluetoothESP32BLE::begin()
 {
   DebugPort.println("Initialising ESP32 BLE");
   // create the BLE device

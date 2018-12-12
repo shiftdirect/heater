@@ -38,7 +38,7 @@ CKeyPad::CKeyPad()
 }
 
 void
-CKeyPad::init(int Lkey, int Rkey, int Ckey, int Ukey, int Dkey)
+CKeyPad::begin(int Lkey, int Rkey, int Ckey, int Ukey, int Dkey)
 {
   _pins[0] = Lkey;
   _pins[1] = Rkey;

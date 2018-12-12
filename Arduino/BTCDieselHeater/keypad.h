@@ -52,7 +52,7 @@ private:
   unsigned long _debounceDelay;
 public:
   CKeyPad();
-  void init(int Lkey, int Rkey, int Ckey, int Ukey, int Dkey);
+  void begin(int Lkey, int Rkey, int Ckey, int Ukey, int Dkey);
   uint8_t update();
 	void setCallback(void (*Callback)(uint8_t event));
 };
