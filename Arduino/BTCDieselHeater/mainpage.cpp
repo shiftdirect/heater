@@ -15,11 +15,11 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           for(key in heater) {
             switch(key) {
               case "CurrentTemp":
-                console.log("Actual temp = ", heater.CurrentTemp);
+                console.log("JSON Rx: CurrentTemp:", heater.CurrentTemp);
                 document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
                 break;
               case "RunState":
-                console.log("Runstate = ", heater.RunState);
+                console.log("JSON Rx: RunState:", heater.RunState);
                 if (heater.RunState == 0) {
                   document.getElementById("myonoffswitch").checked = false;
                   document.getElementById("myonoffswitch").style = "block";
@@ -32,9 +32,12 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                 }
                 break;
               case "DesiredTemp":
-                console.log("Desired temp = ", heater.DesiredTemp);
+                console.log("JSON Rx: DesiredTemp:", heater.DesiredTemp);
                 document.getElementById("slide").value = heater.DesiredTemp;
                 document.getElementById("sliderAmount").innerHTML = heater.DesiredTemp;
+                break;
+              case "ErrorState":
+                console.log("JSON Rx: ErrorState:", heater.ErrorState);
                 break;
             }
           }
@@ -82,7 +85,7 @@ function OnOffCheck(){
   var checkBox = document.getElementById("myonoffswitch");
 
   // Send a message to the Devel console of web browser for debugging
-  console.log(document.getElementById("myonoffswitch").checked);  
+  console.log("OnOffCheck:", document.getElementById("myonoffswitch").checked);  
  
   // If the checkbox is checked, display the output text
   // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
@@ -94,7 +97,7 @@ function OnOffCheck(){
     const cmd = { RunState: 1 };
     var str = JSON.stringify(cmd);
     
-    console.log("Sending: ", str);
+    console.log("JSON Tx:", str);
     Socket.send(str);
   } 
   else{
@@ -104,7 +107,7 @@ function OnOffCheck(){
     const cmd = { RunState: 0 };
     var str = JSON.stringify(cmd);
     
-    console.log("Sending: ", str);
+    console.log("JSON Tx:", str);
     Socket.send(str);
   }
 }
@@ -112,13 +115,11 @@ function OnOffCheck(){
 function onSlide(newVal) {
   document.getElementById("sliderAmount").innerHTML = newVal;
 
-  console.log("Sending desired temp", newVal);
-
   const cmd = { DesiredTemp: 0 };
   cmd.DesiredTemp = newVal;
   var str = JSON.stringify(cmd);
 
-  console.log("Sending: ", str);
+  console.log("JSON Tx:", str);
   Socket.send(str);
 }
 

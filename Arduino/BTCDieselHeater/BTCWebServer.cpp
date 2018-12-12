@@ -28,64 +28,17 @@
 #include "pins.h"
 #include "Index.h"
 #include <ArduinoJson.h>
-#include <map>
-
+#include "Moderator.h"
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
-bool bRxWebData = false;
+
+bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 
 DynamicJsonBuffer jsonBuffer(512);   // create a JSON buffer on the heap
 
-class CModerator {
-  std::map<const char*, float> fMemory;
-  std::map<const char*, int> iMemory;
-public:
-  bool check(const char* name, float value);
-  bool check(const char* name, int value);
-	void reset();
-};
-
-void
-CModerator::reset() 
-{
-  // install invalid values, retain maps (memory defrag reasons)
-	for(auto it = fMemory.begin(); it != fMemory.end(); ++it)  it->second = -100;
-	for(auto it = iMemory.begin(); it != iMemory.end(); ++it)  it->second = -100;
-}
-
-bool
-CModerator::check(const char* name, float value) 
-{
-	bool retval = true;
-	auto it = fMemory.find(name);
-  if(it != fMemory.end()) {
-		retval = it->second != value;
-		it->second = value;
-	}
-	else {
-		fMemory[name] = value;
-	}
-	return retval;
-}
-
-bool
-CModerator::check(const char* name, int value) 
-{
-	bool retval = true;
-	auto it = iMemory.find(name);
-  if(it != iMemory.end()) {
-		retval = it->second != value;
-		it->second = value;
-	}
-	else {
-		iMemory[name] = value;
-	}
-	return retval;
-}
-
-CModerator Moderator;
+CModerator Moderator;         // check for settings that are not actually changing, avoid sending these
 
 const int led = 13;
 
@@ -145,26 +98,27 @@ bool doWebServer(void) {
 	if(numClients) {
 		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
 			lastTx = millis() + 100;
-			bool bSend = false;
 
-			JsonObject& root = jsonBuffer.createObject();
-			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution (hopefully!)
-			if(Moderator.check("CurrentTemp", tidyTemp)) {
+			JsonObject& root = jsonBuffer.createObject();  // create object to add JSON commands to
+
+			Moderator.shouldSend(false);  // reset global should send flag
+
+			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution 
+			if( Moderator.shouldSend("CurrentTemp", tidyTemp) ) 
 				root.set("CurrentTemp", tidyTemp);
-				bSend = true;
-			}
-			if(Moderator.check("RunState", getHeaterInfo().getRunState())) {
+			
+			if( Moderator.shouldSend("RunState", getHeaterInfo().getRunState() ) ) 
 				root.set("RunState", getHeaterInfo().getRunState());
-				bSend = true;
-			}
-			if(Moderator.check("DesiredTemp", getHeaterInfo().getTemperature_Desired())) {
+			
+			if( Moderator.shouldSend("DesiredTemp", getHeaterInfo().getTemperature_Desired() ) ) 
 				root.set("DesiredTemp", getHeaterInfo().getTemperature_Desired());
-				bSend = true;
-			}
+			
+			if( Moderator.shouldSend("ErrorState", getHeaterInfo().getErrState() ) ) 
+				root.set("ErrorState", getHeaterInfo().getErrState());
 
-			if(bSend) {
-				bTxWebData = true;
-      	String jsonToSend;
+			if( Moderator.shouldSend() ) {    // test global should send flags
+				bTxWebData = true;              // OLED tx data animation flag
+      	char jsonToSend[512];
 				root.printTo(jsonToSend);
       	webSocket.broadcastTXT(jsonToSend);
 			}
@@ -249,4 +203,3 @@ void interpretJsonCommand(char* pLine)
 		}
 	}
 }
-
