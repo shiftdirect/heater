@@ -36,8 +36,6 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 
-DynamicJsonBuffer jsonBuffer(512);   // create a JSON buffer on the heap
-
 CModerator Moderator;         // check for settings that are not actually changing, avoid sending these
 
 const int led = 13;
@@ -99,24 +97,19 @@ bool doWebServer(void) {
 		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
 			lastTx = millis() + 100;
 
+      StaticJsonBuffer<512> jsonBuffer;   // create a JSON buffer on the heap
 			JsonObject& root = jsonBuffer.createObject();  // create object to add JSON commands to
 
-			Moderator.shouldSend(false);  // reset global should send flag
+			bool bSend = false;  // reset should send flag
 
 			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution 
-			if( Moderator.shouldSend("CurrentTemp", tidyTemp) ) 
-				root.set("CurrentTemp", tidyTemp);
-			
-			if( Moderator.shouldSend("RunState", getHeaterInfo().getRunState() ) ) 
-				root.set("RunState", getHeaterInfo().getRunState());
-			
-			if( Moderator.shouldSend("DesiredTemp", getHeaterInfo().getTemperature_Desired() ) ) 
-				root.set("DesiredTemp", getHeaterInfo().getTemperature_Desired());
-			
-			if( Moderator.shouldSend("ErrorState", getHeaterInfo().getErrState() ) ) 
-				root.set("ErrorState", getHeaterInfo().getErrState());
+			bSend |= Moderator.send("CurrentTemp", tidyTemp, root); 
+			bSend |= Moderator.send("DesiredTemp", getHeaterInfo().getTemperature_Desired(), root); 
+			bSend |= Moderator.send("RunState", getHeaterInfo().getRunState(), root); 
+			bSend |= Moderator.send("ErrorState", getHeaterInfo().getErrState(), root );
 
-			if( Moderator.shouldSend() ) {    // test global should send flags
+
+      if(bSend) {
 				bTxWebData = true;              // OLED tx data animation flag
       	char jsonToSend[512];
 				root.printTo(jsonToSend);
@@ -158,48 +151,3 @@ bool hasWebServerSpoken(bool reset)
 }
 
 
-void interpretJsonCommand(char* pLine)
-{
-  if(strlen(pLine) == 0)
-    return;
-
-  DebugPort.print("JSON parse... "); DebugPort.print(pLine);
-
-	JsonObject& obj = jsonBuffer.parseObject(pLine);
-	if(!obj.success()) {
-		DebugPort.println(" FAILED");
-		return;
-	}
-	DebugPort.println(" OK"); 
-
-	JsonObject::iterator it;
-	for(it = obj.begin(); it != obj.end(); ++it) {
-
-		if(strcmp("DesiredTemp", it->key) == 0) {
-      reqTemp(it->value.as<unsigned char>());
-		}
-		else if(strcmp("RunState", it->key) == 0) {
-			if(it->value.as<unsigned char>()) {
-	      requestOn();
-			}
-			else {
-	      requestOff();
-			}
-		}
-		else if(strcmp("PumpMin", it->key) == 0) {
-			setPumpMin(it->value.as<float>());
-		}
-		else if(strcmp("PumpMax", it->key) == 0) {
-			setPumpMax(it->value.as<float>());
-		}
-		else if(strcmp("FanMin", it->key) == 0) {
-			setFanMin(it->value.as<short>());
-		}
-		else if(strcmp("FanMax", it->key) == 0) {
-			setFanMax(it->value.as<short>());
-		}
-		else if(strcmp("Thermostat", it->key) == 0) {
-			setThermostatMode(it->value.as<unsigned char>());
-		}
-	}
-}

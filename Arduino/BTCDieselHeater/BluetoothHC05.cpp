@@ -148,6 +148,12 @@ CBluetoothHC05::isConnected()
 }
 
 void
+CBluetoothHC05::send(const char* Str)
+{
+  HC05_SerialPort.print(Str);
+}
+
+void
 CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
   // report to debug port

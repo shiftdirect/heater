@@ -38,6 +38,7 @@ public:
   virtual void setRefTime() { 
     _timeStamp.setRefTime(); 
   };
+  virtual void send(const char* Str) {};
   virtual void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true) {
     _timeStamp.report(pHdr);
     DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");

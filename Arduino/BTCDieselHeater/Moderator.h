@@ -23,19 +23,69 @@
 #define __BTC_MODERATOR_H__
 
 #include <map>
+#include <ArduinoJSON.h>
+
+template <class T>
+class TModerator {
+  std::map<const char*, T> Memory;
+public:
+  bool shouldSend(const char* name, T value);
+  bool send(const char* name, T value, JsonObject& root);
+	void reset();
+};
+
+template<class T>
+bool TModerator<T>::shouldSend(const char* name, T value) 
+{
+  bool retval = true;
+  auto it = Memory.find(name);
+  if(it != Memory.end()) {
+    retval = it->second != value;
+    it->second = value;
+  }
+  else {
+    Memory[name] = value;
+  }
+  return retval;
+}
+
+template<class T>
+bool TModerator<T>::send(const char* name, T value, JsonObject& root) 
+{
+  bool retval;
+  if( retval = shouldSend(name, value ) ) 
+	  root.set(name, value);
+  return retval;
+}
+
+template<class T>
+void TModerator<T>::reset() 
+{
+ 	for(auto it = Memory.begin(); it != Memory.end(); ++it) {
+    it->second = it->second+100;
+  } 
+}
+
 
 class CModerator {
-	bool _bShouldSend;
-  std::map<const char*, float> fMemory;
-  std::map<const char*, int> iMemory;
-  std::map<const char*, unsigned char> cMemory;
+  TModerator<int> iModerator;
+  TModerator<float> fModerator;
+  TModerator<unsigned char> ucModerator;
 public:
-	void shouldSend(bool reset);
-	bool shouldSend();
-  bool shouldSend(const char* name, float value);
-  bool shouldSend(const char* name, int value);
-  bool shouldSend(const char* name, unsigned char value);
-	void reset();
+  bool send(const char* name, int value, JsonObject& root) { 
+    return iModerator.send(name, value, root); 
+  };
+  bool send(const char* name, float value, JsonObject& root) { 
+    return fModerator.send(name, value, root); 
+  };
+  bool send(const char* name, unsigned char value, JsonObject& root) { 
+    return ucModerator.send(name, value, root); 
+  };
+  void reset() {
+    iModerator.reset();
+    fModerator.reset();
+    ucModerator.reset();
+  };
 };
 
 #endif // __BTC_MODERATOR_H__

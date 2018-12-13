@@ -104,6 +104,7 @@
 #include "helpers.h"
 #include "Wire.h"
 #include "Clock.h"
+#include "BTC_JSON.h"
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -457,7 +458,7 @@ void loop()
       // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
       // handling at the client side, moderate OEM Bluetooth delivery
       if(OEMCtrlFrame.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
-        Bluetooth.sendFrame("[OEM]", OEMCtrlFrame, TERMINATE_OEM_LINE);
+//        Bluetooth.sendFrame("[OEM]", OEMCtrlFrame, TERMINATE_OEM_LINE);
         OEMCtrlFrame.setTime();
       }
       else {
@@ -503,7 +504,7 @@ void loop()
       // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
       // handling at the client side, moderate OEM Bluetooth delivery
       if(HeaterFrame1.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
-        Bluetooth.sendFrame("[HTR]", HeaterFrame1, true);
+//        Bluetooth.sendFrame("[HTR]", HeaterFrame1, true);
         HeaterFrame1.setTime();
       }
       else {
@@ -539,7 +540,8 @@ void loop()
       if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
         if(!hasOEMController) {
           // only convey this frames to Bluetooth when NOT using an OEM controller!
-          Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
+//          Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
+          Bluetooth.send( createJSON("RunState", int(0) ) );
         }
         CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
       }
@@ -591,7 +593,7 @@ void loop()
       delay(5);
       if(!hasOEMController) {
         // only convey these frames to Bluetooth when NOT using an OEM controller!
-        Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
+//        Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
       }
       CommState.set(CommStates::TemperatureRead);
       HeaterData.set(HeaterFrame2, TxManage.getFrame());
