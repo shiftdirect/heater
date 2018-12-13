@@ -36,12 +36,16 @@ void initOTA(){
 
 		// NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
 		DebugPort.println("Start updating " + type);
+    DebugPort.handle();    // keep telnet spy alive
 	})
 		.onEnd([]() {
 		DebugPort.println("\nEnd");
+    DebugPort.handle();    // keep telnet spy alive
+    DebugPort.end();       // force graceful close of telnetspy - ensures a client will reconnect cleanly
 	})
 		.onProgress([](unsigned int progress, unsigned int total) {
 		DebugPort.printf("Progress: %u%%\r", (progress / (total / 100)));
+    DebugPort.handle();    // keep telnet spy alive
 	})
 		.onError([](ota_error_t error) {
 		DebugPort.printf("Error[%u]: ", error);

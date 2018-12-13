@@ -47,6 +47,7 @@ public:
     // provide common behviour for bytes received from a bluetooth client
     if(isControl(rxVal)) {    // "End of Line"
       interpretCommand(_rxLine.Line);
+      interpretJsonCommand(_rxLine.Line);
       _rxLine.clear();
     }
     else {

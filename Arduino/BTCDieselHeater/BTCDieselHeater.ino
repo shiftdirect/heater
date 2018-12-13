@@ -232,6 +232,10 @@ void setup() {
   // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   
+  DebugPort.setWelcomeMsg("*************************************************\r\n"
+                          "* Connected to BTC heater controller debug port *\r\n"
+                          "*************************************************\r\n");
+  DebugPort.setBufferSize(8192);
   DebugPort.begin(115200);
 
 
