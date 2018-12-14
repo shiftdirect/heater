@@ -55,11 +55,22 @@ function funcNavLinks() {
 
 function funcdispSettings() {
     document.getElementById("Settings").style.display = "block";
-	currentTime = new Date();
-	time = currentTime.getTime();
-	hours = currentTime.getHours();
-	document.getElementById("curtime").value = time
-	document.getElementById("curdate").value = hours
+    currentTime = new Date();
+    time = currentTime.getTime();
+	  hours = currentTime.getHours();
+  var h = currentTime.getHours();
+  var m = currentTime.getMinutes();
+  var s = currentTime.getSeconds();
+  // add a zero in front of numbers<10
+  m = checkTime(m);
+  s = checkTime(s);
+  t = setTimeout(function() {
+    startTime()
+  }, 500);
+
+   
+	  document.getElementById("curtime").value = h + ":" + m + "" + s;
+	  document.getElementById("curdate").value = hours
     document.getElementById("Home").style.display = "none";
     document.getElementById("Advanced").style.display = "none"; 
     document.getElementById("myLinks").style.display ="none";    
@@ -364,5 +375,3 @@ Settings will go here for automatic mode schedule
 </html> 
 
 )=====";
-
-
