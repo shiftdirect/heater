@@ -33,7 +33,7 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                 break;
               case "DesiredTemp":
                 console.log("JSON Rx: DesiredTemp:", heater.DesiredTemp);
-                document.getElementById("slide").value = heater.DesiredTemp;
+                document.getElementById("slide") = heater.DesiredTemp;
                 document.getElementById("sliderAmount").innerHTML = heater.DesiredTemp;
                 break;
               case "ErrorState":
@@ -55,6 +55,11 @@ function funcNavLinks() {
 
 function funcdispSettings() {
     document.getElementById("Settings").style.display = "block";
+	currentTime = new Date();
+	time = currentTime.getTime();
+	hours = currentTime.getHours();
+	document.getElementById("curtime").value = time
+	document.getElementById("curdate").value = hours
     document.getElementById("Home").style.display = "none";
     document.getElementById("Advanced").style.display = "none"; 
     document.getElementById("myLinks").style.display ="none";    
@@ -132,7 +137,9 @@ function onSlide(newVal) {
 //     Socket.send("[CMD]degC" + document.getElementById("slide").value);
 //     console.log("Sending desired temp", document.getElementById("slide").value, this.value);
 // }
-      </script>
+      
+
+</script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -339,7 +346,19 @@ Place holder for ADVANCED SETTINGS page
 
 
 <Div ID="Settings">
-Place hold for SETTINGS page
+  Current Date:<br>
+  <input type="text" id="curdate" value="Mickey">
+  <br>
+  Current Time:<br>
+  <input type="text" id="curtime" value=time>
+  
+<hr></hr>
+Settings will go here for automatic mode schedule	
+	
+<br><br>
+
+<input type="submit" value="Submit" onload="funcgettime()" action="SendSettings()">
+   
 </Div>
 </body>
 </html> 
