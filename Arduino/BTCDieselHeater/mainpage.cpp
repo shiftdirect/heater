@@ -2,9 +2,65 @@
 
 const char* MAIN_PAGE PROGMEM = R"=====(
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8"/>
     <script>
+
+      var Socket;
+      function init() {
+        Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+      
+        Socket.onmessage = function(event){
+          var heater = JSON.parse(event.data);
+          var key;
+          for(key in heater) {
+            console.log("JSON decode:", key, heater[key]);
+            switch(key) {
+              case "TempCurrent":
+                document.getElementById(key).innerHTML = heater[key];
+                break;
+              case "RunState":
+                if (heater.RunState == 0) {
+                  document.getElementById("myonoffswitch").checked = false;
+                  document.getElementById("myonoffswitch").style = "block";
+                } else if(heater.RunState >= 7) {
+                  document.getElementById("myonoffswitch").checked = false;
+                  document.getElementById("myonoffswitch").style = "none";
+                } else {
+                  document.getElementById("myonoffswitch").checked = true;
+                  document.getElementById("myonoffswitch").style = "block";             
+                }
+                break;
+              case "TempDesired":
+                document.getElementById("slide").value = heater[key];
+                document.getElementById(key).innerHTML = heater[key];
+                break;
+              case "ErrorState":
+                break;
+              case "Thermostat":
+                if(heater[key] != 0) {
+                  document.getElementById("FixedDiv").hidden = true;
+                  document.getElementById("ThermoDiv").hidden = false;
+                }
+                else {
+                  document.getElementById("FixedDiv").hidden = false;
+                  document.getElementById("ThermoDiv").hidden = true;
+                }
+                break;
+              case "PumpFixed":
+                document.getElementById(key).innerHTML = heater[key];
+                break;
+            }
+          }
+        }
+      }
+
+function sendJSONobject(obj){
+  var str = JSON.stringify(obj);
+  console.log("JSON Tx:", str);
+  Socket.send(str);
+}
 
 // Scripts for date handling
 Date.prototype.today = function () { 
@@ -14,20 +70,17 @@ Date.prototype.today = function () {
 // Scripts for setting date and time
 
 function setcurrenttime(){
-  const cmd = { Time: 0 };
+  var cmd = {};
   cmd.Time = document.getElementById("curtime").value;
-  var str = JSON.stringify(cmd);
-  Socket.send(str);
+  sendJSONobject(cmd);
 
 
 }
 
 function setcurrentdate(){
-  var cmd = { Date: 0 };
-  cmd.date =  document.getElementById("curdate").value
-  var str = JSON.stringify(cmd);
-  console.log("Json Tx",str);
-  Socket.send(str);
+  var cmd = {};
+  cmd.Date =  document.getElementById("curdate").value;
+  sendJSONobject(cmd);
 
 }
 
@@ -135,59 +188,6 @@ window.onload = function() {
 };
 // End date Picker Script
 
-      var Socket;
-      function init() {
-        Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
-      
-        Socket.onmessage = function(event){
-          var heater = JSON.parse(event.data);
-          var key;
-          for(key in heater) {
-            switch(key) {
-              case "TempCurrent":
-                console.log("JSON Rx: TempCurrent:", heater.TempCurrent);
-                document.getElementById("TempCurrent").innerHTML = heater.TempCurrent;
-                break;
-              case "RunState":
-                console.log("JSON Rx: RunState:", heater.RunState);
-                if (heater.RunState == 0) {
-                  document.getElementById("myonoffswitch").checked = false;
-                  document.getElementById("myonoffswitch").style = "block";
-                } else if(heater.RunState >= 7) {
-                  document.getElementById("myonoffswitch").checked = false;
-                  document.getElementById("myonoffswitch").style = "none";
-                } else {
-                  document.getElementById("myonoffswitch").checked = true;
-                  document.getElementById("myonoffswitch").style = "block";               
-                }
-                break;
-              case "TempDesired":
-                console.log("JSON Rx: TempDesired:", heater.TempDesired);
-                document.getElementById("slide").value = heater.TempDesired;
-                document.getElementById("TempDesired").innerHTML = heater.TempDesired;
-                break;
-              case "ErrorState":
-                console.log("JSON Rx: ErrorState:", heater.ErrorState);
-                break;
-              case "Thermostat":
-                console.log("JSON Rx: Thermostat:", heater.Thermostat);
-                if(heater.Thermostat) {
-                  document.getElementById("FixedDiv").hidden = true;
-                  document.getElementById("ThermoDiv").hidden = false;
-                }
-                else {
-                  document.getElementById("FixedDiv").hidden = false;
-                  document.getElementById("ThermoDiv").hidden = true;
-                }
-                break;
-              case "PumpFixed":
-                console.log("JSON Rx: Thermostat:", heater.PumpFixed);
-                document.getElementById("PumpFixed").innerHTML = heater.PumpFixed;
-                break;
-            }
-          }
-        }
-      }
 function funcNavLinks() {
   var x = document.getElementById("myLinks");
   if (x.style.display === "block") {
@@ -247,7 +247,6 @@ function funcdispAdvanced(){
 function OnOffCheck(){
 
   // Get the checkbox status and place in the checkbox variable
-//  var checkBox = document.getElementById("myonoffswitch").value;
   var checkBox = document.getElementById("myonoffswitch");
 
   // Send a message to the Devel console of web browser for debugging
@@ -256,25 +255,20 @@ function OnOffCheck(){
   // If the checkbox is checked, display the output text
   // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
   
+  var cmd = {};
   if (checkBox.checked == true){
     //Insert Code Here To Turn On The Heater
     console.log("Turning On Heater");
 
-    const cmd = { RunState: 1 };
-    var str = JSON.stringify(cmd);
-    
-    console.log("JSON Tx:", str);
-    Socket.send(str);
+    cmd.RunState = 1;
+    sendJSONobject(cmd);
   } 
   else{
     //Insert Code Here To Turn Off The Heater
     console.log("Turning Off Heater");
 
-    const cmd = { RunState: 0 };
-    var str = JSON.stringify(cmd);
-    
-    console.log("JSON Tx:", str);
-    Socket.send(str);
+    cmd.RunState = 0;
+    sendJSONobject(cmd);
   }
 }
 
@@ -283,10 +277,9 @@ function onSlide(newVal, JSONKey) {
   
   document.getElementById(JSONKey).innerHTML = newVal;
 
-  // hand carve JSON string - cannot get JSON.stringify to co-operate with a variable as the key
-  var str = '{\"' + JSONKey + '\":' + newVal + '}';
-  console.log("JSON Tx:", str);
-  Socket.send(str);
+  var cmd = {};
+  cmd[JSONKey] = newVal;  // note: variable name needs []
+  sendJSONobject(cmd);
 }
 
      
