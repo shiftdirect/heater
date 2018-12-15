@@ -144,9 +144,9 @@ window.onload = function() {
           var key;
           for(key in heater) {
             switch(key) {
-              case "CurrentTemp":
-                console.log("JSON Rx: CurrentTemp:", heater.CurrentTemp);
-                document.getElementById("TempCurrent").innerHTML = heater.CurrentTemp;
+              case "TempCurrent":
+                console.log("JSON Rx: TempCurrent:", heater.TempCurrent);
+                document.getElementById("TempCurrent").innerHTML = heater.TempCurrent;
                 break;
               case "RunState":
                 console.log("JSON Rx: RunState:", heater.RunState);
@@ -161,10 +161,10 @@ window.onload = function() {
                   document.getElementById("myonoffswitch").style = "block";               
                 }
                 break;
-              case "DesiredTemp":
-                console.log("JSON Rx: DesiredTemp:", heater.DesiredTemp);
-                document.getElementById("slide") = heater.DesiredTemp;
-                document.getElementById("sliderAmount").innerHTML = heater.DesiredTemp;
+              case "TempDesired":
+                console.log("JSON Rx: TempDesired:", heater.TempDesired);
+                document.getElementById("slide").value = heater.TempDesired;
+                document.getElementById("TempDesired").innerHTML = heater.TempDesired;
                 break;
               case "ErrorState":
                 console.log("JSON Rx: ErrorState:", heater.ErrorState);
@@ -276,16 +276,7 @@ function onSlide(newVal, JSONKey) {
   Socket.send(str);
 }
 
-// var slide = document.getElementById("slide");
-//     sliderDiv = document.getElementById("sliderAmount");
-
-// slide.oninput = function() {
-//     sliderDiv.innerHTML = this.value;
-// //    Socket.send("TempDesired," + document.getElementById("slide").value);
-//     Socket.send("[CMD]degC" + document.getElementById("slide").value);
-//     console.log("Sending desired temp", document.getElementById("slide").value, this.value);
-// }
-      
+     
 
 </script>
 
@@ -477,13 +468,13 @@ MainPage {
 <div>
 <h2>Temperature Control</h2>
 </div>
-<input type="range" id="slide" min="8" max="35" step="1" value="22" oninput="onSlide(this.value, 'DesiredTemp')" onchange="onSlide(this.value, 'DesiredTemp')">
+<input type="range" id="slide" min="8" max="35" step="1" value="22" oninput="onSlide(this.value, 'TempDesired')" onchange="onSlide(this.value, 'TempDesired')">
 <div>
 <b>Desired Temp: </b>
-<span id="sliderAmount"></span>
+<span id="TempDesired"></span>
 <div>
 </div>
-<b>Current Temp: </b><span id="DesiredTemp">
+<b>Current Temp: </b><span id="TempCurrent">
 </div>
 </span>
 

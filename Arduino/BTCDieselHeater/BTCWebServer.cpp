@@ -27,7 +27,7 @@
 #include "helpers.h"
 #include "pins.h"
 #include "Index.h"
-#include <ArduinoJson.h>
+#include "BTC_JSON.h"
 #include "Moderator.h"
 
 WebServer server(80);
@@ -97,24 +97,15 @@ bool doWebServer(void) {
 		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
 			lastTx = millis() + 100;
 
-      StaticJsonBuffer<512> jsonBuffer;   // create a JSON buffer on the heap
-			JsonObject& root = jsonBuffer.createObject();  // create object to add JSON commands to
 
-			bool bSend = false;  // reset should send flag
+      char jsonStr[512];
 
-			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution 
-			bSend |= WebModerator.addJson("CurrentTemp", tidyTemp, root); 
-			bSend |= WebModerator.addJson("DesiredTemp", getHeaterInfo().getTemperature_Desired(), root); 
-			bSend |= WebModerator.addJson("RunState", getHeaterInfo().getRunState(), root); 
-			bSend |= WebModerator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
+      if(makeJsonString(WebModerator, jsonStr, 512)) {
+  	    bTxWebData = true;              // OLED tx data animation flag
+   	    webSocket.broadcastTXT(jsonStr);
+      }
 
 
-      if(bSend) {
-				bTxWebData = true;              // OLED tx data animation flag
-      	char jsonToSend[512];
-				root.printTo(jsonToSend);
-      	webSocket.broadcastTXT(jsonToSend);
-			}
 		}
 		return true;
 	}
