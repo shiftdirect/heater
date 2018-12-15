@@ -384,9 +384,10 @@ void loop()
         }
       }
 
-      DebugPort.println("\007Recycling blue wire serial interface");
+      DebugPort.println("Recycling blue wire serial interface");
       initBlueWireSerial();
-      CommState.set(CommStates::Idle);  // revert to idle mode
+//      CommState.set(CommStates::Idle);  // revert to idle mode, after passing thru temperature mode
+      CommState.set(CommStates::TemperatureRead);    // revert to idle mode, after passing thru temperature mode
     }
   }
 
@@ -569,7 +570,7 @@ void loop()
       if(BlueWireData.available()) {
 #ifdef BADSTARTCHECK
         if(!CommState.checkValidStart(BlueWireData.getValue())) {
-          DebugPort.println("***** \007 Invalid start of frame - restarting Serial port *****");    
+          DebugPort.println("***** Invalid start of frame - restarting Serial port *****");    
           initBlueWireSerial();
           CommState.set(CommStates::Idle);
         }
