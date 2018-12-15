@@ -169,6 +169,21 @@ window.onload = function() {
               case "ErrorState":
                 console.log("JSON Rx: ErrorState:", heater.ErrorState);
                 break;
+              case "Thermostat":
+                console.log("JSON Rx: Thermostat:", heater.Thermostat);
+                if(heater.Thermostat) {
+                  document.getElementById("FixedDiv").hidden = true;
+                  document.getElementById("ThermoDiv").hidden = false;
+                }
+                else {
+                  document.getElementById("FixedDiv").hidden = false;
+                  document.getElementById("ThermoDiv").hidden = true;
+                }
+                break;
+              case "PumpFixed":
+                console.log("JSON Rx: Thermostat:", heater.PumpFixed);
+                document.getElementById("PumpFixed").innerHTML = heater.PumpFixed;
+                break;
             }
           }
         }
@@ -268,10 +283,8 @@ function onSlide(newVal, JSONKey) {
   
   document.getElementById(JSONKey).innerHTML = newVal;
 
-  const cmd = { JSONKey: 0 };
-  cmd.JSONKey = newVal;
-  var str = JSON.stringify(cmd);
-
+  // hand carve JSON string - cannot get JSON.stringify to co-operate with a variable as the key
+  var str = '{\"' + JSONKey + '\":' + newVal + '}';
   console.log("JSON Tx:", str);
   Socket.send(str);
 }
@@ -469,11 +482,15 @@ MainPage {
 <h2>Temperature Control</h2>
 </div>
 <input type="range" id="slide" min="8" max="35" step="1" value="22" oninput="onSlide(this.value, 'TempDesired')" onchange="onSlide(this.value, 'TempDesired')">
-<div>
+<div id="ThermoDiv">
 <b>Desired Temp: </b>
 <span id="TempDesired"></span>
-<div>
 </div>
+<div id="FixedDiv">
+<b>Fixed Hz: </b>
+<span id="PumpFixed"></span>
+</div>
+<div>
 <b>Current Temp: </b><span id="TempCurrent">
 </div>
 </span>

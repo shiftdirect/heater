@@ -51,7 +51,7 @@ void interpretJsonCommand(char* pLine)
 	JsonObject::iterator it;
 	for(it = obj.begin(); it != obj.end(); ++it) {
 
-		if(strcmp("DesiredTemp", it->key) == 0) {
+		if(strcmp("TempDesired", it->key) == 0) {
       reqTemp(it->value.as<unsigned char>());
 		}
 		else if(strcmp("RunState", it->key) == 0) {
