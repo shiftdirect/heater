@@ -6,8 +6,29 @@ const char* MAIN_PAGE PROGMEM = R"=====(
   <head>
     <script>
 
+// Scripts for date handling
 Date.prototype.today = function () { 
     return ((this.getDate() < 10)?"0":"") + this.getDate() +"/"+(((this.getMonth()+1) < 10)?"0":"") + (this.getMonth()+1) +"/"+ this.getFullYear();
+}
+
+// Scripts for setting date and time
+
+function setcurrenttime(){
+  const cmd = { Time: 0 };
+  cmd.Time = document.getElementById("curtime").value;
+  var str = JSON.stringify(cmd);
+  Socket.send(str);
+
+
+}
+
+function setcurrentdate(){
+  var cmd = { Date: 0 };
+  cmd.date =  document.getElementById("curdate").value
+  var str = JSON.stringify(cmd);
+  console.log("Json Tx",str);
+  Socket.send(str);
+
 }
 
 // Date Picker Script
@@ -114,10 +135,6 @@ window.onload = function() {
 };
 // End date Picker Script
 
-
-
-
-    
       var Socket;
       function init() {
         Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
@@ -156,10 +173,6 @@ window.onload = function() {
           }
         }
       }
-
-
-
-
 function funcNavLinks() {
   var x = document.getElementById("myLinks");
   if (x.style.display === "block") {
@@ -198,6 +211,7 @@ function funcdispSettings() {
     document.getElementById("Advanced").style.display = "none"; 
     document.getElementById("myLinks").style.display ="none";    
 }
+
 function funcdispHome(){
     document.getElementById("Settings").style.display = "none";
     document.getElementById("Home").style.display = "block";
@@ -213,8 +227,6 @@ function funcdispAdvanced(){
     document.getElementById("myLinks").style.display ="none";    
 
 }
-
-
 
 // Function to check the power on/off slide switch.
 function OnOffCheck(){
@@ -251,11 +263,13 @@ function OnOffCheck(){
   }
 }
 
-function onSlide(newVal) {
-  document.getElementById("sliderAmount").innerHTML = newVal;
+function onSlide(newVal, JSONKey) {
+//elementid must equal the JSON name for each setting
+  
+  document.getElementById(JSONKey).innerHTML = newVal;
 
-  const cmd = { DesiredTemp: 0 };
-  cmd.DesiredTemp = newVal;
+  const cmd = { JSONKey: 0 };
+  cmd.JSONKey = newVal;
   var str = JSON.stringify(cmd);
 
   console.log("JSON Tx:", str);
@@ -277,41 +291,6 @@ function onSlide(newVal) {
 
     <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1">
   <style>
-
-
-  // Date Picker Styles
-
-  .contextmenu {
-  position: absolute;
-  line-height: 20px;
-  font-size: 12px;
-  width: 140px;
-  display: none;
-  background: #f6f6f6;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-}
-
-a.previous, a.next, .days a {
-  cursor: pointer;
-  text-align: center;
-  display: inline-block;
-  width: 20px;
-}
-
-.selected {
-  font-weight: bold;
-  background: #8a46ff;
-  color: #ffffff;
-}
-
-input.datepicker:focus + div.contextmenu {
-  display: block;
-}
-input.datepicker:focus + div.contextmenu, div.contextmenu:hover {
-  display: block;
-}
-
-// End Date Picker Styles
 
   .slider {
     position: absolute;
@@ -498,37 +477,45 @@ MainPage {
 <div>
 <h2>Temperature Control</h2>
 </div>
-<input type="range" id="slide" min="8" max="35" step="1" value="22" oninput="onSlide(this.value)" onchange="onSlide(this.value)">
+<input type="range" id="slide" min="8" max="35" step="1" value="22" oninput="onSlide(this.value, 'DesiredTemp')" onchange="onSlide(this.value, 'DesiredTemp')">
 <div>
 <b>Desired Temp: </b>
 <span id="sliderAmount"></span>
 <div>
 </div>
-<b>Current Temp: </b><span id="TempCurrent">
+<b>Current Temp: </b><span id="DesiredTemp">
 </div>
 </span>
 
-<div id="Advanced" class="AdvSettings">
-Place holder for ADVANCED SETTINGS page
+<div id="Advanced">
+Advanced Settings
+<b>Pump Min</b>
+<input type="range" id="PumpMinSlide" min=".5" max="35" step=".5" value="22" oninput="onSlide(this.value, 'PumpMin')" onchange="onSlide(this.value, 'PumpMin')"> <span id="PumpMin"></span>
+<div>
+<b>Pump Max</b>
+<input type="range" id="PumpMaxSlide" min=".5" max="5" step=".5" value="22" oninput="onSlide(this.value, 'PumpMax')" onchange="onSlide(this.value, 'PumpMax')"> <span id="PumpMax"></span>
+</div>
+<div>
+<b>Fan Min</b>
+<input type="range" id="FanMinSlide" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMin')" onchange="onSlide(this.value, 'FanMin')"> <span id="FanMin"></span>
+</div>
+<div>
+<b>Fan Max</b>
+<input type="range" id="FanMaxSlide" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMax')" onchange="onSlide(this.value, 'FanMax')"> <span id="FanMax"></span>
+</div>
 </div>
 
 
-<Div ID="Settings">
+<Div id="Settings">
   Current Date:<br>
-  <input type="text" id="curdate" value="00:00:00">
+  <input type="text" id="curdate"><input type="button" Value="Set Date" onclick="setcurrentdate()">
+
   <br>
-  Current Time:<br>
-  <input type="text" id="curtime" value=time>
+  Current Time (24 Hour Format):<br>
+  <input type="text" id="curtime"> <input type="button" Value="Set Time" onclick="setcurrenttime()">
 
-  <input type="text" class="datepicker">
-
-<hr></hr>
-Settings will go here for automatic mode schedule	
-	
-<br><br>
-
-<input type="submit" value="Submit" onload="funcgettime()" action="SendSettings()">
-   
+<hr></hr>	
+<br><br>   
 </Div>
 </body>
 </html> 

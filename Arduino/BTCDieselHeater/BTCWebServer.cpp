@@ -201,5 +201,9 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("Thermostat", it->key) == 0) {
 			setThermostatMode(it->value.as<unsigned char>());
 		}
+    else if(strcmp("Date", it->key) == 0) {
+    }
+    else if(strcmp("Time", it->key) == 0) {
+    }
 	}
 }
