@@ -22,10 +22,24 @@
 #ifndef __BTC_JSON_H__
 #define __BTC_JSON_H__
 
-extern char defaultJSONstr[];
+#include <ArduinoJson.h>
+#include "Moderator.h"
 
-const char* createJSON(const char* name, float value, char* jsonToSend = defaultJSONstr);
-const char* createJSON(const char* name, unsigned char value, char* jsonToSend = defaultJSONstr);
-const char* createJSON(const char* name, int value, char* jsonToSend = defaultJSONstr);
+extern char defaultJSONstr[64];
+
+bool makeJsonString(CModerator& moderator, char* opStr, int len);
+
+template<class T>
+const char* createJSON(const char* name, T value)
+{
+  StaticJsonBuffer<64> jsonBuffer;
+	JsonObject& root = jsonBuffer.createObject();  // create object to add JSON commands to
+
+	root.set(name, value);
+	root.printTo(defaultJSONstr);
+
+  return defaultJSONstr;
+}
+
 
 #endif

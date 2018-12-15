@@ -30,7 +30,7 @@ class TModerator {
   std::map<const char*, T> Memory;
 public:
   bool shouldSend(const char* name, T value);
-  bool send(const char* name, T value, JsonObject& root);
+  bool addJson(const char* name, T value, JsonObject& root);
 	void reset();
 };
 
@@ -50,13 +50,14 @@ bool TModerator<T>::shouldSend(const char* name, T value)
 }
 
 template<class T>
-bool TModerator<T>::send(const char* name, T value, JsonObject& root) 
+bool TModerator<T>::addJson(const char* name, T value, JsonObject& root) 
 {
   bool retval;
   if( retval = shouldSend(name, value ) ) 
 	  root.set(name, value);
   return retval;
 }
+
 
 template<class T>
 void TModerator<T>::reset() 
@@ -66,20 +67,28 @@ void TModerator<T>::reset()
   } 
 }
 
-
 class CModerator {
   TModerator<int> iModerator;
   TModerator<float> fModerator;
   TModerator<unsigned char> ucModerator;
 public:
-  bool send(const char* name, int value, JsonObject& root) { 
-    return iModerator.send(name, value, root); 
+  bool shouldSend(const char* name, int value) {
+    return iModerator.shouldSend(name, value);
   };
-  bool send(const char* name, float value, JsonObject& root) { 
-    return fModerator.send(name, value, root); 
+  bool shouldSend(const char* name, float value) {
+    return fModerator.shouldSend(name, value);
   };
-  bool send(const char* name, unsigned char value, JsonObject& root) { 
-    return ucModerator.send(name, value, root); 
+  bool shouldSend(const char* name, unsigned char value) {
+    return ucModerator.shouldSend(name, value);
+  };
+  bool addJson(const char* name, int value, JsonObject& root) { 
+    return iModerator.addJson(name, value, root); 
+  };
+  bool addJson(const char* name, float value, JsonObject& root) { 
+    return fModerator.addJson(name, value, root); 
+  };
+  bool addJson(const char* name, unsigned char value, JsonObject& root) { 
+    return ucModerator.addJson(name, value, root); 
   };
   void reset() {
     iModerator.reset();

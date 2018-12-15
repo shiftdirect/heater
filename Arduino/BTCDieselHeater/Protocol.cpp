@@ -200,28 +200,33 @@ CProtocol::setTemperature_HeatExchg(short degC) // temperature of heat exchanger
   Heater.HeatExchgTemp_LSB = (degC >> 0) & 0xff;
 }
 
-short 
-CProtocol::getFan_Voltage() const    // temperature near inlet
+float 
+CProtocol::getFan_Voltage() const    // fan voltage
 {
-  short retval;
-  retval = Heater.FanVoltage_MSB;
-  retval <<= 8;
-  retval |= Heater.FanVoltage_LSB;
-  return retval;
+  if(getRunState()) {                // fan volatge sensing goes stupid when main heater relay turns off!
+    short val;
+    val = Heater.FanVoltage_MSB;
+    val <<= 8;
+    val |= Heater.FanVoltage_LSB;
+    return float(val) * 0.1;
+  }
+  return 0;
 }
 
 void
-CProtocol::setFan_Voltage(short voltsx10)     // temperature near inlet
+CProtocol::setFan_Voltage(float volts)     // fan voltage
 {
-  Heater.FanVoltage_MSB = (voltsx10 >> 8) & 0xff;
-  Heater.FanVoltage_LSB = (voltsx10 >> 0) & 0xff;
+  short val = short(volts * 10);
+  Heater.FanVoltage_MSB = (val >> 8) & 0xff;
+  Heater.FanVoltage_LSB = (val >> 0) & 0xff;
 }
 
 void
-CProtocol::setVoltage_Supply(short voltsx10)
+CProtocol::setVoltage_Supply(float volts)
 {
-  Heater.SupplyV_MSB = (voltsx10 >> 8) & 0xff;
-  Heater.SupplyV_LSB = (voltsx10 >> 0) & 0xff;
+  short val = short(volts * 10);
+  Heater.SupplyV_MSB = (val >> 8) & 0xff;
+  Heater.SupplyV_LSB = (val >> 0) & 0xff;
 }
 
 float

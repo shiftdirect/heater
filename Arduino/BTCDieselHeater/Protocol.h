@@ -149,7 +149,7 @@ public:
   //
   float getVoltage_Supply() const;
   float getVoltage_SupplyRaw() const;
-  void setVoltage_Supply(short voltsx10);
+  void setVoltage_Supply(float volts);
   
   // fan set/get
   short getFan_Actual() const;  // Heater side, actual
@@ -158,8 +158,8 @@ public:
   void setFan_Actual(short speed);  // Heater side, actual
   void setFan_Min(short speed); // Controller side, define min fan speed
   void setFan_Max(short speed); // Controller side, define max fan speed
-  short getFan_Voltage() const;           // fan voltage
-  void setFan_Voltage(short voltsx10);  // fan voltage
+  float getFan_Voltage() const;      // fan voltage
+  void setFan_Voltage(float volts);  // fan voltage
   
   // pump set/get
   void setPump_Min(float Freq) {   Controller.MinPumpFreq = (uint8_t)(Freq * 10.f + 0.5f); };
@@ -217,6 +217,8 @@ public:
   bool  isThermostat() const { return Controller.isThermostat(); };
   float getTemperature_Desired() const { return float(Controller.getTemperature_Desired()); };
   float getTemperature_HeatExchg() const { return float(Heater.getTemperature_HeatExchg()); };
+  float getTemperature_Min() const { return float(Controller.getTemperature_Min()); };
+  float getTemperature_Max() const { return float(Controller.getTemperature_Max()); };
   float getPump_Fixed() const { return Heater.getPump_Fixed(); };
   float getPump_Actual() const { return Heater.getPump_Actual(); };
   float getPump_Min() const { return Controller.getPump_Min(); };
@@ -224,7 +226,10 @@ public:
   float getFan_Actual() const { return Heater.getFan_Actual(); };
   short getFan_Min() const { return Controller.getFan_Min(); };
   short getFan_Max() const { return Controller.getFan_Max(); };
+  float getFan_Voltage() const { return Heater.getFan_Voltage(); };
   float getGlowPlug_Power() const { return Heater.getGlowPlug_Current() * Heater.getGlowPlug_Voltage(); };
+  float getGlow_Voltage() const { return Heater.getGlowPlug_Voltage(); };
+  float getGlow_Current() const { return Heater.getGlowPlug_Current(); };
 };
 
 

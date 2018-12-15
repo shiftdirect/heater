@@ -36,7 +36,7 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 
-CModerator Moderator;         // check for settings that are not actually changing, avoid sending these
+CModerator WebModerator;         // check for settings that are not actually changing, avoid sending these
 
 const int led = 13;
 
@@ -89,7 +89,7 @@ bool doWebServer(void) {
 	int numClients = webSocket.connectedClients();
 	if(numClients != prevNumClients) {
 		prevNumClients = numClients;
-		Moderator.reset();   // force full update of params if number of clients change
+		WebModerator.reset();   // force full update of params if number of clients change
 		DebugPort.println("Changed number of web clients, resetting history");
 	}
 
@@ -103,10 +103,10 @@ bool doWebServer(void) {
 			bool bSend = false;  // reset should send flag
 
 			float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution 
-			bSend |= Moderator.send("CurrentTemp", tidyTemp, root); 
-			bSend |= Moderator.send("DesiredTemp", getHeaterInfo().getTemperature_Desired(), root); 
-			bSend |= Moderator.send("RunState", getHeaterInfo().getRunState(), root); 
-			bSend |= Moderator.send("ErrorState", getHeaterInfo().getErrState(), root );
+			bSend |= WebModerator.addJson("CurrentTemp", tidyTemp, root); 
+			bSend |= WebModerator.addJson("DesiredTemp", getHeaterInfo().getTemperature_Desired(), root); 
+			bSend |= WebModerator.addJson("RunState", getHeaterInfo().getRunState(), root); 
+			bSend |= WebModerator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
 
 
       if(bSend) {
@@ -129,7 +129,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 		for (int i = 0; i < length && i < 256; i++) {
 			cmd[i] = payload[i];
 		}
-//    DebugPort.println(cmd);
 		interpretJsonCommand(cmd);  // send to the main heater controller decode routine
   }
 }
@@ -150,4 +149,7 @@ bool hasWebServerSpoken(bool reset)
 	return retval;
 }
 
-
+void resetWebModerator()
+{
+  WebModerator.reset();
+}

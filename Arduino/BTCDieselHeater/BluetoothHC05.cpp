@@ -24,6 +24,7 @@
 #include "debugport.h"
 #include "BluetoothHC05.h"
 #include "BTCConfig.h"
+#include "helpers.h"
 
 // Bluetooth access via HC-05 Module, using a UART
 
@@ -150,6 +151,7 @@ CBluetoothHC05::isConnected()
 void
 CBluetoothHC05::send(const char* Str)
 {
+  DebugPort.print("BT send: "); DebugPort.println(Str);
   HC05_SerialPort.print(Str);
 }
 
@@ -205,5 +207,18 @@ CBluetoothHC05::ATCommand(const char* cmd)
     return true;
   }
   return false;
+}
+
+void 
+CBluetoothHC05::foldbackDesiredTemp()
+{
+  StaticJsonBuffer<32> jsonBuffer;               // create a JSON buffer on the stack
+  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+	if(foldbackModerator.addJson("TempDesired", getSetTemp(), root)) { 
+    char opStr[32];
+		root.printTo(opStr);
+    send(opStr);
+  }
 }
 

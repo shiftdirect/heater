@@ -133,6 +133,7 @@ void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
+void updateJsonBT();
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -153,7 +154,7 @@ CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
 TelnetSpy DebugPort;
-
+CModerator BTModerator;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -164,6 +165,7 @@ CProtocolPackage HeaterData;
 unsigned long moderator;
 bool bUpdateDisplay = false;
 bool bHaveWebClient = false;
+bool bBTconnected = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
@@ -290,6 +292,7 @@ void setup() {
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
 
+  bBTconnected = false;
   Bluetooth.begin();
  
 }
@@ -325,6 +328,16 @@ void loop()
   KeyPad.update();      // scan keypad - key presses handler via callback functions!
 
   Bluetooth.check();    // check for Bluetooth activity
+
+  if(Bluetooth.isConnected()) {
+    if(!bBTconnected) {
+      bBTconnected = true;
+      BTModerator.reset();
+    }
+  }
+  else {
+    bBTconnected = false;
+  }
 
 
   //////////////////////////////////////////////////////////////////////////////////////
@@ -541,7 +554,7 @@ void loop()
         if(!hasOEMController) {
           // only convey this frames to Bluetooth when NOT using an OEM controller!
 //          Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
-          Bluetooth.send( createJSON("RunState", int(0) ) );
+//          Bluetooth.send( createJSON("RunState", 1.50 ) );
         }
         CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
       }
@@ -619,6 +632,7 @@ void loop()
         ScreenManager.reqUpdate();
       }
       CommState.set(CommStates::Idle);
+      updateJsonBT();
       break;
   }  // switch(CommState)
 
@@ -638,82 +652,6 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 }
 
 
-void interpretCommand(const char* pLine)
-{
-  unsigned char cVal;
-  unsigned short sVal;
-  float fVal;
-
-  if(strlen(pLine) == 0)
-    return;
-  
-  #ifdef DEBUG_BTRX
-    DebugPort.println(pLine);
-  #endif
-
-  if(strncmp(pLine, "[CMD]", 5) == 0) {
-    // incoming command from BT app!
-    DebugPort.write("  Command decode: ");
-
-    pLine += 5;   // skip past "[CMD]" header
-    if(strncmp(pLine, "ON", 2) == 0) {
-      TxManage.queueOnRequest();
-      DebugPort.println("Heater ON");
-      SmartError.reset();
-      Bluetooth.setRefTime();
-    }
-    else if(strncmp(pLine, "OFF", 3) == 0) {
-      TxManage.queueOffRequest();
-      DebugPort.println("Heater OFF");
-      SmartError.inhibit();
-      Bluetooth.setRefTime();
-    }
-    else if(strncmp(pLine, "Pmin", 4) == 0) {
-      pLine += 4;
-      fVal = atof(pLine);
-      NVstore.setPmin(fVal);
-      DebugPort.print("Pump min = "); DebugPort.println(fVal);
-    }
-    else if(strncmp(pLine, "Pmax", 4) == 0) {
-      pLine += 4;
-      fVal = atof(pLine);
-      NVstore.setPmax(fVal);
-      DebugPort.print("Pump max = "); DebugPort.println(fVal);
-    }
-    else if(strncmp(pLine, "Fmin", 4) == 0) {
-      pLine += 4;
-      sVal = atoi(pLine);
-      NVstore.setFmin(sVal);
-      DebugPort.print("Fan min = "); DebugPort.println(sVal);
-    }
-    else if(strncmp(pLine, "Fmax", 4) == 0) {
-      pLine += 4;
-      sVal = atoi(pLine);
-      NVstore.setFmax(sVal);
-      DebugPort.print("Fan max = "); DebugPort.println(int(sVal));
-    }
-    else if(strncmp(pLine, "save", 4) == 0) {
-      NVstore.save();
-      DebugPort.println("NV save");
-    }
-    else if(strncmp(pLine, "degC", 4) == 0) {
-      pLine += 4;
-      cVal = atoi(pLine);
-      NVstore.setTemperature(cVal);
-      DebugPort.print("degC = "); DebugPort.println(cVal);
-    }
-    else if(strncmp(pLine, "Mode", 4) == 0) {
-      pLine += 4;
-      cVal = !NVstore.getThermostatMode();
-      NVstore.setThermostatMode(cVal);
-      DebugPort.print("Mode now "); DebugPort.println(cVal ? "Thermostat" : "Fixed Hz");
-    }
-    else {
-      DebugPort.print(pLine); DebugPort.println(" ????");
-    }
-
-  }
-}
 
 void initBlueWireSerial()
 {
@@ -785,7 +723,7 @@ void reqTemp(unsigned char newTemp)
   if(newTemp <= min)
     newTemp = min;
      
-  NVstore.setTemperature(newTemp);
+  NVstore.setDesiredTemperature(newTemp);
 
   ScreenManager.reqUpdate();
 }
@@ -799,7 +737,7 @@ void reqTempDelta(int delta)
 
 int getSetTemp()
 {
-  return NVstore.getTemperature();
+  return NVstore.getDesiredTemperature();
 }
 
 void reqThermoToggle()
@@ -945,4 +883,19 @@ void checkDebugCommands()
       }
     }
   }
+}
+
+void updateJsonBT()
+{
+  char jsonStr[512];
+
+  if(makeJsonString(BTModerator, jsonStr, 512)) {
+    Bluetooth.send( jsonStr );
+  }
+}
+
+
+void resetBTModerator()
+{
+  BTModerator.reset();
 }

@@ -21,6 +21,7 @@
 
 
 #include "BluetoothAbstract.h"
+#include "Moderator.h"
 
 // Define the serial port for access to a HC-05 module.
 // This is generally Serial2, but different platforms use 
@@ -38,6 +39,7 @@ static HardwareSerial& HC05_SerialPort(Serial2);
 class CBluetoothHC05 : public CBluetoothAbstract {
   bool ATCommand(const char* str);
   int _sensePin, _keyPin;
+  CModerator foldbackModerator;
 public:
   CBluetoothHC05(int keyPin, int sensePin);
   void begin();
@@ -47,4 +49,5 @@ public:
   virtual bool isConnected();
 protected:
   virtual void openSerial(int baudrate);
+  virtual void foldbackDesiredTemp();
 };

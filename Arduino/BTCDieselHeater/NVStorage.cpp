@@ -97,7 +97,7 @@ CHeaterStorage::getFmax()
 }
 
 unsigned char
-CHeaterStorage::getTemperature()
+CHeaterStorage::getDesiredTemperature()
 {
   return _calValues.Heater.setTemperature;
 }
@@ -135,7 +135,7 @@ CHeaterStorage::setFmax(unsigned short val)
 }
 
 void
-CHeaterStorage::setTemperature(unsigned char val)
+CHeaterStorage::setDesiredTemperature(unsigned char val)
 {
   _calValues.Heater.setTemperature = val;
 }

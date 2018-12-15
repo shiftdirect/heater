@@ -98,14 +98,14 @@ public:
     float getPmax();
     unsigned short getFmin();
     unsigned short getFmax();
-    unsigned char getTemperature();
+    unsigned char getDesiredTemperature();
     unsigned char getThermostatMode();
 
     void setPmin(float);
     void setPmax(float);
     void setFmin(unsigned short val);
     void setFmax(unsigned short val);
-    void setTemperature(unsigned char val);
+    void setDesiredTemperature(unsigned char val);
     void setThermostatMode(unsigned char val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);

@@ -20,26 +20,31 @@
  * 
  */
 
-class CProtocolPackage;
+#include "Protocol.h"
 
 
-extern void ToggleOnOff();
-extern void requestOn();
-extern void requestOff();
-extern void reqTempDelta(int delta);
-extern void reqTemp(unsigned char newTemp);
-extern void reqThermoToggle();
-extern void setThermostatMode(unsigned char);
-extern void reqPumpPrime(bool on);
+extern void  ToggleOnOff();
+extern void  requestOn();
+extern void  requestOff();
+extern void  reqTempDelta(int delta);
+extern void  reqTemp(unsigned char newTemp);
+extern void  reqThermoToggle();
+extern void  setThermostatMode(unsigned char);
+extern void  reqPumpPrime(bool on);
 extern float getActualTemperature();
+extern int   getSetTemp();
 extern void  setPumpMin(float);
 extern void  setPumpMax(float);
 extern void  setFanMin(short);
 extern void  setFanMax(short);
+extern void  setDateTime(const char* newTime);
+extern void  setDate(const char* newTime);
+extern void  setTime(const char* newTime);
 extern void  saveNV();
 extern const CProtocolPackage& getHeaterInfo();
-extern void interpretCommand(const char* pLine);
 extern void interpretJsonCommand(char* pLine);
+extern void resetWebModerator();
+extern void resetBTModerator();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

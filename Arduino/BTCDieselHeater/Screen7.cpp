@@ -22,9 +22,9 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen5
+// CScreen7
 //
-// This screen allows the fuel mixture endpoints to be adjusted
+// This screen allows the timers to be adjusted
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -58,6 +58,9 @@ CScreen7::show()
   char str[16];
   int xPos, yPos;
 
+  if(_rowSel == 0) {
+    NVstore.getTimerInfo(_instance, _timer);
+  }
   sprintf(str, " Timer %d ", _instance + 1);
   _printInverted(0, 16, str, true);
 

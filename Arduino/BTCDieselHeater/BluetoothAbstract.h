@@ -33,6 +33,7 @@ class CBluetoothAbstract {
 protected:
   sRxLine _rxLine;
   CContextTimeStamp _timeStamp;
+  virtual void foldbackDesiredTemp() {};
 public:
   virtual void begin() {};
   virtual void setRefTime() { 
@@ -46,13 +47,11 @@ public:
   virtual void check() {};
   virtual void collectRxData(char rxVal) {
     // provide common behviour for bytes received from a bluetooth client
-    if(isControl(rxVal)) {    // "End of Line"
-      interpretCommand(_rxLine.Line);
+    _rxLine.append(rxVal);   // append new char to our Rx buffer
+    if(rxVal == '}') {    // "End of JSON Line"
       interpretJsonCommand(_rxLine.Line);
       _rxLine.clear();
-    }
-    else {
-      _rxLine.append(rxVal);   // append new char to our Rx buffer
+      foldbackDesiredTemp();   // rapid foldback if desired temp changes
     }
   };
   virtual bool isConnected() { return false; };

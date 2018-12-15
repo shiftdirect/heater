@@ -121,3 +121,35 @@ CClock::_checkTimer(int timer, const DateTime& now)
     }
   }
 }
+
+void setDateTime(const char* newTime)
+{
+  DebugPort.print("setting time to: ");  DebugPort.println(newTime);
+  int month,day,year,hour,minute,second;
+  if(6 == sscanf(newTime, "%d/%d/%d %d:%d:%d", &day, &month, &year, &hour, &minute, &second)) {
+    DateTime newDateTime(year, month, day, hour, minute, second);
+    Clock.set(newDateTime);
+  }
+}
+
+void setDate(const char* newDate)
+{
+  DebugPort.print("setting date to: ");  DebugPort.println(newDate);
+  int month,day,year;
+  if(3 == sscanf(newDate, "%d/%d/%d", &day, &month, &year)) {
+    DateTime currentDateTime = Clock.get();
+    DateTime newDateTime(year, month, day, currentDateTime.hour(), currentDateTime.minute(), currentDateTime.second());
+    Clock.set(newDateTime);
+  }
+}
+
+void setTime(const char* newTime)
+{
+  DebugPort.print("setting time to: ");  DebugPort.println(newTime);
+  int hour,minute,second;
+  if(3 == sscanf(newTime, "%d:%d:%d", &hour, &minute, &second)) {
+    DateTime currentDateTime = Clock.get();
+    DateTime newDateTime(currentDateTime.year(), currentDateTime.month(), currentDateTime.day(), hour, minute, second);
+    Clock.set(newDateTime);
+  }
+}

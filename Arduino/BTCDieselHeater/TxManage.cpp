@@ -118,7 +118,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     m_TxFrame.setPump_Min(NVstore.getPmin());
     m_TxFrame.setPump_Max(NVstore.getPmax());
     m_TxFrame.setThermostatMode(NVstore.getThermostatMode());
-    m_TxFrame.setTemperature_Desired(NVstore.getTemperature());
+    m_TxFrame.setTemperature_Desired(NVstore.getDesiredTemperature());
   }
   else {
     m_TxFrame.setPassiveMode();    // this prevents the tuning parameters being saved by heater
