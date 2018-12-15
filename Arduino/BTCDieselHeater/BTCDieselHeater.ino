@@ -864,6 +864,9 @@ void checkDebugCommands()
         val++;
         bSendVal = true;
       }
+      else if(rxVal  == 'r') {
+        ESP.restart();            // reset the esp
+      }
       else if(rxVal == '[') {
         val--;
         bSendVal = true;

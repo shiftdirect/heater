@@ -42,6 +42,7 @@ void initOTA(){
 		DebugPort.println("\nEnd");
     DebugPort.handle();    // keep telnet spy alive
     DebugPort.end();       // force graceful close of telnetspy - ensures a client will reconnect cleanly
+    ESP.restart();
 	})
 		.onProgress([](unsigned int progress, unsigned int total) {
 		DebugPort.printf("Progress: %u%%\r", (progress / (total / 100)));
@@ -62,4 +63,3 @@ void initOTA(){
 void DoOTA(){
   ArduinoOTA.handle();
 };
-
