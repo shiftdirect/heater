@@ -5,6 +5,115 @@ const char* MAIN_PAGE PROGMEM = R"=====(
 <html>
   <head>
     <script>
+
+// Date Picker Script
+
+window.onload = function() {
+  // IE11 forEach, padStart
+  (function () {
+    if ( typeof NodeList.prototype.forEach === "function" ) return false;
+    NodeList.prototype.forEach = Array.prototype.forEach;
+  })();
+
+  (function () {
+    if ( typeof String.prototype.padStart === "function" ) return false;
+    String.prototype.padStart = function padStart(length, value) {
+      var res = String(this);
+      if(length >= (value.length + this.length)) {
+        for (var i = 0; i <= (length - (value.length + this.length)); i++) {
+          res = value + res;
+        }
+      }
+      return res;
+    };
+  })();
+
+  var datePickerTpl = '<div class="yearMonth"><a class="previous">&lsaquo;</a><span class="year">{y}</span>-<span class="month">{m}</span><a class="next">&rsaquo;</a></div><div class="days"><a>1</a><a>2</a><a>3</a><a>4</a><a>5</a><a>6</a><a>7</a><a>8</a><a>9</a><a>10</a><a>11</a><a>12</a><a>13</a><a>14</a><a>15</a><a>16</a><a>17</a><a>18</a><a>19</a><a>20</a><a>21</a><a>22</a><a>23</a><a>24</a><a>25</a><a>26</a><a>27</a><a>28</a><a>29</a><a>30</a><a>31</a>';
+
+  function daysInMonth(month, year) {
+    return new Date(year, month, 0).getDate();
+  }
+
+  function hideInvalidDays(dp, month, year){
+    dp.querySelectorAll(".days a").forEach(function(a){
+      a.style.display = "inline-block";
+    });
+    var days = daysInMonth(month, year);
+    var invalidCount = 31 - days;
+    if(invalidCount > 0) {
+      for (var j = 1; j <= invalidCount; j++) {
+        dp.querySelector(".days a:nth-last-child(" + j + ")").style.display = "none";
+      }
+    }
+  }
+
+  function clearSelected(dp) {
+    dp.querySelectorAll(".days a.selected").forEach(function(e){
+      e.classList.remove("selected");
+    });
+  }
+
+  function setMonthYear(dp, month, year, input) {
+    dp.querySelector(".month").textContent = String(month).padStart(2, "0");
+    dp.querySelector(".year").textContent = year;
+    clearSelected(dp);
+    hideInvalidDays(dp, month, year);
+    if(input && input.value) {
+      var date = input.value.split("-");
+      var curYear = parseInt(dp.querySelector(".year").textContent), curMonth = parseInt(dp.querySelector(".month").textContent);
+      if(date[0] == curYear && date[1] == curMonth) {
+        dp.querySelector(".days a:nth-child(" + parseInt(date[2]) + ")").className = "selected";
+      }
+    }
+  }
+
+  document.querySelectorAll(".datepicker").forEach(function(input) {
+    input.setAttribute("readonly", "true");
+    var dp = document.createElement("div");
+    dp.className = "contextmenu";
+    dp.style.left = input.offsetLeft + "px";
+    dp.style.top = input.offsetTop + input.offsetHeight + "px";
+    var now = new Date();
+    dp.insertAdjacentHTML('beforeEnd', datePickerTpl.replace("{m}", String(now.getMonth() + 1).padStart(2, "0")).replace("{y}", now.getFullYear()));
+    hideInvalidDays(dp, now.getMonth() + 1, now.getFullYear());
+
+    dp.querySelector("a.previous").addEventListener("click", function(e){
+      var curYear = parseInt(dp.querySelector(".year").textContent), curMonth = parseInt(dp.querySelector(".month").textContent);
+      var firstMonth = curMonth - 1 == 0;
+      setMonthYear(dp, firstMonth ? 12 : curMonth - 1, firstMonth ? curYear - 1 : curYear, input);
+    });
+
+    dp.querySelector("a.next").addEventListener("click", function(e){
+      var curYear = parseInt(dp.querySelector(".year").textContent), curMonth = parseInt(dp.querySelector(".month").textContent);
+      var lastMonth = curMonth + 1 == 13;
+      setMonthYear(dp, lastMonth ? 1 : curMonth + 1, lastMonth ? curYear + 1 : curYear, input);
+    });
+
+    dp.querySelectorAll(".days a").forEach(function(a){
+      a.addEventListener("click", function(e) {
+        clearSelected(dp);
+        e.target.className = "selected";
+        input.value = dp.querySelector(".year").textContent + "-" + dp.querySelector(".month").textContent + "-" + this.text.padStart(2, "0");
+      });
+    });
+
+    input.parentNode.insertBefore(dp, input.nextSibling);
+
+    input.addEventListener("focus", function(){
+      if (input.value){
+        var date = input.value.split("-");
+        setMonthYear(dp, date[1], date[0]);
+        dp.querySelector(".days a:nth-child(" + parseInt(date[2]) + ")").className = "selected";
+      }
+    });
+  });
+};
+// End date Picker Script
+
+
+
+
+    
       var Socket;
       function init() {
         Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
@@ -44,6 +153,9 @@ const char* MAIN_PAGE PROGMEM = R"=====(
         }
       }
 
+
+
+
 function funcNavLinks() {
   var x = document.getElementById("myLinks");
   if (x.style.display === "block") {
@@ -65,20 +177,20 @@ return i;
 function funcdispSettings() {
     document.getElementById("Settings").style.display = "block";
     currentTime = new Date();
-	var h = currentTime.getHours();
-	var m = currentTime.getMinutes();
-	var s = currentTime.getSeconds();
-	// add a zero in front of numbers<10
-	h = checkTime(h);
-	m = checkTime(m);
-	s = checkTime(s);
+	  var h = currentTime.getHours();
+	  var m = currentTime.getMinutes();
+	  var s = currentTime.getSeconds();
+	  // add a zero in front of numbers<10
+	  h = checkTime(h);
+	  m = checkTime(m);
+	  s = checkTime(s);
 
-   console.log("Hours":h);
-console.log("Minutes":m);
-console.log("Seconds":s);
-	  document.getElementById("curtime").value = h + ":" + m + "" + s;
+    console.log("Hours",h);
+    console.log("Minutes",m);
+    console.log("Seconds",s);
+	  document.getElementById("curtime").value = h + ":" + m + ":" + s;
 	  document.getElementById("curdate").value = hours
-	document.getElementById("Home").style.display = "none";
+  	document.getElementById("Home").style.display = "none";
     document.getElementById("Advanced").style.display = "none"; 
     document.getElementById("myLinks").style.display ="none";    
 }
@@ -109,7 +221,7 @@ function OnOffCheck(){
 
   // Send a message to the Devel console of web browser for debugging
   console.log("OnOffCheck:", document.getElementById("myonoffswitch").checked);  
- 
+
   // If the checkbox is checked, display the output text
   // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
   
@@ -161,7 +273,41 @@ function onSlide(newVal) {
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-  
+
+
+  // Date Picker Styles
+
+  .contextmenu {
+  position: absolute;
+  line-height: 20px;
+  font-size: 12px;
+  width: 140px;
+  display: none;
+  background: #f6f6f6;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+a.previous, a.next, .days a {
+  cursor: pointer;
+  text-align: center;
+  display: inline-block;
+  width: 20px;
+}
+
+.selected {
+  font-weight: bold;
+  background: #8a46ff;
+  color: #ffffff;
+}
+
+input.datepicker:focus + div.contextmenu {
+  display: block;
+}
+input.datepicker:focus + div.contextmenu, div.contextmenu:hover {
+  display: block;
+}
+
+// End Date Picker Styles
 
   .slider {
     position: absolute;
@@ -369,7 +515,9 @@ Place holder for ADVANCED SETTINGS page
   <br>
   Current Time:<br>
   <input type="text" id="curtime" value=time>
-  
+
+  <input type="text" class="datepicker"/>
+
 <hr></hr>
 Settings will go here for automatic mode schedule	
 	
