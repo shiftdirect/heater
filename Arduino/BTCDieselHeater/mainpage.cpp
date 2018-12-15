@@ -53,25 +53,32 @@ function funcNavLinks() {
   }
 }
 
+function checkTime(i)
+{
+if (i<10)
+  {
+  i="0" + i;
+  }
+return i;
+}
+
 function funcdispSettings() {
     document.getElementById("Settings").style.display = "block";
     currentTime = new Date();
-    time = currentTime.getTime();
-	  hours = currentTime.getHours();
-  var h = currentTime.getHours();
-  var m = currentTime.getMinutes();
-  var s = currentTime.getSeconds();
-  // add a zero in front of numbers<10
-  m = checkTime(m);
-  s = checkTime(s);
-  t = setTimeout(function() {
-    startTime()
-  }, 500);
+	var h = currentTime.getHours();
+	var m = currentTime.getMinutes();
+	var s = currentTime.getSeconds();
+	// add a zero in front of numbers<10
+	h = checkTime(h);
+	m = checkTime(m);
+	s = checkTime(s);
 
-   
+   console.log("Hours":h);
+console.log("Minutes":m);
+console.log("Seconds":s);
 	  document.getElementById("curtime").value = h + ":" + m + "" + s;
 	  document.getElementById("curdate").value = hours
-    document.getElementById("Home").style.display = "none";
+	document.getElementById("Home").style.display = "none";
     document.getElementById("Advanced").style.display = "none"; 
     document.getElementById("myLinks").style.display ="none";    
 }
@@ -358,7 +365,7 @@ Place holder for ADVANCED SETTINGS page
 
 <Div ID="Settings">
   Current Date:<br>
-  <input type="text" id="curdate" value="Mickey">
+  <input type="text" id="curdate" value="00:00:00">
   <br>
   Current Time:<br>
   <input type="text" id="curtime" value=time>
