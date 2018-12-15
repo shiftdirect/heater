@@ -6,6 +6,10 @@ const char* MAIN_PAGE PROGMEM = R"=====(
   <head>
     <script>
 
+Date.prototype.today = function () { 
+    return ((this.getDate() < 10)?"0":"") + this.getDate() +"/"+(((this.getMonth()+1) < 10)?"0":"") + (this.getMonth()+1) +"/"+ this.getFullYear();
+}
+
 // Date Picker Script
 
 window.onload = function() {
@@ -189,7 +193,7 @@ function funcdispSettings() {
     console.log("Minutes",m);
     console.log("Seconds",s);
 	  document.getElementById("curtime").value = h + ":" + m + ":" + s;
-	  document.getElementById("curdate").value = hours
+	  document.getElementById("curdate").value = currentTime.today()
   	document.getElementById("Home").style.display = "none";
     document.getElementById("Advanced").style.display = "none"; 
     document.getElementById("myLinks").style.display ="none";    
@@ -271,7 +275,7 @@ function onSlide(newVal) {
 
 </script>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1">
   <style>
 
 
@@ -516,7 +520,7 @@ Place holder for ADVANCED SETTINGS page
   Current Time:<br>
   <input type="text" id="curtime" value=time>
 
-  <input type="text" class="datepicker"/>
+  <input type="text" class="datepicker">
 
 <hr></hr>
 Settings will go here for automatic mode schedule	

@@ -39,6 +39,7 @@ void initOTA(){
 	})
 		.onEnd([]() {
 		DebugPort.println("\nEnd");
+    ESP.restart();
 	})
 		.onProgress([](unsigned int progress, unsigned int total) {
 		DebugPort.printf("Progress: %u%%\r", (progress / (total / 100)));
@@ -58,4 +59,3 @@ void initOTA(){
 void DoOTA(){
   ArduinoOTA.handle();
 };
-
