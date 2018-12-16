@@ -21,15 +21,18 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                 document.getElementById(key).innerHTML = heater[key];
                 break;
               case "RunState":
-                if (heater.RunState == 0) {
+                if (heater[key] == 0) {
                   document.getElementById("myonoffswitch").checked = false;
                   document.getElementById("myonoffswitch").style = "block";
-                } else if(heater.RunState >= 7) {
+                  document.getElementById("onoffswitch").style.visibility = "visible";
+                } else if(heater[key] >= 7) {
                   document.getElementById("myonoffswitch").checked = false;
                   document.getElementById("myonoffswitch").style = "none";
+                  document.getElementById("onoffswitch").style.visibility = "hidden";
                 } else {
                   document.getElementById("myonoffswitch").checked = true;
                   document.getElementById("myonoffswitch").style = "block";             
+                  document.getElementById("onoffswitch").style.visibility = "visible";
                 }
                 break;
               case "TempDesired":
@@ -37,6 +40,10 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                 document.getElementById(key).innerHTML = heater[key];
                 break;
               case "ErrorState":
+                document.getElementById("ErrorDiv").hidden = heater[key] <= 1;
+                break;
+              case "ErrorString":
+                document.getElementById(key).innerHTML = heater[key];
                 break;
               case "Thermostat":
                 if(heater[key] != 0) {
@@ -256,7 +263,7 @@ function OnOffCheck(){
   // We also need to send a message back into the esp as we cannot directly run Arduino Functions from within the javascript
   
   var cmd = {};
-  if (checkBox.checked == true){
+  if (checkBox.checked){
     //Insert Code Here To Turn On The Heater
     console.log("Turning On Heater");
 
@@ -463,7 +470,7 @@ MainPage {
 <span class="MaingPage" id="Home">
 <div><H2>Power Control</H2></div>
 
-<div class="onoffswitch">
+<div class="onoffswitch" id="onoffswitch">
     <input type="checkbox" onclick="OnOffCheck()" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch" clicked>
     <label class="onoffswitch-label" for="myonoffswitch">
         <span class="onoffswitch-inner"></span>
@@ -485,6 +492,9 @@ MainPage {
 </div>
 <div>
 <b>Current Temp: </b><span id="TempCurrent">
+</div>
+<div id="ErrorDiv" style="color:red" hidden>
+<b>Error <span id="ErrorString"> </b>
 </div>
 </span>
 
