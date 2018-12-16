@@ -326,7 +326,7 @@ const char* Runstates [] PROGMEM = {
   "Stopping",
   "Shutting down",
   "Cooling",
-  "Heating glow plug",
+  "Heating glow plug",    // interpreted state - actually runstate 2 with no pump action!
   "Unknown run state"
 };
 
@@ -356,8 +356,8 @@ const char* Errstates [] PROGMEM = {
   "Comms fault",     // E-07
   "Flame out",       // E-08
   "Temp sense",      // E-09
-  "Ignition fail",   // E-10
-  "Failed 1st ignition attempt",  // E-11
+  "Ignition fail",   // E-10          SmartError manufactured state - sensing runstate 2 -> >5
+  "Failed 1st ignition attempt",  // E-11  SmartError manufactured state - sensing runstate 2 -> 3
   "Unknown error?"   // mystery code!
 };
 
@@ -373,8 +373,8 @@ const char* ErrstatesEx [] PROGMEM = {
   "E-07: Comms fault",     // E-07
   "E-08: Flame out",       // E-08
   "E-09: Temp sense",      // E-09
-  "E-10: Ignition fail",   // E-10
-  "E-11: Failed 1st ignition attempt",  // E-11
+  "E-10: Ignition fail",   // E-10  SmartError manufactured state - sensing runstate 2 -> >5
+  "E-11: Failed 1st ignition attempt",  // E-11  SmartError manufactured state - sensing runstate 2 -> 3
   "Unknown error?"   // mystery code!
 };
 
