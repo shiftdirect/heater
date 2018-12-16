@@ -320,12 +320,13 @@ const char* Runstates [] PROGMEM = {
   " Stopped/Ready ",
   "Starting...",
   "Igniting...",
-  " Ignition retry ",
+  "Ignition retry pause",
   "Ignited",
   "Running",
   "Stopping",
   "Shutting down",
   "Cooling",
+  "Heating glow plug",
   "Unknown run state"
 };
 
@@ -335,7 +336,10 @@ const char*
 CProtocolPackage::getRunStateStr() const 
 { 
   uint8_t runstate = Heater.getRunState();
-  UPPERLIMIT(runstate, 9);
+  UPPERLIMIT(runstate, 10);
+  if(runstate == 2 && getPump_Actual() == 0) {  // split runstate 2 - glow, then fuel
+    runstate = 9;
+  }
   return Runstates[runstate]; 
 }
 
@@ -353,6 +357,24 @@ const char* Errstates [] PROGMEM = {
   "Flame out",       // E-08
   "Temp sense",      // E-09
   "Ignition fail",   // E-10
+  "Failed 1st ignition attempt",  // E-11
+  "Unknown error?"   // mystery code!
+};
+
+const char* ErrstatesEx [] PROGMEM = {
+  "E-00: OK",
+  "E-00: OK",
+  "E-01: Low voltage",     // E-01
+  "E-02: High voltage",    // E-02
+  "E-03: Glow plug fault", // E-03
+  "E-04: Pump fault",      // E-04
+  "E-05: Overheat",        // E-05
+  "E-06: Motor fault",     // E-06
+  "E-07: Comms fault",     // E-07
+  "E-08: Flame out",       // E-08
+  "E-09: Temp sense",      // E-09
+  "E-10: Ignition fail",   // E-10
+  "E-11: Failed 1st ignition attempt",  // E-11
   "Unknown error?"   // mystery code!
 };
 
@@ -360,6 +382,14 @@ const char*
 CProtocolPackage::getErrStateStr() const 
 { 
   uint8_t errstate = Heater.getErrState();
-  UPPERLIMIT(errstate, 12);
+  UPPERLIMIT(errstate, 13);
   return Errstates[errstate]; 
+}
+
+const char* 
+CProtocolPackage::getErrStateStrEx() const 
+{ 
+  uint8_t errstate = Heater.getErrState();
+  UPPERLIMIT(errstate, 13);
+  return ErrstatesEx[errstate]; 
 }

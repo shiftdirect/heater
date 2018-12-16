@@ -17,9 +17,6 @@ const char* MAIN_PAGE PROGMEM = R"=====(
           for(key in heater) {
             console.log("JSON decode:", key, heater[key]);
             switch(key) {
-              case "TempCurrent":
-                document.getElementById(key).innerHTML = heater[key];
-                break;
               case "RunState":
                 if (heater[key] == 0) {
                   document.getElementById("myonoffswitch").checked = false;
@@ -34,6 +31,13 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                   document.getElementById("myonoffswitch").style = "block";             
                   document.getElementById("onoffswitch").style.visibility = "visible";
                 }
+                document.getElementById("RunString").style.visibility = (heater[key] == 5 || heater[key] == 0) ? "hidden" : "visible";
+                break;
+              case "ErrorString":
+              case "PumpFixed":
+              case "RunString":
+              case "TempCurrent":
+                document.getElementById(key).innerHTML = heater[key];
                 break;
               case "TempDesired":
                 document.getElementById("slide").value = heater[key];
@@ -41,9 +45,6 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                 break;
               case "ErrorState":
                 document.getElementById("ErrorDiv").hidden = heater[key] <= 1;
-                break;
-              case "ErrorString":
-                document.getElementById(key).innerHTML = heater[key];
                 break;
               case "Thermostat":
                 if(heater[key] != 0) {
@@ -54,9 +55,6 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                   document.getElementById("FixedDiv").hidden = false;
                   document.getElementById("ThermoDiv").hidden = true;
                 }
-                break;
-              case "PumpFixed":
-                document.getElementById(key).innerHTML = heater[key];
                 break;
             }
           }
@@ -286,6 +284,7 @@ function onSlide(newVal, JSONKey) {
 
   var cmd = {};
   cmd[JSONKey] = newVal;  // note: variable name needs []
+  cmd.NVsave = 8861;      // named variable DOESN'T !!
   sendJSONobject(cmd);
 }
 
@@ -295,6 +294,16 @@ function onSlide(newVal, JSONKey) {
 
     <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1">
   <style>
+
+  .throb_me {
+    animation: throbber 1s linear infinite;
+  }
+
+  @keyframes throbber {
+    50% {
+      opacity: 0;
+    }
+  }
 
   .slider {
     position: absolute;
@@ -449,6 +458,7 @@ MainPage {
 }
 
 </style>
+
 <title>Chinese Diesel Heater Web Controller Interface</title>
 </head>
 <body onload="javascript:init()">
@@ -477,6 +487,7 @@ MainPage {
         <span class="onoffswitch-switch"></span>
     </label>
 </div>
+<span class="throb_me" id="RunString" style="visibility:hidden"></span>
 
 <div>
 <h2>Temperature Control</h2>
@@ -493,7 +504,7 @@ MainPage {
 <div>
 <b>Current Temp: </b><span id="TempCurrent">
 </div>
-<div id="ErrorDiv" style="color:red" hidden>
+<div id="ErrorDiv" style="color:crimson" hidden>
 <b>Error <span id="ErrorString"> </b>
 </div>
 </span>

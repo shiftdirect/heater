@@ -213,6 +213,7 @@ public:
   const char* getRunStateStr() const;
   int   getErrState() const { return Heater.getErrState(); };
   const char* getErrStateStr() const;
+  const char* getErrStateStrEx() const;
   float getBattVoltage() const { return Heater.getVoltage_Supply(); };
   bool  isThermostat() const { return Controller.isThermostat(); };
   float getTemperature_Desired() const { return float(Controller.getTemperature_Desired()); };

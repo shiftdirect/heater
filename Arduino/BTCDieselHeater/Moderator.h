@@ -63,7 +63,12 @@ template<class T>
 void TModerator<T>::reset() 
 {
  	for(auto it = Memory.begin(); it != Memory.end(); ++it) {
-    it->second = it->second+100;
+    if(std::is_pointer<T>::value) {
+      it->second = NULL;
+    }
+    else {
+      it->second = it->second+100;
+    }
   } 
 }
 
@@ -71,29 +76,42 @@ class CModerator {
   TModerator<int> iModerator;
   TModerator<float> fModerator;
   TModerator<unsigned char> ucModerator;
+  TModerator<const char*> szModerator;
 public:
+  // integer values
   bool shouldSend(const char* name, int value) {
     return iModerator.shouldSend(name, value);
-  };
-  bool shouldSend(const char* name, float value) {
-    return fModerator.shouldSend(name, value);
-  };
-  bool shouldSend(const char* name, unsigned char value) {
-    return ucModerator.shouldSend(name, value);
   };
   bool addJson(const char* name, int value, JsonObject& root) { 
     return iModerator.addJson(name, value, root); 
   };
+  // float values
+  bool shouldSend(const char* name, float value) {
+    return fModerator.shouldSend(name, value);
+  };
   bool addJson(const char* name, float value, JsonObject& root) { 
     return fModerator.addJson(name, value, root); 
+  };
+  // unsigned char values
+  bool shouldSend(const char* name, unsigned char value) {
+    return ucModerator.shouldSend(name, value);
   };
   bool addJson(const char* name, unsigned char value, JsonObject& root) { 
     return ucModerator.addJson(name, value, root); 
   };
+  // const char* values
+  bool shouldSend(const char* name, const char* value) {
+    return szModerator.shouldSend(name, value);
+  };
+  bool addJson(const char* name, const char* value, JsonObject& root) { 
+    return szModerator.addJson(name, value, root); 
+  };
+  // force changes on all held values
   void reset() {
     iModerator.reset();
     fModerator.reset();
     ucModerator.reset();
+    szModerator.reset();
   };
 };
 
