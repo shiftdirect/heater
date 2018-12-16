@@ -1,4 +1,4 @@
-#include "FontTypes.h"
+#include "../../FontTypes.h"
 
 // Font data for Arial 8pt
 extern const uint8_t PROGMEM arial_8ptBitmaps [];

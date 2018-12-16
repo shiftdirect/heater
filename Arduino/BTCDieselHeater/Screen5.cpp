@@ -33,7 +33,7 @@
 #include "helpers.h"
 #include "Screen5.h"
 #include "BTCWifi.h"
-#include "Arial.h"
+#include "src/fonts/Arial.h"
 
 
 CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 

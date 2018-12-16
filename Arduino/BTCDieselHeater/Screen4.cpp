@@ -26,7 +26,7 @@
 #include "BTCWifi.h"
 #include "Tahoma8.h"
 #include "FranklinGothic.h"
-#include "Arial.h"
+#include "src/fonts/Arial.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //

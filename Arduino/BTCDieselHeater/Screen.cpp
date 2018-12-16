@@ -1,7 +1,5 @@
 #include <Arduino.h>
 #include "Screen.h"
-#include "128x64OLED.h"
-#include "ScreenManager.h"
 
 // base class functionality for screens
 

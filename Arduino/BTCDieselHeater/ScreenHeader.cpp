@@ -9,7 +9,7 @@
 #include "helpers.h"
 #include "NVStorage.h"
 #include "Clock.h"
-#include "Arial.h"
+#include "src/fonts/Arial.h"
 
 
 #define MINIFONT miniFontInfo

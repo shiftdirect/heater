@@ -32,7 +32,7 @@
 #include "KeyPad.h"
 #include "helpers.h"
 #include "Screen6.h"
-#include "Arial.h"
+#include "src/fonts/Arial.h"
 #include "Clock.h"
 
 
