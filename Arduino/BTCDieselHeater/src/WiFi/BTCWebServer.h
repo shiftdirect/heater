@@ -50,3 +50,6 @@ void handleRoot();
 void handleNotFound();
 void webturnOn();
 void webturnOff();
+
+bool sendWebServerString(const char* Str);
+bool isWebServerClientChange(); 

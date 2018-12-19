@@ -152,7 +152,7 @@ CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
 TelnetSpy DebugPort;
-CModerator BTModerator;
+CModerator JSONmoderator;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -327,14 +327,19 @@ void loop()
 
   Bluetooth.check();    // check for Bluetooth activity
 
+  // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {
     if(!bBTconnected) {
-      bBTconnected = true;
-      BTModerator.reset();
+      resetJSONmoderator();  // force full send upoon BT client connect
     }
+    bBTconnected = true;
   }
   else {
     bBTconnected = false;
+  }
+  // manage changes in number of wifi clients
+  if(isWebServerClientChange()) {
+    resetJSONmoderator();  // force full send upoon number of Wifi clients change
   }
 
 
@@ -891,13 +896,15 @@ void updateJsonBT()
 {
   char jsonStr[600];
 
-  if(makeJsonString(BTModerator, jsonStr, sizeof(jsonStr))) {
+  if(makeJsonString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
+    DebugPort.print("JSON send: "); DebugPort.println(Str);
     Bluetooth.send( jsonStr );
+    sendWebServerString( jsonStr );
   }
 }
 
 
-void resetBTModerator()
+void resetJSONmoderator()
 {
-  BTModerator.reset();
+  JSONmoderator.reset();
 }

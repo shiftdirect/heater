@@ -91,8 +91,7 @@ void interpretJsonCommand(char* pLine)
       reqPumpPrime(it->value.as<unsigned char>());
 		}
 		else if(strcmp("Refresh", it->key) == 0) {
-      resetWebModerator();
-      resetBTModerator();
+      resetJSONmoderator();
 		}
 		else if(strcmp("Timer1Days", it->key) == 0) {
       decodeTimerDays(0, it->value.as<const char*>());

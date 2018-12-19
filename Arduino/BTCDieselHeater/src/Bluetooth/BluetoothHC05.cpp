@@ -151,7 +151,6 @@ CBluetoothHC05::isConnected()
 void
 CBluetoothHC05::send(const char* Str)
 {
-  DebugPort.print("BT send: "); DebugPort.println(Str);
   HC05_SerialPort.print(Str);
 }
 

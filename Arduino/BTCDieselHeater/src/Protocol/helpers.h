@@ -44,7 +44,7 @@ extern void  saveNV();
 extern const CProtocolPackage& getHeaterInfo();
 extern void interpretJsonCommand(char* pLine);
 extern void resetWebModerator();
-extern void resetBTModerator();
+extern void resetJSONmoderator();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

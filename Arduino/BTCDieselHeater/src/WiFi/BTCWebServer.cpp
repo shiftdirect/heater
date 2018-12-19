@@ -36,8 +36,6 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 
-CModerator WebModerator;         // check for settings that are not actually changing, avoid sending these
-
 const int led = 13;
 
 void handleRoot() {
@@ -81,36 +79,33 @@ void initWebServer(void) {
 unsigned char cVal;
 
 bool doWebServer(void) {
-	static unsigned long lastTx = 0;
-	static int prevNumClients;
 	webSocket.loop();
 	server.handleClient();
+}
+
+bool isWebServerClientChange() 
+{
+	static int prevNumClients = -1;
 
 	int numClients = webSocket.connectedClients();
 	if(numClients != prevNumClients) {
 		prevNumClients = numClients;
-		WebModerator.reset();   // force full update of params if number of clients change
-		DebugPort.println("Changed number of web clients, resetting history");
+		DebugPort.println("Changed number of web clients, should reset JSON moderator");
+    return true;
 	}
+  return false;
+}
 
-	if(numClients) {
-		if(millis() > lastTx) {   // moderate the delivery of new messages - we simply cannot send every pass of the main loop!
-			lastTx = millis() + 100;
-
-
-      char jsonStr[600];
-
-      if(makeJsonString(WebModerator, jsonStr, sizeof(jsonStr))) {
-  	    bTxWebData = true;              // OLED tx data animation flag
-   	    webSocket.broadcastTXT(jsonStr);
-      }
-
-
-		}
+bool sendWebServerString(const char* Str)
+{
+	if(webSocket.connectedClients()) {
+    bTxWebData = true;              // OLED tx data animation flag
+    webSocket.broadcastTXT(Str);
 		return true;
 	}
   return false;
 }
+
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
 	if (type == WStype_TEXT) {
@@ -140,7 +135,3 @@ bool hasWebServerSpoken(bool reset)
 	return retval;
 }
 
-void resetWebModerator()
-{
-  WebModerator.reset();
-}
