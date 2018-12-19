@@ -131,7 +131,7 @@ void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
-void updateJsonBT();
+void updateJSONclients();
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -157,6 +157,7 @@ CModerator JSONmoderator;
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool hasOEMController = false;
+bool hasHtrData = false;
 
 CProtocolPackage HeaterData;
 
@@ -351,6 +352,10 @@ void loop()
   //
   sRxData BlueWireData;
 
+  // calc elapsed time since last rxd byte
+  // used to detect no OEM controller, or the start of an OEM frame sequence
+  unsigned long RxTimeElapsed = timenow - lastRxTime;
+
   if (BlueWireSerial.available()) {
     // Data is avaialable, read and store it now, use it later
     // Note that if not in a recognised data receive frame state, the data 
@@ -360,10 +365,6 @@ void loop()
     lastRxTime = timenow;    // tickle last rx time, for rx data timeout purposes
   } 
 
-
-  // calc elapsed time since last rxd byte
-  // used to detect no OEM controller, or the start of an OEM frame sequence
-  unsigned long RxTimeElapsed = timenow - lastRxTime;
 
   // precautionary state machine action if all 24 bytes were not received 
   // whilst expecting a frame from the blue wire
@@ -410,6 +411,7 @@ void loop()
       // Detect the possible start of a new frame sequence from an OEM controller
       // This will be the first activity for considerable period on the blue wire
       // The heater always responds to a controller frame, but otherwise never by itself
+      hasHtrData = false;
       if(RxTimeElapsed >= 970) {
         // have not seen any receive data for a second.
         // OEM controller is probably not connected. 
@@ -424,7 +426,7 @@ void loop()
 
 #if SUPPORT_OEM_CONTROLLER == 1
       if(BlueWireData.available() && (RxTimeElapsed > RX_DATA_TIMOUT+10)) {  
-#ifdef REPORT_OEM_RESYNC
+#if REPORT_OEM_RESYNC == 1
         DebugPort.print("Re-sync'd with OEM Controller. ");
         DebugPort.print(RxTimeElapsed);
         DebugPort.println("ms Idle time.");
@@ -433,6 +435,7 @@ void loop()
         CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
         //
         //  ** IMPORTANT - we must drop through to OEMCtrlRx *NOW* (skipping break) **
+        //  **             otherwise the first byte will be lost!                   **
         //
       }
       else {
@@ -475,7 +478,6 @@ void loop()
       // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
       // handling at the client side, moderate OEM Bluetooth delivery
       if(OEMCtrlFrame.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
-//        Bluetooth.sendFrame("[OEM]", OEMCtrlFrame, TERMINATE_OEM_LINE);
         OEMCtrlFrame.setTime();
       }
       else {
@@ -507,8 +509,10 @@ void loop()
 
       // test for valid CRC, abort and restarts Serial1 if invalid
       if(!validateFrame(HeaterFrame1, "RX1")) {
+        hasHtrData = false;
         break;
       }
+      hasHtrData = true;
 
       // received heater frame (after controller message), report
     
@@ -521,7 +525,6 @@ void loop()
       // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
       // handling at the client side, moderate OEM Bluetooth delivery
       if(HeaterFrame1.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
-//        Bluetooth.sendFrame("[HTR]", HeaterFrame1, true);
         HeaterFrame1.setTime();
       }
       else {
@@ -542,10 +545,7 @@ void loop()
         CommState.set(CommStates::BTC_Tx);
       }
       else {
-//        CommState.set(CommStates::Idle);    // "Listen Only" input is  held low, don't send out Tx
         HeaterData.set(HeaterFrame1, OEMCtrlFrame);
-//        pRxFrame = &HeaterFrame1;
-//        pTxFrame = &OEMCtrlFrame;
         CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send out Tx
       }
       break;
@@ -555,11 +555,11 @@ void loop()
       // Handle time interval where we send data to the blue wire
       lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
       if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
-        if(!hasOEMController) {
+/*        if(!hasOEMController) {
           // only convey this frames to Bluetooth when NOT using an OEM controller!
 //          Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
 //          Bluetooth.send( createJSON("RunState", 1.50 ) );
-        }
+        }*/
         CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
       }
       break;
@@ -598,8 +598,10 @@ void loop()
 
       // test for valid CRC, abort and restarts Serial1 if invalid
       if(!validateFrame(HeaterFrame2, "RX2")) {
+        hasHtrData = false;
         break;
       }
+      hasHtrData = true;
 
       // received heater frame (after our control message), report
 
@@ -607,15 +609,13 @@ void loop()
       // if abnormal transitions, introduce a smart error!
       SmartError.monitor(HeaterFrame2);
 
-      delay(5);
+/*      delay(5);
       if(!hasOEMController) {
         // only convey these frames to Bluetooth when NOT using an OEM controller!
 //        Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
-      }
+      }*/
       CommState.set(CommStates::TemperatureRead);
       HeaterData.set(HeaterFrame2, TxManage.getFrame());
-//      pRxFrame = &HeaterFrame2;
-//      pTxFrame = &TxManage.getFrame();
       break;
 
     case CommStates::TemperatureRead:
@@ -636,7 +636,7 @@ void loop()
         ScreenManager.reqUpdate();
       }
       CommState.set(CommStates::Idle);
-      updateJsonBT();
+      updateJSONclients();
       break;
   }  // switch(CommState)
 
@@ -892,12 +892,12 @@ void checkDebugCommands()
   }
 }
 
-void updateJsonBT()
+void updateJSONclients()
 {
   char jsonStr[600];
 
   if(makeJsonString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
-    DebugPort.print("JSON send: "); DebugPort.println(Str);
+    DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
     Bluetooth.send( jsonStr );
     sendWebServerString( jsonStr );
   }
@@ -907,4 +907,21 @@ void updateJsonBT()
 void resetJSONmoderator()
 {
   JSONmoderator.reset();
+}
+
+
+const char* getControllerStat()
+{
+  if(hasHtrData) {
+    if(hasOEMController)
+      return "OEM,Htr";
+    else
+      return "BTC,Htr";
+  }
+  else {
+    if(hasOEMController)
+      return "OEM";
+    else
+      return "BTC";
+  }
 }

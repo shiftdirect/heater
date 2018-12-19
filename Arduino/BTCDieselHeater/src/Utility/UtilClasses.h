@@ -37,11 +37,15 @@ public:
   };
 
   CommStates() {
-    set(Idle);
+    m_State = Idle;
+    m_Count = 0;
   }
   void set(eCS eState) {
     m_State = eState;
     m_Count = 0;
+#if SHOW_STATE_MACHINE_TRANSITIONS == 1
+    DebugPort.print("State");DebugPort.println(m_State);
+#endif
   }
   eCS get() {
     return m_State;

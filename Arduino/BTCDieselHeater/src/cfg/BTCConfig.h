@@ -90,5 +90,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Blue wire handling
 //
-#define SUPPORT_OEM_CONTROLLER 1
-
+#define SUPPORT_OEM_CONTROLLER 1           /* 0=we send without regard to an OEM's data, 1=co-exist with OEM controller */
+#define REPORT_OEM_RESYNC 0                /* report idle time if OEM controller detected */
+#define SHOW_STATE_MACHINE_TRANSITIONS 0   /* state machine changes reported to DebugPort */

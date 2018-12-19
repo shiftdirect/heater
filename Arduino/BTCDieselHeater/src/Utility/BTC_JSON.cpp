@@ -159,6 +159,7 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("Timer2Stop", getTimerStr(1, 1), root );
   bSend |= moderator.addJson("Timer2Days", getTimerStr(1, 2), root );
   bSend |= moderator.addJson("Timer2Repeat", getTimerStr(1, 3), root );
+  bSend |= moderator.addJson("BluewireStat", getControllerStat(), root );
 
   if(bSend) {
 		root.printTo(opStr, len);
