@@ -27,6 +27,7 @@ const char* MAIN_PAGE PROGMEM = R"=====(
 <html lang="en">
   <head>
     <meta charset="utf-8"/>
+    <link rel="icon" href="data;,">
     <script>
 
       var Socket;
