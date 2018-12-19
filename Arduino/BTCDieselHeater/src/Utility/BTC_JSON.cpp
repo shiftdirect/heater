@@ -24,13 +24,10 @@
 #include "../Protocol/helpers.h"
 #include "NVstorage.h"
 #include "../RTC/BTCDateTime.h"
+#include "../RTC/Timers.h"
 
 
 char defaultJSONstr[64];
-
-void decodeTimerDays(int timerID, const char* str);
-void decodeTimerTime(int ID, int stop, const char*);
-void decodeTimerRepeat(int ID, int state);
 
 
 void interpretJsonCommand(char* pLine)
@@ -128,7 +125,7 @@ void interpretJsonCommand(char* pLine)
 
 bool makeJsonString(CModerator& moderator, char* opStr, int len)
 {
-  StaticJsonBuffer<512> jsonBuffer;               // create a JSON buffer on the stack
+  StaticJsonBuffer<600> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
 	bool bSend = false;  // reset should send flag
@@ -155,6 +152,14 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getBattVoltage(), root );
 	bSend |= moderator.addJson("GlowVoltage", getHeaterInfo().getGlow_Voltage(), root );
 	bSend |= moderator.addJson("GlowCurrent", getHeaterInfo().getGlow_Current(), root );
+  bSend |= moderator.addJson("Timer1Start", getTimerStr(0, 0), root );
+  bSend |= moderator.addJson("Timer1Stop", getTimerStr(0, 1), root );
+  bSend |= moderator.addJson("Timer1Days", getTimerStr(0, 2), root );
+  bSend |= moderator.addJson("Timer1Repeat", getTimerStr(0, 3), root );
+  bSend |= moderator.addJson("Timer2Start", getTimerStr(1, 0), root );
+  bSend |= moderator.addJson("Timer2Stop", getTimerStr(1, 1), root );
+  bSend |= moderator.addJson("Timer2Days", getTimerStr(1, 2), root );
+  bSend |= moderator.addJson("Timer2Repeat", getTimerStr(1, 3), root );
 
   if(bSend) {
 		root.printTo(opStr, len);
@@ -164,47 +169,3 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 }
 
 
-void decodeTimerDays(int ID, const char* str)
-{
-  sTimer timer;
-  NVstore.getTimerInfo(ID, timer);
-  unsigned char days = 0;
-  if(strstr(str, "Next"))  {
-    days = 0x80;
-  }
-  else {
-    for(int i=0; i< 7; i++) {
-      int mask = 0x01 << i;
-      if(strstr(str, daysOfTheWeek[i]))  
-        days |= mask;
-    }
-  }
-  timer.enabled = days;
-  NVstore.setTimerInfo(ID, timer);
-}
-
-void decodeTimerTime(int ID, int stop, const char* str)
-{
-  sTimer timer;
-  NVstore.getTimerInfo(ID, timer);
-  int hour, minute;
-  if(2 == sscanf(str, "%d:%d", &hour, &minute)) {
-    if(stop) {
-      timer.stop.hour = hour;
-      timer.stop.min = minute;
-    }
-    else {
-      timer.start.hour = hour;
-      timer.start.min = minute;
-    }
-    NVstore.setTimerInfo(ID, timer);
-  }
-}
-
-void decodeTimerRepeat(int ID, int state)
-{
-  sTimer timer;
-  NVstore.getTimerInfo(ID, timer);
-  timer.repeat = state;
-  NVstore.setTimerInfo(ID, timer);
-}
