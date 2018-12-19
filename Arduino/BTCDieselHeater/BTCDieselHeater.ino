@@ -889,9 +889,9 @@ void checkDebugCommands()
 
 void updateJsonBT()
 {
-  char jsonStr[512];
+  char jsonStr[600];
 
-  if(makeJsonString(BTModerator, jsonStr, 512)) {
+  if(makeJsonString(BTModerator, jsonStr, sizeof(jsonStr))) {
     Bluetooth.send( jsonStr );
   }
 }

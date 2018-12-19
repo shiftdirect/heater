@@ -98,9 +98,9 @@ bool doWebServer(void) {
 			lastTx = millis() + 100;
 
 
-      char jsonStr[512];
+      char jsonStr[600];
 
-      if(makeJsonString(WebModerator, jsonStr, 512)) {
+      if(makeJsonString(WebModerator, jsonStr, sizeof(jsonStr))) {
   	    bTxWebData = true;              // OLED tx data animation flag
    	    webSocket.broadcastTXT(jsonStr);
       }
