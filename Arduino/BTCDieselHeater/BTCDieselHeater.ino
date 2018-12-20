@@ -928,11 +928,28 @@ void checkDebugCommands()
   }
 }
 
-
-
-const char* getControllerStat()
+// 0x00 - Normal:  BTC, with heater responding
+// 0x01 - Error:   BTC, heater not responding
+// 0x02 - Special: OEM controller & heater responding
+// 0x03 - Error:   OEM controller, heater not responding
+int getBlueWireStat()
 {
-  if(bHasHtrData) {
+  int stat = 0;
+  if(!bHasHtrData) {
+    stat |= 0x01;
+  }
+  if(bHasOEMController) {
+    stat |= 0x02;
+  }
+  return stat;
+}
+
+const char* getBlueWireStatStr()
+{
+  const char* BlueWireStates[] = { "BTC,Htr", "BTC", "OEM,Htr", "OEM" };
+
+  return BlueWireStates[getBlueWireStat()];
+/*  if(bHasHtrData) {
     if(bHasOEMController)
       return "OEM,Htr";
     else
@@ -943,7 +960,7 @@ const char* getControllerStat()
       return "OEM";
     else
       return "BTC";
-  }
+  }*/
 }
 
 bool hasOEMcontroller()

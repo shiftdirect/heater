@@ -45,8 +45,9 @@ extern const CProtocolPackage& getHeaterInfo();
 extern void interpretJsonCommand(char* pLine);
 extern void resetWebModerator();
 extern void resetJSONmoderator();
-extern const char* getControllerStat();
+extern const char* getBlueWireStatStr();
 extern bool hasOEMcontroller();
+extern int getBlueWireStat();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B
