@@ -56,6 +56,7 @@
 #define TERMINATE_BTC_LINE 0              /* when an OEM controller does not exist */
 #define REPORT_OEM_RESYNC 0               /* report idle time if OEM controller detected */
 #define SHOW_STATE_MACHINE_TRANSITIONS 0  /* state machine changes reported to DebugPort */
+#define REPORT_BLUEWIRE_RECYCLES 1        /* best default on as this is abnormal behaviour can toggle using <W> on debug console */
 
 ///////////////////////////////////////////////////////////////////////////////
 // LED monitoring

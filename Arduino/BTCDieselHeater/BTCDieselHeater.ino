@@ -158,6 +158,7 @@ bool bHasOEMController = false;
 bool bHasHtrData = false;
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
+bool bReportRecyleEvents = REPORT_BLUEWIRE_RECYCLES;
 
 CProtocolPackage HeaterData;
 
@@ -375,23 +376,25 @@ void loop()
 
       if(RxTimeElapsed >= moderator) {
         moderator += 10;
-        DebugPort.print(RxTimeElapsed);
-        DebugPort.print("ms - ");
+        if(bReportRecyleEvents) {
+          DebugPort.print(RxTimeElapsed);
+          DebugPort.print("ms - ");
+        }
         if(CommState.is(CommStates::OEMCtrlRx)) {
-          DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
           bHasOEMController = false;
+          if(bReportRecyleEvents) DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
         }
         else if(CommState.is(CommStates::HeaterRx1)) {
-          DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
           bHasHtrData = false;
+          if(bReportRecyleEvents) DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
         }
         else {
-          DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
           bHasHtrData = false;
+          if(bReportRecyleEvents) DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
         }
       }
 
-      DebugPort.println("Recycling blue wire serial interface");
+      if(bReportRecyleEvents) DebugPort.println("Recycling blue wire serial interface");
       initBlueWireSerial();
       CommState.set(CommStates::TemperatureRead);    // revert to idle mode, after passing thru temperature mode
     }
@@ -829,12 +832,13 @@ void checkDebugCommands()
       if(rxVal == ' ') {   // SPACE to bring up menu
         DebugPort.print("\014");
         DebugPort.println("MENU options");
-        DebugPort.println("<+> - request heater turns ON");
-        DebugPort.println("<-> - request heater turns OFF");
-        DebugPort.println("<B> - toggle raw blue wire data reporting");
-        DebugPort.println("<J> - toggle output JSON reporting");
-        DebugPort.println("<R> - restart the ESP");
         DebugPort.println("");
+        DebugPort.print("  <B> - toggle raw blue wire data reporting, currently "); DebugPort.println(bReportBlueWireData ? "ON" : "OFF");
+        DebugPort.print("  <J> - toggle output JSON reporting, currently "); DebugPort.println(bReportJSONData ? "ON" : "OFF");
+        DebugPort.print("  <W> - toggle reporting of blue wire recycling event, currently "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
+        DebugPort.println("  <+> - request heater turns ON");
+        DebugPort.println("  <-> - request heater turns OFF");
+        DebugPort.println("  <R> - restart the ESP");
         DebugPort.println("");
         DebugPort.println("");
         DebugPort.println("");
@@ -869,12 +873,16 @@ void checkDebugCommands()
       }
 #endif
       else if(rxVal == 'b') { 
-        DebugPort.println("Toggling raw blue wire data reporting");
         bReportBlueWireData = !bReportBlueWireData;
+        DebugPort.print("Toggled raw blue wire data reporting "); DebugPort.println(bReportBlueWireData ? "ON" : "OFF");
       }
       else if(rxVal == 'j')  {
-        DebugPort.println("Toggling JSON data reporting");
         bReportJSONData = !bReportJSONData;
+        DebugPort.print("Toggled JSON data reporting "); DebugPort.println(bReportJSONData ? "ON" : "OFF");
+      }
+      else if(rxVal == 'w')  {
+        bReportRecyleEvents = !bReportRecyleEvents;
+        DebugPort.print("Toggled blue wire recycling event reporting "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
       }
       else if(rxVal == '+') {
         TxManage.queueOnRequest();
