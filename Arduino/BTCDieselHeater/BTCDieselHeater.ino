@@ -156,9 +156,11 @@ sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool bHasOEMController = false;
 bool bHasHtrData = false;
+
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
 bool bReportRecyleEvents = REPORT_BLUEWIRE_RECYCLES;
+bool bReportOEMresync = REPORT_OEM_RESYNC;
 
 CProtocolPackage HeaterData;
 
@@ -332,7 +334,7 @@ void loop()
   // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {
     if(!bBTconnected) {
-      resetJSONmoderator();  // force full send upoon BT client connect
+      resetJSONmoderator();  // force full send upon BT client connect
     }
     bBTconnected = true;
   }
@@ -341,7 +343,7 @@ void loop()
   }
   // manage changes in number of wifi clients
   if(isWebServerClientChange()) {
-    resetJSONmoderator();  // force full send upoon number of Wifi clients change
+    resetJSONmoderator();  // force full send upon number of Wifi clients change
   }
 
 
@@ -382,19 +384,23 @@ void loop()
         }
         if(CommState.is(CommStates::OEMCtrlRx)) {
           bHasOEMController = false;
-          if(bReportRecyleEvents) DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
+          if(bReportRecyleEvents) 
+            DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
         }
         else if(CommState.is(CommStates::HeaterRx1)) {
           bHasHtrData = false;
-          if(bReportRecyleEvents) DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
+          if(bReportRecyleEvents) 
+            DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
         }
         else {
           bHasHtrData = false;
-          if(bReportRecyleEvents) DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
+          if(bReportRecyleEvents) 
+            DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
         }
       }
 
-      if(bReportRecyleEvents) DebugPort.println("Recycling blue wire serial interface");
+      if(bReportRecyleEvents) 
+        DebugPort.println("Recycling blue wire serial interface");
       initBlueWireSerial();
       CommState.set(CommStates::TemperatureRead);    // revert to idle mode, after passing thru temperature mode
     }
@@ -431,11 +437,13 @@ void loop()
 
 #if SUPPORT_OEM_CONTROLLER == 1
       if(BlueWireData.available() && (RxTimeElapsed > RX_DATA_TIMOUT+10)) {  
-#if REPORT_OEM_RESYNC == 1
-        DebugPort.print("Re-sync'd with OEM Controller. ");
-        DebugPort.print(RxTimeElapsed);
-        DebugPort.println("ms Idle time.");
-#endif
+
+        if(bReportOEMresync) {
+          DebugPort.print("Re-sync'd with OEM Controller. ");
+          DebugPort.print(RxTimeElapsed);
+          DebugPort.println("ms Idle time.");
+        }
+
         bHasOEMController = true;
         CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
         //
@@ -463,13 +471,13 @@ void loop()
       // collect OEM controller frame
       if(BlueWireData.available()) {
         if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
-          CommState.set(CommStates::OEMCtrlReport);  // collected 24 bytes, move on!
+          CommState.set(CommStates::OEMCtrlValidate);  // collected 24 bytes, move on!
         }
       }
       break;
 
 
-    case CommStates::OEMCtrlReport:
+    case CommStates::OEMCtrlValidate:
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -491,13 +499,13 @@ void loop()
       // collect heater frame, always in response to an OEM controller frame
       if(BlueWireData.available()) {
         if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
-          CommState.set(CommStates::HeaterReport1);
+          CommState.set(CommStates::HeaterValidate1);
         }
       }
       break;
 
 
-    case CommStates::HeaterReport1:
+    case CommStates::HeaterValidate1:
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -559,19 +567,19 @@ void loop()
         }
         else {
           if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
-            CommState.set(CommStates::HeaterReport2);
+            CommState.set(CommStates::HeaterValidate2);
           }
         }
 #else
         if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
-          CommState.set(CommStates::HeaterReport2);
+          CommState.set(CommStates::HeaterValidate2);
         }
 #endif
       } 
       break;
 
 
-    case CommStates::HeaterReport2:
+    case CommStates::HeaterValidate2:
 #if RX_LED == 1
     digitalWrite(LED_Pin, LOW);
 #endif
@@ -835,7 +843,8 @@ void checkDebugCommands()
         DebugPort.println("");
         DebugPort.print("  <B> - toggle raw blue wire data reporting, currently "); DebugPort.println(bReportBlueWireData ? "ON" : "OFF");
         DebugPort.print("  <J> - toggle output JSON reporting, currently "); DebugPort.println(bReportJSONData ? "ON" : "OFF");
-        DebugPort.print("  <W> - toggle reporting of blue wire recycling event, currently "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
+        DebugPort.print("  <W> - toggle reporting of blue wire timeout/recycling event, currently "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
+        DebugPort.print("  <O> - toggle reporting of OEM resync event, currently "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");        
         DebugPort.println("  <+> - request heater turns ON");
         DebugPort.println("  <-> - request heater turns OFF");
         DebugPort.println("  <R> - restart the ESP");
@@ -883,6 +892,10 @@ void checkDebugCommands()
       else if(rxVal == 'w')  {
         bReportRecyleEvents = !bReportRecyleEvents;
         DebugPort.print("Toggled blue wire recycling event reporting "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
+      }
+      else if(rxVal == 'o')  {
+        bReportOEMresync = !bReportOEMresync;
+        DebugPort.print("Toggled OEM resync event reporting "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");
       }
       else if(rxVal == '+') {
         TxManage.queueOnRequest();

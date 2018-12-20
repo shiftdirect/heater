@@ -33,7 +33,7 @@ class CommStates {
 public:
   // comms states
   enum eCS { 
-    Idle, OEMCtrlRx, OEMCtrlReport, HeaterRx1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterReport2, TemperatureRead
+    Idle, OEMCtrlRx, OEMCtrlValidate, HeaterRx1, HeaterValidate1, BTC_Tx, HeaterRx2, HeaterValidate2, TemperatureRead
   };
 
 private:
