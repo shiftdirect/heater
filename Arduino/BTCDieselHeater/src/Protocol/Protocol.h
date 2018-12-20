@@ -23,6 +23,7 @@
 #define _CPROTOCOL_H_
 
 #include <Arduino.h>
+#include "../Utility/UtilClasses.h"
 
 class CProtocol {
 public:
@@ -204,9 +205,11 @@ public:
   long elapsedTime() { return millis() - lastTime; };
 };
 
+
 class CProtocolPackage {
   CProtocol Heater;
   CProtocol Controller;
+  CContextTimeStamp _timeStamp;
 public:
   void  set(const CProtocol& htr, const CProtocol& ctl) { Heater = htr; Controller = ctl; };
   int   getRunState() const { return Heater.getRunState(); };
@@ -231,6 +234,9 @@ public:
   float getGlowPlug_Power() const { return Heater.getGlowPlug_Current() * Heater.getGlowPlug_Voltage(); };
   float getGlow_Voltage() const { return Heater.getGlowPlug_Voltage(); };
   float getGlow_Current() const { return Heater.getGlowPlug_Current(); };
+
+  void  setRefTime();
+  void  reportFrames(bool isOEM);
 };
 
 

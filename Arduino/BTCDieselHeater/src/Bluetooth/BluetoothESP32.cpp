@@ -87,32 +87,15 @@ CBluetoothESP32Classic::check()
 }
 
 void 
-CBluetoothESP32Classic::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
+CBluetoothESP32Classic::send(const char* Str)
 {
-  char fullMsg[32];
-
-  // report to debug port
-  CBluetoothAbstract::sendFrame(pHdr, Frame, lineterm);
-  
-  delay(40);
   if(isConnected()) {
 
-    if(Frame.verifyCRC()) {
 #if BT_LED == 1     
-      digitalWrite(LED_Pin, !digitalRead(LED_Pin)); // toggle LED
+    digitalWrite(LED_Pin, !digitalRead(LED_Pin)); // toggle LED
 #endif
-      int len = strlen(pHdr);
-      if(len < 8) {
-        strcpy(fullMsg, pHdr);
-        memcpy(&fullMsg[len], Frame.Data, 24);
-
-        SerialBT.write((uint8_t*)fullMsg, 24+len);
-      }
-      delay(10);
-    }
-    else {
-      DebugPort.println("Data not sent to Bluetooth, CRC error!");
-    }
+    SerialBT.write((uint8_t*)Str, strlen(Str));
+    delay(10);
   }
   else {
     DebugPort.println("No Bluetooth client");
@@ -244,7 +227,7 @@ CBluetoothESP32BLE::begin()
   DebugPort.println("Awaiting a client to notify...");
 }
 
-void 
+/*void 
 CBluetoothESP32BLE::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
   char fullMsg[32];
@@ -268,6 +251,29 @@ CBluetoothESP32BLE::sendFrame(const char* pHdr, const CProtocol& Frame, bool lin
     else {
       DebugPort.println("Data not sent to Bluetooth, CRC error!");
     }
+  }
+  else {
+    DebugPort.println("No Bluetooth client");
+#if BT_LED == 1     
+    digitalWrite(LED_Pin, 0);
+#endif
+  }
+}
+*/
+void 
+CBluetoothESP32BLE::send(const char* Str)
+{
+  char fullMsg[32];
+
+  if(isConnected()) {
+
+#if BT_LED == 1     
+    digitalWrite(LED_Pin, !digitalRead(LED_Pin)); // toggle LED
+#endif
+    std::string txData = Str;
+
+    BLE_Send(txData);
+    delay(10);
   }
   else {
     DebugPort.println("No Bluetooth client");

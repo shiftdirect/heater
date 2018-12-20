@@ -151,9 +151,14 @@ CBluetoothHC05::isConnected()
 void
 CBluetoothHC05::send(const char* Str)
 {
-  HC05_SerialPort.print(Str);
+  if(isConnected()) {
+    HC05_SerialPort.print(Str);
+  }
+  else {
+//    DebugPort.print("No Bluetooth client");
+  }
 }
-
+/*
 void
 CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
 {
@@ -186,6 +191,7 @@ CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineter
   if(lineterm)
     DebugPort.println("");
 }
+*/
 
 void 
 CBluetoothHC05::openSerial(int baudrate)

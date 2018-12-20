@@ -32,18 +32,10 @@ class CProtocol;
 class CBluetoothAbstract {
 protected:
   sRxLine _rxLine;
-  CContextTimeStamp _timeStamp;
   virtual void foldbackDesiredTemp() {};
 public:
   virtual void begin() {};
-  virtual void setRefTime() { 
-    _timeStamp.setRefTime(); 
-  };
   virtual void send(const char* Str) {};
-  virtual void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true) {
-    _timeStamp.report(pHdr);
-    DebugReportFrame(pHdr, Frame, lineterm ? "\r\n" : "   ");
-  };
   virtual void check() {};
   virtual void collectRxData(char rxVal) {
     // provide common behviour for bytes received from a bluetooth client

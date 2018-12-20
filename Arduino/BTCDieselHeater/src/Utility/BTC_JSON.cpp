@@ -25,9 +25,13 @@
 #include "NVstorage.h"
 #include "../RTC/BTCDateTime.h"
 #include "../RTC/Timers.h"
+#include "../Bluetooth/BluetoothAbstract.h"
+#include "../WiFi/BTCWebServer.h"
+#include "../cfg/BTCConfig.h"
 
 
 char defaultJSONstr[64];
+CModerator JSONmoderator;
 
 
 void interpretJsonCommand(char* pLine)
@@ -49,7 +53,9 @@ void interpretJsonCommand(char* pLine)
 	for(it = obj.begin(); it != obj.end(); ++it) {
 
 		if(strcmp("TempDesired", it->key) == 0) {
-      reqTemp(it->value.as<unsigned char>());
+      if(!reqTemp(it->value.as<unsigned char>())) {  // this request is blocked if OEM controller active
+        JSONmoderator.reset("TempDesired");
+      }
 		}
 		else if(strcmp("RunState", it->key) == 0) {
 			if(it->value.as<unsigned char>()) {
@@ -72,7 +78,9 @@ void interpretJsonCommand(char* pLine)
 			setFanMax(it->value.as<short>());
 		}
 		else if(strcmp("Thermostat", it->key) == 0) {
-			setThermostatMode(it->value.as<unsigned char>());
+			if(!setThermostatMode(it->value.as<unsigned char>())) {  // this request is blocked if OEM controller active
+        JSONmoderator.reset("ThermoStat");   
+      }
 		}
 		else if(strcmp("NVsave", it->key) == 0) {
       if(it->value.as<int>() == 8861)
@@ -167,5 +175,26 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 
   return bSend;
 }
+
+
+void updateJSONclients(bool report)
+{
+  char jsonStr[600];
+
+  if(makeJsonString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
+    if (report) {
+      DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
+    }
+    getBluetoothClient().send( jsonStr );
+    sendWebServerString( jsonStr );
+  }
+}
+
+
+void resetJSONmoderator()
+{
+  JSONmoderator.reset();
+}
+
 
 

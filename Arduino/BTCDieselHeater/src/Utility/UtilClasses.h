@@ -24,9 +24,9 @@
 
 #include <Arduino.h>
 #include <string.h>
-#include "../Protocol/Protocol.h"
 #include "DebugPort.h"
 
+class CProtocol;
 
 // a class to track the blue wire receive / transmit states
 class CommStates {
@@ -36,47 +36,26 @@ public:
     Idle, OEMCtrlRx, OEMCtrlReport, HeaterRx1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterReport2, TemperatureRead
   };
 
+private:
+  eCS m_State;
+  int m_Count;
+
+public:
   CommStates() {
     m_State = Idle;
     m_Count = 0;
   }
-  void set(eCS eState) {
-    m_State = eState;
-    m_Count = 0;
-#if SHOW_STATE_MACHINE_TRANSITIONS == 1
-    DebugPort.print("State");DebugPort.println(m_State);
-#endif
-  }
+  void set(eCS eState);
   eCS get() {
     return m_State;
   }
   bool is(eCS eState) {
     return m_State == eState;
   }
-  bool collectData(CProtocol& Frame, unsigned char val, int limit = 24) {   // returns true when buffer filled
-    Frame.Data[m_Count++] = val;
-    return m_Count >= limit;
-  }
-  bool collectDataEx(CProtocol& Frame, unsigned char val, int limit = 24) {   // returns true when buffer filled
-    // guarding against rogue rx kernel buffer stutters....
-    if((m_Count == 0) && (val != 0x76)) {
-      DebugPort.println("First heater byte not 0x76 - SKIPPING");
-      return false;
-    }
-    Frame.Data[m_Count++] = val;
-    return m_Count >= limit;
-  }
-  bool checkValidStart(unsigned char val)
-  {
-    if(m_Count) 
-      return true;
-    else 
-      return val == 0x76;
-  }
+  bool collectData(CProtocol& Frame, unsigned char val, int limit = 24);
+  bool collectDataEx(CProtocol& Frame, unsigned char val, int limit = 24);
+  bool checkValidStart(unsigned char val);
 
-private:
-  eCS m_State;
-  int m_Count;
 };
 
 
@@ -137,9 +116,9 @@ public:
   void setRefTime() { 
     refTime = millis(); 
   };
-  void report(const char* pHdr) {
+  void report(bool isDelta) {
     char msg[32];
-    if(strncmp(pHdr, "[HTR]", 5) == 0) {
+    if(isDelta) {
       long delta = millis() - prevTime;
       sprintf(msg, "%+8ldms ", delta);
     }
@@ -147,6 +126,12 @@ public:
       prevTime = millis();
       sprintf(msg, "%8dms ", prevTime - refTime);
     }
+    DebugPort.print(msg);
+  };
+  void report() {
+    char msg[32];
+    prevTime = millis();
+    sprintf(msg, "%8dms ", prevTime - refTime);
     DebugPort.print(msg);
   };
 };

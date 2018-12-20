@@ -26,10 +26,10 @@
 extern void  ToggleOnOff();
 extern void  requestOn();
 extern void  requestOff();
-extern void  reqTempDelta(int delta);
-extern void  reqTemp(unsigned char newTemp);
-extern void  reqThermoToggle();
-extern void  setThermostatMode(unsigned char);
+extern bool  reqTempDelta(int delta);
+extern bool  reqTemp(unsigned char newTemp);
+extern bool  reqThermoToggle();
+extern bool  setThermostatMode(unsigned char);
 extern void  reqPumpPrime(bool on);
 extern float getActualTemperature();
 extern int   getSetTemp();

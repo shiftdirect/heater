@@ -24,6 +24,7 @@
 
 #include <map>
 #include <ArduinoJSON.h>
+#include "DebugPort.h"
 
 template <class T>
 class TModerator {
@@ -32,6 +33,7 @@ public:
   bool shouldSend(const char* name, T value);
   bool addJson(const char* name, T value, JsonObject& root);
 	void reset();
+	void reset(const char* name);
 };
 
 template<class T>
@@ -70,6 +72,21 @@ void TModerator<T>::reset()
       it->second = it->second+100;
     }
   } 
+}
+
+template<class T>
+void TModerator<T>::reset(const char* name)
+{
+  auto it = Memory.find(name);
+  if(it != Memory.end()) {
+    DebugPort.print("Resetting moderator: \""); DebugPort.print(name); DebugPort.println("\"");
+    if(std::is_pointer<T>::value) {
+      it->second = NULL;
+    }
+    else {
+      it->second = it->second+100;
+    }
+  }
 }
 
 class CModerator {
@@ -112,6 +129,12 @@ public:
     fModerator.reset();
     ucModerator.reset();
     szModerator.reset();
+  };
+  void reset(const char* name) {
+    iModerator.reset(name);
+    fModerator.reset(name);
+    ucModerator.reset(name);
+    szModerator.reset(name);
   };
 };
 

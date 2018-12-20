@@ -131,7 +131,6 @@ void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
-void updateJSONclients();
 
 // DS18B20 temperature sensor support
 OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
@@ -152,12 +151,13 @@ CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
 TelnetSpy DebugPort;
-CModerator JSONmoderator;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool hasOEMController = false;
 bool hasHtrData = false;
+bool bReportBlueWireData = REPORT_RAW_DATA;
+bool bReportJSONData = REPORT_JSON_TRANSMIT;
 
 CProtocolPackage HeaterData;
 
@@ -379,18 +379,20 @@ void loop()
         DebugPort.print("ms - ");
         if(CommState.is(CommStates::OEMCtrlRx)) {
           DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
+          hasOEMController = false;
         }
         else if(CommState.is(CommStates::HeaterRx1)) {
           DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
+          hasHtrData = false;
         }
         else {
           DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
+          hasHtrData = false;
         }
       }
 
       DebugPort.println("Recycling blue wire serial interface");
       initBlueWireSerial();
-//      CommState.set(CommStates::Idle);  // revert to idle mode, after passing thru temperature mode
       CommState.set(CommStates::TemperatureRead);    // revert to idle mode, after passing thru temperature mode
     }
   }
@@ -473,18 +475,8 @@ void loop()
         break;
       }
 
-      // filled OEM controller frame, report
-      // echo received OEM controller frame over Bluetooth, using [OEM] header
-      // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
-      // handling at the client side, moderate OEM Bluetooth delivery
-      if(OEMCtrlFrame.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
-        OEMCtrlFrame.setTime();
-      }
-      else {
-#if REPORT_SUPPRESSED_OEM_DATA_FRAMES != 0
-        DebugPort.println("Suppressed delivery of OEM frame");
-#endif
-      }
+      // filled OEM controller frame
+      OEMCtrlFrame.setTime();
       CommState.set(CommStates::HeaterRx1);
       break;
 
@@ -518,22 +510,12 @@ void loop()
     
       // do some monitoring of the heater state variable
       // if abnormal transitions, introduce a smart error!
-      // This will also cancel ON/OFF requests if runstate in startup/shutdown
+      // This routine also cancels ON/OFF requests if runstate in startup/shutdown periods
       SmartError.monitor(HeaterFrame1);
 
-      // echo heater reponse data to Bluetooth client
-      // note that Rotary Knob and LED OEM controllers can flood the Bluetooth 
-      // handling at the client side, moderate OEM Bluetooth delivery
-      if(HeaterFrame1.elapsedTime() > OEM_TO_BLUETOOTH_MODERATION_TIME) {
-        HeaterFrame1.setTime();
-      }
-      else {
-#if REPORT_SUPPRESSED_OEM_DATA_FRAMES != 0
-        DebugPort.println("Suppressed delivery of OEM heater response frame");
-#endif
-      }
+      HeaterFrame1.setTime();
 
-      if(digitalRead(ListenOnlyPin)) {
+      if(digitalRead(ListenOnlyPin)) {  // pin open, pulled high (STANDARD OPERATION)
         bool isBTCmaster = false;
         while(BlueWireSerial.available()) {
           DebugPort.println("DUMPED ROGUE RX DATA");
@@ -544,7 +526,7 @@ void loop()
         TxManage.Start(timenow);
         CommState.set(CommStates::BTC_Tx);
       }
-      else {
+      else {   // pin shorted to ground
         HeaterData.set(HeaterFrame1, OEMCtrlFrame);
         CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send out Tx
       }
@@ -555,11 +537,6 @@ void loop()
       // Handle time interval where we send data to the blue wire
       lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
       if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
-/*        if(!hasOEMController) {
-          // only convey this frames to Bluetooth when NOT using an OEM controller!
-//          Bluetooth.sendFrame("[BTC]", TxManage.getFrame(), TERMINATE_BTC_LINE);    //  BTC => Bluetooth Controller :-)
-//          Bluetooth.send( createJSON("RunState", 1.50 ) );
-        }*/
         CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
       }
       break;
@@ -596,7 +573,7 @@ void loop()
     digitalWrite(LED_Pin, LOW);
 #endif
 
-      // test for valid CRC, abort and restarts Serial1 if invalid
+      // test for valid CRC, abort and restart Serial1 if invalid
       if(!validateFrame(HeaterFrame2, "RX2")) {
         hasHtrData = false;
         break;
@@ -609,11 +586,6 @@ void loop()
       // if abnormal transitions, introduce a smart error!
       SmartError.monitor(HeaterFrame2);
 
-/*      delay(5);
-      if(!hasOEMController) {
-        // only convey these frames to Bluetooth when NOT using an OEM controller!
-//        Bluetooth.sendFrame("[HTR]", HeaterFrame2, true);    // pin not grounded, suppress duplicate to BT
-      }*/
       CommState.set(CommStates::TemperatureRead);
       HeaterData.set(HeaterFrame2, TxManage.getFrame());
       break;
@@ -636,7 +608,9 @@ void loop()
         ScreenManager.reqUpdate();
       }
       CommState.set(CommStates::Idle);
-      updateJSONclients();
+      updateJSONclients(bReportJSONData);
+      if(bReportBlueWireData) 
+        HeaterData.reportFrames(hasOEMController);
       break;
   }  // switch(CommState)
 
@@ -680,9 +654,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
     DebugPort.print("\007Bad CRC detected for ");
     DebugPort.print(name);
     DebugPort.println(" frame - restarting blue wire's serial port");
-    char header[16];
-    sprintf(header, "[CRC_%s]", name);
-    DebugReportFrame(header, frame, "\r\n");
+    DebugReportFrame("BAD CRC:", frame, "\r\n");
     initBlueWireSerial();
     CommState.set(CommStates::Idle);
     return false;
@@ -695,14 +667,14 @@ void requestOn()
 {
   TxManage.queueOnRequest();
   SmartError.reset();
-  Bluetooth.setRefTime();
+  HeaterData.setRefTime();
 }
 
 void requestOff()
 {
   TxManage.queueOffRequest();
   SmartError.inhibit();
-  Bluetooth.setRefTime();
+  HeaterData.setRefTime();
 }
 
 void ToggleOnOff()
@@ -718,8 +690,11 @@ void ToggleOnOff()
 }
 
 
-void reqTemp(unsigned char newTemp)
+bool reqTemp(unsigned char newTemp)
 {
+  if(hasOEMController)
+    return false;
+
   unsigned char max = DefaultBTCParams.getTemperature_Max();
   unsigned char min = DefaultBTCParams.getTemperature_Min();
   if(newTemp >= max)
@@ -730,13 +705,14 @@ void reqTemp(unsigned char newTemp)
   NVstore.setDesiredTemperature(newTemp);
 
   ScreenManager.reqUpdate();
+  return true;
 }
 
-void reqTempDelta(int delta)
+bool reqTempDelta(int delta)
 {
   unsigned char newTemp = getSetTemp() + delta;
 
-  reqTemp(newTemp);
+  return reqTemp(newTemp);
 }
 
 int getSetTemp()
@@ -744,14 +720,18 @@ int getSetTemp()
   return NVstore.getDesiredTemperature();
 }
 
-void reqThermoToggle()
+bool reqThermoToggle()
 {
-  setThermostatMode(getThermostatMode() ? 0 : 1);
+  return setThermostatMode(getThermostatMode() ? 0 : 1);
 }
 
-void setThermostatMode(unsigned char val)
+bool setThermostatMode(unsigned char val)
 {
+  if(hasOEMController)
+    return false;
+
   NVstore.setThermostatMode(val);
+  return true;
 }
 
 
@@ -832,49 +812,83 @@ void checkDebugCommands()
 
     char rxVal = DebugPort.read();
 
+    rxVal = toLowerCase(rxVal);
+
+#ifdef PROTOCOL_INVESTIGATION    
     bool bSendVal = false;
+#endif
     if(isControl(rxVal)) {    // "End of Line"
+#ifdef PROTOCOL_INVESTIGATION    
       String convert(PCline.Line);
       val = convert.toInt();
       bSendVal = true;
       PCline.clear();
+#endif
     }
     else {
-      if(isDigit(rxVal)) {
+      if(rxVal == ' ') {   // SPACE to bring up menu
+        DebugPort.print("\014");
+        DebugPort.println("MENU options");
+        DebugPort.println("<+> - request heater turns ON");
+        DebugPort.println("<-> - request heater turns OFF");
+        DebugPort.println("<B> - toggle raw blue wire data reporting");
+        DebugPort.println("<J> - toggle output JSON reporting");
+        DebugPort.println("<R> - restart the ESP");
+        DebugPort.println("");
+        DebugPort.println("");
+        DebugPort.println("");
+        DebugPort.println("");
+        DebugPort.println("");
+        DebugPort.println("");
+        DebugPort.println("");
+        DebugPort.println("");
+      }
+#ifdef PROTOCOL_INVESTIGATION    
+      else if(isDigit(rxVal)) {
         PCline.append(rxVal);
       }
-      else if((rxVal == 'p') || (rxVal == 'P')) {
+      else if(rxVal == 'p') {
         DebugPort.println("Test Priming Byte... ");
         mode = 1;
       }
-      else if((rxVal == 'g') || (rxVal == 'G')) {
+      else if(rxVal == 'g') {
         DebugPort.println("Test glow power byte... ");
         mode = 2;
       }
-      else if((rxVal == 'i') || (rxVal == 'I')) {
+      else if(rxVal == 'i') {
         DebugPort.println("Test fan bytes");
         mode = 3;
-      }
-      else if(rxVal  == '+') {
-        TxManage.queueOnRequest();
-        Bluetooth.setRefTime();             // reset time reference "run time"
-      }
-      else if(rxVal  == '-') {
-        TxManage.queueOffRequest();
-        Bluetooth.setRefTime();
       }
       else if(rxVal == ']') {
         val++;
         bSendVal = true;
       }
-      else if(rxVal  == 'r') {
-        ESP.restart();            // reset the esp
-      }
       else if(rxVal == '[') {
         val--;
         bSendVal = true;
       }
+#endif
+      else if(rxVal == 'b') { 
+        DebugPort.println("Toggling raw blue wire data reporting");
+        bReportBlueWireData = !bReportBlueWireData;
+      }
+      else if(rxVal == 'j')  {
+        DebugPort.println("Toggling JSON data reporting");
+        bReportJSONData = !bReportJSONData;
+      }
+      else if(rxVal == '+') {
+        TxManage.queueOnRequest();
+        HeaterData.setRefTime();
+      }
+      else if(rxVal == '-') {
+        TxManage.queueOffRequest();
+        HeaterData.setRefTime();
+      }
+      else if(rxVal == 'r') {
+        ESP.restart();            // reset the esp
+      }
     }
+#ifdef PROTOCOL_INVESTIGATION    
     if(bSendVal) {
       switch(mode) {
         case 1:
@@ -889,25 +903,10 @@ void checkDebugCommands()
           break;
       }
     }
+#endif
   }
 }
 
-void updateJSONclients()
-{
-  char jsonStr[600];
-
-  if(makeJsonString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
-    DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
-    Bluetooth.send( jsonStr );
-    sendWebServerString( jsonStr );
-  }
-}
-
-
-void resetJSONmoderator()
-{
-  JSONmoderator.reset();
-}
 
 
 const char* getControllerStat()

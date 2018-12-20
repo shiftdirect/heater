@@ -44,13 +44,6 @@
 #define USE_WEBSERVER 1
 
 
-///////////////////////////////////////////////////////////////////////////////
-// limit rate of Bluetooth delivery from enthusiastic OEM controllers
-//
-#define OEM_TO_BLUETOOTH_MODERATION_TIME  700
-// show when we did moderate data frames to bluetooth
-#define REPORT_SUPPRESSED_OEM_DATA_FRAMES 0
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // debug reporting options
@@ -58,8 +51,11 @@
 // true: each frame of data is reported on a new lines
 // false: controller, then heater response frmaes are reported on a single line (excel CSV worthy!)
 //
-#define TERMINATE_OEM_LINE false    /* when an OEM controller exists */
-#define TERMINATE_BTC_LINE false    /* when an OEM controller does not exist */
+#define REPORT_RAW_DATA 0                 /* can toggle using <B> from debug console */
+#define TERMINATE_OEM_LINE 0              /* when an OEM controller exists */
+#define TERMINATE_BTC_LINE 0              /* when an OEM controller does not exist */
+#define REPORT_OEM_RESYNC 0               /* report idle time if OEM controller detected */
+#define SHOW_STATE_MACHINE_TRANSITIONS 0  /* state machine changes reported to DebugPort */
 
 ///////////////////////////////////////////////////////////////////////////////
 // LED monitoring
@@ -91,5 +87,9 @@
 // Blue wire handling
 //
 #define SUPPORT_OEM_CONTROLLER 1           /* 0=we send without regard to an OEM's data, 1=co-exist with OEM controller */
-#define REPORT_OEM_RESYNC 0                /* report idle time if OEM controller detected */
-#define SHOW_STATE_MACHINE_TRANSITIONS 0   /* state machine changes reported to DebugPort */
+
+///////////////////////////////////////////////////////////////////////////////
+// Communications reporting
+//
+#define REPORT_JSON_TRANSMIT 1    
+

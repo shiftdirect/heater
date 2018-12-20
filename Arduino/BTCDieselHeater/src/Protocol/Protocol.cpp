@@ -23,6 +23,7 @@
 #include "Protocol.h"
 #include "../Utility/DebugPort.h"
 #include "helpers.h"
+#include "../cfg/BTCConfig.h"
 
 
 unsigned short 
@@ -392,4 +393,23 @@ CProtocolPackage::getErrStateStrEx() const
   uint8_t errstate = Heater.getErrState();
   UPPERLIMIT(errstate, 13);
   return ErrstatesEx[errstate]; 
+}
+
+void  
+CProtocolPackage::setRefTime()
+{
+  _timeStamp.setRefTime();
+}
+
+void  
+CProtocolPackage::reportFrames(bool isOEM)
+{
+  _timeStamp.report();   // absolute time
+  if(isOEM) {
+    DebugReportFrame("OEM:", Controller, TERMINATE_OEM_LINE ? "\r\n" : "   ");
+  }
+  else {
+    DebugReportFrame("BTC:", Controller, TERMINATE_BTC_LINE ? "\r\n" : "   ");
+  }
+  DebugReportFrame("HTR:", Heater, "\r\n");
 }

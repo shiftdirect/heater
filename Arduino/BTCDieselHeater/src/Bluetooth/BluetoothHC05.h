@@ -44,7 +44,6 @@ public:
   CBluetoothHC05(int keyPin, int sensePin);
   void begin();
   void send(const char* Str);
-  void sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm=true);
   void check();
   virtual bool isConnected();
 protected:
