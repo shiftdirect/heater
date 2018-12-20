@@ -7,6 +7,7 @@ CScreen::CScreen(C128x64_OLED& disp, CScreenManager& mgr) :
   _display(disp), 
   _ScreenManager(mgr) 
 {
+   _showOEMerror = 0;
 }
 
 
@@ -18,6 +19,16 @@ CScreen::~CScreen()
 bool
 CScreen::animate()
 {
+  if(_showOEMerror) {
+    DebugPort.println("CScreen::animate()");
+    _display.fillRect(8, 20, 112, 24, WHITE);
+    if(_showOEMerror & 0x01) {
+      _printInverted(_display.xCentre(), 23, "Other controller ", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 32, "Operation blocked", true, eCentreJustify);
+    }
+    _showOEMerror--;
+    return true;
+  }
   return false;
 }
 
@@ -94,6 +105,11 @@ CScreen::_adjustExtents(CRect& extents, eJUSTIFY justify, const char* str)
   }
 }
 
+void 
+CScreen::_reqOEMWarning()
+{
+  _showOEMerror = 10;
+}
 
 // a class used for temporary alternate fonts usage
 // Reverts to standard inbuilt font when the instance falls out of scope

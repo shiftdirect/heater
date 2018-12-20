@@ -39,12 +39,14 @@ const int radius = 4;
 
 class CScreen {
 protected:
+  int  _showOEMerror;
   C128x64_OLED& _display;
   CScreenManager& _ScreenManager;
   void _printMenuText(int x, int y, const char* str, bool selected = false, eJUSTIFY justify = eLeftJustify, int border = 3, int radius = 4);
   void _printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify = eLeftJustify);
   void _adjustExtents(CRect& rect, eJUSTIFY justify, const char* str);
   void _drawMenuSelection(CRect extents, const char* str, int border = 3, int radius = 4);
+  void _reqOEMWarning();
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 

@@ -36,4 +36,5 @@ public:
   CScreen2(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
+  bool animate() { return CScreen::animate(); };
 };

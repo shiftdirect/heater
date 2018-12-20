@@ -156,8 +156,10 @@ CScreen1::animate()
       _heatAnimationState -= 2;
       _heatAnimationState &= 0x07;
     }
-    return retval |= true;
+
+    retval = true;
   }
+  retval |= CScreen::animate();
   return retval;
 }
 
@@ -175,12 +177,16 @@ CScreen1::keyHandler(uint8_t event)
       _ScreenManager.nextScreen();
     }
     if(event & key_Up) {
-      reqTempDelta(+1);
-      _showTarget = millis() + 3500;
+      if(reqTempDelta(+1))
+        _showTarget = millis() + 3500;
+      else 
+        _reqOEMWarning();
     }
     if(event & key_Down) {
-      reqTempDelta(-1);
-      _showTarget = millis() + 3500;
+      if(reqTempDelta(-1))
+        _showTarget = millis() + 3500;
+      else 
+        _reqOEMWarning();
     }
   }
   // require hold to turn ON or OFF

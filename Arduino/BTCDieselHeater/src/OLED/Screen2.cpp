@@ -127,8 +127,12 @@ CScreen2::keyHandler(uint8_t event)
       if(!_showMode)
         _ScreenManager.prevScreen();
       else {
-        _showMode = millis() + 5000;
-        _nModeSel = 0;
+        if(hasOEMcontroller())
+          _reqOEMWarning();
+        else {
+          _showMode = millis() + 5000;
+          _nModeSel = 0;
+        }
         _ScreenManager.reqUpdate();
       }
     }
@@ -137,8 +141,12 @@ CScreen2::keyHandler(uint8_t event)
       if(!_showMode)
         _ScreenManager.nextScreen();
       else {
-        _showMode = millis() + 5000;
-        _nModeSel = 1;
+        if(hasOEMcontroller())
+          _reqOEMWarning();
+        else {
+          _showMode = millis() + 5000;
+          _nModeSel = 1;
+        }
         _ScreenManager.reqUpdate();
       }
     }
@@ -146,8 +154,10 @@ CScreen2::keyHandler(uint8_t event)
     // impossible with 5 way switch!
     uint8_t doubleKey = key_Down | key_Up;
     if((event & doubleKey) == doubleKey) {
-      reqThermoToggle();
-      _showSetMode = millis() + 2000;
+      if(reqThermoToggle())
+        _showSetMode = millis() + 2000;
+      else 
+        _reqOEMWarning();
     }
   }
   // use repeat function for key hold detection
@@ -185,13 +195,17 @@ CScreen2::keyHandler(uint8_t event)
     if(!_showMode) {
       // release DOWN key to reduce set demand, provided we are not in mode select
       if(event & key_Down) {
-        reqTempDelta(-1);
-        _showSetMode = millis() + 2000;
+        if(reqTempDelta(-1))
+          _showSetMode = millis() + 2000;
+        else 
+          _reqOEMWarning();
       }
       // release UP key to increase set demand, provided we are not in mode select
       if(event & key_Up) {
-        reqTempDelta(+1);
-        _showSetMode = millis() + 2000;
+        if(reqTempDelta(+1))
+          _showSetMode = millis() + 2000;
+        else 
+          _reqOEMWarning();
       }
     }
     // release CENTRE to accept new mode, and/or show current setting

@@ -169,8 +169,9 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
-	if(_currentScreen >= 0)
+	if(_currentScreen >= 0) {
 		return _Screens[_currentScreen]->animate();
+  }
 	return false;
 }
 

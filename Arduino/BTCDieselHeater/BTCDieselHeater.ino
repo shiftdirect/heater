@@ -154,8 +154,8 @@ TelnetSpy DebugPort;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
-bool hasOEMController = false;
-bool hasHtrData = false;
+bool bHasOEMController = false;
+bool bHasHtrData = false;
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
 
@@ -379,15 +379,15 @@ void loop()
         DebugPort.print("ms - ");
         if(CommState.is(CommStates::OEMCtrlRx)) {
           DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
-          hasOEMController = false;
+          bHasOEMController = false;
         }
         else if(CommState.is(CommStates::HeaterRx1)) {
           DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
-          hasHtrData = false;
+          bHasHtrData = false;
         }
         else {
           DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
-          hasHtrData = false;
+          bHasHtrData = false;
         }
       }
 
@@ -413,12 +413,12 @@ void loop()
       // Detect the possible start of a new frame sequence from an OEM controller
       // This will be the first activity for considerable period on the blue wire
       // The heater always responds to a controller frame, but otherwise never by itself
-      hasHtrData = false;
+      bHasHtrData = false;
       if(RxTimeElapsed >= 970) {
         // have not seen any receive data for a second.
         // OEM controller is probably not connected. 
         // Skip state machine immediately to BTC_Tx, sending our own settings.
-        hasOEMController = false;
+        bHasOEMController = false;
         bool isBTCmaster = true;
         TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
         TxManage.Start(timenow);
@@ -433,7 +433,7 @@ void loop()
         DebugPort.print(RxTimeElapsed);
         DebugPort.println("ms Idle time.");
 #endif
-        hasOEMController = true;
+        bHasOEMController = true;
         CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
         //
         //  ** IMPORTANT - we must drop through to OEMCtrlRx *NOW* (skipping break) **
@@ -501,10 +501,10 @@ void loop()
 
       // test for valid CRC, abort and restarts Serial1 if invalid
       if(!validateFrame(HeaterFrame1, "RX1")) {
-        hasHtrData = false;
+        bHasHtrData = false;
         break;
       }
-      hasHtrData = true;
+      bHasHtrData = true;
 
       // received heater frame (after controller message), report
     
@@ -575,10 +575,10 @@ void loop()
 
       // test for valid CRC, abort and restart Serial1 if invalid
       if(!validateFrame(HeaterFrame2, "RX2")) {
-        hasHtrData = false;
+        bHasHtrData = false;
         break;
       }
-      hasHtrData = true;
+      bHasHtrData = true;
 
       // received heater frame (after our control message), report
 
@@ -610,7 +610,7 @@ void loop()
       CommState.set(CommStates::Idle);
       updateJSONclients(bReportJSONData);
       if(bReportBlueWireData) 
-        HeaterData.reportFrames(hasOEMController);
+        HeaterData.reportFrames(bHasOEMController);
       break;
   }  // switch(CommState)
 
@@ -692,7 +692,7 @@ void ToggleOnOff()
 
 bool reqTemp(unsigned char newTemp)
 {
-  if(hasOEMController)
+  if(bHasOEMController)
     return false;
 
   unsigned char max = DefaultBTCParams.getTemperature_Max();
@@ -727,7 +727,7 @@ bool reqThermoToggle()
 
 bool setThermostatMode(unsigned char val)
 {
-  if(hasOEMController)
+  if(bHasOEMController)
     return false;
 
   NVstore.setThermostatMode(val);
@@ -911,16 +911,21 @@ void checkDebugCommands()
 
 const char* getControllerStat()
 {
-  if(hasHtrData) {
-    if(hasOEMController)
+  if(bHasHtrData) {
+    if(bHasOEMController)
       return "OEM,Htr";
     else
       return "BTC,Htr";
   }
   else {
-    if(hasOEMController)
+    if(bHasOEMController)
       return "OEM";
     else
       return "BTC";
   }
+}
+
+bool hasOEMcontroller()
+{
+  return bHasOEMController;
 }

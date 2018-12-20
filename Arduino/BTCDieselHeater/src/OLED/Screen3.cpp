@@ -27,7 +27,7 @@
 //
 // CScreen3
 //
-// This screen allows the temeprature control mode to be selected and
+// This screen allows the temperature control mode to be selected and
 // allows pump priming
 //
 ///////////////////////////////////////////////////////////////////////////
@@ -146,12 +146,16 @@ CScreen3::keyHandler(uint8_t event)
     }
     // press UP
     if(event & key_Up) {
-      _rowSel++;
-      UPPERLIMIT(_rowSel, 2);
-      if(_rowSel == 2)
-        _colSel = 1;       // select OFF upon entry to priming menu
-      if(_rowSel == 1)
-        _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+      if(hasOEMcontroller())
+        _reqOEMWarning();
+      else {
+        _rowSel++;
+        UPPERLIMIT(_rowSel, 2);
+        if(_rowSel == 2)
+          _colSel = 1;       // select OFF upon entry to priming menu
+        if(_rowSel == 1)
+          _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+      }
     }
     // press DOWN
     if(event & key_Down) {

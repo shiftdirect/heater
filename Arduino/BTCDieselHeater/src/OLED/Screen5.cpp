@@ -206,27 +206,31 @@ CScreen5::keyHandler(uint8_t event)
     }
     // press UP 
     if(event & key_Up) {
-      switch(_rowSel) {
-        case 0:
-        case 2:
-        case 3:
-        case 4:
-          _rowSel++;
-          _colSel = 0;
-          UPPERLIMIT(_rowSel, 5);
-          break;
-        case 1:  // password entry
-          _PWdig[_colSel]++; 
-          ROLLUPPERLIMIT(_PWdig[_colSel], 9, 0);
-          break;
-        case 6:
-          setPumpMin(adjPump[0]);
-          setPumpMax(adjPump[1]);
-          setFanMin(adjFan[0]);
-          setFanMax(adjFan[1]);
-          saveNV();
-          _rowSel = 0;
-          break;
+      if(hasOEMcontroller())
+        _reqOEMWarning();
+      else {
+        switch(_rowSel) {
+          case 0:
+          case 2:
+          case 3:
+          case 4:
+            _rowSel++;
+            _colSel = 0;
+            UPPERLIMIT(_rowSel, 5);
+            break;
+          case 1:  // password entry
+            _PWdig[_colSel]++; 
+            ROLLUPPERLIMIT(_PWdig[_colSel], 9, 0);
+            break;
+          case 6:
+            setPumpMin(adjPump[0]);
+            setPumpMax(adjPump[1]);
+            setFanMin(adjFan[0]);
+            setFanMax(adjFan[1]);
+            saveNV();
+            _rowSel = 0;
+            break;
+        }
       }
     }
     // press DOWN
