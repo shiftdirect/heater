@@ -70,24 +70,27 @@ const char* MAIN_PAGE PROGMEM = R"=====(
                 document.getElementById("ErrorDiv").hidden = heater[key] <= 1;
                 break;
 				case "TempBody":
-				//The threshold levels for each bar to come on are: 21°C, 41°C,61°C, 81°C, 101°C, 121°C
-					if(heater[key] > 20){
-						document.getElementById("TopBar").className = "active21"
+				//The threshold levels for each bar to come on are: 21°C, 41°C, 61°C, 81°C, 101°C, 121°C
+							if(heater[key] > 120){
+						document.getElementById("TopBar").className = "active121";
 						}
-						if(heater[key] > 41){
-						document.getElementById("TopBar").className = "active41"
+						else if(heater[key] > 100){
+						document.getElementById("TopBar").className = "active101";
 						}
-							if(heater[key] > 61){
-						document.getElementById("TopBar").className = "active61"
+							else if(heater[key] > 80){
+						document.getElementById("TopBar").className = "active81";
+    				}
+							else if(heater[key] > 60){
+						document.getElementById("TopBar").className = "active61";
 						}
-							if(heater[key] > 20){
-						document.getElementById("TopBar").className = "active81"
+						else if(heater[key] > 40){
+						document.getElementById("TopBar").className = "active41";
 						}
-							if(heater[key] > 101){
-						document.getElementById("TopBar").className = "active101"
+					else if(heater[key] > 20){
+						document.getElementById("TopBar").className = "active21";
 						}
-							if(heater[key] > 121){
-						document.getElementById("TopBar").className = "active121"
+					else {
+						document.getElementById("TopBar").className = "active0";
 						}
 				break;
               case "Thermostat":
@@ -462,29 +465,33 @@ body {
   color: black;
 }
 
+.active0 {
+  background-color: #40ffff;
+  color: #000000;
+}
 .active21 {
   background-color: #5f9ea0;
-  color: white;
+  color: #ffffff;
 }
 .active41 {
   background-color: #4CAF50;
-  color: white;
+  color: #ffffff;
 }
 .active61 {
   background-color: #eeee00;
-  color: white;
+  color: #000000;
 }
 .active81 {
   background-color: #8b0000;
-  color: white;
+  color: #ffffff;
 }
 .active101 {
   background-color: #cd0000;
-  color: white;
+  color: #ffffff;
 }
 .active121 {
   background-color: #ff0000;
-  color: white;
+  color: #ffffff;
 }
 
   input:checked + .slider {
@@ -530,7 +537,7 @@ MainPage {
 
 <!-- Top Navigation Menu -->
 <div class="topnav">
-  <div id="TopBar" style="padding-left:30px"><a href="javascript:void(0);" onclick="funcdispHome()" class="active21">Chinese Diesel Heater Web Control</a></div>
+  <div id="TopBar" style="padding-left:30px"><a href="javascript:void(0);" onclick="funcdispHome()" >Chinese Diesel Heater Web Control</a></div>
   <div id="myLinks">
     <a href="javascript:void(0);" onclick="funcdispHome()">Home</a>
     <a href="javascript:void(0);" onclick="funcdispSettings()">Settings</a>
