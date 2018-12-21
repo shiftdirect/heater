@@ -162,7 +162,8 @@ bool bReportJSONData = REPORT_JSON_TRANSMIT;
 bool bReportRecyleEvents = REPORT_BLUEWIRE_RECYCLES;
 bool bReportOEMresync = REPORT_OEM_RESYNC;
 
-CProtocolPackage HeaterData;
+CProtocolPackage reportHeaterData;
+CProtocolPackage primaryHeaterData;
 
 unsigned long moderator;
 bool bUpdateDisplay = false;
@@ -426,6 +427,7 @@ void loop()
         // have not seen any receive data for a second.
         // OEM controller is probably not connected. 
         // Skip state machine immediately to BTC_Tx, sending our own settings.
+        bHasHtrData = false;
         bHasOEMController = false;
         bHasHtrData = false;
         bool isBTCmaster = true;
@@ -527,20 +529,35 @@ void loop()
 
       HeaterFrame1.setTime();
 
-      if(digitalRead(ListenOnlyPin)) {  // pin open, pulled high (STANDARD OPERATION)
-        bool isBTCmaster = false;
-        while(BlueWireSerial.available()) {
-          DebugPort.println("DUMPED ROGUE RX DATA");
-          BlueWireSerial.read();
-        }
-        BlueWireSerial.flush();
-        TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
-        TxManage.Start(timenow);
-        CommState.set(CommStates::BTC_Tx);
+      while(BlueWireSerial.available()) {
+        DebugPort.println("DUMPED ROGUE RX DATA");
+        BlueWireSerial.read();
       }
-      else {   // pin shorted to ground
-        HeaterData.set(HeaterFrame1, OEMCtrlFrame);
-        CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send out Tx
+      BlueWireSerial.flush();
+
+      primaryHeaterData.set(HeaterFrame1, OEMCtrlFrame);  // OEM is always *the* controller
+      if(bReportBlueWireData) {
+        primaryHeaterData.reportFrames(true);
+        CommState.setDelay(20);          // let serial get sent before we send blue wire
+      }
+      else {
+        CommState.setDelay(0);
+      }
+      CommState.set(CommStates::HeaterReport1);
+      break;
+
+
+    case CommStates::HeaterReport1:
+      if(CommState.delayExpired()) {
+        if(digitalRead(ListenOnlyPin)) {  // pin open, pulled high (STANDARD OPERATION)
+          bool isBTCmaster = false;
+          TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
+          TxManage.Start(timenow);
+          CommState.set(CommStates::BTC_Tx);
+        }
+        else {   // pin shorted to ground
+          CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send our Tx
+        }
       }
       break;
     
@@ -582,7 +599,7 @@ void loop()
 
     case CommStates::HeaterValidate2:
 #if RX_LED == 1
-    digitalWrite(LED_Pin, LOW);
+      digitalWrite(LED_Pin, LOW);
 #endif
 
       // test for valid CRC, abort and restart Serial1 if invalid
@@ -598,9 +615,27 @@ void loop()
       // if abnormal transitions, introduce a smart error!
       SmartError.monitor(HeaterFrame2);
 
-      CommState.set(CommStates::TemperatureRead);
-      HeaterData.set(HeaterFrame2, TxManage.getFrame());
+      if(!bHasOEMController)              // no OEM controller - BTC is *the* controller
+        primaryHeaterData.set(HeaterFrame2, TxManage.getFrame());
+       
+      if(bReportBlueWireData) {
+        reportHeaterData.set(HeaterFrame2, TxManage.getFrame());
+        reportHeaterData.reportFrames(false);
+        CommState.setDelay(20);          // let serial get sent before we send blue wire
+      }
+      else {
+        CommState.setDelay(0);
+      }
+      CommState.set(CommStates::HeaterReport2);
       break;
+
+
+    case CommStates::HeaterReport2:
+      if(CommState.delayExpired()) {
+        CommState.set(CommStates::TemperatureRead);
+      }
+      break;
+
 
     case CommStates::TemperatureRead:
       // update temperature reading, 
@@ -621,8 +656,6 @@ void loop()
       }
       CommState.set(CommStates::Idle);
       updateJSONclients(bReportJSONData);
-      if(bReportBlueWireData) 
-        HeaterData.reportFrames(bHasOEMController);
       break;
   }  // switch(CommState)
 
@@ -668,7 +701,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
     DebugPort.println(" frame - restarting blue wire's serial port");
     DebugReportFrame("BAD CRC:", frame, "\r\n");
     initBlueWireSerial();
-    CommState.set(CommStates::Idle);
+    CommState.set(CommStates::TemperatureRead);
     return false;
   }
   return true;
@@ -679,19 +712,19 @@ void requestOn()
 {
   TxManage.queueOnRequest();
   SmartError.reset();
-  HeaterData.setRefTime();
+//  HeaterData.setRefTime();
 }
 
 void requestOff()
 {
   TxManage.queueOffRequest();
   SmartError.inhibit();
-  HeaterData.setRefTime();
+//  HeaterData.setRefTime();
 }
 
 void ToggleOnOff()
 {
-  if(HeaterData.getRunState()) {
+  if(primaryHeaterData.getRunState()) {
     DebugPort.println("ToggleOnOff: Heater OFF");
     requestOff();
   }
@@ -807,7 +840,7 @@ void saveNV()
 
 const CProtocolPackage& getHeaterInfo()
 {
-  return HeaterData;
+  return primaryHeaterData;
 }
 
 bool isWebClientConnected()
@@ -846,6 +879,7 @@ void checkDebugCommands()
         DebugPort.print("  <J> - toggle output JSON reporting, currently "); DebugPort.println(bReportJSONData ? "ON" : "OFF");
         DebugPort.print("  <W> - toggle reporting of blue wire timeout/recycling event, currently "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
         DebugPort.print("  <O> - toggle reporting of OEM resync event, currently "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");        
+        DebugPort.print("  <S> - toggle reporting of state machine transits "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");        
         DebugPort.println("  <+> - request heater turns ON");
         DebugPort.println("  <-> - request heater turns OFF");
         DebugPort.println("  <R> - restart the ESP");
@@ -898,13 +932,16 @@ void checkDebugCommands()
         bReportOEMresync = !bReportOEMresync;
         DebugPort.print("Toggled OEM resync event reporting "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");
       }
+      else if(rxVal == 's') {
+        CommState.toggleReporting();
+      }
       else if(rxVal == '+') {
         TxManage.queueOnRequest();
-        HeaterData.setRefTime();
+//        HeaterData.setRefTime();
       }
       else if(rxVal == '-') {
         TxManage.queueOffRequest();
-        HeaterData.setRefTime();
+//        HeaterData.setRefTime();
       }
       else if(rxVal == 'r') {
         ESP.restart();            // reset the esp

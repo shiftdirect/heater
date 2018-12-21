@@ -235,7 +235,7 @@ public:
   float getGlow_Voltage() const { return Heater.getGlowPlug_Voltage(); };
   float getGlow_Current() const { return Heater.getGlowPlug_Current(); };
 
-  void  setRefTime();
+//  void  setRefTime();
   void  reportFrames(bool isOEM);
 };
 

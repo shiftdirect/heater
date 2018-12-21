@@ -30,36 +30,53 @@
 void 
 CommStates::set(eCS eState) 
 {
-  m_State = eState;
-  m_Count = 0;
-#if SHOW_STATE_MACHINE_TRANSITIONS == 1
-  DebugPort.print("State");DebugPort.println(m_State);
-#endif
+  _State = eState;
+  _Count = 0;
+  if(_report) {
+   static const char* stateNames[] = { 
+     "Idle", "OEMCtrlRx", "OEMCtrlValidate", "HeaterRx1", "HeaterValidate1", "HeaterReport1", 
+     "BTC_Tx", "HeaterRx2", "HeaterValidate2", "HeaterReport2", "TemperatureRead" 
+    };
+    if(_State == Idle) DebugPort.println("");  // clear screen
+    DebugPort.print("State:");DebugPort.println(stateNames[_State]);
+  }
 }
 
 bool 
 CommStates::collectData(CProtocol& Frame, unsigned char val, int limit) {   // returns true when buffer filled
-  Frame.Data[m_Count++] = val;
-  return m_Count >= limit;
+  Frame.Data[_Count++] = val;
+  return _Count >= limit;
 }
 
 bool 
 CommStates::collectDataEx(CProtocol& Frame, unsigned char val, int limit) {   // returns true when buffer filled
   // guarding against rogue rx kernel buffer stutters....
-  if((m_Count == 0) && (val != 0x76)) {
+  if((_Count == 0) && (val != 0x76)) {
     DebugPort.println("First heater byte not 0x76 - SKIPPING");
     return false;
   }
-  Frame.Data[m_Count++] = val;
-  return m_Count >= limit;
+  Frame.Data[_Count++] = val;
+  return _Count >= limit;
 }
 
 bool 
 CommStates::checkValidStart(unsigned char val)
 {
-  if(m_Count) 
+  if(_Count) 
     return true;
   else 
     return val == 0x76;
 }
 
+void
+CommStates::setDelay(int ms)
+{
+  _delay = millis() + ms;
+}
+
+bool 
+CommStates::delayExpired()
+{
+  long test = millis() - _delay;
+  return(test >= 0);
+}

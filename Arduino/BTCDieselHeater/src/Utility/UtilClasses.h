@@ -25,6 +25,7 @@
 #include <Arduino.h>
 #include <string.h>
 #include "DebugPort.h"
+#include "../cfg/BTCConfig.h"
 
 class CProtocol;
 
@@ -33,28 +34,34 @@ class CommStates {
 public:
   // comms states
   enum eCS { 
-    Idle, OEMCtrlRx, OEMCtrlValidate, HeaterRx1, HeaterValidate1, BTC_Tx, HeaterRx2, HeaterValidate2, TemperatureRead
+    Idle, OEMCtrlRx, OEMCtrlValidate, HeaterRx1, HeaterValidate1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterValidate2, HeaterReport2,TemperatureRead
   };
 
 private:
-  eCS m_State;
-  int m_Count;
-
+  eCS _State;
+  int _Count;
+  unsigned long _delay;
+  bool _report;
 public:
   CommStates() {
-    m_State = Idle;
-    m_Count = 0;
+    _State = Idle;
+    _Count = 0;
+    _delay = millis();
+    _report = REPORT_STATE_MACHINE_TRANSITIONS;
   }
   void set(eCS eState);
   eCS get() {
-    return m_State;
+    return _State;
   }
   bool is(eCS eState) {
-    return m_State == eState;
+    return _State == eState;
   }
   bool collectData(CProtocol& Frame, unsigned char val, int limit = 24);
   bool collectDataEx(CProtocol& Frame, unsigned char val, int limit = 24);
   bool checkValidStart(unsigned char val);
+  void setDelay(int ms);
+  bool delayExpired();
+  bool toggleReporting() { _report = !_report; };
 
 };
 

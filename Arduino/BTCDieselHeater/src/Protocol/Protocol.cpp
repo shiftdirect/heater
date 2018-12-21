@@ -395,11 +395,11 @@ CProtocolPackage::getErrStateStrEx() const
   return ErrstatesEx[errstate]; 
 }
 
-void  
+/*void  
 CProtocolPackage::setRefTime()
 {
   _timeStamp.setRefTime();
-}
+}*/
 
 void  
 CProtocolPackage::reportFrames(bool isOEM)
