@@ -69,6 +69,27 @@ const char* MAIN_PAGE PROGMEM = R"=====(
               case "ErrorState":
                 document.getElementById("ErrorDiv").hidden = heater[key] <= 1;
                 break;
+				case "TempBody":
+				//The threshold levels for each bar to come on are: 21°C, 41°C,61°C, 81°C, 101°C, 121°C
+					if(heater[key] > 20){
+						document.getElementById("TopBar").className = "active21"
+						}
+						if(heater[key] > 41){
+						document.getElementById("TopBar").className = "active41"
+						}
+							if(heater[key] > 61){
+						document.getElementById("TopBar").className = "active61"
+						}
+							if(heater[key] > 20){
+						document.getElementById("TopBar").className = "active81"
+						}
+							if(heater[key] > 101){
+						document.getElementById("TopBar").className = "active101"
+						}
+							if(heater[key] > 121){
+						document.getElementById("TopBar").className = "active121"
+						}
+				break;
               case "Thermostat":
                 if(heater[key] != 0) {
                   document.getElementById("FixedDiv").hidden = true;
@@ -441,8 +462,28 @@ body {
   color: black;
 }
 
-.active {
+.active21 {
+  background-color: #5f9ea0;
+  color: white;
+}
+.active41 {
   background-color: #4CAF50;
+  color: white;
+}
+.active61 {
+  background-color: #eeee00;
+  color: white;
+}
+.active81 {
+  background-color: #8b0000;
+  color: white;
+}
+.active101 {
+  background-color: #cd0000;
+  color: white;
+}
+.active121 {
+  background-color: #ff0000;
   color: white;
 }
 
@@ -489,7 +530,7 @@ MainPage {
 
 <!-- Top Navigation Menu -->
 <div class="topnav">
-  <div style="padding-left:30px"><a href="javascript:void(0);" onclick="funcdispHome()" class="active">Chinese Diesel Heater Web Control</a></div>
+  <div id="TopBar" style="padding-left:30px"><a href="javascript:void(0);" onclick="funcdispHome()" class="active21">Chinese Diesel Heater Web Control</a></div>
   <div id="myLinks">
     <a href="javascript:void(0);" onclick="funcdispHome()">Home</a>
     <a href="javascript:void(0);" onclick="funcdispSettings()">Settings</a>
