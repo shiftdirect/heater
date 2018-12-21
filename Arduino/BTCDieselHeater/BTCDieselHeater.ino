@@ -949,18 +949,6 @@ const char* getBlueWireStatStr()
   const char* BlueWireStates[] = { "BTC,Htr", "BTC", "OEM,Htr", "OEM" };
 
   return BlueWireStates[getBlueWireStat()];
-/*  if(bHasHtrData) {
-    if(bHasOEMController)
-      return "OEM,Htr";
-    else
-      return "BTC,Htr";
-  }
-  else {
-    if(bHasOEMController)
-      return "OEM";
-    else
-      return "BTC";
-  }*/
 }
 
 bool hasOEMcontroller()
