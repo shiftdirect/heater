@@ -441,7 +441,15 @@ body {
   color: black;
 }
 
-.active {
+.active0 {
+  background-color: #00f0f0;
+  color: black;
+}
+.active21 {
+  background-color: #5f9ea0;
+  color: #ffffff;
+}
+.active41 {
   background-color: #4CAF50;
   color: white;
 }
@@ -489,7 +497,6 @@ MainPage {
 
 <!-- Top Navigation Menu -->
 <div class="topnav">
-  <div style="padding-left:30px"><a href="javascript:void(0);" onclick="funcdispHome()" class="active">Chinese Diesel Heater Web Control</a></div>
   <div id="myLinks">
     <a href="javascript:void(0);" onclick="funcdispHome()">Home</a>
     <a href="javascript:void(0);" onclick="funcdispSettings()">Settings</a>

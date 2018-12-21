@@ -422,12 +422,12 @@ void loop()
       // Detect the possible start of a new frame sequence from an OEM controller
       // This will be the first activity for considerable period on the blue wire
       // The heater always responds to a controller frame, but otherwise never by itself
-      bHasHtrData = false;
       if(RxTimeElapsed >= 970) {
         // have not seen any receive data for a second.
         // OEM controller is probably not connected. 
         // Skip state machine immediately to BTC_Tx, sending our own settings.
         bHasOEMController = false;
+        bHasHtrData = false;
         bool isBTCmaster = true;
         TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
         TxManage.Start(timenow);
@@ -444,6 +444,7 @@ void loop()
           DebugPort.println("ms Idle time.");
         }
 
+        bHasHtrData = false;
         bHasOEMController = true;
         CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
         //
