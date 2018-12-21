@@ -214,7 +214,7 @@ public:
   void  set(const CProtocol& htr, const CProtocol& ctl) { Heater = htr; Controller = ctl; };
   int   getRunState() const { return Heater.getRunState(); };
   const char* getRunStateStr() const;
-  int   getErrState() const { return Heater.getErrState(); };
+  int   getErrState() const;
   const char* getErrStateStr() const;
   const char* getErrStateStrEx() const;
   float getBattVoltage() const { return Heater.getVoltage_Supply(); };

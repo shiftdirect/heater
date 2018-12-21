@@ -336,7 +336,7 @@ const char* Runstates [] PROGMEM = {
 const char* 
 CProtocolPackage::getRunStateStr() const 
 { 
-  uint8_t runstate = Heater.getRunState();
+  uint8_t runstate = getRunState();
   UPPERLIMIT(runstate, 10);
   if(runstate == 2 && getPump_Actual() == 0) {  // split runstate 2 - glow, then fuel
     runstate = 9;
@@ -371,7 +371,7 @@ const char* ErrstatesEx [] PROGMEM = {
   "E-04: Pump fault",      // E-04
   "E-05: Overheat",        // E-05
   "E-06: Motor fault",     // E-06
-  "E-07: Comms fault",     // E-07
+  "E-07: No heater comms", // E-07
   "E-08: Flame out",       // E-08
   "E-09: Temp sense",      // E-09
   "E-10: Ignition fail",   // E-10  SmartError manufactured state - sensing runstate 2 -> >5
@@ -382,7 +382,7 @@ const char* ErrstatesEx [] PROGMEM = {
 const char* 
 CProtocolPackage::getErrStateStr() const 
 { 
-  uint8_t errstate = Heater.getErrState();
+  uint8_t errstate = getErrState();
   UPPERLIMIT(errstate, 13);
   return Errstates[errstate]; 
 }
@@ -390,7 +390,7 @@ CProtocolPackage::getErrStateStr() const
 const char* 
 CProtocolPackage::getErrStateStrEx() const 
 { 
-  uint8_t errstate = Heater.getErrState();
+  uint8_t errstate = getErrState();
   UPPERLIMIT(errstate, 13);
   return ErrstatesEx[errstate]; 
 }
@@ -412,4 +412,13 @@ CProtocolPackage::reportFrames(bool isOEM)
     DebugReportFrame("BTC:", Controller, TERMINATE_BTC_LINE ? "\r\n" : "   ");
   }
   DebugReportFrame("HTR:", Heater, "\r\n");
+}
+
+int   
+CProtocolPackage::getErrState() const 
+{ 
+  if(getBlueWireStat() & 0x01) 
+    return 8; // force E-07 - we're not seeing heater data
+  else
+     return Heater.getErrState(); 
 }

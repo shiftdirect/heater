@@ -145,14 +145,8 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root); 
 	bSend |= moderator.addJson("RunState", getHeaterInfo().getRunState(), root);
   bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
-  if(getBlueWireStat() & 0x01) {
-  	bSend |= moderator.addJson("ErrorState", 8, root );  // force E-07
-    bSend |= moderator.addJson("ErrorString", "E-07: No heater data", root); 
-  }
-  else {
-  	bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
-    bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!
-  }
+	bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
+  bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!
 	bSend |= moderator.addJson("Thermostat", getHeaterInfo().isThermostat(), root );
 	bSend |= moderator.addJson("PumpFixed", getHeaterInfo().getPump_Fixed(), root );
 	bSend |= moderator.addJson("PumpMin", getHeaterInfo().getPump_Min(), root );
