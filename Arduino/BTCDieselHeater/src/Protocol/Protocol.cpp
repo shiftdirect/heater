@@ -417,8 +417,14 @@ CProtocolPackage::reportFrames(bool isOEM)
 int   
 CProtocolPackage::getErrState() const 
 { 
-  if(getBlueWireStat() & 0x01) 
+  if(getBlueWireStat() & 0x01) {
     return 8; // force E-07 - we're not seeing heater data
-  else
-     return Heater.getErrState(); 
+  }
+  else {
+    int smartErr = getSmartError();
+    if(smartErr)
+      return smartErr;
+    else
+      return Heater.getErrState(); 
+  }
 }

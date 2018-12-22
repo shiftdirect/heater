@@ -48,6 +48,7 @@ extern void resetJSONmoderator();
 extern const char* getBlueWireStatStr();
 extern bool hasOEMcontroller();
 extern int getBlueWireStat();
+extern int getSmartError();
 
 #define LOWERLIMIT(A, B) if(A < B) A = B
 #define UPPERLIMIT(A, B) if(A > B) A = B

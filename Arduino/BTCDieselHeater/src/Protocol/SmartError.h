@@ -29,7 +29,7 @@ public:
   CSmartError();
   void reset();
   void inhibit();
-  void monitor(CProtocol& heaterFrame);
+  void monitor(const CProtocol& heaterFrame);
   void monitor(unsigned char runstate);
   unsigned char getError();
 };

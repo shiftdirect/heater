@@ -51,21 +51,12 @@ CSmartError::inhibit()
 // In addition, the hetaer frame has the ErrState updated to track the 
 // smart error, providing no heater error exists!
 void
-CSmartError::monitor(CProtocol& heaterFrame)
+CSmartError::monitor(const CProtocol& heaterFrame)
 {
   bool bSilent = true;
   if(heaterFrame.verifyCRC(bSilent)) {  // check but don't report dodgy frames to debug
     // only accept valid heater frames!
     monitor(heaterFrame.getRunState());
-    unsigned char HtrErr = heaterFrame.getErrState();
-    if((HtrErr & 0xfe) == 0)  {
-      // heater is Idle or Normal running state  (E-0X + 1 in protocol!!)
-      unsigned char smartErr = getError();
-      if(smartErr) {
-        heaterFrame.setErrState(smartErr);  // 10 = ign fail, 11 = retry
-        heaterFrame.setCRC();              // changed the message, fix the CRC!
-      }
-    }
   }
 }
 

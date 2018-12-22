@@ -993,3 +993,8 @@ bool hasOEMcontroller()
 {
   return bHasOEMController;
 }
+
+int getSmartError()
+{
+  return SmartError.getError();
+}
