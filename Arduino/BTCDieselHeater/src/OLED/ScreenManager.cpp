@@ -95,6 +95,7 @@ CScreenManager::CScreenManager()
   _pDisplay = NULL;
   _currentScreen = -1;
   _bReqUpdate = false;
+  _DimTime = millis() + 60000;
 }
 
 CScreenManager::~CScreenManager()
@@ -150,6 +151,15 @@ CScreenManager::begin()
 bool 
 CScreenManager::checkUpdate()
 {
+  if(_DimTime) {
+    long tDelta = millis() - _DimTime;
+    if(tDelta > 0) {
+      if(NVstore.getDimTime())
+        _pDisplay->dim(true);
+      _DimTime = 0;
+    }
+  }
+
   if(_bReqUpdate) {
 		if(_currentScreen >= 0) {
 			_Screens[_currentScreen]->show();
@@ -216,6 +226,10 @@ CScreenManager::keyHandler(uint8_t event)
 {
 	if(_currentScreen >= 0)
   	_Screens[_currentScreen]->keyHandler(event);
+
+  if(_DimTime == 0)
+    _pDisplay->dim(false);
+  _DimTime = millis() + NVstore.getDimTime();
 }
 
 

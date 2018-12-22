@@ -33,6 +33,7 @@ class CScreenManager {
   std::vector<CScreen*> _Screens;
   C128x64_OLED* _pDisplay;
   int _currentScreen;
+  unsigned long _DimTime;
   bool _bReqUpdate;
   void _switchScreen();
 public:

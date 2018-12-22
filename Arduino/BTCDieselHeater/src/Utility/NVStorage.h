@@ -64,6 +64,7 @@ struct sTimer {
 // the actual data stored to NV memory
 struct sNVStore {
   sHeater Heater;
+  long DimTime;
   sTimer timer[2];
   bool valid();
   void init();
@@ -100,6 +101,7 @@ public:
     unsigned short getFmax();
     unsigned char getDesiredTemperature();
     unsigned char getThermostatMode();
+    unsigned long getDimTime();
 
     void setPmin(float);
     void setPmax(float);
@@ -107,6 +109,7 @@ public:
     void setFmax(unsigned short val);
     void setDesiredTemperature(unsigned char val);
     void setThermostatMode(unsigned char val);
+    void setDimTime(unsigned long val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);

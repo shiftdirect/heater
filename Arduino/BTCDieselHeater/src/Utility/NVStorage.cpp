@@ -34,6 +34,7 @@ sNVStore::valid()
     retval &= (timer[i].stop.min >= 0 && timer[i].stop.min < 60);
     retval &= timer[i].repeat < 2;
   }
+  retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
   retval &= Heater.Pmin < 100;
   retval &= Heater.Pmax < 150;
   retval &= Heater.Fmin < 5000;
@@ -54,6 +55,7 @@ sNVStore::init()
     timer[i].enabled = 0;
     timer[i].repeat = 0;
   }
+  DimTime = 60000;  // 1 minute
   Heater.Pmin = 14;
   Heater.Pmax = 45;
   Heater.Fmin = 1500;
@@ -162,7 +164,17 @@ CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
   }
 }
 
+unsigned long 
+CHeaterStorage::getDimTime()
+{
+  return _calValues.DimTime;
+}
 
+void 
+CHeaterStorage::setDimTime(unsigned long val)
+{
+  _calValues.DimTime = val;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
