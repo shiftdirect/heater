@@ -154,7 +154,7 @@ CScreenManager::checkUpdate()
   if(_DimTime) {
     long tDelta = millis() - _DimTime;
     if(tDelta > 0) {
-      if(NVstore.getDimTime())
+//      if(NVstore.getDimTime())
         _pDisplay->dim(true);
       _DimTime = 0;
     }
@@ -229,7 +229,11 @@ CScreenManager::keyHandler(uint8_t event)
 
   if(_DimTime == 0)
     _pDisplay->dim(false);
-  _DimTime = millis() + NVstore.getDimTime();
+//  _DimTime = millis() + NVstore.getDimTime();
+  _DimTime = millis() + 60000;
+  if(_DimTime == 0)
+   _DimTime = 1;
 }
 
 
+ 

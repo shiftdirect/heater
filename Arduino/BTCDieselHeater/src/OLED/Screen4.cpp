@@ -23,9 +23,10 @@
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Wifi/BTCWifi.h"
-#include "fonts/Tahoma8.h"
-#include "fonts/FranklinGothic.h"
-#include "fonts/Arial.h"
+// #include "fonts/Tahoma8.h"
+// #include "fonts/FranklinGothic.h"
+// #include "fonts/Arial.h"
+#include "../Utility/NVstorage.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -47,10 +48,6 @@ CScreen4::show()
 {
   CScreenHeader::show();
   
-//  CTransientFont tmp(_display, &tahoma_8ptFontInfo);
-//  CTransientFont tmp(_display, &franklinGothicMediumCond_8ptFontInfo);
-//  CTransientFont tmp(_display, &arial_8ptFontInfo);
-
   int yPos = 16;
   if(isWifiConnected() || isWifiAP()) {
     if(isWifiAP()) {
@@ -66,6 +63,10 @@ CScreen4::show()
   else {
     _printInverted(0, yPos, " WiFi Inactive ", true);
   }
+  yPos += _display.textHeight() + 2;
+  char msg[32];
+  sprintf(msg, "Display Dim: %d mins", NVstore.getDimTime());
+  _printMenuText(0, yPos, msg);
 }
 
 
