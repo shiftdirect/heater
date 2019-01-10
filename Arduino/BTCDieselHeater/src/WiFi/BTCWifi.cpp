@@ -59,7 +59,7 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
     DebugPort.println("Setting up ESP as AP");
     isAP = WiFi.softAP(failedssid, failedpassword);
     if(isAP) {
-      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 0), IPAddress(255,255,255,0));
+      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
     }
   } 
   else {
