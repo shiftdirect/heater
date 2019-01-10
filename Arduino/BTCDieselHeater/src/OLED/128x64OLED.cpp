@@ -54,13 +54,17 @@
 
 
 // Hardware SPI constructor
-C128x64_OLED::C128x64_OLED(int8_t DC, int8_t CS, int8_t RST) : Adafruit_SH1106(DC, CS, RST)
+C128x64_OLED::C128x64_OLED(int8_t DC, int8_t CS, int8_t RST) : OLED_BASE_CLASS(DC, CS, RST)
 {
 	m_pFontInfo = NULL;
 }
 
-// I2C constructor
-C128x64_OLED::C128x64_OLED(int8_t SDA, int8_t SCL) : Adafruit_SH1106(SDA, SCL) 
+// I2C constructor - note important difference in the parameters of the base classes here!!!
+#if USE_ADAFRUIT_SH1106 == 1
+C128x64_OLED::C128x64_OLED(int8_t SDA, int8_t SCL) : Adafruit_SH1106(SDA, SCL)  // pins for I2C
+#elif USE_ADAFRUIT_SSD1306 == 1
+C128x64_OLED::C128x64_OLED(int8_t SDA, int8_t SCL) : Adafruit_SSD1306(128, 64)  // width, height
+#endif
 {
 	m_pFontInfo = NULL;
 }
@@ -85,7 +89,7 @@ size_t C128x64_OLED::write(uint8_t c)
     }
   }
   else {
-	  Adafruit_SH1106::write(c);
+	  OLED_BASE_CLASS::write(c);
   }
 #if ARDUINO >= 100
   return 1;
@@ -114,7 +118,7 @@ void C128x64_OLED::getTextExtents(const char* str, CRect& rect)
   }
   else {
     int16_t x1, y1;
-    Adafruit_SH1106::getTextBounds(str, 0, 0, &x1, &y1, &rect.width, &rect.height);
+    OLED_BASE_CLASS::getTextBounds(str, 0, 0, &x1, &y1, &rect.width, &rect.height);
   }
 }
 

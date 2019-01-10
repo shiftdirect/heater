@@ -116,10 +116,16 @@ CScreenManager::begin()
 {
 
   // 128 x 64 OLED support (I2C)
-  // SH1106_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  // xxxx_SWITCHCAPVCC = generate display voltage from 3.3V internally
   _pDisplay = new C128x64_OLED(OLED_SDA_pin, OLED_SCL_pin);
+#if USE_ADAFRUIT_SH1106 == 1
   _pDisplay->begin(SH1106_SWITCHCAPVCC);
-  Wire.begin(OLED_SDA_pin, OLED_SCL_pin, 800000);   // speed up I2C from the default crappy 100kHz set via the adafruit begin!
+   Wire.begin(OLED_SDA_pin, OLED_SCL_pin, 800000);   // speed up I2C from the default crappy 100kHz set via the adafruit begin!
+#elif USE_ADAFRUIT_SSD1306 == 1
+  _pDisplay->begin(SSD1306_SWITCHCAPVCC, 0x3c);
+  _pDisplay->ssd1306_command(SSD1306_SETPRECHARGE); // 0xd9
+  _pDisplay->ssd1306_command(0x1F);  // correct lame reversal of OLED current phases
+#endif
 
   // replace adafruit splash screen
   _pDisplay->clearDisplay();

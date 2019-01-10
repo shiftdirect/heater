@@ -22,12 +22,21 @@
 #ifndef __128x64OLED_H__
 #define __128x64OLED_H__
 
+#include "../cfg/BTCConfig.h"
+
+#if USE_ADAFRUIT_SH1106 == 1
 #include <Adafruit_SH1106.h>
+#define OLED_BASE_CLASS Adafruit_SH1106
+#endif
+#if USE_ADAFRUIT_SSD1306 == 1
+#include <Adafruit_SSD1306.h>
+#define OLED_BASE_CLASS Adafruit_SSD1306
+#endif
 
 #include "fonts/FontTypes.h"
 #include "../Utility/UtilClasses.h"
 
-class C128x64_OLED : public Adafruit_SH1106 {
+class C128x64_OLED : public OLED_BASE_CLASS {
 	const FONT_INFO* m_pFontInfo;
 public:
   C128x64_OLED(int8_t DC, int8_t CS, int8_t RST);    // Hardware SPI constructor

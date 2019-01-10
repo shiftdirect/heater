@@ -41,8 +41,8 @@ CBluetoothESP32HC05::CBluetoothESP32HC05(int keyPin, int sensePin, int rxPin, in
   _rxPin = rxPin;
   _txPin = txPin;
 
+  digitalWrite(_txPin, HIGH);  // set high before making an output to avoid low glitch
   pinMode(_txPin, OUTPUT);
-  digitalWrite(_txPin, HIGH);
   pinMode(_rxPin, INPUT_PULLUP);
 }
 

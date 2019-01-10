@@ -94,3 +94,8 @@
 //
 #define REPORT_JSON_TRANSMIT 1    
 
+///////////////////////////////////////////////////////////////////////////////
+// Adafruit OLED selection
+//
+#define USE_ADAFRUIT_SH1106  1    
+#define USE_ADAFRUIT_SSD1306 0

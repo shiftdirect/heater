@@ -48,6 +48,8 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
   // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
   // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
   // then goes into a blocking loop awaiting configuration and will return success result
+ 
+  wm.setHostname("BTCDieselHeater");
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
 

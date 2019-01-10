@@ -49,4 +49,5 @@ public:
 protected:
   virtual void openSerial(int baudrate);
   virtual void foldbackDesiredTemp();
+  void flush();
 };

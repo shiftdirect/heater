@@ -54,6 +54,8 @@ CBluetoothHC05::begin()
 
   digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
 
+  delay(50);
+
   openSerial(9600); // virtual function, may call derived class method here
 
   DebugPort.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
@@ -64,9 +66,10 @@ CBluetoothHC05::begin()
     DebugPort.print("  @ ");
     DebugPort.print(BTRates[BTidx]);
     DebugPort.print(" baud... ");
-    openSerial(BTRates[BTidx]);      // open serial port at a std.baud rate
+    openSerial(BTRates[BTidx]);      // open serial port at a std. baud rate
     delay(10);
-    HC05_SerialPort.print("\r\n");   // clear the throat!
+    flush();
+    HC05_SerialPort.print("AT\r\n");   // clear the throat!
     delay(100);
     HC05_SerialPort.setTimeout(100);
 
@@ -227,3 +230,9 @@ CBluetoothHC05::foldbackDesiredTemp()
   }
 }
 
+void 
+CBluetoothHC05::flush()
+{
+  while(HC05_SerialPort.available())  
+    HC05_SerialPort.read();
+}
