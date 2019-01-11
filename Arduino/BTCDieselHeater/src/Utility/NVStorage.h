@@ -31,6 +31,32 @@ struct sHeater {
   uint8_t   setTemperature;
   uint8_t   sysVoltage;
   uint8_t   fanSensor;
+  uint8_t   glowPower;
+
+  bool valid() {
+    bool retval = true;
+    retval &= Pmin < 100;
+    retval &= Pmax < 150;
+    retval &= Fmin < 5000;
+    retval &= Fmax < 6000;
+    retval &= ThermostatMode < 2;
+    retval &= setTemperature < 40;
+    retval &= sysVoltage == 120 || sysVoltage == 240;
+    retval &= fanSensor == 1 || fanSensor == 2;
+    retval &= glowPower >= 1 && glowPower <= 6;
+    return retval;
+  };
+  void init() {
+    Pmin = 14;
+    Pmax = 45;
+    Fmin = 1500;
+    Fmax = 4500;
+    ThermostatMode = 1;
+    setTemperature = 23;
+    sysVoltage = 120;
+    fanSensor = 1;
+    glowPower = 5;
+  };
 };
 
 struct sHourMin {
@@ -60,6 +86,23 @@ struct sTimer {
     stop = rhs.stop;
     enabled = rhs.enabled;
     repeat = rhs.repeat;
+  };
+  void init() {
+    start.hour = 0;
+    start.min = 0;
+    stop.hour = 0;
+    stop.min = 0;
+    enabled = 0;
+    repeat = 0;
+  };
+  bool valid() {
+    bool retval = true;
+    retval &= (start.hour >= 0 && start.hour < 24);
+    retval &= (start.min >= 0 && start.min < 60);
+    retval &= (stop.hour >= 0 && stop.hour < 24);
+    retval &= (stop.min >= 0 && stop.min < 60);
+    retval &= repeat < 2;
+    return retval;
   };
 };
 
@@ -134,6 +177,12 @@ public:
   void init();
   void load();
   void save();
+  void loadHeater();
+  void saveHeater();
+  void loadTimer(int idx, sTimer& timer);
+  void saveTimer(int idx, sTimer& timer);
+  void loadUI();
+  void saveUI();
 };
 
 #endif

@@ -23,26 +23,18 @@
 #include "NVStorage.h"
 #include "DebugPort.h"
 
+bool inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
+bool inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
+
 bool 
 sNVStore::valid()
 {
   bool retval = true;
-  for(int i=0; i<2; i++) {
-    retval &= (timer[i].start.hour >= 0 && timer[i].start.hour < 24);
-    retval &= (timer[i].start.min >= 0 && timer[i].start.min < 60);
-    retval &= (timer[i].stop.hour >= 0 && timer[i].stop.hour < 24);
-    retval &= (timer[i].stop.min >= 0 && timer[i].stop.min < 60);
-    retval &= timer[i].repeat < 2;
-  }
   retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
-  retval &= Heater.Pmin < 100;
-  retval &= Heater.Pmax < 150;
-  retval &= Heater.Fmin < 5000;
-  retval &= Heater.Fmax < 6000;
-  retval &= Heater.ThermostatMode < 2;
-  retval &= Heater.setTemperature < 40;
-  retval &= Heater.sysVoltage == 120 || Heater.sysVoltage == 240;
-  retval &= Heater.fanSensor == 1 || Heater.fanSensor == 2;
+  for(int i=0; i<2; i++) {
+    retval &= timer[i].valid();
+  }
+  retval &= Heater.valid();
   return retval;  
 }
 
@@ -50,34 +42,15 @@ void
 sNVStore::init()
 {
   for(int i=0; i<2; i++) {
-    timer[i].start.hour = 0;
-    timer[i].start.min = 0;
-    timer[i].stop.hour = 0;
-    timer[i].stop.min = 0;
-    timer[i].enabled = 0;
-    timer[i].repeat = 0;
+    timer[i].init();
   }
   DimTime = 60000;  // 1 minute
-  Heater.Pmin = 14;
-  Heater.Pmax = 45;
-  Heater.Fmin = 1500;
-  Heater.Fmax = 4500;
-  Heater.ThermostatMode = 1;
-  Heater.setTemperature = 23;
-  Heater.sysVoltage = 120;
-  Heater.fanSensor = 1;
+  Heater.init();
 }
 
 CHeaterStorage::CHeaterStorage()
 {
-  _calValues.Heater.Pmin = 14;
-  _calValues.Heater.Pmax = 40;
-  _calValues.Heater.Fmin = 1500;
-  _calValues.Heater.Fmax = 4500;
-  _calValues.Heater.ThermostatMode = 1;
-  _calValues.Heater.setTemperature = 22;
-  _calValues.Heater.sysVoltage = 120;
-  _calValues.Heater.fanSensor = 1;
+  _calValues.Heater.init();
 }
 
 float
@@ -223,30 +196,164 @@ CESP32HeaterStorage::CESP32HeaterStorage()
 
 CESP32HeaterStorage::~CESP32HeaterStorage()
 {
-  preferences.end();
 }
 
 void
 CESP32HeaterStorage::init()
 {
-  preferences.begin("dieselheater", false);
 }
 
-void CESP32HeaterStorage::load()
+void 
+CESP32HeaterStorage::load()
 {
   DebugPort.println("Reading from NV storage");
-  preferences.getBytes("calValues", &_calValues, sizeof(sNVStore));
-  if(!_calValues.valid()) {
-    DebugPort.println("Invalid NV storage, initialising");
-    _calValues.init();
-    save();
+  // section for heater calibration params
+  loadHeater();
+  if(!_calValues.Heater.valid()) {
+    _calValues.Heater.init();
+    saveHeater();
+  }
+  // section for timers
+  for(int i=0; i<2; i++) {
+    loadTimer(i+1, _calValues.timer[i]);
+    if(!_calValues.timer[i].valid()) {
+      _calValues.timer[i].init();
+      saveTimer(i+1, _calValues.timer[i]);
+    }
+  }
+  loadUI();
+}
+
+void 
+CESP32HeaterStorage::save()
+{
+  DebugPort.println("Saving to NV storage");
+  saveHeater();
+  for(int i=0; i<2; i++) {
+    saveTimer(i+1, _calValues.timer[i]);
+  }
+  saveUI();
+}
+
+void 
+CESP32HeaterStorage::loadHeater()
+{
+  // section for heater calibration params
+  preferences.begin("Calibration", false);
+  _calValues.Heater.Pmin = preferences.getUChar("minPump", 1.4);
+  _calValues.Heater.Pmax = preferences.getUChar("maxPump", 4.5);
+  _calValues.Heater.Fmin = preferences.getUShort("minFan", 1500);
+  _calValues.Heater.Fmax = preferences.getUShort("maxFan", 4500);
+  _calValues.Heater.ThermostatMode = preferences.getUChar("thermostat", 1);
+  _calValues.Heater.setTemperature = preferences.getUChar("setTemperature", 22);
+  _calValues.Heater.sysVoltage = preferences.getUChar("systemVoltage", 120);
+  _calValues.Heater.fanSensor = preferences.getUChar("fanSensor", 1);
+  _calValues.Heater.glowPower = preferences.getUChar("glowPower", 5);
+  preferences.end();    
+}
+
+void 
+CESP32HeaterStorage::saveHeater()
+{
+  // section for heater calibration params
+  preferences.begin("Calibration", false);
+  preferences.putUChar("minPump", _calValues.Heater.Pmin);
+  preferences.putUChar("maxPump", _calValues.Heater.Pmax);
+  preferences.putUShort("minFan", _calValues.Heater.Fmin);
+  preferences.putUShort("maxFan", _calValues.Heater.Fmax);
+  preferences.putUChar("thermostat", _calValues.Heater.ThermostatMode);
+  preferences.putUChar("setTemperature", _calValues.Heater.setTemperature);
+  preferences.putUChar("systemVoltage", _calValues.Heater.sysVoltage);
+  preferences.putUChar("fanSensor", _calValues.Heater.fanSensor);
+  preferences.putUChar("glowPower", _calValues.Heater.glowPower);
+  preferences.end();    
+}
+
+void 
+CESP32HeaterStorage::loadTimer(int idx, sTimer& timer) {
+  char SectionName[16];
+  sprintf(SectionName, "timer%d", idx);
+  if(!preferences.begin(SectionName, false))
+    DebugPort.println("Preferences::begin() failed");
+  timer.start.hour = preferences.getUChar("startHour", 0);
+  timer.start.min = preferences.getUChar("startMin", 0);
+  timer.stop.hour = preferences.getUChar("stopHour", 0);
+  timer.stop.min = preferences.getUChar("stopMin", 0);
+  timer.enabled = preferences.getUChar("enabled", 0);
+  timer.repeat = preferences.getUChar("repeat", 0);
+  preferences.end();    
+  DebugPort.println("LOADED idx start stop en rpt");
+  DebugPort.print(idx);
+  DebugPort.print(" ");
+  DebugPort.print(timer.start.hour);
+  DebugPort.print(":");
+  DebugPort.print(timer.start.min);
+  DebugPort.print(" ");
+  DebugPort.print(timer.stop.hour);
+  DebugPort.print(":");
+  DebugPort.print(timer.stop.min);
+  DebugPort.print(" ");
+  DebugPort.print(timer.enabled);
+  DebugPort.print(" ");
+  DebugPort.println(timer.repeat);
+}
+
+void 
+CESP32HeaterStorage::saveTimer(int idx, sTimer& timer) 
+{
+  char SectionName[16];
+  sprintf(SectionName, "timer%d", idx);
+  preferences.begin(SectionName, false);
+  preferences.putUChar("startHour", timer.start.hour);
+  preferences.putUChar("startMin", timer.start.min);
+  preferences.putUChar("stopHour", timer.stop.hour);
+  preferences.putUChar("stopMin", timer.stop.min);
+  preferences.putUChar("enabled", timer.enabled);
+  preferences.putUChar("repeat", timer.repeat);
+  preferences.end();    
+  DebugPort.println("SAVED idx start stop en rpt");
+  DebugPort.print(idx);
+  DebugPort.print(" ");
+  DebugPort.print(timer.start.hour);
+  DebugPort.print(":");
+  DebugPort.print(timer.start.min);
+  DebugPort.print(" ");
+  DebugPort.print(timer.stop.hour);
+  DebugPort.print(":");
+  DebugPort.print(timer.stop.min);
+  DebugPort.print(" ");
+  DebugPort.print(timer.enabled);
+  DebugPort.print(" ");
+  DebugPort.println(timer.repeat);
+}
+
+void 
+CESP32HeaterStorage::loadUI()
+{
+  preferences.begin("user", false);
+  _calValues.DimTime = preferences.getUChar("dimTime", 60000);
+  preferences.end();    
+  if(!((_calValues.DimTime >= 0) && (_calValues.DimTime < 300000))) {   // 5 mins
+    _calValues.DimTime = 60000;
+    saveUI();
   }
 }
 
-void CESP32HeaterStorage::save()
+void 
+CESP32HeaterStorage::saveUI()
 {
-  DebugPort.println("Saving to NV storage");
-  preferences.putBytes("calValues", &_calValues, sizeof(sNVStore));
+  preferences.begin("user", false);
+  preferences.putUChar("dimTime", _calValues.DimTime);
+  preferences.end();    
+}
+
+bool inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
+{
+  return (test >= minLim) && (test <= maxLim);
+}
+bool inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim)
+{
+  return (test >= minLim) && (test <= maxLim);
 }
 
 #endif  // ESP32
