@@ -133,7 +133,7 @@ void checkDisplayUpdate();
 void checkDebugCommands();
 
 // DS18B20 temperature sensor support
-OneWire  ds(DS18B20_Pin);  // on pin 5 (a 4.7K resistor is necessary)
+OneWire  ds(15);  // on pin 5 (a 4.7K resistor is necessary)
 DallasTemperature TempSensor(&ds);
 long lastTemperatureTime;            // used to moderate DS18B20 access
 float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
@@ -233,13 +233,27 @@ void parentKeyHandler(uint8_t event)
   ScreenManager.keyHandler(event);   // call into the Screen Manager
 }
 
-void setup() {
+// Added additional t
 
+int numberOfDevices; // Number of temperature devices found
+DeviceAddress tempDeviceAddress;
+
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (deviceAddress[i] < 16) DebugPort.print("0");
+    DebugPort.print(deviceAddress[i], HEX);
+  }
+}
+void setup() {
+  TempSensor.begin();
+ DebugPort.print("Temperature for the device 1 (index 0) is: ");
+  DebugPort.println(TempSensor.getTempCByIndex(0));
   // initialise TelnetSpy (port 23) as well as Serial to 115200 
   // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   
-  TempSensor.begin();
   DebugPort.setWelcomeMsg("*************************************************\r\n"
                           "* Connected to BTC heater controller debug port *\r\n"
                           "*************************************************\r\n");
@@ -257,8 +271,45 @@ void setup() {
   Clock.begin();
   
   // initialise DS18B20 temperature sensor(s)
-  TempSensor.setWaitForConversion(false);
-  TempSensor.requestTemperatures();
+    // Grab a count of devices on the wire
+  numberOfDevices = TempSensor.getDeviceCount();
+  
+  // locate devices on the bus
+  DebugPort.print("Locating devices...");
+  
+  DebugPort.print("Found ");
+  DebugPort.print(numberOfDevices, DEC);
+  DebugPort.println(" devices.");
+
+  // report parasite power requirements
+  DebugPort.print("Parasite power is: "); 
+  if (TempSensor.isParasitePowerMode()) Serial.println("ON");
+  else DebugPort.println("OFF");
+  
+  // Loop through each device, print out address
+  for(int i=0;i<numberOfDevices; i++)
+  {
+    // Search the wire for address
+    if(TempSensor.getAddress(tempDeviceAddress, i))
+  {
+    DebugPort.print("Found device ");
+    DebugPort.print(i, DEC);
+    DebugPort.print(" with address: ");
+    printAddress(tempDeviceAddress);
+    DebugPort.println();
+    
+    
+     DebugPort.print("Resolution actually set to: ");
+    DebugPort.print(TempSensor.getResolution(tempDeviceAddress), DEC); 
+    DebugPort.println();
+  }else{
+    DebugPort.print("Found ghost device at ");
+    DebugPort.print(i, DEC);
+    DebugPort.print(" but could not detect address. Check power and cabling");
+  }
+  }
+ // TempSensor.setWaitForConversion(false);
+ // TempSensor.requestTemperatures();
   lastTemperatureTime = millis();
   lastAnimationTime = millis();
   
@@ -267,7 +318,7 @@ void setup() {
 #if USE_WIFI == 1
 
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
-#if USE_OTA==1
+#if USE_OTA == 1
   initOTA();
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
@@ -431,7 +482,6 @@ void loop()
         // Skip state machine immediately to BTC_Tx, sending our own settings.
         bHasHtrData = false;
         bHasOEMController = false;
-        bHasHtrData = false;
         bool isBTCmaster = true;
         TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
         TxManage.Start(timenow);
@@ -644,7 +694,7 @@ void loop()
       // synchronised with serial reception as interrupts do get disabled in the OneWire library
       tDelta = timenow - lastTemperatureTime;
       if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
-        lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature
+        lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature        
         fTemperature = TempSensor.getTempCByIndex(0);    // read sensor
         // DebugPort.print("DS18B20 = "); DebugPort.println(fTemperature);
         // initialise filtered temperature upon very first pass
@@ -664,7 +714,11 @@ void loop()
           fFilteredTemperature = -100;
         }
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
+        // Added DISABLE INTERRUPTS to test for parasitic fix.
+        portDISABLE_INTERRUPTS();
         TempSensor.requestTemperatures();               // prep sensor for future reading
+        portENABLE_INTERRUPTS();
+
         ScreenManager.reqUpdate();
       }
       updateJSONclients(bReportJSONData);
