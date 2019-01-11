@@ -53,10 +53,16 @@ CScreen2::show()
   char msg[20];
   int xPos, yPos;
 
-  sprintf(msg, "%.1f`", getActualTemperature());
-  {
-    CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
-    _printMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
+  float fTemp = getActualTemperature();
+  if(fTemp > -80) {
+    sprintf(msg, "%.1f`", fTemp);
+    {
+      CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
+      _printMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
+    }
+  }
+  else {
+    _printMenuText(_display.xCentre(), 25, "No Temperature Sensor", false, eCentreJustify);
   }
 
 

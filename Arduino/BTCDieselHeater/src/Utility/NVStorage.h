@@ -29,6 +29,8 @@ struct sHeater {
   uint16_t  Fmax;
   uint8_t   ThermostatMode;
   uint8_t   setTemperature;
+  uint8_t   sysVoltage;
+  uint8_t   fanSensor;
 };
 
 struct sHourMin {
@@ -101,6 +103,8 @@ public:
     unsigned short getFmax();
     unsigned char getDesiredTemperature();
     unsigned char getThermostatMode();
+    unsigned char getSysVoltage();
+    unsigned char getFanSensor();
     unsigned long getDimTime();
 
     void setPmin(float);
@@ -109,6 +113,8 @@ public:
     void setFmax(unsigned short val);
     void setDesiredTemperature(unsigned char val);
     void setThermostatMode(unsigned char val);
+    void setSystemVoltage(float fVal);
+    void setFanSensor(unsigned char val);
     void setDimTime(unsigned long val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);

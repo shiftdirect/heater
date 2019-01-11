@@ -101,6 +101,9 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("Refresh", it->key) == 0) {
       resetJSONmoderator();
 		}
+		else if(strcmp("SystemVoltage", it->key) == 0) {
+      setSystemVoltage(it->value.as<float>());
+		}
 		else if(strcmp("Timer1Days", it->key) == 0) {
       decodeTimerDays(0, it->value.as<const char*>());
 		}
@@ -125,6 +128,9 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("Timer2Repeat", it->key) == 0) {
       decodeTimerRepeat(1, it->value.as<unsigned char>());
 		}
+		else if(strcmp("FanSensor", it->key) == 0) {
+      setFanSensor(it->value.as<unsigned char>());
+		}
 	}
 }
 
@@ -137,8 +143,11 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 
 	bool bSend = false;  // reset should send flag
 
-  float tidyTemp = int(getActualTemperature() * 10) * 0.1f;  // round to 0.1 resolution 
-	bSend |= moderator.addJson("TempCurrent", tidyTemp, root); 
+  float tidyTemp = getActualTemperature();
+  tidyTemp = int(tidyTemp * 10) * 0.1f;  // round to 0.1 resolution 
+  if(tidyTemp > -80) {
+	  bSend |= moderator.addJson("TempCurrent", tidyTemp, root); 
+  }
 	bSend |= moderator.addJson("TempDesired", getHeaterInfo().getTemperature_Desired(), root); 
 	bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
 	bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
@@ -156,7 +165,9 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("FanMax", getHeaterInfo().getFan_Max(), root );
 	bSend |= moderator.addJson("FanRPM", getHeaterInfo().getFan_Actual(), root );
 	bSend |= moderator.addJson("FanVoltage", getHeaterInfo().getFan_Voltage(), root );
-	bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getBattVoltage(), root );
+	bSend |= moderator.addJson("FanSensor", getHeaterInfo().getFan_Sensor(), root );
+	bSend |= moderator.addJson("InputVoltage", getHeaterInfo().getBattVoltage(), root );
+	bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getSystemVoltage(), root );
 	bSend |= moderator.addJson("GlowVoltage", getHeaterInfo().getGlow_Voltage(), root );
 	bSend |= moderator.addJson("GlowCurrent", getHeaterInfo().getGlow_Current(), root );
   bSend |= moderator.addJson("Timer1Start", getTimerStr(0, 0), root );

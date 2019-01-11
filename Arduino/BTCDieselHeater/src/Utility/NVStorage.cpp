@@ -41,6 +41,8 @@ sNVStore::valid()
   retval &= Heater.Fmax < 6000;
   retval &= Heater.ThermostatMode < 2;
   retval &= Heater.setTemperature < 40;
+  retval &= Heater.sysVoltage == 120 || Heater.sysVoltage == 240;
+  retval &= Heater.fanSensor == 1 || Heater.fanSensor == 2;
   return retval;  
 }
 
@@ -62,6 +64,8 @@ sNVStore::init()
   Heater.Fmax = 4500;
   Heater.ThermostatMode = 1;
   Heater.setTemperature = 23;
+  Heater.sysVoltage = 120;
+  Heater.fanSensor = 1;
 }
 
 CHeaterStorage::CHeaterStorage()
@@ -72,6 +76,8 @@ CHeaterStorage::CHeaterStorage()
   _calValues.Heater.Fmax = 4500;
   _calValues.Heater.ThermostatMode = 1;
   _calValues.Heater.setTemperature = 22;
+  _calValues.Heater.sysVoltage = 120;
+  _calValues.Heater.fanSensor = 1;
 }
 
 float
@@ -146,6 +152,36 @@ void
 CHeaterStorage::setThermostatMode(unsigned char val)
 {
   _calValues.Heater.ThermostatMode = val;
+}
+
+void 
+CHeaterStorage::setSystemVoltage(float fVal)
+{
+  int val = int(fVal * 10.0);
+  if(val == 120 || val == 240) {
+    _calValues.Heater.sysVoltage = val;
+  }
+}
+
+unsigned char
+CHeaterStorage::getSysVoltage()
+{
+  return _calValues.Heater.sysVoltage;
+}
+
+void
+CHeaterStorage::setFanSensor(unsigned char val)
+{
+  if(val == 2)
+    _calValues.Heater.fanSensor = 2;
+  else 
+    _calValues.Heater.fanSensor = 1;
+}
+
+unsigned char
+CHeaterStorage::getFanSensor()
+{
+  return _calValues.Heater.fanSensor;
 }
 
 void 

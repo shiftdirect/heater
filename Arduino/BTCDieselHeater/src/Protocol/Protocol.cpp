@@ -317,6 +317,14 @@ CProtocol::setThermostatMode(unsigned on)
     setTemperature_Actual(0);   // if using fixed mode, actual must be reported as 0
 };
 
+void 
+CProtocol::setSystemVoltage(float fVal) 
+{
+  int val = int(fVal * 10.);
+  if(val == 120 || val == 240)
+    Controller.OperatingVoltage = val;
+}
+
 const char* Runstates [] PROGMEM = {
   " Stopped/Ready ",
   "Starting...",
@@ -428,3 +436,4 @@ CProtocolPackage::getErrState() const
       return Heater.getErrState(); 
   }
 }
+

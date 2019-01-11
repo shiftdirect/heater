@@ -138,6 +138,7 @@ DallasTemperature TempSensor(&ds);
 long lastTemperatureTime;            // used to moderate DS18B20 access
 float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
 const float fAlpha = 0.95;           // exponential mean alpha
+int DS18B20holdoff = 2;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
@@ -238,6 +239,7 @@ void setup() {
   // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   
+  TempSensor.begin();
   DebugPort.setWelcomeMsg("*************************************************\r\n"
                           "* Connected to BTC heater controller debug port *\r\n"
                           "*************************************************\r\n");
@@ -255,7 +257,6 @@ void setup() {
   Clock.begin();
   
   // initialise DS18B20 temperature sensor(s)
-  TempSensor.begin();
   TempSensor.setWaitForConversion(false);
   TempSensor.requestTemperatures();
   lastTemperatureTime = millis();
@@ -266,7 +267,7 @@ void setup() {
 #if USE_WIFI == 1
 
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
-#if USE_OTA == 1
+#if USE_OTA==1
   initOTA();
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
@@ -289,11 +290,12 @@ void setup() {
   // define defaults should OEM controller be missing
   DefaultBTCParams.setTemperature_Desired(23);
   DefaultBTCParams.setTemperature_Actual(22);
-  DefaultBTCParams.Controller.OperatingVoltage = 120;
+  DefaultBTCParams.setSystemVoltage(12.0);
   DefaultBTCParams.setPump_Min(1.6f);
   DefaultBTCParams.setPump_Max(5.5f);
   DefaultBTCParams.setFan_Min(1680);
   DefaultBTCParams.setFan_Max(4500);
+  DefaultBTCParams.Controller.FanSensor = 1;
 
   bBTconnected = false;
   Bluetooth.begin();
@@ -644,18 +646,29 @@ void loop()
       if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
         lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature
         fTemperature = TempSensor.getTempCByIndex(0);    // read sensor
+        // DebugPort.print("DS18B20 = "); DebugPort.println(fTemperature);
         // initialise filtered temperature upon very first pass
-        if(fFilteredTemperature <= -90) {              // avoid FP exactness issues
-          fFilteredTemperature = fTemperature;         // prime with initial reading
+        if(fTemperature > -80) {                       // avoid disconnected sensor readings being integrated
+          if(DS18B20holdoff)
+            DS18B20holdoff--;                            // first value upon sensor connect is bad
+          else {
+            if(fFilteredTemperature < -90) {            // avoid FP exactness issues - starts as -100 on boot
+              fFilteredTemperature = fTemperature;       // prime with first *valid* reading
+            }
+            // exponential mean to stabilse readings
+            fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
+          }
         }
-        // exponential mean to stabilse readings
-        fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
+        else {
+          DS18B20holdoff = 2;
+          fFilteredTemperature = -100;
+        }
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         TempSensor.requestTemperatures();               // prep sensor for future reading
         ScreenManager.reqUpdate();
       }
-      CommState.set(CommStates::Idle);
       updateJSONclients(bReportJSONData);
+      CommState.set(CommStates::Idle);
       break;
   }  // switch(CommState)
 
@@ -831,6 +844,15 @@ void  setFanMin(short cVal)
 void  setFanMax(short cVal)
 {
   NVstore.setFmax(cVal);
+}
+
+void setFanSensor(unsigned char cVal)
+{
+  NVstore.setFanSensor(cVal);
+}
+
+void setSystemVoltage(float val) {
+  NVstore.setSystemVoltage(val);
 }
 
 void saveNV() 

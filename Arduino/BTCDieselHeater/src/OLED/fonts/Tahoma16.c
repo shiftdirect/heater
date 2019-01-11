@@ -206,6 +206,16 @@ const uint8_t tahoma_16ptBitmaps[] PROGMEM =
 	0x00, 0x00, //             
 	0x00, 0x00, //             
 
+	// @284 '-' (4 pixels wide)
+	0x03, 0xC0, //       ####
+	0x03, 0xC0, //       ####
+	0x03, 0xC0, //       ####
+	0x03, 0xC0, //       ####
+	0x03, 0xC0, //       ####
+	0x03, 0xC0, //       ####
+	0x03, 0xC0, //       ####
+	0x03, 0xC0, //       ####
+
 };
 
 // Character descriptors for Tahoma 16pt
@@ -225,7 +235,7 @@ const FONT_CHAR_INFO tahoma_16ptDescriptors[] PROGMEM =
 	{0, 0, 0},       // '*' 
 	{0, 0, 0},       // '+' 
 	{0, 0, 0},       // , 
-	{0, 0, 0},       // - 
+	{8, 16, 284},    // - 
 	{4, 16, 0},      // '.' 
 	{0, 0, 0},       // '/' 
 	{11, 16, 8},     // '0' 

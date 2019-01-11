@@ -97,8 +97,9 @@ CScreen1::show()
       desiredT = -getHeaterInfo().getPump_Fixed();
   }
 
+  float fTemp = getActualTemperature();
   showThermometer(desiredT,    // read values from most recently sent [BTC] frame
-                  getActualTemperature());
+                  fTemp);
 
   _animateRPM = false;
   _animatePump = false;
@@ -223,12 +224,15 @@ CScreen1::showThermometer(float desired, float actual)
   char msg[16];
   // draw bulb design
   _display.drawBitmap(X_BULB, Y_BULB, ambientThermometerIcon, W_BULB_ICON, H_BULB_ICON, WHITE);
-  // draw mercury
-  int yPos = Y_BULB + TEMP_YPOS(actual);
-  _display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
-  _display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);  
+
+  if(actual > 0) { 
+    // draw mercury
+    int yPos = Y_BULB + TEMP_YPOS(actual);
+    _display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
+    _display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);  
+  }
   // print actual temperature
-  {
+  if(actual > -80) {
 #ifdef MINI_TEMPLABEL  
     CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
     sprintf(msg, "%.1f`C", actual);
@@ -236,6 +240,9 @@ CScreen1::showThermometer(float desired, float actual)
     sprintf(msg, "%.1f", actual);
 #endif
     _printMenuText(0, Y_BASELINE, msg);
+  }
+  else {
+    _printInverted(1, Y_BASELINE-2, "N/A", true);
   }
 
   // draw target setting

@@ -151,6 +151,8 @@ public:
   float getVoltage_Supply() const;
   float getVoltage_SupplyRaw() const;
   void setVoltage_Supply(float volts);
+  float getSystemVoltage() const { return float(Controller.OperatingVoltage) * 0.1; };
+  void  setSystemVoltage(float val);
   
   // fan set/get
   short getFan_Actual() const;  // Heater side, actual
@@ -231,9 +233,11 @@ public:
   short getFan_Min() const { return Controller.getFan_Min(); };
   short getFan_Max() const { return Controller.getFan_Max(); };
   float getFan_Voltage() const { return Heater.getFan_Voltage(); };
+  int   getFan_Sensor() const { return Controller.Controller.FanSensor; };
   float getGlowPlug_Power() const { return Heater.getGlowPlug_Current() * Heater.getGlowPlug_Voltage(); };
   float getGlow_Voltage() const { return Heater.getGlowPlug_Voltage(); };
   float getGlow_Current() const { return Heater.getGlowPlug_Current(); };
+  float getSystemVoltage() const { return Controller.getSystemVoltage(); };
 
 //  void  setRefTime();
   void  reportFrames(bool isOEM);

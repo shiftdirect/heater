@@ -22,7 +22,11 @@
 // Should be working - Jimmy C
 #include "BTCWifi.h"
 #include "../Utility/DebugPort.h"
+#include <DNSServer.h>
 // select which pin will trigger the configuration portal when set to LOW
+
+#define FAILEDSSID "BTCESP32"
+#define FAILEDPASSWORD "thereisnospoon"
 
 WiFiManager wm;
 
@@ -30,10 +34,12 @@ unsigned int  timeout   = 120; // seconds to run for
 unsigned int  startTime = millis();
 bool isAP               = false;
 bool portalRunning      = false;
-bool startCP            = false; // start AP and webserver if true, else start only webserver
+bool startCP            = true; // start AP and webserver if true, else start only webserver
 int TRIG_PIN;
 
 
+void configModeCallback (WiFiManager *myWiFiManager);
+void saveConfigCallback ();
 
 
 void initWifi(int initpin,const char *failedssid, const char *failedpassword) 
@@ -42,16 +48,18 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
   pinMode(TRIG_PIN, INPUT_PULLUP);
 
   //reset settings - wipe credentials for testing
-  //wm.resetSettings();
+  wm.resetSettings();
 
   // Automatically connect using saved credentials,
   // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
   // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
   // then goes into a blocking loop awaiting configuration and will return success result
  
-  wm.setHostname("BTCDieselHeater");
-  wm.setConfigPortalTimeout(20);
+//  wm.setHostname("BTCDieselHeater");
+  wm.setConfigPortalTimeout(120);
   wm.setConfigPortalBlocking(false);
+//  wm.setAPCallback(configModeCallback);
+//  wm.setSaveConfigCallback(saveConfigCallback); 
 
   bool res = wm.autoConnect(); // auto generated AP name from chipid
 //  bool res = false;
@@ -61,7 +69,7 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
     DebugPort.println("Setting up ESP as AP");
     isAP = WiFi.softAP(failedssid, failedpassword);
     if(isAP) {
-      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 0), IPAddress(255,255,255,0));
+      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
     }
   } 
   else {
@@ -91,17 +99,18 @@ void doWiFiManager(){
   }
 
   // is configuration portal requested?
-  if(TRIG_PIN == 1 && (!portalRunning)) {
+//  if(TRIG_PIN == 1 && (!portalRunning)) {
+  if(digitalRead(TRIG_PIN) == LOW && !portalRunning) {
     if(startCP){
       DebugPort.println("Button Pressed, Starting Config Portal");
       wm.setConfigPortalBlocking(false);
       wm.startConfigPortal();
-      TRIG_PIN = 0; // reset the flag
+//      TRIG_PIN = 0; // reset the flag
     }  
     else{
       DebugPort.println("Button Pressed, Starting Web Portal");
       wm.startWebPortal();
-      TRIG_PIN = 0; // reset the flag
+//      TRIG_PIN = 0; // reset the flag
     }  
     portalRunning = true;
     startTime = millis();
@@ -125,5 +134,16 @@ bool isWifiConnected()
 bool isWifiAP()
 {
   return isAP;
+}
+
+//callback que indica que o ESP entrou no modo AP
+void configModeCallback (WiFiManager *myWiFiManager) {  
+  DebugPort.println("Entered config mode");
+  DebugPort.println(WiFi.softAPIP()); //imprime o IP do AP
+  DebugPort.println(myWiFiManager->getConfigPortalSSID()); //imprime o SSID criado da rede</p><p>}</p><p>//callback que indica que salvamos uma nova rede para se conectar (modo estação)
+}
+void saveConfigCallback () {
+  DebugPort.println("Should save config");
+  DebugPort.println(WiFi.softAPIP()); //imprime o IP do AP
 }
 
