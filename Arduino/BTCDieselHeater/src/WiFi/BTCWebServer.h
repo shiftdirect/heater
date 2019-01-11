@@ -46,7 +46,9 @@
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 void initWebServer();
 bool doWebServer();
+void handleWMConfig();
 void handleRoot();
+void handleReset();
 void handleNotFound();
 void webturnOn();
 void webturnOff();

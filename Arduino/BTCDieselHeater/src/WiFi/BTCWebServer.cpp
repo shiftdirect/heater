@@ -43,6 +43,20 @@ void handleRoot() {
 	server.send(200, "text/html", s); //Send web page
 }
 
+void handleWMConfig() {
+	DebugPort.println("Starting web portal for wifi config");
+	wm.startWebPortal();
+}
+void handleReset() {
+	server.send(200, "text/plain", "Resetting Wifi Settings!");
+	DebugPort.println("diconnecting client and wifi");
+	//client.disconnect();
+	wifi_station_disconnect();
+	wm.resetSettings();
+	ESP.reset();
+
+}
+
 void handleNotFound() {
 	digitalWrite(led, 1);
 	String message = "File Not Found\n\n";
