@@ -290,26 +290,25 @@ void setup() {
   for(int i=0;i<numberOfDevices; i++)
   {
     // Search the wire for address
-    if(TempSensor.getAddress(tempDeviceAddress, i))
-  {
-    DebugPort.print("Found device ");
-    DebugPort.print(i, DEC);
-    DebugPort.print(" with address: ");
-    printAddress(tempDeviceAddress);
-    DebugPort.println();
-    
-    
-     DebugPort.print("Resolution actually set to: ");
-    DebugPort.print(TempSensor.getResolution(tempDeviceAddress), DEC); 
-    DebugPort.println();
-  }else{
-    DebugPort.print("Found ghost device at ");
-    DebugPort.print(i, DEC);
-    DebugPort.print(" but could not detect address. Check power and cabling");
+    if(TempSensor.getAddress(tempDeviceAddress, i)) {
+      DebugPort.print("Found device ");
+      DebugPort.print(i, DEC);
+      DebugPort.print(" with address: ");
+      printAddress(tempDeviceAddress);
+      DebugPort.println();
+      
+      
+      DebugPort.print("Resolution actually set to: ");
+      DebugPort.print(TempSensor.getResolution(tempDeviceAddress), DEC); 
+      DebugPort.println();
+    } else {
+      DebugPort.print("Found ghost device at ");
+      DebugPort.print(i, DEC);
+      DebugPort.print(" but could not detect address. Check power and cabling");
+    }
   }
-  }
- // TempSensor.setWaitForConversion(false);
- // TempSensor.requestTemperatures();
+  TempSensor.setWaitForConversion(false);
+  TempSensor.requestTemperatures();
   lastTemperatureTime = millis();
   lastAnimationTime = millis();
   
@@ -715,9 +714,9 @@ void loop()
         }
         DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         // Added DISABLE INTERRUPTS to test for parasitic fix.
-        portDISABLE_INTERRUPTS();
+//        portDISABLE_INTERRUPTS();
         TempSensor.requestTemperatures();               // prep sensor for future reading
-        portENABLE_INTERRUPTS();
+//        portENABLE_INTERRUPTS();
 
         ScreenManager.reqUpdate();
       }
