@@ -55,7 +55,7 @@ void handleReset() {
 	DebugPort.println("diconnecting client and wifi");
 	//client.disconnect();
 //	wifi_station_disconnect();
-  wm.disconnect();
+	wm.disconnect();
 	wm.resetSettings();
 	ESP.restart();
 
@@ -86,6 +86,8 @@ void initWebServer(void) {
 	}
 	
 	server.on("/", handleRoot);
+	server.on("/wmconfig", handleWMConfig);
+	server.on("/resetwifi",handleReset);
 	server.onNotFound(handleNotFound);
 
 	server.begin();
