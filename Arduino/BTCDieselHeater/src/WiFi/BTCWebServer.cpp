@@ -29,6 +29,9 @@
 #include "Index.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
+#include <WiFiManager.h>
+
+extern WiFiManager wm;
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -51,9 +54,10 @@ void handleReset() {
 	server.send(200, "text/plain", "Resetting Wifi Settings!");
 	DebugPort.println("diconnecting client and wifi");
 	//client.disconnect();
-	wifi_station_disconnect();
+//	wifi_station_disconnect();
+  wm.disconnect();
 	wm.resetSettings();
-	ESP.reset();
+	ESP.restart();
 
 }
 
