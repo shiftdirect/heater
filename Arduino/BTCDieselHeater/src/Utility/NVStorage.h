@@ -180,8 +180,8 @@ public:
   void save();
   void loadHeater();
   void saveHeater();
-  void loadTimer(int idx, sTimer& timer);
-  void saveTimer(int idx, sTimer& timer);
+  void loadTimer(int idx);
+  void saveTimer(int idx);
   void loadUI();
   void saveUI();
   bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max);

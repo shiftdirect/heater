@@ -211,7 +211,7 @@ CESP32HeaterStorage::load()
   DebugPort.println("Reading from NV storage");
   loadHeater();
   for(int i=0; i<2; i++) {
-    loadTimer(i+1, _calValues.timer[i]);
+    loadTimer(i);
   }
   loadUI();
 }
@@ -222,7 +222,7 @@ CESP32HeaterStorage::save()
   DebugPort.println("Saving to NV storage");
   saveHeater();
   for(int i=0; i<2; i++) {
-    saveTimer(i+1, _calValues.timer[i]);
+    saveTimer(i);
   }
   saveUI();
 }
@@ -262,10 +262,11 @@ CESP32HeaterStorage::saveHeater()
 }
 
 void 
-CESP32HeaterStorage::loadTimer(int idx, sTimer& timer) 
+CESP32HeaterStorage::loadTimer(int idx) 
 {
+  sTimer& timer = _calValues.timer[idx];
   char SectionName[16];
-  sprintf(SectionName, "timer%d", idx);
+  sprintf(SectionName, "timer%d", idx+1);
   preferences.begin(SectionName, false);
   validatedLoad("startHour", timer.start.hour, 0, u8inBounds, 0, 23);
   validatedLoad("startMin", timer.start.min, 0, u8inBounds, 0, 59);
@@ -277,10 +278,11 @@ CESP32HeaterStorage::loadTimer(int idx, sTimer& timer)
 }
 
 void 
-CESP32HeaterStorage::saveTimer(int idx, sTimer& timer) 
+CESP32HeaterStorage::saveTimer(int idx) 
 {
+  sTimer& timer = _calValues.timer[idx];
   char SectionName[16];
-  sprintf(SectionName, "timer%d", idx);
+  sprintf(SectionName, "timer%d", idx+1);
   preferences.begin(SectionName, false);
   preferences.putUChar("startHour", timer.start.hour);
   preferences.putUChar("startMin", timer.start.min);
