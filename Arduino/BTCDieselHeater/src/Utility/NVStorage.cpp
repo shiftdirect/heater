@@ -23,8 +23,10 @@
 #include "NVStorage.h"
 #include "DebugPort.h"
 
-bool inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
-bool inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
+bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
+bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2);
+bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
+bool s32inBounds(long test, long minLim, long maxLim);
 
 bool 
 sNVStore::valid()
@@ -207,19 +209,9 @@ void
 CESP32HeaterStorage::load()
 {
   DebugPort.println("Reading from NV storage");
-  // section for heater calibration params
   loadHeater();
-  if(!_calValues.Heater.valid()) {
-    _calValues.Heater.init();
-    saveHeater();
-  }
-  // section for timers
   for(int i=0; i<2; i++) {
     loadTimer(i+1, _calValues.timer[i]);
-    if(!_calValues.timer[i].valid()) {
-      _calValues.timer[i].init();
-      saveTimer(i+1, _calValues.timer[i]);
-    }
   }
   loadUI();
 }
@@ -240,15 +232,15 @@ CESP32HeaterStorage::loadHeater()
 {
   // section for heater calibration params
   preferences.begin("Calibration", false);
-  _calValues.Heater.Pmin = preferences.getUChar("minPump", 1.4);
-  _calValues.Heater.Pmax = preferences.getUChar("maxPump", 4.5);
-  _calValues.Heater.Fmin = preferences.getUShort("minFan", 1500);
-  _calValues.Heater.Fmax = preferences.getUShort("maxFan", 4500);
-  _calValues.Heater.ThermostatMode = preferences.getUChar("thermostat", 1);
-  _calValues.Heater.setTemperature = preferences.getUChar("setTemperature", 22);
-  _calValues.Heater.sysVoltage = preferences.getUChar("systemVoltage", 120);
-  _calValues.Heater.fanSensor = preferences.getUChar("fanSensor", 1);
-  _calValues.Heater.glowPower = preferences.getUChar("glowPower", 5);
+  validatedLoad("minPump", _calValues.Heater.Pmin, 14, u8inBounds, 4, 100);
+  validatedLoad("maxPump", _calValues.Heater.Pmax, 14, u8inBounds, 4, 150);
+  validatedLoad("minFan", _calValues.Heater.Fmin, 1500, u16inBounds, 100, 5000);
+  validatedLoad("maxFan", _calValues.Heater.Fmax, 4500, u16inBounds, 100, 6000);
+  validatedLoad("thermostat", _calValues.Heater.ThermostatMode, 1, u8inBounds, 0, 1);
+  validatedLoad("setTemperature", _calValues.Heater.setTemperature, 22, u8inBounds, 0, 40);
+  validatedLoad("systemVoltage", _calValues.Heater.sysVoltage, 12, u8Match2, 120, 240);
+  validatedLoad("fanSensor", _calValues.Heater.fanSensor, 1, u8inBounds, 1, 2);
+  validatedLoad("glowPower", _calValues.Heater.glowPower, 5, u8inBounds, 1, 6);
   preferences.end();    
 }
 
@@ -270,32 +262,18 @@ CESP32HeaterStorage::saveHeater()
 }
 
 void 
-CESP32HeaterStorage::loadTimer(int idx, sTimer& timer) {
+CESP32HeaterStorage::loadTimer(int idx, sTimer& timer) 
+{
   char SectionName[16];
   sprintf(SectionName, "timer%d", idx);
-  if(!preferences.begin(SectionName, false))
-    DebugPort.println("Preferences::begin() failed");
-  timer.start.hour = preferences.getUChar("startHour", 0);
-  timer.start.min = preferences.getUChar("startMin", 0);
-  timer.stop.hour = preferences.getUChar("stopHour", 0);
-  timer.stop.min = preferences.getUChar("stopMin", 0);
-  timer.enabled = preferences.getUChar("enabled", 0);
-  timer.repeat = preferences.getUChar("repeat", 0);
+  preferences.begin(SectionName, false);
+  validatedLoad("startHour", timer.start.hour, 0, u8inBounds, 0, 23);
+  validatedLoad("startMin", timer.start.min, 0, u8inBounds, 0, 59);
+  validatedLoad("stopHour", timer.stop.hour, 0, u8inBounds, 0, 23);
+  validatedLoad("stopMin", timer.stop.min, 0, u8inBounds, 0, 59);
+  validatedLoad("enabled", timer.enabled, 0, u8inBounds, 0, 255);  // all 8 bits used!
+  validatedLoad("repeat", timer.repeat, 0, u8inBounds, 0, 1);
   preferences.end();    
-  DebugPort.println("LOADED idx start stop en rpt");
-  DebugPort.print(idx);
-  DebugPort.print(" ");
-  DebugPort.print(timer.start.hour);
-  DebugPort.print(":");
-  DebugPort.print(timer.start.min);
-  DebugPort.print(" ");
-  DebugPort.print(timer.stop.hour);
-  DebugPort.print(":");
-  DebugPort.print(timer.stop.min);
-  DebugPort.print(" ");
-  DebugPort.print(timer.enabled);
-  DebugPort.print(" ");
-  DebugPort.println(timer.repeat);
 }
 
 void 
@@ -311,32 +289,14 @@ CESP32HeaterStorage::saveTimer(int idx, sTimer& timer)
   preferences.putUChar("enabled", timer.enabled);
   preferences.putUChar("repeat", timer.repeat);
   preferences.end();    
-  DebugPort.println("SAVED idx start stop en rpt");
-  DebugPort.print(idx);
-  DebugPort.print(" ");
-  DebugPort.print(timer.start.hour);
-  DebugPort.print(":");
-  DebugPort.print(timer.start.min);
-  DebugPort.print(" ");
-  DebugPort.print(timer.stop.hour);
-  DebugPort.print(":");
-  DebugPort.print(timer.stop.min);
-  DebugPort.print(" ");
-  DebugPort.print(timer.enabled);
-  DebugPort.print(" ");
-  DebugPort.println(timer.repeat);
 }
 
 void 
 CESP32HeaterStorage::loadUI()
 {
   preferences.begin("user", false);
-  _calValues.DimTime = preferences.getUChar("dimTime", 60000);
+  validatedLoad("dimTime", _calValues.DimTime, 60000, s32inBounds, 0, 600000);
   preferences.end();    
-  if(!((_calValues.DimTime >= 0) && (_calValues.DimTime < 300000))) {   // 5 mins
-    _calValues.DimTime = 60000;
-    saveUI();
-  }
 }
 
 void 
@@ -347,13 +307,79 @@ CESP32HeaterStorage::saveUI()
   preferences.end();    
 }
 
-bool inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
+bool
+CESP32HeaterStorage::validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max)
+{
+  val = preferences.getUChar(key, defVal);
+  if(!validator(val, min, max)) {
+
+    DebugPort.print("CESP32HeaterStorage::validatedLoad<uint8_t> invalid read ");
+    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
+    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
+    DebugPort.println(defVal);
+
+    val = defVal;
+    preferences.putUChar(key, val);
+    return false;
+  }
+  return true;
+}
+
+bool
+CESP32HeaterStorage::validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max)
+{
+  val = preferences.getUShort(key, defVal);
+  if(!validator(val, min, max)) {
+
+    DebugPort.print("CESP32HeaterStorage::validatedLoad<uint16_t> invalid read ");
+    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
+    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
+    DebugPort.println(defVal);
+
+    val = defVal;
+    preferences.putUShort(key, val);
+    return false;
+  }
+  return true;
+}
+
+bool
+CESP32HeaterStorage::validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max)
+{
+  val = preferences.getLong(key, defVal);
+  if(!validator(val, min, max)) {
+
+    DebugPort.print("CESP32HeaterStorage::validatedLoad<long> invalid read ");
+    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
+    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
+    DebugPort.println(defVal);
+
+    val = defVal;
+    preferences.putLong(key, val);
+    return false;
+  }
+  return true;
+}
+
+bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
 {
   return (test >= minLim) && (test <= maxLim);
 }
-bool inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim)
+
+bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2)
+{
+  return (test == test1) || (test == test2);
+}
+
+bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim)
 {
   return (test >= minLim) && (test <= maxLim);
 }
+
+bool s32inBounds(long test, long minLim, long maxLim)
+{
+  return (test >= minLim) && (test <= maxLim);
+}
+
 
 #endif  // ESP32

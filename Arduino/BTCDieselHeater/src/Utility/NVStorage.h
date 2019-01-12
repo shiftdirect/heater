@@ -60,8 +60,8 @@ struct sHeater {
 };
 
 struct sHourMin {
-  int8_t hour;
-  int8_t min;
+  uint8_t hour;
+  uint8_t min;
   sHourMin() {
     hour = 0;
     min = 0;
@@ -101,7 +101,7 @@ struct sTimer {
     retval &= (start.min >= 0 && start.min < 60);
     retval &= (stop.hour >= 0 && stop.hour < 24);
     retval &= (stop.min >= 0 && stop.min < 60);
-    retval &= repeat < 2;
+    retval &= repeat <= 2;
     return retval;
   };
 };
@@ -168,6 +168,7 @@ public:
 #ifdef ESP32
 
 #include <Preferences.h>
+#include <functional>
 
 class CESP32HeaterStorage : public CHeaterStorage {
   Preferences preferences;
@@ -183,6 +184,9 @@ public:
   void saveTimer(int idx, sTimer& timer);
   void loadUI();
   void saveUI();
+  bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max);
+  bool validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max);
+  bool validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max);
 };
 
 #endif
