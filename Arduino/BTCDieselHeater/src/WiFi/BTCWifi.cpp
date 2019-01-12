@@ -58,7 +58,7 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
 //  wm.setHostname("BTCDieselHeater");
   wm.setConfigPortalTimeout(120);
   wm.setConfigPortalBlocking(false);
-  wm.setAPCallback(configModeCallback);
+//  wm.setAPCallback(configModeCallback);
 //  wm.setSaveConfigCallback(saveConfigCallback); 
 
   bool res = wm.autoConnect(); // auto generated AP name from chipid
