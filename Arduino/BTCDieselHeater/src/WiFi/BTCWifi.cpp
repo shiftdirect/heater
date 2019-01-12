@@ -23,18 +23,21 @@
 #include "BTCWifi.h"
 #include "../Utility/DebugPort.h"
 #include <DNSServer.h>
+#include "esp_system.h"
+
 // select which pin will trigger the configuration portal when set to LOW
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
 
 WiFiManager wm;
+extern void stopWebServer();
 
 unsigned int  timeout   = 120; // seconds to run for
 unsigned int  startTime = millis();
 bool isAP               = false;
 bool portalRunning      = false;
-bool startCP            = true; // start AP and webserver if true, else start only webserver
+bool startCP            = false;//true; // start AP and webserver if true, else start only webserver
 int TRIG_PIN;
 
 
@@ -42,10 +45,20 @@ void configModeCallback (WiFiManager *myWiFiManager);
 void saveConfigCallback ();
 
 
-void initWifi(int initpin,const char *failedssid, const char *failedpassword) 
+bool initWifi(int initpin,const char *failedssid, const char *failedpassword) 
 {
   TRIG_PIN = initpin;
   pinMode(TRIG_PIN, INPUT_PULLUP);
+
+  uint8_t MAC[6];
+  esp_read_mac(MAC, ESP_MAC_WIFI_STA);
+  char msg[64];
+  sprintf(msg, "STA MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+  DebugPort.println(msg);
+  esp_read_mac(MAC, ESP_MAC_WIFI_SOFTAP);
+  sprintf(msg, "AP MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+  DebugPort.println(msg);
+
 
   //reset settings - wipe credentials for testing
 //  wm.resetSettings();
@@ -71,6 +84,7 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
     if(isAP) {
       WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
     }
+    return false;
   } 
   else {
     //if you get here you have connected to the WiFi    
@@ -79,6 +93,7 @@ void initWifi(int initpin,const char *failedssid, const char *failedpassword)
     DebugPort.print("IP address: ");
     DebugPort.println(WiFi.localIP());
   }
+  return true;
 }
 
 void doWiFiManager(){
@@ -101,6 +116,7 @@ void doWiFiManager(){
   // is configuration portal requested?
 //  if(TRIG_PIN == 1 && (!portalRunning)) {
   if(digitalRead(TRIG_PIN) == LOW && !portalRunning) {
+    stopWebServer();
     if(startCP){
       DebugPort.println("Button Pressed, Starting Config Portal");
       wm.setConfigPortalBlocking(false);

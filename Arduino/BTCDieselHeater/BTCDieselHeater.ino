@@ -316,12 +316,18 @@ void setup() {
 
 #if USE_WIFI == 1
 
-  initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
+  bool wifiConnected = initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
 #if USE_OTA == 1
   initOTA();
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
-  initWebServer();
+  if(wifiConnected) {
+    DebugPort.println("Starting heater web server");
+    initWebServer();
+  }
+  else {
+    DebugPort.println("SKIPPED starting heater web server");
+  }
 #endif // USE_WEBSERVER
 
 #endif // USE_WIFI

@@ -27,7 +27,7 @@
 #include <WiFi.h>
 
   void doWiFiManager();
-  void initWifi(int initpin,const char *failedssid, const char *failedpassword);
+  bool initWifi(int initpin,const char *failedssid, const char *failedpassword);
   const char* getWifiAddrStr(); 
   bool isWifiConnected();
   bool isWifiAP();

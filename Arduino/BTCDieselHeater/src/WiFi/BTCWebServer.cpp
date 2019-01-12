@@ -52,12 +52,17 @@ void handleWMConfig() {
 }
 void handleReset() {
 	server.send(200, "text/plain", "Resetting Wifi Settings!");
-	DebugPort.println("diconnecting client and wifi");
+	DebugPort.println("diconnecting client and wifi, then rebooting");
 	//client.disconnect();
 //	wifi_station_disconnect();
 	wm.disconnect();
 	wm.resetSettings();
+
+  delay(1000);
+
 	ESP.restart();
+
+
 
 }
 
@@ -96,6 +101,13 @@ void initWebServer(void) {
 	DebugPort.println("HTTP server started");
 
 }
+
+void stopWebServer()
+{
+	server.close();
+  webSocket.close();
+}
+
 unsigned char cVal;
 
 bool doWebServer(void) {
