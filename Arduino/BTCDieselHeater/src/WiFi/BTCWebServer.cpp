@@ -50,6 +50,7 @@ void handleWMConfig() {
 	DebugPort.println("Starting web portal for wifi config");
 	wm.startWebPortal();
 }
+
 void handleReset() {
 	server.send(200, "text/plain", "Resetting Wifi Settings!");
 	DebugPort.println("diconnecting client and wifi, then rebooting");
@@ -85,12 +86,13 @@ void handleNotFound() {
 
 void initWebServer(void) {
 
-	
+  
 	if (MDNS.begin("BTCHeater")) {
 		DebugPort.println("MDNS responder started");
 	}
 	
 	server.on("/", handleRoot);
+	server.on("/btc", handleRoot);
 	server.on("/wmconfig", handleWMConfig);
 	server.on("/resetwifi",handleReset);
 	server.onNotFound(handleNotFound);

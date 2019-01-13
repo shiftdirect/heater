@@ -40,7 +40,7 @@
 //     HC-05 works OK with WiFi
 //
 #define USE_WIFI      1
-#define USE_OTA       1
+#define USE_OTA       0
 #define USE_WEBSERVER 1
 
 
@@ -51,10 +51,10 @@
 // true: each frame of data is reported on a new lines
 // false: controller, then heater response frmaes are reported on a single line (excel CSV worthy!)
 //
-#define REPORT_RAW_DATA 0                 /* can toggle using <B> from debug console */
+#define REPORT_RAW_DATA    0              /* can toggle using <B> from debug console */
 #define TERMINATE_OEM_LINE 0              /* when an OEM controller exists */
 #define TERMINATE_BTC_LINE 0              /* when an OEM controller does not exist */
-#define REPORT_OEM_RESYNC 0               /* report idle time if OEM controller detected */
+#define REPORT_OEM_RESYNC  0              /* report idle time if OEM controller detected */
 #define REPORT_STATE_MACHINE_TRANSITIONS 0  /* state machine changes reported to DebugPort */
 #define REPORT_BLUEWIRE_RECYCLES 1        /* best default on as this is abnormal behaviour can toggle using <W> on debug console */
 

@@ -321,13 +321,13 @@ void setup() {
   initOTA();
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
-  if(wifiConnected) {
+//  if(wifiConnected) {
     DebugPort.println("Starting heater web server");
     initWebServer();
-  }
+/*  }
   else {
     DebugPort.println("SKIPPED starting heater web server");
-  }
+  }*/
 #endif // USE_WEBSERVER
 
 #endif // USE_WIFI
