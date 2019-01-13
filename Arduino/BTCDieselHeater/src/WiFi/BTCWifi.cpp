@@ -23,9 +23,15 @@
 #include "BTCWifi.h"
 #include "../Utility/DebugPort.h"
 #include <DNSServer.h>
-#include "esp_system.h"
 
-// select which pin will trigger the configuration portal when set to LOW
+#include "esp_system.h"
+#include <Preferences.h>
+
+// function to control the behaviour upon reboot if no wifi manager credentials exist
+// or connection fails
+void prepBootIntoConfigPortal(bool state);
+bool shouldBootIntoConfigPortal();
+
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -40,7 +46,8 @@ unsigned int  startTime = millis();
 bool isAP               = false;
 bool portalRunning      = false;
 bool startCP            = true;//true; // start AP and webserver if true, else start only webserver
-int TRIG_PIN;
+int TRIG_PIN;           //  which pin triggers the configuration portal when set to LOW
+
 unsigned startServer = 0;
 
 
@@ -70,7 +77,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);  // ensure our webserver gets awoken when IP config changes to STA
-  wm.setEnableConfigPortal(false);
+  wm.setEnableConfigPortal(shouldBootIntoConfigPortal());
  
   bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
 //  bool res = false;
@@ -108,6 +115,32 @@ void doWiFiManager(){
       }
     }
 
+    static bool pinDown = false;
+    static long pinTime = 0;
+    if(digitalRead(TRIG_PIN) == LOW) {
+      if(!pinDown)
+        pinTime = millis();
+      pinDown = true;
+    } 
+    else {
+      if(pinDown) {
+        pinDown = false;
+        unsigned long tDelta = millis() - pinTime;
+        DebugPort.print("Wifi config button tDelta = "); DebugPort.println(tDelta);
+        if(tDelta > 1000) {    // > 1 second press
+          prepBootIntoConfigPortal(false);   // long press - boot into SoftAP
+          DebugPort.println("*** Rebooting into web server ***");
+          delay(1000);
+          ESP.restart();
+        }
+        else if(tDelta > 100) {
+          prepBootIntoConfigPortal(true);    // short press - boot into Portal
+          DebugPort.println("*** Rebooting into config portal ***");
+          delay(1000);
+          ESP.restart();
+        }
+      }
+    }
   // is auto timeout portal running
 /*  if(portalRunning){
     wm.process();
@@ -170,5 +203,25 @@ bool isWifiConnected()
 bool isWifiAP()
 {
   return isAP;
+}
+
+
+void prepBootIntoConfigPortal(bool state)
+{
+  Preferences NV;
+  NV.begin("user");
+  NV.putBool("bootPortal", state);
+  NV.end();
+  DebugPort.print("Set boot config portal if WiFiManager not configured = "); DebugPort.println(state);
+}
+
+bool shouldBootIntoConfigPortal()
+{
+  Preferences NV;
+  NV.begin("user");
+  bool retval = NV.getBool("bootPortal", false);
+  NV.end();
+  DebugPort.print("Boot config portal if WiFiManager not configured = "); DebugPort.println(retval);
+  return retval;
 }
 
