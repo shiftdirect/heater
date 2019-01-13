@@ -70,6 +70,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);  // ensure our webserver gets awoken when IP config changes to STA
+  wm.setEnableConfigPortal(false);
  
   bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
 //  bool res = false;
@@ -78,7 +79,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     DebugPort.println("Failed to connect");
     DebugPort.println("Setting up ESP as AP");
 //    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
-//    isAP = WiFi.softAP(failedssid, failedpassword);
+    isAP = WiFi.softAP(failedssid, failedpassword);
 //    WiFi.begin(failedssid);
 //    if(isAP) {
 //      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
