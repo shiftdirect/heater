@@ -68,16 +68,27 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   //reset settings - wipe credentials for testing
 //  wm.resetSettings();
 
-  // Automatically connect using saved credentials,
-  // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
-  // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
-  // then goes into a blocking loop awaiting configuration and will return success result
+  // Automatically connect using saved credentials:
+  // WiFiManager will prepare a link connection, using stored credentials if available.
+  //
+  // NO CREDENTIALS: 
+  //   Using a stored NV variable, we control the link creation via wm.setEnableConfigPortal():
+  //     true -  SoftAP is created (SSID = failedssid), and linked to the config portal 
+  //     false - we need to create a Soft AP, the portal does not start, we provide a web server
+ //
+  // WITH CREDENTIALS:
+  //
+  //   Connected to stored AP, AP provides an IP address to use, we are STA (station)
+  //   failed to connect to stored AP, using a stored NV variable we control the behaviour via wm.setEnableConfigPortal():
+  //     true -  SoftAP is created (SSID = failedssid), and linked to the config portal
+  //     false - we need to create a Soft AP, the portal does not start, we provide a web server
  
   wm.setHostname(failedssid);
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);  // ensure our webserver gets awoken when IP config changes to STA
   wm.setEnableConfigPortal(shouldBootIntoConfigPortal());
+  wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
  
   bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
 //  bool res = false;
@@ -85,12 +96,11 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   if(!res) {
     DebugPort.println("Failed to connect");
     DebugPort.println("Setting up ESP as AP");
-//    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
+    // We need to start the soft AP 
+    // - wifimanger has done most of the work, but has been left us high and dry :-)
     isAP = WiFi.softAP(failedssid, failedpassword);
-//    WiFi.begin(failedssid);
-//    if(isAP) {
-//      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
-//    }
+    DebugPort.print("IP address: ");
+    DebugPort.println(WiFi.softAPIP());
     return false;
   } 
   else {
@@ -133,14 +143,16 @@ void doWiFiManager(){
           delay(1000);
           ESP.restart();
         }
-        else if(tDelta > 100) {
+        else if(tDelta > 50) {
           prepBootIntoConfigPortal(true);    // short press - boot into Portal
           DebugPort.println("*** Rebooting into config portal ***");
           delay(1000);
           ESP.restart();
         }
+        // contact bounce otherwise!
       }
     }
+
   // is auto timeout portal running
 /*  if(portalRunning){
     wm.process();
