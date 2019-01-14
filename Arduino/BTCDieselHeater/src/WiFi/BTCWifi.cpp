@@ -114,6 +114,11 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     else
       DebugPort.print("  STA IP address: ");
     DebugPort.println(WiFi.localIP());
+    int chnl = WiFi.channel();
+    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
+    WiFi.softAP(failedssid, failedpassword, chnl);
+    WiFi.enableAP(true);
+    WiFi.enableSTA(true);
     return true;
   }
 }
