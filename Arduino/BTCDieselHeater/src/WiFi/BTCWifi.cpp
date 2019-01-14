@@ -166,29 +166,37 @@ void doWiFiManager()
       DebugPort.print("Wifi config button tDelta = "); DebugPort.println(tDelta);
       // > 5 second press?
       if(tDelta > 5000) {    
-        prepBootIntoConfigPortal(true);   // very long press - clear credentials, boot into portal
-        wm.resetSettings();
-        DebugPort.println("*** Clearing credentials and rebooting into portal ***");
-        delay(1000);
-        ESP.restart();
+        wifiEnterConfigPortal(true, true);  // very long press - clear credentials, reboot into portal
       }
       // > 1 second press?
       else if(tDelta > 1000) {    
-        prepBootIntoConfigPortal(false);   // long press - boot into SoftAP
-        DebugPort.println("*** Rebooting into web server ***");
-        delay(1000);
-        ESP.restart();
+        wifiEnterConfigPortal(false);   // long press - reboot into web server
       }
       // > 50ms press?
       else if(tDelta > 50) {
-        prepBootIntoConfigPortal(true);    // short press - boot into Portal
-        DebugPort.println("*** Rebooting into config portal ***");
-        delay(1000);
-        ESP.restart();
+        wifiEnterConfigPortal(true);    // quick press - reboot into portal
       }
       // consider as contact bounce if < 50ms!
     }
   }
+}
+
+void wifiEnterConfigPortal(bool state, bool erase) 
+{
+  prepBootIntoConfigPortal(state);  
+
+  if(erase) {
+    wm.resetSettings();
+    DebugPort.println("*** Erased wifi credentials ***");
+  } 
+
+  if(state) 
+    DebugPort.println("*** Rebooting into config portal ***");
+  else
+    DebugPort.println("*** Rebooting into web server ***");
+
+  delay(1000);
+  ESP.restart();
 }
 
 // callback is invoked by WiFiManager after new credentials are saved and verified
@@ -238,7 +246,7 @@ bool isWifiSTA()
   return isSTA;             // true: STAtion mode link is active
 }
 
-bool isConfigPortal()
+bool isWifiConfigPortal()
 {
   return isPortalAP;        // true: config portal is running
 }
