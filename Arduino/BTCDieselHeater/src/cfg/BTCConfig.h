@@ -40,7 +40,7 @@
 //     HC-05 works OK with WiFi
 //
 #define USE_WIFI      1
-#define USE_OTA       0
+#define USE_OTA       1
 #define USE_WEBSERVER 1
 
 
