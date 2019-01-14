@@ -28,10 +28,12 @@
 
   void doWiFiManager();
   bool initWifi(int initpin,const char *failedssid, const char *failedpassword);
-  const char* getWifiAddrStr(); 
+  const char* getWifiAPAddrStr(); 
+  const char* getWifiSTAAddrStr(); 
   bool isWifiConnected();
   bool isWifiAP();
-  bool isPortal();
+  bool isWifiSTA();
+  bool isConfigPortal();
   bool isWebClientConnected();
   bool hasWebClientSpoken(bool reset = false);
   bool hasWebServerSpoken(bool reset = false);

@@ -51,21 +51,29 @@ CScreen4::show()
   int yPos = 16;
   if(isWifiConnected() || isWifiAP()) {
     if(isWifiAP()) {
-      _printInverted(0, yPos, " WiFi Access Point ", true);
+      _printInverted(0, yPos, " WiFi: AP only ", true);
     }
     else {
-      _printInverted(0, yPos, " WiFi Client ", true);
+      _printInverted(0, yPos, " WiFi: STA+AP ", true);
     }
+    // only show STA IP address if available!
+    if(isWifiSTA()) {
+      yPos += _display.textHeight() + 2;
+      _printMenuText(0, yPos, "STA:");
+      _printMenuText(25, yPos, getWifiSTAAddrStr());
+    }
+    // show AP IP address
     yPos += _display.textHeight() + 2;
-    _printMenuText(0, yPos, "IP addr.");
-    _printMenuText(_display.width(), yPos, getWifiAddrStr(), false, eRightJustify);
+    _printMenuText(0, yPos, " AP:");
+    _printMenuText(25, yPos, getWifiAPAddrStr());
   }
   else {
     _printInverted(0, yPos, " WiFi Inactive ", true);
   }
   yPos += _display.textHeight() + 2;
   char msg[32];
-  sprintf(msg, "Display Dim: %d mins", NVstore.getDimTime());
+  int mins = NVstore.getDimTime() / 60000;
+  sprintf(msg, "Display Dim: %d min%c", mins, (mins > 1) ? 's' : ' ');
   _printMenuText(0, yPos, msg);
 }
 

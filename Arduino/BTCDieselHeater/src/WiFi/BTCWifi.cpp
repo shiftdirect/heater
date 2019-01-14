@@ -39,9 +39,8 @@ void APstartedCallback(WiFiManager*);
 
 WiFiManager wm;
 
-//bool isPortalAP         = false;
-//bool isAP               = false;
-int  APmode = 0;        // 0 = STA, 1 = Soft AP, 2 = Config Portal Soft AP
+bool isPortalAP         = false;
+bool isSTA              = false;
 int TRIG_PIN;           //  which pin triggers the configuration portal when set to LOW
 
 unsigned restartServer = 0;
@@ -79,48 +78,54 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   //     true -  SoftAP is created (SSID = failedssid), and linked to the config portal
   //     false - we need to create a Soft AP, the portal does not start, we provide a web server
  
-  APmode = 0;   // assume STA for now
+  DebugPort.println("Attempting to start STA mode (or config portal) via WifiManager...");
+
   wm.setHostname(failedssid);
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);  // ensure our webserver gets awoken when IP config changes to STA
   wm.setAPCallback(APstartedCallback);
   wm.setEnableConfigPortal(shouldBootIntoConfigPortal());
-  wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
+//REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
+// REMOVED    wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0)); 
  
   bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
 //  bool res = false;
+  DebugPort.print("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
 
+  int chnl = 1;
+  bool retval = false;
   if(!res) {
-    // runs through here if we need to start our own soft AP to run THE web page
-    DebugPort.println("WiFimanager failed to connect, Setting up ESP as AP");
-    // We need to start the soft AP 
-    // - wifimanger has done most of the work, but has been left us high and dry :-)
-    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
-    delay(100);
-    WiFi.softAP(failedssid, failedpassword);
-    DebugPort.print("  Soft AP IP address: "); 
-    DebugPort.println(WiFi.softAPIP());
-    if(APmode == 0)   // non zero if config portal was started
-      APmode = 1;
-    return false;
-  } 
+    // failed STA mode
+    DebugPort.println("WiFimanager failed STA connection. Setting up AP...");
+  }    
   else {
-    // runs through here is STA or portal config AP mode
-    //if you get here you have connected to the WiFi    
-    DebugPort.println("WiFiManager connected...yeey :)");
-    if(isPortal())
-      DebugPort.print("  Config Portal IP address: ");
-    else
-      DebugPort.print("  STA IP address: ");
-    DebugPort.println(WiFi.localIP());
-    int chnl = WiFi.channel();
-    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
-    WiFi.softAP(failedssid, failedpassword, chnl);
-    WiFi.enableAP(true);
-    WiFi.enableSTA(true);
-    return true;
+    // runs through here if STA connected OK
+    // if you get here you have connected to the WiFi    
+    isSTA = true;
+    DebugPort.println("WiFiManager connected in STA mode OK");
+    DebugPort.print("  STA IP address: "); DebugPort.println(WiFi.localIP());
+    // must use same radio channel as STA to go to STA+AP, otherwise we drop the STA!
+    chnl = WiFi.channel();  
+    DebugPort.print("Now promoting to STA+AP mode"); 
+    retval = true;
   }
+  // always setup an AP - for STA+AP mode we *must* use the same RF channel as STA
+  DebugPort.println("Starting AP mode");
+//REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
+// REMOVED    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));  
+  WiFi.softAP(failedssid, failedpassword, chnl);
+  WiFi.enableAP(true);
+  DebugPort.print("  AP IP address: "); DebugPort.println(WiFi.softAPIP());
+  DebugPort.print("WifiMode after initWifi = "); DebugPort.println(WiFi.getMode());
+
+  // even though we may have started in STA mode - start the config portal if demanded via the NV flag
+  if(shouldBootIntoConfigPortal()) {
+    DebugPort.println("Manually starting web portal");
+    wm.startWebPortal();
+  }
+  
+  return retval;
 }
 
 void doWiFiManager()
@@ -129,7 +134,7 @@ void doWiFiManager()
 
   if(restartServer) {
     long tDelta = millis() - restartServer;
-    if(tDelta > 10000) {
+    if(tDelta > 7500) {
       restartServer = 0;
       ESP.restart();
     }
@@ -175,24 +180,28 @@ void saveParamsCallback()
 {
   restartServer = millis() | 1;      // prepare to reboot in the near future - ensure non zero!
   prepBootIntoConfigPortal(false);   // ensure we fall back to SoftAP with our web page in future
-//  isPortalAP = false;
-//  isAP = false;
-  APmode = 0;
+  isPortalAP = false;
 }
 
 void APstartedCallback(WiFiManager*)
 {
-  //isPortalAP = true;
-  APmode = 2;
+  isPortalAP = true;
 }
 
-const char* getWifiAddrStr()
+const char* getWifiAPAddrStr()
 { 
-//  if(isAP)
-  if(APmode)
+  if(WiFi.getMode() & WIFI_MODE_AP)
     return WiFi.softAPIP().toString().c_str(); 
   else
+    return NULL; 
+};
+  
+const char* getWifiSTAAddrStr()
+{ 
+  if(WiFi.getMode() & WIFI_MODE_STA)
     return WiFi.localIP().toString().c_str(); 
+  else
+    return NULL; 
 };
   
 
@@ -203,14 +212,18 @@ bool isWifiConnected()
 
 bool isWifiAP()
 {
-//  return isAP;
-  return APmode != 0;
+  int mode = WiFi.getMode();
+  return !isSTA && ((mode & WIFI_MODE_AP) != 0);   
 }
 
-bool isPortal()
+bool isWifiSTA()
 {
-//  return isPortalAP;
-  return APmode == 2;
+  return isSTA;  
+}
+
+bool isConfigPortal()
+{
+  return isPortalAP;
 }
 
 
