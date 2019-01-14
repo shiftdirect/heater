@@ -128,7 +128,14 @@ CScreenHeader::showWifiIcon()
 {
   if(isWifiConnected() || isWifiAP()) {
     _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
-    if(isWifiAP()) {
+    if(isPortal()) {
+      _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 15, 7, BLACK);
+      CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+      _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
+//      _display.print("PTL");
+      _display.print("CFG");
+    }
+    else if(isWifiAP()) {
       _display.fillRect(X_WIFI_ICON + 8, Y_WIFI_ICON + 5, 10, 7, BLACK);
       CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
       _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);

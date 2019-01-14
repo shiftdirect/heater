@@ -31,6 +31,7 @@
   const char* getWifiAddrStr(); 
   bool isWifiConnected();
   bool isWifiAP();
+  bool isPortal();
   bool isWebClientConnected();
   bool hasWebClientSpoken(bool reset = false);
   bool hasWebServerSpoken(bool reset = false);
