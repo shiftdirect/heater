@@ -31,26 +31,20 @@
 // or connection fails
 void prepBootIntoConfigPortal(bool state);
 bool shouldBootIntoConfigPortal();
-
+void saveParamsCallback();
+void APstartedCallback(WiFiManager*);
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
 
 WiFiManager wm;
-extern void stopWebServer();
-extern void initWebServer();
-void saveParamsCallback();
-void APstartedCallback(WiFiManager*);
 
-unsigned int  timeout   = 120; // seconds to run for
-unsigned int  startTime = millis();
-bool isPortalAP         = false;
-bool isAP               = false;
-bool portalRunning      = false;
-bool startCP            = true;//true; // start AP and webserver if true, else start only webserver
+//bool isPortalAP         = false;
+//bool isAP               = false;
+int  APmode = 0;        // 0 = STA, 1 = Soft AP, 2 = Config Portal Soft AP
 int TRIG_PIN;           //  which pin triggers the configuration portal when set to LOW
 
-unsigned startServer = 0;
+unsigned restartServer = 0;
 
 
 bool initWifi(int initpin,const char *failedssid, const char *failedpassword) 
@@ -61,10 +55,10 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   uint8_t MAC[6];
   esp_read_mac(MAC, ESP_MAC_WIFI_STA);
   char msg[64];
-  sprintf(msg, "STA MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+  sprintf(msg, "  STA MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
   DebugPort.println(msg);
   esp_read_mac(MAC, ESP_MAC_WIFI_SOFTAP);
-  sprintf(msg, " AP MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+  sprintf(msg, "   AP MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
   DebugPort.println(msg);
 
   //reset settings - wipe credentials for testing
@@ -85,6 +79,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   //     true -  SoftAP is created (SSID = failedssid), and linked to the config portal
   //     false - we need to create a Soft AP, the portal does not start, we provide a web server
  
+  APmode = 0;   // assume STA for now
   wm.setHostname(failedssid);
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
@@ -98,39 +93,39 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 
   if(!res) {
     // runs through here if we need to start our own soft AP to run THE web page
-    DebugPort.println("Failed to connect");
-    DebugPort.println("Setting up ESP as AP");
+    DebugPort.println("WiFimanager failed to connect, Setting up ESP as AP");
     // We need to start the soft AP 
     // - wifimanger has done most of the work, but has been left us high and dry :-)
     WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
     delay(100);
-    isAP = WiFi.softAP(failedssid, failedpassword);
-    DebugPort.print("AP IP address: "); DebugPort.println(WiFi.softAPIP());
+    WiFi.softAP(failedssid, failedpassword);
+    DebugPort.print("  Soft AP IP address: "); 
+    DebugPort.println(WiFi.softAPIP());
+    if(APmode == 0)   // non zero if config portal was started
+      APmode = 1;
     return false;
   } 
   else {
     // runs through here is STA or portal config AP mode
     //if you get here you have connected to the WiFi    
-    DebugPort.println("connected...yeey :)");
-    DebugPort.println("Ready");
+    DebugPort.println("WiFiManager connected...yeey :)");
     if(isPortal())
-      DebugPort.print("AP IP address: ");
+      DebugPort.print("  Config Portal IP address: ");
     else
-      DebugPort.print("STA IP address: ");
+      DebugPort.print("  STA IP address: ");
     DebugPort.println(WiFi.localIP());
+    return true;
   }
-  return true;
 }
 
 void doWiFiManager()
 {
   wm.process();
 
-  if(startServer) {
-    long tDelta = millis() - startServer;
+  if(restartServer) {
+    long tDelta = millis() - restartServer;
     if(tDelta > 10000) {
-      startServer = 0;
-      initWebServer();
+      restartServer = 0;
       ESP.restart();
     }
   }
@@ -173,20 +168,23 @@ void doWiFiManager()
 
 void saveParamsCallback() 
 {
-  startServer = millis();
+  restartServer = millis() | 1;      // prepare to reboot in the near future - ensure non zero!
   prepBootIntoConfigPortal(false);   // ensure we fall back to SoftAP with our web page in future
-  isPortalAP = false;
-  isAP = false;
+//  isPortalAP = false;
+//  isAP = false;
+  APmode = 0;
 }
 
 void APstartedCallback(WiFiManager*)
 {
-  isPortalAP = true;
+  //isPortalAP = true;
+  APmode = 2;
 }
 
 const char* getWifiAddrStr()
 { 
-  if(isAP)
+//  if(isAP)
+  if(APmode)
     return WiFi.softAPIP().toString().c_str(); 
   else
     return WiFi.localIP().toString().c_str(); 
@@ -200,12 +198,14 @@ bool isWifiConnected()
 
 bool isWifiAP()
 {
-  return isAP;
+//  return isAP;
+  return APmode != 0;
 }
 
 bool isPortal()
 {
-  return isPortalAP;
+//  return isPortalAP;
+  return APmode == 2;
 }
 
 
@@ -215,7 +215,7 @@ void prepBootIntoConfigPortal(bool state)
   NV.begin("user");
   NV.putBool("bootPortal", state);
   NV.end();
-  DebugPort.print("Setting boot config portal if WiFiManager not configured = "); DebugPort.println(state);
+  DebugPort.print("Setting boot config portal if WiFiManager fails = "); DebugPort.println(state);
 }
 
 bool shouldBootIntoConfigPortal()
@@ -224,7 +224,7 @@ bool shouldBootIntoConfigPortal()
   NV.begin("user");
   bool retval = NV.getBool("bootPortal", false);
   NV.end();
-  DebugPort.print("Boot config portal if WiFiManager not configured = "); DebugPort.println(retval);
+  DebugPort.print("Boot config portal if WiFiManager fails = "); DebugPort.println(retval);
   return retval;
 }
 
