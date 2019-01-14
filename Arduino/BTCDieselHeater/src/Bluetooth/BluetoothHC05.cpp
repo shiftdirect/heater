@@ -127,9 +127,11 @@ CBluetoothHC05::begin()
 
     // leave HC-05 command mode, return to data mode
     digitalWrite(_keyPin, LOW);  
+
   }
 
   delay(50);
+  flush();    // ensure any AT command reponse dribbles are cleaned up!
 
   DebugPort.println("");
 }

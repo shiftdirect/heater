@@ -233,23 +233,24 @@ void parentKeyHandler(uint8_t event)
   ScreenManager.keyHandler(event);   // call into the Screen Manager
 }
 
-// Added additional t
 
-int numberOfDevices; // Number of temperature devices found
-DeviceAddress tempDeviceAddress;
-
-void printAddress(DeviceAddress deviceAddress)
+const char* print18B20Address(DeviceAddress deviceAddress)
 {
+  static char addrStr[32];
+  addrStr[0] = 0;
   for (uint8_t i = 0; i < 8; i++)
   {
-    if (deviceAddress[i] < 16) DebugPort.print("0");
-    DebugPort.print(deviceAddress[i], HEX);
+    char subset[8];
+    sprintf(subset, "%02X%c", deviceAddress[i], i<7 ? ':' : ' ');
+    strcat(addrStr, subset);
   }
+  return addrStr;
 }
+
 void setup() {
+  char msg[128];
   TempSensor.begin();
- DebugPort.print("Temperature for the device 1 (index 0) is: ");
-  DebugPort.println(TempSensor.getTempCByIndex(0));
+
   // initialise TelnetSpy (port 23) as well as Serial to 115200 
   // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
@@ -259,8 +260,47 @@ void setup() {
                           "*************************************************\r\n");
   DebugPort.setBufferSize(8192);
   DebugPort.begin(115200);
+  DebugPort.println("_______________________________________________________________");
+  
+  DebugPort.println("DS18B20 status dump");
+  sprintf(msg, "  Temperature for device#1 (idx 0) is: %.1f", TempSensor.getTempCByIndex(0));
+  DebugPort.println(msg);
 
+  // locate devices on the bus
+  DebugPort.print("  Locating DS18B20 devices...");
+  
+  // initialise DS18B20 temperature sensor(s)
+    // Grab a count of devices on the wire
+  int numberOfDevices = TempSensor.getDeviceCount();
+  
+  sprintf(msg, "  Found %d devices", numberOfDevices);
+  DebugPort.println(msg);
 
+  // report parasite power requirements
+  sprintf(msg, "  Parasite power is: %s", TempSensor.isParasitePowerMode() ? "ON" : "OFF");
+  DebugPort.println(msg);
+  
+  // Loop through each device, print out address
+  for(int i=0;i<numberOfDevices; i++)
+  {
+    // Search the wire for address
+    DeviceAddress tempDeviceAddress;
+    if(TempSensor.getAddress(tempDeviceAddress, i)) {
+      sprintf(msg, "  Found DS18B20 device#%d with address: %s", i+1, print18B20Address(tempDeviceAddress));
+      DebugPort.println(msg);
+      
+      sprintf(msg, "  Resolution: %d bits", TempSensor.getResolution(tempDeviceAddress)); 
+      DebugPort.println(msg);
+    } else {
+      sprintf(msg, "  Found ghost @ device#%d, but could not detect address. Check power and cabling", i+1);
+      DebugPort.println(msg);
+    }
+  }
+  TempSensor.setWaitForConversion(false);
+  TempSensor.requestTemperatures();
+  lastTemperatureTime = millis();
+  lastAnimationTime = millis();
+  
   NVstore.init();
   NVstore.load();
 
@@ -270,64 +310,16 @@ void setup() {
   // Initialize the rtc object
   Clock.begin();
   
-  // initialise DS18B20 temperature sensor(s)
-    // Grab a count of devices on the wire
-  numberOfDevices = TempSensor.getDeviceCount();
-  
-  // locate devices on the bus
-  DebugPort.print("Locating devices...");
-  
-  DebugPort.print("Found ");
-  DebugPort.print(numberOfDevices, DEC);
-  DebugPort.println(" devices.");
-
-  // report parasite power requirements
-  DebugPort.print("Parasite power is: "); 
-  if (TempSensor.isParasitePowerMode()) Serial.println("ON");
-  else DebugPort.println("OFF");
-  
-  // Loop through each device, print out address
-  for(int i=0;i<numberOfDevices; i++)
-  {
-    // Search the wire for address
-    if(TempSensor.getAddress(tempDeviceAddress, i)) {
-      DebugPort.print("Found device ");
-      DebugPort.print(i, DEC);
-      DebugPort.print(" with address: ");
-      printAddress(tempDeviceAddress);
-      DebugPort.println();
-      
-      
-      DebugPort.print("Resolution actually set to: ");
-      DebugPort.print(TempSensor.getResolution(tempDeviceAddress), DEC); 
-      DebugPort.println();
-    } else {
-      DebugPort.print("Found ghost device at ");
-      DebugPort.print(i, DEC);
-      DebugPort.print(" but could not detect address. Check power and cabling");
-    }
-  }
-  TempSensor.setWaitForConversion(false);
-  TempSensor.requestTemperatures();
-  lastTemperatureTime = millis();
-  lastAnimationTime = millis();
-  
   ScreenManager.begin();
 
 #if USE_WIFI == 1
 
-  bool wifiConnected = initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
+  initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
 #if USE_OTA == 1
   initOTA();
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
-//  if(wifiConnected) {
-    DebugPort.println("Starting heater web server");
-    initWebServer();
-/*  }
-  else {
-    DebugPort.println("SKIPPED starting heater web server");
-  }*/
+  initWebServer();
 #endif // USE_WEBSERVER
 
 #endif // USE_WIFI

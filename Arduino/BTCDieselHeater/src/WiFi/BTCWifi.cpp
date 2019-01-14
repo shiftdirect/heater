@@ -64,7 +64,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   sprintf(msg, "STA MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
   DebugPort.println(msg);
   esp_read_mac(MAC, ESP_MAC_WIFI_SOFTAP);
-  sprintf(msg, "AP MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+  sprintf(msg, " AP MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
   DebugPort.println(msg);
 
   //reset settings - wipe credentials for testing
@@ -122,97 +122,61 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   return true;
 }
 
-void doWiFiManager(){
-    wm.process();
+void doWiFiManager()
+{
+  wm.process();
 
-    if(startServer) {
-      long tDelta = millis() - startServer;
-      if(tDelta > 10000) {
-        startServer = 0;
-        initWebServer();
-        ESP.restart();
-      }
-    }
-
-    static bool pinDown = false;
-    static long pinTime = 0;
-    if(digitalRead(TRIG_PIN) == LOW) {
-      if(!pinDown)
-        pinTime = millis();
-      pinDown = true;
-    } 
-    else {
-      if(pinDown) {
-        pinDown = false;
-        unsigned long tDelta = millis() - pinTime;
-        DebugPort.print("Wifi config button tDelta = "); DebugPort.println(tDelta);
-        if(tDelta > 5000) {    // > 5 second press
-          prepBootIntoConfigPortal(true);   // very long press - clear credentials, boot into portal
-          wm.resetSettings();
-          DebugPort.println("*** Clearing credentials and rebooting into portal ***");
-          delay(1000);
-          ESP.restart();
-        }
-        else if(tDelta > 1000) {    // > 1 second press
-          prepBootIntoConfigPortal(false);   // long press - boot into SoftAP
-          DebugPort.println("*** Rebooting into web server ***");
-          delay(1000);
-          ESP.restart();
-        }
-        else if(tDelta > 50) {
-          prepBootIntoConfigPortal(true);    // short press - boot into Portal
-          DebugPort.println("*** Rebooting into config portal ***");
-          delay(1000);
-          ESP.restart();
-        }
-        // contact bounce otherwise!
-      }
-    }
-
-  // is auto timeout portal running
-/*  if(portalRunning){
-    wm.process();
-    long tDelta = millis() - startTime;
-    if(tDelta > (timeout*1000)){
-      DebugPort.println("portaltimeout");
-      portalRunning = false;
-      if(startCP){
-        wm.stopConfigPortal();
-      }  
-      else{
-        wm.stopWebPortal();
-      } 
-      wm.disconnect();
-      WiFi.softAP("BTCDieselHeater");
-      WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));
+  if(startServer) {
+    long tDelta = millis() - startServer;
+    if(tDelta > 10000) {
+      startServer = 0;
       initWebServer();
+      ESP.restart();
     }
   }
 
-  // is configuration portal requested?
-//  if(TRIG_PIN == 1 && (!portalRunning)) {
-  if(digitalRead(TRIG_PIN) == LOW && !portalRunning) {
-//    stopWebServer();
-    if(startCP){
-      DebugPort.println("Button Pressed, Starting Config Portal with new AP");
-//      wm.setConfigPortalBlocking(false);
-      wm.startConfigPortal();
-//      TRIG_PIN = 0; // reset the flag
-    }  
-    else{
-      DebugPort.println("Button Pressed, Starting Web Portal");
-      wm.startWebPortal();
-//      TRIG_PIN = 0; // reset the flag
-    }  
-    portalRunning = true;
-    startTime = millis();
-  }*/
+  static bool pinDown = false;
+  static long pinTime = 0;
+  if(digitalRead(TRIG_PIN) == LOW) {
+    if(!pinDown)
+      pinTime = millis();
+    pinDown = true;
+  } 
+  else {
+    if(pinDown) {
+      pinDown = false;
+      unsigned long tDelta = millis() - pinTime;
+      DebugPort.print("Wifi config button tDelta = "); DebugPort.println(tDelta);
+      if(tDelta > 5000) {    // > 5 second press
+        prepBootIntoConfigPortal(true);   // very long press - clear credentials, boot into portal
+        wm.resetSettings();
+        DebugPort.println("*** Clearing credentials and rebooting into portal ***");
+        delay(1000);
+        ESP.restart();
+      }
+      else if(tDelta > 1000) {    // > 1 second press
+        prepBootIntoConfigPortal(false);   // long press - boot into SoftAP
+        DebugPort.println("*** Rebooting into web server ***");
+        delay(1000);
+        ESP.restart();
+      }
+      else if(tDelta > 50) {
+        prepBootIntoConfigPortal(true);    // short press - boot into Portal
+        DebugPort.println("*** Rebooting into config portal ***");
+        delay(1000);
+        ESP.restart();
+      }
+      // contact bounce otherwise!
+    }
+  }
 }
 
 void saveParamsCallback() 
 {
   startServer = millis();
   prepBootIntoConfigPortal(false);   // ensure we fall back to SoftAP with our web page in future
+  isPortalAP = false;
+  isAP = false;
 }
 
 void APstartedCallback(WiFiManager*)

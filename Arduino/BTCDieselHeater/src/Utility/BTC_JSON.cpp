@@ -40,6 +40,11 @@ void interpretJsonCommand(char* pLine)
     return;
 
   DebugPort.print("JSON parse... "); DebugPort.print(pLine);
+/*  for(int i=0; i<strlen(pLine); i++) {
+    char msg[8];
+    sprintf(msg, "%02X ", pLine[i]);
+    DebugPort.print(msg);
+  }*/
 
   StaticJsonBuffer<512> jsonBuffer;   // create a JSON buffer on the heap
 	JsonObject& obj = jsonBuffer.parseObject(pLine);
@@ -138,7 +143,7 @@ void interpretJsonCommand(char* pLine)
 
 bool makeJsonString(CModerator& moderator, char* opStr, int len)
 {
-  StaticJsonBuffer<600> jsonBuffer;               // create a JSON buffer on the stack
+  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
 	bool bSend = false;  // reset should send flag
@@ -190,7 +195,7 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 
 void updateJSONclients(bool report)
 {
-  char jsonStr[600];
+  char jsonStr[800];
 
   if(makeJsonString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
     if (report) {
