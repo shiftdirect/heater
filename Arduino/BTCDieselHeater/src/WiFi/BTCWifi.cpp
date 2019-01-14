@@ -2,7 +2,8 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  James Clark
+ * Copyright (C) 2019  Ray Jones
+ * Copyright (C) 2019  James Clark
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,11 +40,10 @@ void APstartedCallback(WiFiManager*);
 
 WiFiManager wm;
 
-bool isPortalAP         = false;
-bool isSTA              = false;
-int TRIG_PIN;           //  which pin triggers the configuration portal when set to LOW
-
-unsigned restartServer = 0;
+bool isPortalAP         = false;   // true if config portal is running
+bool isSTA              = false;   // true if connected to an access point
+int TRIG_PIN;                      // pin that triggers the configuration portal when set to LOW
+unsigned restartServer = 0;        // set to time of portal reconfig - will cause reboot a while later
 
 
 bool initWifi(int initpin,const char *failedssid, const char *failedpassword) 
@@ -51,6 +51,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   TRIG_PIN = initpin;
   pinMode(TRIG_PIN, INPUT_PULLUP);
 
+  // report the MAC addresses - note individual values for STA and AP modes
   uint8_t MAC[6];
   esp_read_mac(MAC, ESP_MAC_WIFI_STA);
   char msg[64];
@@ -90,7 +91,6 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 // REMOVED    wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0)); 
  
   bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
-//  bool res = false;
   DebugPort.print("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
 
   int chnl = 1;
@@ -123,16 +123,21 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   if(shouldBootIntoConfigPortal()) {
     DebugPort.println("Manually starting web portal");
     wm.startWebPortal();
-    isPortalAP = true;
+    isPortalAP = true;                   // we started portal, we have to flag it!
   }
   
   return retval;
 }
 
+// call from main sketch loop()
 void doWiFiManager()
 {
   wm.process();
 
+  // handle the tail end of new credentials being saved by WiFiManager
+  // whilst the new connection is established OK, the web server is detached
+  // Reboot the ESP so the config portal's root link is removed and our's becomes active
+  // reboot takes palce 7.5 seconds after the config portal params are saved
   if(restartServer) {
     long tDelta = millis() - restartServer;
     if(tDelta > 7500) {
@@ -141,6 +146,12 @@ void doWiFiManager()
     }
   }
 
+  // manage handling of pin to enter WiFManager config portal
+  // we typically use the BOOT pin for this (pins.h)
+  //
+  // Quick Press (< 1 sec)      - enable config portal
+  // > 1 second (< 5 sec) press - disable config portal
+  // > 5 second press           - erase credentials, enable config portal
   static bool pinDown = false;
   static long pinTime = 0;
   if(digitalRead(TRIG_PIN) == LOW) {
@@ -153,40 +164,45 @@ void doWiFiManager()
       pinDown = false;
       unsigned long tDelta = millis() - pinTime;
       DebugPort.print("Wifi config button tDelta = "); DebugPort.println(tDelta);
-      if(tDelta > 5000) {    // > 5 second press
+      // > 5 second press?
+      if(tDelta > 5000) {    
         prepBootIntoConfigPortal(true);   // very long press - clear credentials, boot into portal
         wm.resetSettings();
         DebugPort.println("*** Clearing credentials and rebooting into portal ***");
         delay(1000);
         ESP.restart();
       }
-      else if(tDelta > 1000) {    // > 1 second press
+      // > 1 second press?
+      else if(tDelta > 1000) {    
         prepBootIntoConfigPortal(false);   // long press - boot into SoftAP
         DebugPort.println("*** Rebooting into web server ***");
         delay(1000);
         ESP.restart();
       }
+      // > 50ms press?
       else if(tDelta > 50) {
         prepBootIntoConfigPortal(true);    // short press - boot into Portal
         DebugPort.println("*** Rebooting into config portal ***");
         delay(1000);
         ESP.restart();
       }
-      // contact bounce otherwise!
+      // consider as contact bounce if < 50ms!
     }
   }
 }
 
+// callback is invoked by WiFiManager after new credentials are saved and verified
 void saveParamsCallback() 
 {
   restartServer = millis() | 1;      // prepare to reboot in the near future - ensure non zero!
-  prepBootIntoConfigPortal(false);   // ensure we fall back to SoftAP with our web page in future
-  isPortalAP = false;
+  prepBootIntoConfigPortal(false);   // ensure we present our web page after reboot
+  isPortalAP = false;                // clear CFG adornment from OLED WiFi icon
 }
 
+// callback called if the WiFiManager started the config portal
 void APstartedCallback(WiFiManager*)
 {
-  isPortalAP = true;
+  isPortalAP = true;                  // will add CFG adornment to OLED WiFi icon
 }
 
 const char* getWifiAPAddrStr()
@@ -219,15 +235,15 @@ bool isWifiAP()
 
 bool isWifiSTA()
 {
-  return isSTA;  
+  return isSTA;             // true: STAtion mode link is active
 }
 
 bool isConfigPortal()
 {
-  return isPortalAP;
+  return isPortalAP;        // true: config portal is running
 }
 
-
+// save an NV flag to determine whether config portal should run after reboot
 void prepBootIntoConfigPortal(bool state)
 {
   Preferences NV;
@@ -237,6 +253,7 @@ void prepBootIntoConfigPortal(bool state)
   DebugPort.print("Setting boot config portal if WiFiManager fails = "); DebugPort.println(state);
 }
 
+// test the NV flag whether the config portal should run after reboot
 bool shouldBootIntoConfigPortal()
 {
   Preferences NV;

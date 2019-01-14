@@ -41,7 +41,7 @@ bool bTxWebData = false;
 
 const int led = 13;
 
-void handleRoot() {
+void handleBTCRoot() {
 	String s = MAIN_PAGE; //Read HTML contents
 	server.send(200, "text/html", s); //Send web page
 }
@@ -67,7 +67,7 @@ void handleReset() {
 
 }
 
-void handleNotFound() {
+void handleBTCNotFound() {
 	digitalWrite(led, 1);
 	String message = "File Not Found\n\n";
 	message += "URI: ";
@@ -91,11 +91,10 @@ void initWebServer(void) {
 		DebugPort.println("MDNS responder started");
 	}
 	
-	server.on("/", handleRoot);
-	server.on("/btc", handleRoot);
+	server.on("/", handleBTCRoot);
 	server.on("/wmconfig", handleWMConfig);
 	server.on("/resetwifi",handleReset);
-	server.onNotFound(handleNotFound);
+	server.onNotFound(handleBTCNotFound);
 
 	server.begin();
 	webSocket.begin();
@@ -104,14 +103,9 @@ void initWebServer(void) {
 
 }
 
-void stopWebServer()
-{
-	server.close();
-  webSocket.close();
-}
-
 unsigned char cVal;
 
+// called my main sketch loop()
 bool doWebServer(void) {
 	webSocket.loop();
 	server.handleClient();
