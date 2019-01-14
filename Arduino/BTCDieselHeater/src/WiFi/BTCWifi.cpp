@@ -123,6 +123,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   if(shouldBootIntoConfigPortal()) {
     DebugPort.println("Manually starting web portal");
     wm.startWebPortal();
+    isPortalAP = true;
   }
   
   return retval;
