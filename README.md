@@ -1,6 +1,6 @@
 # BluetoothHeater
 
-Bluetooth interface for Chinese Diesel Heaters
+Bluetooth & WiFi interface for Chinese Diesel Heaters
 
 Requirements
 --------------------------
