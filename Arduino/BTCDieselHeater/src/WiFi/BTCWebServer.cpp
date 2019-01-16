@@ -47,24 +47,22 @@ void handleBTCRoot() {
 }
 
 void handleWMConfig() {
+	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
 	DebugPort.println("Starting web portal for wifi config");
-	wm.startWebPortal();
+  delay(500);
+//	wm.startWebPortal();
+  wifiEnterConfigPortal(true, false, 3000);
 }
 
 void handleReset() {
-	server.send(200, "text/plain", "Resetting Wifi Settings!");
+	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
 	DebugPort.println("diconnecting client and wifi, then rebooting");
+  delay(500);
 	//client.disconnect();
 //	wifi_station_disconnect();
-	wm.disconnect();
-	wm.resetSettings();
-
-  delay(1000);
-
-	ESP.restart();
-
-
-
+//	wm.disconnect();
+//	wm.resetSettings();
+  wifiEnterConfigPortal(true, true, 3000);
 }
 
 void handleBTCNotFound() {

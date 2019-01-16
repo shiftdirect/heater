@@ -30,4 +30,7 @@ public:
   CScreen4(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
+private:
+  int  _rowSel;
+  int  _repeatCount;
 };

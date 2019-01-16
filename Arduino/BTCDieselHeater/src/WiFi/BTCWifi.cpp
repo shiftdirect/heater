@@ -24,6 +24,7 @@
 #include "BTCWifi.h"
 #include "../Utility/DebugPort.h"
 #include <DNSServer.h>
+#include "../OLED/ScreenManager.h"
 
 #include "esp_system.h"
 #include <Preferences.h>
@@ -45,6 +46,7 @@ bool isSTA              = false;   // true if connected to an access point
 int TRIG_PIN;                      // pin that triggers the configuration portal when set to LOW
 unsigned restartServer = 0;        // set to time of portal reconfig - will cause reboot a while later
 
+extern CScreenManager ScreenManager;
 
 bool initWifi(int initpin,const char *failedssid, const char *failedpassword) 
 {
@@ -134,17 +136,6 @@ void doWiFiManager()
 {
   wm.process();
 
-  // handle the tail end of new credentials being saved by WiFiManager
-  // whilst the new connection is established OK, the web server is detached
-  // Reboot the ESP so the config portal's root link is removed and our's becomes active
-  // reboot takes palce 7.5 seconds after the config portal params are saved
-  if(restartServer) {
-    long tDelta = millis() - restartServer;
-    if(tDelta > 7500) {
-      restartServer = 0;
-      ESP.restart();
-    }
-  }
 
   // manage handling of pin to enter WiFManager config portal
   // we typically use the BOOT pin for this (pins.h)
@@ -154,49 +145,78 @@ void doWiFiManager()
   // > 5 second press           - erase credentials, enable config portal
   static bool pinDown = false;
   static long pinTime = 0;
+  unsigned long tDelta;
+
   if(digitalRead(TRIG_PIN) == LOW) {
     if(!pinDown)
       pinTime = millis();
     pinDown = true;
+    // track hold duration - change OLED Wifi annotation according to length of press
+    tDelta = millis() - pinTime;
+    if(tDelta > 5000)
+      isPortalAP = true;          // we will start portal - show 'CFG' on OLED!
+    else if(tDelta > 1000)
+      isPortalAP = false;         // we won't start portal - hide 'CFG' on OLED!
+    else
+      isPortalAP = true;          // we will start portal - show 'CFG' on OLED!
   } 
   else {
     if(pinDown) {
       pinDown = false;
-      unsigned long tDelta = millis() - pinTime;
+      tDelta = millis() - pinTime;
       DebugPort.print("Wifi config button tDelta = "); DebugPort.println(tDelta);
       // > 5 second press?
       if(tDelta > 5000) {    
-        prepBootIntoConfigPortal(true);   // very long press - clear credentials, boot into portal
-        wm.resetSettings();
-        DebugPort.println("*** Clearing credentials and rebooting into portal ***");
-        delay(1000);
-        ESP.restart();
+        wifiEnterConfigPortal(true, true);  // very long press - clear credentials, reboot into portal
       }
       // > 1 second press?
       else if(tDelta > 1000) {    
-        prepBootIntoConfigPortal(false);   // long press - boot into SoftAP
-        DebugPort.println("*** Rebooting into web server ***");
-        delay(1000);
-        ESP.restart();
+        wifiEnterConfigPortal(false);   // long press - reboot into web server
       }
       // > 50ms press?
       else if(tDelta > 50) {
-        prepBootIntoConfigPortal(true);    // short press - boot into Portal
-        DebugPort.println("*** Rebooting into config portal ***");
-        delay(1000);
-        ESP.restart();
+        wifiEnterConfigPortal(true);    // quick press - reboot into portal
       }
       // consider as contact bounce if < 50ms!
     }
   }
 }
 
+void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay) 
+{
+	wm.disconnect();
+  prepBootIntoConfigPortal(state);  
+
+  const char* content[2];
+
+  if(isWifiSTA() && !erase)
+    content[0] = "WiFi Mode -> STA+AP";
+  else 
+    content[0] = "WiFi Mode -> AP only";
+
+  if(erase) {
+    wm.resetSettings();
+    DebugPort.println("*** Erased wifi credentials ***");
+  } 
+
+  if(state) {
+    DebugPort.println("*** Rebooting into config portal ***");
+    content[1] = "Web -> Config Portal";
+  }
+  else {
+    DebugPort.println("*** Rebooting into web server ***");
+    content[1] = "Web -> Heater control";
+  }
+
+  restartServer = (millis() + rebootDelay) | 1;      // prepare to reboot in the future - ensure non zero!
+
+  ScreenManager.showRebootMsg(content, rebootDelay);
+}
+
 // callback is invoked by WiFiManager after new credentials are saved and verified
 void saveParamsCallback() 
 {
-  restartServer = millis() | 1;      // prepare to reboot in the near future - ensure non zero!
-  prepBootIntoConfigPortal(false);   // ensure we present our web page after reboot
-  isPortalAP = false;                // clear CFG adornment from OLED WiFi icon
+  wifiEnterConfigPortal(false);  // stop config portal, reboot
 }
 
 // callback called if the WiFiManager started the config portal
@@ -238,7 +258,7 @@ bool isWifiSTA()
   return isSTA;             // true: STAtion mode link is active
 }
 
-bool isConfigPortal()
+bool isWifiConfigPortal()
 {
   return isPortalAP;        // true: config portal is running
 }

@@ -33,9 +33,10 @@
   bool isWifiConnected();
   bool isWifiAP();
   bool isWifiSTA();
-  bool isConfigPortal();
+  bool isWifiConfigPortal();
   bool isWebClientConnected();
   bool hasWebClientSpoken(bool reset = false);
   bool hasWebServerSpoken(bool reset = false);
+  void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000);
 
 #endif __BTCWIFI_H__
