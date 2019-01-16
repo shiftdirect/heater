@@ -28,6 +28,7 @@
 class CProtocol;
 class C128x64_OLED;
 class CScreen;
+class CRebootScreen;
 
 class CScreenManager {
   std::vector<CScreen*> _Screens;
@@ -36,6 +37,7 @@ class CScreenManager {
   unsigned long _DimTime;
   bool _bReqUpdate;
   void _switchScreen();
+  CRebootScreen* _pRebootScreen;
 public:
   CScreenManager();
   ~CScreenManager();
@@ -47,6 +49,7 @@ public:
   void prevScreen();
   void keyHandler(uint8_t event);
   void reqUpdate();
+  void showRebootMsg(const char* content[2], long delayTime);
 };
 
 #endif // __SCREEN_MANAGER_H__

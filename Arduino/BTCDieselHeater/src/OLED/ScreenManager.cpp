@@ -7,6 +7,7 @@
 #include "Screen6.h"
 #include "Screen7.h"
 #include "Screen8.h"
+#include "RebootScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -96,6 +97,7 @@ CScreenManager::CScreenManager()
   _currentScreen = -1;
   _bReqUpdate = false;
   _DimTime = millis() + 60000;
+  _pRebootScreen = NULL;
 }
 
 CScreenManager::~CScreenManager()
@@ -167,10 +169,17 @@ CScreenManager::checkUpdate()
   }
 
   if(_bReqUpdate) {
-		if(_currentScreen >= 0) {
-			_Screens[_currentScreen]->show();
+    if(_pRebootScreen) {
+      _pRebootScreen->show();
       _bReqUpdate = false;
-			return true;
+      return true;
+    }
+    else {
+      if(_currentScreen >= 0) {
+        _Screens[_currentScreen]->show();
+        _bReqUpdate = false;
+        return true;
+      }
     }
   }
   return false;
@@ -235,11 +244,18 @@ CScreenManager::keyHandler(uint8_t event)
 
   if(_DimTime == 0)
     _pDisplay->dim(false);
-//  _DimTime = millis() + NVstore.getDimTime();
-  _DimTime = millis() + 60000;
-  if(_DimTime == 0)
-   _DimTime = 1;
+  _DimTime = (millis() + NVstore.getDimTime()) | 1;
+//  _DimTime = (millis() + 60000) | 1;
 }
 
 
- 
+void 
+CScreenManager::showRebootMsg(const char* content[2], long delayTime)
+{
+  if(_pRebootScreen == NULL)
+    _pRebootScreen = new CRebootScreen(*_pDisplay, *this);
+
+  _pRebootScreen->setMessage(content, delayTime);
+  _bReqUpdate = true;
+  _pDisplay->dim(false);
+}

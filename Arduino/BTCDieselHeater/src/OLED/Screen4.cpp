@@ -79,11 +79,12 @@ CScreen4::show()
   else {
     _printInverted(0, yPos, " WiFi Inactive ", true);
   }
-  yPos += _display.textHeight() + 2;
+
+/*  yPos += _display.textHeight() + 2;
   char msg[32];
   int mins = NVstore.getDimTime() / 60000;
   sprintf(msg, "Display Dim: %d min%c", mins, (mins > 1) ? 's' : ' ');
-  _printMenuText(0, yPos, msg);
+  _printMenuText(0, yPos, msg);*/
 }
 
 
@@ -94,15 +95,16 @@ CScreen4::keyHandler(uint8_t event)
     _repeatCount = 0;
     // press CENTRE
     if(event & key_Centre) {
-      return;
     }
     // press LEFT 
     if(event & key_Left) {
       _ScreenManager.prevScreen(); 
+      _rowSel = 0;
     }
     // press RIGHT 
     if(event & key_Right) {
       _ScreenManager.nextScreen(); 
+      _rowSel = 0;
     }
     // press UP
     if(event & key_Up) {
@@ -116,6 +118,7 @@ CScreen4::keyHandler(uint8_t event)
       // _rowSel--;
       // UPPERLIMIT(_rowSel, 0);
     }
+    _ScreenManager.reqUpdate();
   }
 
   if(event & keyRepeat) {    // track key hold time
@@ -125,13 +128,17 @@ CScreen4::keyHandler(uint8_t event)
   if(event & keyReleased) {
     if(event & key_Centre) {
       if(_rowSel) {
-        if(isWifiConfigPortal())
-          wifiEnterConfigPortal(false);  // stop config portal, reboot
+
+        if(_repeatCount > STA_HOLD_TIME) {
+          wifiEnterConfigPortal(true, _repeatCount > STA_HOLD_TIME, 5000);    // press - reboot into portal, long press - erase credentials
+        }
         else {
-          if(_rowSel==1)
-            wifiEnterConfigPortal(true, _repeatCount > STA_HOLD_TIME);    // press - reboot into portal, long press - erase credentials
-          else
-            wifiEnterConfigPortal(false);  // stop config portal, reboot
+          if(isWifiConfigPortal()) {
+            wifiEnterConfigPortal(false, false, 5000);  // stop config portal, reboot
+          }
+          else {
+            wifiEnterConfigPortal(true, false, 5000);  // stop config portal, reboot
+          }
         }
       }
     }
