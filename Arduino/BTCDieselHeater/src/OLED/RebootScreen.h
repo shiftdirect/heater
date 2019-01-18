@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  James Clark
+ * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +19,19 @@
  * 
  */
 
-#ifndef __BTCWIFI_H__
-#define __BTCWIFI_H__
+#include <stdint.h>
+#include "ScreenHeader.h"
 
-#include <Arduino.h>
-#include <WiFiManager.h>
-#include <WiFi.h>
+class C128x64_OLED;
+class CScreenManager;
 
-  void doWiFiManager();
-  bool initWifi(int initpin,const char *failedssid, const char *failedpassword);
-  const char* getWifiAPAddrStr(); 
-  const char* getWifiSTAAddrStr(); 
-  const char* getWifiAPMACStr();
-  const char* getWifiSTAMACStr();
-  bool isWifiConnected();
-  bool isWifiAP();
-  bool isWifiSTA();
-  bool isWifiConfigPortal();
-  bool isWebClientConnected();
-  bool hasWebClientSpoken(bool reset = false);
-  bool hasWebServerSpoken(bool reset = false);
-  void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000);
-  int  isWifiButton();
-
-#endif __BTCWIFI_H__
+class CRebootScreen : public CScreen {
+public:
+  CRebootScreen(C128x64_OLED& display, CScreenManager& mgr);
+  void show();
+  void keyHandler(uint8_t event);
+  void setMessage(const char* content[2], long delayTime);
+private:
+  String _rebootMessage[2];
+  long _restartTime;
+};

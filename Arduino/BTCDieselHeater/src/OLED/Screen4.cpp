@@ -42,6 +42,7 @@
 CScreen4::CScreen4(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _rowSel = 0;
+  _bShowMAC = false;
 }
 
 
@@ -50,7 +51,7 @@ CScreen4::show()
 {
   CScreenHeader::show();
   
-  int yPos = 16;
+  int yPos = 18;
   if(isWifiConnected() || isWifiAP()) {
     
     const char* pTitle = NULL;
@@ -65,20 +66,30 @@ CScreen4::show()
       _printInverted(3, yPos, pTitle, true);   // inverted title bar
     yPos += 3;
 
-    // show AP IP address
-    yPos += _display.textHeight() + 2;
-    _printMenuText(0, yPos, " AP:");
-    _printMenuText(25, yPos, getWifiAPAddrStr());
     // only show STA IP address if available!
     if(isWifiSTA() && _repeatCount <= STA_HOLD_TIME) {
       yPos += _display.textHeight() + 2;
       _printMenuText(0, yPos, "STA:");
-      _printMenuText(25, yPos, getWifiSTAAddrStr());
+      if(_bShowMAC)
+        _printMenuText(25, yPos, getWifiSTAMACStr());
+      else
+        _printMenuText(25, yPos, getWifiSTAAddrStr());
     }
+    // show AP IP address
+    yPos += _display.textHeight() + 2;
+    _printMenuText(0, yPos, " AP:");
+    if(_bShowMAC)
+      _printMenuText(25, yPos, getWifiAPMACStr());
+    else
+      _printMenuText(25, yPos, getWifiAPAddrStr());
   }
   else {
     _printInverted(0, yPos, " WiFi Inactive ", true);
   }
+
+    // show next/prev screen navigation line
+  _printMenuText(_display.xCentre(), 52, "<-             ->", _rowSel == 0, eCentreJustify);
+
 
 /*  yPos += _display.textHeight() + 2;
   char msg[32];
@@ -109,14 +120,13 @@ CScreen4::keyHandler(uint8_t event)
     // press UP
     if(event & key_Up) {
       _rowSel = 1;
-      // _rowSel++;
-      // UPPERLIMIT(_rowSel, (isWifiConfigPortal() ? 2 : 1));
     }
     // press DOWN
     if(event & key_Down) {
+      if(_rowSel == 0) {
+        _bShowMAC = !_bShowMAC;   // toogle MAC/IP address if on navigation row
+      }
       _rowSel = 0;
-      // _rowSel--;
-      // UPPERLIMIT(_rowSel, 0);
     }
     _ScreenManager.reqUpdate();
   }

@@ -33,4 +33,5 @@ public:
 private:
   int  _rowSel;
   int  _repeatCount;
+  bool _bShowMAC;
 };

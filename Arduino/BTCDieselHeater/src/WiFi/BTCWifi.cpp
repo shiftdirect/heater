@@ -45,6 +45,8 @@ bool isPortalAP         = false;   // true if config portal is running
 bool isSTA              = false;   // true if connected to an access point
 int TRIG_PIN;                      // pin that triggers the configuration portal when set to LOW
 unsigned restartServer = 0;        // set to time of portal reconfig - will cause reboot a while later
+char MACstr[2][20];                // MACstr[0] STA, MACstr[1] = AP
+int wifiButtonState = 0;
 
 extern CScreenManager ScreenManager;
 
@@ -56,12 +58,11 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   // report the MAC addresses - note individual values for STA and AP modes
   uint8_t MAC[6];
   esp_read_mac(MAC, ESP_MAC_WIFI_STA);
-  char msg[64];
-  sprintf(msg, "  STA MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
-  DebugPort.println(msg);
+  sprintf(MACstr[0], "%02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+  DebugPort.print("  STA MAC address: "); DebugPort.println(MACstr[0]);
   esp_read_mac(MAC, ESP_MAC_WIFI_SOFTAP);
-  sprintf(msg, "   AP MAC address: %02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
-  DebugPort.println(msg);
+  sprintf(MACstr[1], "%02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
+  DebugPort.print("   AP MAC address: "); DebugPort.println(MACstr[1]);
 
   //reset settings - wipe credentials for testing
 //  wm.resetSettings();
@@ -148,17 +149,19 @@ void doWiFiManager()
   unsigned long tDelta;
 
   if(digitalRead(TRIG_PIN) == LOW) {
-    if(!pinDown)
+    if(!pinDown) {
       pinTime = millis();
+      ScreenManager.reqUpdate();
+    }
     pinDown = true;
     // track hold duration - change OLED Wifi annotation according to length of press
     tDelta = millis() - pinTime;
     if(tDelta > 5000)
-      isPortalAP = true;          // we will start portal - show 'CFG' on OLED!
+      wifiButtonState = 3;        // we will show 'ERS' on OLED!
     else if(tDelta > 1000)
-      isPortalAP = false;         // we won't start portal - hide 'CFG' on OLED!
+      wifiButtonState = 2;        // we will show 'HTR' on OLED!
     else
-      isPortalAP = true;          // we will start portal - show 'CFG' on OLED!
+      wifiButtonState = 1;        // we will show 'CFG' on OLED!
   } 
   else {
     if(pinDown) {
@@ -227,20 +230,29 @@ void APstartedCallback(WiFiManager*)
 
 const char* getWifiAPAddrStr()
 { 
-  if(WiFi.getMode() & WIFI_MODE_AP)
-    return WiFi.softAPIP().toString().c_str(); 
-  else
-    return NULL; 
-};
+  noInterrupts();
+  IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
+  interrupts();
+  return IPaddr.toString().c_str(); 
+}
   
 const char* getWifiSTAAddrStr()
 { 
-  if(WiFi.getMode() & WIFI_MODE_STA)
-    return WiFi.localIP().toString().c_str(); 
-  else
-    return NULL; 
-};
+  noInterrupts();
+  IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
+  interrupts();
+  return IPaddr.toString().c_str(); 
+}
   
+const char* getWifiAPMACStr()
+{ 
+  return MACstr[1]; 
+}
+  
+const char* getWifiSTAMACStr()
+{ 
+  return MACstr[0]; 
+}
 
 bool isWifiConnected()
 {
@@ -284,3 +296,7 @@ bool shouldBootIntoConfigPortal()
   return retval;
 }
 
+int  isWifiButton()
+{
+  return wifiButtonState;
+}
