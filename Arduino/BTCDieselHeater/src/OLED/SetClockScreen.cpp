@@ -39,6 +39,7 @@ CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 {
   _rowSel = 0;
   _nextT = millis();
+  _SaveTime = 0;
 }
 
 void
@@ -69,39 +70,50 @@ CSetClockScreen::show()
       working = now;
       // DELIBERATE DROP THROUGH HERE
     }
-    yPos = 28;
-    xPos = 6;
-    // date
-    if(_rowSel==0) {
-      xPos = 20;
-      _printMenuText(xPos, yPos, working.dowStr());
-    }          
 
-    sprintf(str, "%d", working.day());
-    xPos += 20 + 12;
-    _printMenuText(xPos, yPos, str, _rowSel==1, eRightJustify);
-    xPos += 4;
-    _printMenuText(xPos, yPos, working.monthStr(), _rowSel==2);
-    xPos += 22;
-    sprintf(str, "%d", working.year());
-    _printMenuText(xPos, yPos, str, _rowSel==3);
-    // time
-    yPos = 40;
-    xPos = 26;
-    sprintf(str, "%02d", working.hour());
-    _printMenuText(xPos, yPos, str, _rowSel==4);
-    xPos += 16;
-    _printMenuText(xPos, yPos, ":");
-    xPos += 8;
-    sprintf(str, "%02d", working.minute());
-    _printMenuText(xPos, yPos, str, _rowSel==5);
-    xPos += 16;
-    _printMenuText(xPos, yPos, ":");
-    sprintf(str, "%02d", working.second());
-    xPos += 8;
-    _printMenuText(xPos, yPos, str, _rowSel==6);
-    if(_rowSel>=1)
-      _printMenuText(_display.width()-border, yPos, "SET", _rowSel==7, eRightJustify);
+    if(_SaveTime) {
+      long tDelta = millis() - _SaveTime;
+      if(tDelta > 0) 
+        _SaveTime = 0;
+      _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
+    }
+    else {
+      yPos = 28;
+      xPos = 6;
+      // date
+      if(_rowSel==0) {
+        xPos = 20;
+        _printMenuText(xPos, yPos, working.dowStr());
+      }          
+
+      sprintf(str, "%d", working.day());
+      xPos += 20 + 12;
+      _printMenuText(xPos, yPos, str, _rowSel==1, eRightJustify);
+      xPos += 4;
+      _printMenuText(xPos, yPos, working.monthStr(), _rowSel==2);
+      xPos += 22;
+      sprintf(str, "%d", working.year());
+      _printMenuText(xPos, yPos, str, _rowSel==3);
+      // time
+      yPos = 40;
+      xPos = 26;
+      sprintf(str, "%02d", working.hour());
+      _printMenuText(xPos, yPos, str, _rowSel==4);
+      xPos += 16;
+      _printMenuText(xPos, yPos, ":");
+      xPos += 8;
+      sprintf(str, "%02d", working.minute());
+      _printMenuText(xPos, yPos, str, _rowSel==5);
+      xPos += 16;
+      _printMenuText(xPos, yPos, ":");
+      sprintf(str, "%02d", working.second());
+      xPos += 8;
+      _printMenuText(xPos, yPos, str, _rowSel==6);
+      if(_rowSel>=1)
+        _printMenuText(_display.width()-border, yPos, "SET", _rowSel==7, eRightJustify);
+    }
     // navigation line
     yPos = 53;
     xPos = _display.xCentre();
@@ -124,6 +136,7 @@ CSetClockScreen::keyHandler(uint8_t event)
       else {
         if(_rowSel == 7) {  // set the RTC!
           Clock.set(working);
+          _SaveTime = millis() + 1500;
         }
         _rowSel = 0;
       }

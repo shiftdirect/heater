@@ -60,8 +60,8 @@ struct sHeater {
 };
 
 struct sHourMin {
-  uint8_t hour;
-  uint8_t min;
+  int8_t hour;
+  int8_t min;
   sHourMin() {
     hour = 0;
     min = 0;
@@ -184,6 +184,7 @@ public:
   void saveTimer(int idx);
   void loadUI();
   void saveUI();
+  bool validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max);
   bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max);
   bool validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max);
   bool validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max);

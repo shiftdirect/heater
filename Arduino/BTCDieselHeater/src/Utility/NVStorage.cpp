@@ -24,6 +24,7 @@
 #include "DebugPort.h"
 
 bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
+bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim);
 bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2);
 bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
 bool s32inBounds(long test, long minLim, long maxLim);
@@ -268,10 +269,10 @@ CESP32HeaterStorage::loadTimer(int idx)
   char SectionName[16];
   sprintf(SectionName, "timer%d", idx+1);
   preferences.begin(SectionName, false);
-  validatedLoad("startHour", timer.start.hour, 0, u8inBounds, 0, 23);
-  validatedLoad("startMin", timer.start.min, 0, u8inBounds, 0, 59);
-  validatedLoad("stopHour", timer.stop.hour, 0, u8inBounds, 0, 23);
-  validatedLoad("stopMin", timer.stop.min, 0, u8inBounds, 0, 59);
+  validatedLoad("startHour", timer.start.hour, 0, s8inBounds, 0, 23);
+  validatedLoad("startMin", timer.start.min, 0, s8inBounds, 0, 59);
+  validatedLoad("stopHour", timer.stop.hour, 0, s8inBounds, 0, 23);
+  validatedLoad("stopMin", timer.stop.min, 0, s8inBounds, 0, 59);
   validatedLoad("enabled", timer.enabled, 0, u8inBounds, 0, 255);  // all 8 bits used!
   validatedLoad("repeat", timer.repeat, 0, u8inBounds, 0, 1);
   preferences.end();    
@@ -284,10 +285,10 @@ CESP32HeaterStorage::saveTimer(int idx)
   char SectionName[16];
   sprintf(SectionName, "timer%d", idx+1);
   preferences.begin(SectionName, false);
-  preferences.putUChar("startHour", timer.start.hour);
-  preferences.putUChar("startMin", timer.start.min);
-  preferences.putUChar("stopHour", timer.stop.hour);
-  preferences.putUChar("stopMin", timer.stop.min);
+  preferences.putChar("startHour", timer.start.hour);
+  preferences.putChar("startMin", timer.start.min);
+  preferences.putChar("stopHour", timer.stop.hour);
+  preferences.putChar("stopMin", timer.stop.min);
   preferences.putUChar("enabled", timer.enabled);
   preferences.putUChar("repeat", timer.repeat);
   preferences.end();    
@@ -322,6 +323,24 @@ CESP32HeaterStorage::validatedLoad(const char* key, uint8_t& val, int defVal, st
 
     val = defVal;
     preferences.putUChar(key, val);
+    return false;
+  }
+  return true;
+}
+
+bool
+CESP32HeaterStorage::validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max)
+{
+  val = preferences.getChar(key, defVal);
+  if(!validator(val, min, max)) {
+
+    DebugPort.print("CESP32HeaterStorage::validatedLoad<uint8_t> invalid read ");
+    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
+    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
+    DebugPort.println(defVal);
+
+    val = defVal;
+    preferences.putChar(key, val);
     return false;
   }
   return true;
@@ -364,6 +383,11 @@ CESP32HeaterStorage::validatedLoad(const char* key, long& val, long defVal, std:
 }
 
 bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
+{
+  return (test >= minLim) && (test <= maxLim);
+}
+
+bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim)
 {
   return (test >= minLim) && (test <= maxLim);
 }

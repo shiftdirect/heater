@@ -40,6 +40,7 @@ CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int
 {
   _rowSel = 0;
   _colSel = 0;
+  _SaveTime = 0;
   _instance = instance;
 }
 
@@ -60,9 +61,18 @@ CSetTimerScreen::show()
   if(_rowSel == 0) {
     NVstore.getTimerInfo(_instance, _timer);
   }
-  sprintf(str, " Timer %d ", _instance + 1);
+  sprintf(str, " Set Timer %d ", _instance + 1);
   _printInverted(0, 16, str, true);
 
+  if(_SaveTime) {
+    long tDelta = millis() - _SaveTime;
+    if(tDelta > 0) 
+      _SaveTime = 0;
+    _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
+    _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
+    _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
+  }
+  else {
   // start
   xPos = 18;
   yPos = 28;
@@ -101,7 +111,7 @@ CSetTimerScreen::show()
     _printMenuText(xPos, yPos, msg, _colSel==5, eRightJustify);
   else
     _printInverted(xPos, yPos, msg, _timer.repeat, eRightJustify);
-
+  }
   // navigation line
   yPos = 53;
   xPos = _display.xCentre();
@@ -122,10 +132,15 @@ CSetTimerScreen::keyHandler(uint8_t event)
       if(_rowSel == 0) {
         _ScreenManager.selectTimerScreen(false);  // exit: return to clock screen
       }
-      else {
+      else if(_rowSel == 2) {   // exit from per day settings
+        _rowSel = 1;
+      }
+      else {  // in config fields, save new settings
+        _SaveTime = millis() + 1500;
         NVstore.setTimerInfo(_instance, _timer);
         NVstore.save();
         _rowSel = 0;
+        _ScreenManager.reqUpdate();
       }
       return;
     }
@@ -134,10 +149,6 @@ CSetTimerScreen::keyHandler(uint8_t event)
       switch(_rowSel) {
         case 0:
           _ScreenManager.prevScreen(); 
-          break;
-        case 1:
-          _colSel--;
-          ROLLLOWERLIMIT(_colSel, 0, 5);
           break;
         case 2:
           _colSel--;
@@ -151,20 +162,28 @@ CSetTimerScreen::keyHandler(uint8_t event)
         case 0:
           _ScreenManager.nextScreen(); 
           break;
-        case 1:
-          _colSel++;
-          ROLLUPPERLIMIT(_colSel, 5, 0);
-          break;
+        // case 1:
+        //   _colSel++;
+        //   ROLLUPPERLIMIT(_colSel, 5, 0);
+        //   break;
         case 2:
           _colSel++;
           ROLLUPPERLIMIT(_colSel, 6, 0);
           break;
       }
     }
-    // press DOWN - return - only on row 0
+    // press UP  
+    if(event & key_Up) {
+      if(_rowSel == 1) {
+        _colSel++;
+        ROLLUPPERLIMIT(_colSel, 5, 0);
+      }
+    }
+    // press DOWN
     if(event & key_Down) {
-      if(_rowSel == 0) {
-        _ScreenManager.selectTimerScreen(false);  // exit: return to clock screen
+      if(_rowSel == 1) {
+        _colSel--;
+        ROLLLOWERLIMIT(_colSel, 0, 5);
       }
     }
   }
@@ -174,11 +193,11 @@ CSetTimerScreen::keyHandler(uint8_t event)
     bHeld = true;
     if(_rowSel == 1) {
       if(_colSel < 4) {
-        if(event & key_Down) adjust(-1);
-        if(event & key_Up) adjust(+1);
+        if(event & key_Left) adjust(-1);
+        if(event & key_Right) adjust(+1);
       }
       else if(_colSel == 4) {
-        if(event & key_Up) {
+        if(event & key_Right) {
           _timer.enabled &= 0x7f;   // strip next day flag
           _rowSel = 2;
           _colSel = 0;
@@ -195,18 +214,35 @@ CSetTimerScreen::keyHandler(uint8_t event)
 
   if(event & keyReleased) {
     if(!bHeld) {
-      // released DOWN - can only leave adjustment by using OK (centre button)
       int maskDOW = 0x01 << _colSel;
-      if(event & key_Down) {
-        // adjust selected item
+
+      if(event & key_Left) {
         switch(_rowSel) {
           case 1:
             adjust(-1);
             break;
+        }
+      }
+
+      // released DOWN - can only leave adjustment by using OK (centre button)
+      if(event & key_Down) {
+        // adjust selected item
+        switch(_rowSel) {
+          // case 1:
+          //   adjust(-1);
+          //   break;
           case 2:
             // adjust selected item
             _timer.enabled ^= maskDOW;
             _timer.enabled &= 0x7f;
+            break;
+        }
+      }
+      if(event & key_Right) {
+        switch(_rowSel) {
+          case 1:
+            // adjust selected item
+            adjust(+1);
             break;
         }
       }
@@ -218,10 +254,10 @@ CSetTimerScreen::keyHandler(uint8_t event)
             _rowSel = 1;
             _colSel = 0;
             break;
-          case 1:
-            // adjust selected item
-            adjust(+1);
-            break;
+          // case 1:
+          //   // adjust selected item
+          //   adjust(+1);
+          //   break;
           case 2:
             // adjust selected item
             _timer.enabled ^= maskDOW;
@@ -297,7 +333,7 @@ CSetTimerScreen::_printEnabledTimers()
   }
   else {
     if(_rowSel==1 && _colSel==4) {
-      _printMenuText(xPos, yPos, "Hold UP", true, eRightJustify);
+      _printMenuText(xPos, yPos, "Hold RIGHT", true, eRightJustify);
     }
     else {
       xPos -= 7 * dayWidth;  // back step 7 day entries

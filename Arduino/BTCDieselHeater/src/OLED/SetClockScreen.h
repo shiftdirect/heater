@@ -31,6 +31,7 @@ class CSetClockScreen : public CScreenHeader {
   int  _rowSel;
   unsigned long _nextT;
   BTCDateTime working;
+  unsigned long _SaveTime;
 
   void adjTimeDate(int dir);
 

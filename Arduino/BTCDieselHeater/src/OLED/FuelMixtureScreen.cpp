@@ -39,6 +39,7 @@ CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mg
 {
   _rowSel = 0;
   _colSel = 0;
+  _SaveTime = 0;
   for(int i= 0; i < 4; i++) 
     _PWdig[i] = -1;
 }
@@ -53,71 +54,81 @@ CFuelMixtureScreen::show()
   int xPos, yPos;
   const int col2 = 90;
   const int col3 = _display.width() - border;
-
   _printInverted(0, 16, " Fuel Settings ", true);
 
-  switch(_rowSel) {
-    case 0:
-      // show settings overview (initial screen entry)
-      // pump max/min
-      yPos = 28;
-      _printMenuText(0, yPos, "Pump (Hz)");
-      sprintf(str, "%.1f", getHeaterInfo().getPump_Min());
-      _printMenuText(col2, yPos, str, false, eRightJustify);
-      sprintf(str, "%.1f", getHeaterInfo().getPump_Max());
-      _printMenuText(col3, yPos, str, false, eRightJustify);
-      // fan max/min
-      yPos = 40;
-      _printMenuText(0, yPos, "Fan (RPM)");
-      sprintf(str, "%d", getHeaterInfo().getFan_Min());
-      _printMenuText(col2, yPos, str, false, eRightJustify);
-      sprintf(str, "%d", getHeaterInfo().getFan_Max());
-      _printMenuText(col3, yPos, str, false, eRightJustify);
-      // navigation line
-      yPos = 53;
-      xPos = _display.xCentre();
-      _printMenuText(xPos, yPos, "<-             ->", true, eCentreJustify);
-      break;
+  if(_SaveTime) {
+    long tDelta = millis() - _SaveTime;
+    if(tDelta > 0) 
+      _SaveTime = 0;
+    _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
+    _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
+    _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
+  }
+  else {
 
-    case 1:
-      _printMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
-      _showPassword();
-      break;
+    switch(_rowSel) {
+      case 0:
+        // show settings overview (initial screen entry)
+        // pump max/min
+        yPos = 28;
+        _printMenuText(0, yPos, "Pump (Hz)");
+        sprintf(str, "%.1f", getHeaterInfo().getPump_Min());
+        _printMenuText(col2, yPos, str, false, eRightJustify);
+        sprintf(str, "%.1f", getHeaterInfo().getPump_Max());
+        _printMenuText(col3, yPos, str, false, eRightJustify);
+        // fan max/min
+        yPos = 40;
+        _printMenuText(0, yPos, "Fan (RPM)");
+        sprintf(str, "%d", getHeaterInfo().getFan_Min());
+        _printMenuText(col2, yPos, str, false, eRightJustify);
+        sprintf(str, "%d", getHeaterInfo().getFan_Max());
+        _printMenuText(col3, yPos, str, false, eRightJustify);
+        // navigation line
+        yPos = 53;
+        xPos = _display.xCentre();
+        _printMenuText(xPos, yPos, "<-             ->", true, eCentreJustify);
+        break;
 
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-      _display.clearDisplay();
-      // Pump Minimum adjustment
-      yPos = border + 36;
-      _printMenuText(80, yPos, "Min", false, eRightJustify);
-      sprintf(str, "%.1f", adjPump[0]); 
-      _printMenuText(col3, yPos, str, _rowSel == 2, eRightJustify);
-      // Pump Maximum adjustment
-      yPos = border + 24;
-      _printMenuText(80, yPos, "Pump Hz Max", false, eRightJustify);
-      sprintf(str, "%.1f", adjPump[1]);
-      _printMenuText(col3, yPos, str, _rowSel == 3, eRightJustify);
-      // Fan Minimum adjustment
-      yPos = border + 12;
-      _printMenuText(80, yPos, "Min", false, eRightJustify);
-      sprintf(str, "%d", adjFan[0]);
-      _printMenuText(col3, yPos, str, _rowSel == 4, eRightJustify);
-      // Fan Maximum adjustment
-      yPos = border;
-      _printMenuText(80, yPos, "Fan RPM Max", false, eRightJustify);
-      sprintf(str, "%d", adjFan[1]);
-      _printMenuText(col3, yPos, str, _rowSel == 5, eRightJustify);
-      // navigation line
-      yPos = 53;
-      _printMenuText(_display.xCentre(), yPos, "<-             ->", false, eCentreJustify);
-      break;
+      case 1:
+        _printMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
+        _showPassword();
+        break;
 
-    case 6:
-      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
-      break;
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+        _display.clearDisplay();
+        // Pump Minimum adjustment
+        yPos = border + 36;
+        _printMenuText(80, yPos, "Min", false, eRightJustify);
+        sprintf(str, "%.1f", adjPump[0]); 
+        _printMenuText(col3, yPos, str, _rowSel == 2, eRightJustify);
+        // Pump Maximum adjustment
+        yPos = border + 24;
+        _printMenuText(80, yPos, "Pump Hz Max", false, eRightJustify);
+        sprintf(str, "%.1f", adjPump[1]);
+        _printMenuText(col3, yPos, str, _rowSel == 3, eRightJustify);
+        // Fan Minimum adjustment
+        yPos = border + 12;
+        _printMenuText(80, yPos, "Min", false, eRightJustify);
+        sprintf(str, "%d", adjFan[0]);
+        _printMenuText(col3, yPos, str, _rowSel == 4, eRightJustify);
+        // Fan Maximum adjustment
+        yPos = border;
+        _printMenuText(80, yPos, "Fan RPM Max", false, eRightJustify);
+        sprintf(str, "%d", adjFan[1]);
+        _printMenuText(col3, yPos, str, _rowSel == 5, eRightJustify);
+        // navigation line
+        yPos = 53;
+        _printMenuText(_display.xCentre(), yPos, "<-             ->", false, eCentreJustify);
+        break;
+
+      case 6:
+        _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+        _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+        break;
+    }
   }
   
 //  _display.display();
@@ -223,12 +234,14 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
             ROLLUPPERLIMIT(_PWdig[_colSel], 9, 0);
             break;
           case 6:
+            _SaveTime = millis() + 1500;
             setPumpMin(adjPump[0]);
             setPumpMax(adjPump[1]);
             setFanMin(adjFan[0]);
             setFanMax(adjFan[1]);
             saveNV();
             _rowSel = 0;
+            _ScreenManager.reqUpdate();
             break;
         }
       }

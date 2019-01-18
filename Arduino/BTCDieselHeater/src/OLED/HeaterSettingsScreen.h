@@ -24,21 +24,17 @@
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocol;
 
-class CFuelMixtureScreen : public CScreenHeader {
-  int  _PWdig[4];
-  float adjPump[2];
-  short adjFan[2];
-  int  _rowSel;
-  int  _colSel;
+class CHeaterSettingsScreen : public CScreenHeader
+{
+  int _rowSel;
   unsigned long _SaveTime;
-  void _showPassword();
-  void _adjustSetting(int dir);
-
+  void _adjust(int dir);
+  int _sysVoltage;
+  int _fanSensor;
+  int _glowPower;
 public:
-  CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
-  bool animate() { return CScreen::animate(); };
 };

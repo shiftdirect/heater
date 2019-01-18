@@ -26,18 +26,20 @@ class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CFuelMixtureScreen : public CScreenHeader {
+class CPasswordScreen : public CScreenHeader {
   int  _PWdig[4];
-  float adjPump[2];
-  short adjFan[2];
-  int  _rowSel;
-  int  _colSel;
+  bool _bGetPassword;
+  bool _bPasswordOK;
+  int  _PWcol;
   unsigned long _SaveTime;
-  void _showPassword();
-  void _adjustSetting(int dir);
-
+  char _Title[20];
+protected:
+  bool _showPassword();
+  void _setGetPassword(bool state);
+  void _setTitle(const char* title);
+  bool _isPasswordOK();
 public:
-  CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };

@@ -8,6 +8,7 @@
 #include "SetTimerScreen.h"
 #include "ClockScreen.h"
 #include "RebootScreen.h"
+#include "HeaterSettingsScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -149,12 +150,13 @@ CScreenManager::begin()
   _pDisplay->display();
 
   DebugPort.println("Creating Screens");
-  _Screens.push_back(new CDetailedScreen(*_pDisplay, *this));      // 0: detail control
-  _Screens.push_back(new CBasicScreen(*_pDisplay, *this));      // 1: basic control
-  _Screens.push_back(new CClockScreen(*_pDisplay, *this));      // 2: clock
-  _Screens.push_back(new CPrimingScreen(*_pDisplay, *this));      // 3: mode / priming
-  _Screens.push_back(new CWiFiScreen(*_pDisplay, *this));      // 4: comms info
-  _Screens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      // 5: tuning
+  _Screens.push_back(new CDetailedScreen(*_pDisplay, *this));         //  detail control
+  _Screens.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
+  _Screens.push_back(new CClockScreen(*_pDisplay, *this));            //  clock
+  _Screens.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
+  _Screens.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
+  _Screens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
+  _Screens.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
   _SetTimeScreen = new CSetClockScreen(*_pDisplay, *this);            // clock set
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 0)); // set timer 1
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 1)); // set timer 2
