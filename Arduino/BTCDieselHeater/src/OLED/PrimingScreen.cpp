@@ -42,7 +42,7 @@ CPrimingScreen::CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr) : CSc
 }
 
 
-void 
+bool 
 CPrimingScreen::show()
 {
   CScreenHeader::show();
@@ -97,20 +97,15 @@ CPrimingScreen::show()
     }
   }
 
-//  _display.display();
-
+  return true;
 }
 
 
-void 
+bool 
 CPrimingScreen::keyHandler(uint8_t event)
 {
   
   if(event & keyPressed) {
-    // press CENTRE
-    if(event & key_Centre) {
-      return;
-    }
     // press LEFT 
     if(event & key_Left) {
       switch(_rowSel) {
@@ -178,6 +173,7 @@ CPrimingScreen::keyHandler(uint8_t event)
 
     _ScreenManager.reqUpdate();
   }
+  return true;
 }
 
 void 

@@ -46,7 +46,7 @@ CClockScreen::showTime(int)
 }
 
 
-void 
+bool 
 CClockScreen::show()
 {
   CScreenHeader::show();
@@ -68,17 +68,15 @@ CClockScreen::show()
   }
   sprintf(str, "%s %d %s %d", now.dowStr(), now.day(), now.monthStr(), now.year());
   _printMenuText(_display.xCentre(), 56, str, false, eCentreJustify);
+
+  return true;
 }
 
 
-void 
+bool 
 CClockScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
-    // press CENTRE
-    if(event & key_Centre) {
-      return;
-    }
     // press LEFT 
     if(event & key_Left) {
       _ScreenManager.prevScreen(); 
@@ -96,5 +94,6 @@ CClockScreen::keyHandler(uint8_t event)
       _ScreenManager.selectTimerScreen(true);      // switch to timer set screen loop
     }
   }
+  return true;
 }
 

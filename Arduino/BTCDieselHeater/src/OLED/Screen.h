@@ -28,8 +28,6 @@
 #include "fonts/FontTypes.h"
 #include "../Utility/UtilClasses.h"
 
-class CProtocol;
-
 enum eJUSTIFY { 
    eLeftJustify, eCentreJustify, eRightJustify 
 };
@@ -52,8 +50,8 @@ public:
   virtual ~CScreen(); 
   virtual void onSelect();
   virtual bool animate();
-  virtual void show();
-  virtual void keyHandler(uint8_t event) {};
+  virtual bool show();
+  virtual bool keyHandler(uint8_t event) {  return false; };
 };
 
 

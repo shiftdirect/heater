@@ -37,7 +37,7 @@ class CSetClockScreen : public CScreenHeader {
 
 public:
   CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
+  bool show();
   void showTime(int);
-  void keyHandler(uint8_t event);
+  bool keyHandler(uint8_t event);
 };

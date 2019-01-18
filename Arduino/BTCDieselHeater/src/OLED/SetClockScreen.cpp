@@ -48,7 +48,7 @@ CSetClockScreen::showTime(int)
   // override and DO NOTHING!
 }
 
-void 
+bool 
 CSetClockScreen::show()
 {
   long deltaT = millis() - _nextT;
@@ -120,10 +120,11 @@ CSetClockScreen::show()
     _printMenuText(xPos, yPos, " return ", _rowSel==0, eCentreJustify);
 
   }    
+  return true;
 }
 
 
-void 
+bool 
 CSetClockScreen::keyHandler(uint8_t event)
 {
 
@@ -140,7 +141,6 @@ CSetClockScreen::keyHandler(uint8_t event)
         }
         _rowSel = 0;
       }
-      return;
     }
     // press LEFT 
     if(event & key_Left) {
@@ -190,6 +190,7 @@ CSetClockScreen::keyHandler(uint8_t event)
 
   _nextT = millis();
   _ScreenManager.reqUpdate();
+  return true;
 }
 
 void 

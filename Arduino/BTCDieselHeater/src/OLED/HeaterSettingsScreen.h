@@ -20,21 +20,20 @@
  */
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "PasswordScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CHeaterSettingsScreen : public CScreenHeader
+class CHeaterSettingsScreen : public CPasswordScreen
 {
   int _rowSel;
-  unsigned long _SaveTime;
   void _adjust(int dir);
   int _sysVoltage;
   int _fanSensor;
   int _glowPower;
 public:
   CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
-  void keyHandler(uint8_t event);
+  bool show();
+  bool keyHandler(uint8_t event);
 };

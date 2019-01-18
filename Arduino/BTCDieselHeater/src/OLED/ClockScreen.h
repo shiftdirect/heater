@@ -31,6 +31,6 @@ protected:
   bool _colon;
 public:
   CClockScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
-  void keyHandler(uint8_t event);
+  bool show();
+  bool keyHandler(uint8_t event);
 };

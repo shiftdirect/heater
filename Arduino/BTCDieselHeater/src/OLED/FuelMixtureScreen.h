@@ -20,25 +20,25 @@
  */
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "PasswordScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocol;
+//class CProtocol;
 
-class CFuelMixtureScreen : public CScreenHeader {
-  int  _PWdig[4];
+class CFuelMixtureScreen : public CPasswordScreen {
+  // int  _PWdig[4];
   float adjPump[2];
   short adjFan[2];
   int  _rowSel;
   int  _colSel;
-  unsigned long _SaveTime;
-  void _showPassword();
+//  unsigned long _SaveTime;
+//  void _showPassword();
   void _adjustSetting(int dir);
 
 public:
   CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
-  void keyHandler(uint8_t event);
+  bool show();
+  bool keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };
 };

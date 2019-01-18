@@ -50,7 +50,7 @@ CSetTimerScreen::onSelect()
   NVstore.getTimerInfo(_instance, _timer);
 }
 
-void 
+bool 
 CSetTimerScreen::show()
 {
   CScreenHeader::show();
@@ -117,10 +117,12 @@ CSetTimerScreen::show()
   xPos = _display.xCentre();
   //_printMenuText(xPos, yPos, "<-             ->", _rowSel==0, eCentreJustify);
   _printMenuText(xPos, yPos, "<-    return    ->", _rowSel==0, eCentreJustify);
+
+  return true;
 }
 
 
-void 
+bool 
 CSetTimerScreen::keyHandler(uint8_t event)
 {
   static bool bHeld = false;
@@ -142,7 +144,6 @@ CSetTimerScreen::keyHandler(uint8_t event)
         _rowSel = 0;
         _ScreenManager.reqUpdate();
       }
-      return;
     }
     // press LEFT - navigate fields, or screens
     if(event & key_Left) {
@@ -269,6 +270,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
   }
 
   _ScreenManager.reqUpdate();
+  return true;
 }
 
 

@@ -46,7 +46,7 @@ class CDetailedScreen : public CScreenHeader
   void showRunState(int state, int errstate);
 public:
   CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
+  bool show();
   bool animate();
-  void keyHandler(uint8_t event);
+  bool keyHandler(uint8_t event);
 };

@@ -46,16 +46,9 @@ CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 }
 
 
-void 
+bool 
 CPasswordScreen::show()
 {
-  CScreenHeader::show();
-
-  char str[16];
-  int xPos, yPos;
-  const int col2 = 90;
-  const int col3 = _display.width() - border;
-  _printInverted(0, 16, _Title, true);
 
   if(_SaveTime) {
     long tDelta = millis() - _SaveTime;
@@ -64,18 +57,20 @@ CPasswordScreen::show()
     _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
     _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
     _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
+    return true;
+  }
+  else if(_bGetPassword) {
+    _printMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
+    _showPassword();
+    return true;
   }
   else {
-
-    if(_bGetPassword) {
-      _printMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
-      _showPassword();
-    }
+    return false;
   }
 }
 
 
-void 
+bool 
 CPasswordScreen::keyHandler(uint8_t event)
 {
   if(_bGetPassword) {
@@ -90,11 +85,12 @@ CPasswordScreen::keyHandler(uint8_t event)
            (_PWdig[3] == 8)) {
           _bPasswordOK = true;
         }
+
+        _bGetPassword = false;
         // reset PW digits
         for(int i= 0; i < 4; i++) 
           _PWdig[i] = -1;
 
-      return;
       }
 
       // press LEFT 
@@ -122,7 +118,9 @@ CPasswordScreen::keyHandler(uint8_t event)
       }
       _ScreenManager.reqUpdate();
     }
+    return true;
   }
+  return false;
 }
 
 bool
@@ -158,26 +156,21 @@ CPasswordScreen::_showPassword()
 }
 
 void 
-CPasswordScreen::_setGetPassword(bool state)
+CPasswordScreen::_getPassword()
 {
-  _bGetPassword = state;
-  if(state) {
-    _bPasswordOK = false;
-    _PWcol = 0;
-    // reset PW digits
-    for(int i= 0; i < 4; i++) 
-      _PWdig[i] = -1;
-  }
+  _bGetPassword = true;
+  _bPasswordOK = false;
+  _PWcol = 0;
+  // reset PW digits
+  for(int i= 0; i < 4; i++) 
+    _PWdig[i] = -1;
+    
+  _ScreenManager.reqUpdate();
 }
 
 void 
-CPasswordScreen::_setTitle(const char* title)
+CPasswordScreen::_showStoringMessage()
 {
-  strcpy(_Title, title);
-}
-
-bool 
-CPasswordScreen::_isPasswordOK()
-{
-  return _bPasswordOK;
+  _SaveTime = millis() + 1500;
+  _ScreenManager.reqUpdate();
 }

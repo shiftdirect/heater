@@ -39,6 +39,6 @@ class CSetTimerScreen : public CScreenHeader {
 public:
   CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
   void onSelect();
-  void show();
-  void keyHandler(uint8_t event);
+  bool show();
+  bool keyHandler(uint8_t event);
 };

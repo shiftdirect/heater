@@ -18,13 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
+#ifndef __PASSWORDSCREEN_H__
+#define __PASSWORDSCREEN_H__
 
 #include <stdint.h>
 #include "ScreenHeader.h"
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocol;
 
 class CPasswordScreen : public CScreenHeader {
   int  _PWdig[4];
@@ -32,15 +33,16 @@ class CPasswordScreen : public CScreenHeader {
   bool _bPasswordOK;
   int  _PWcol;
   unsigned long _SaveTime;
-  char _Title[20];
 protected:
   bool _showPassword();
-  void _setGetPassword(bool state);
-  void _setTitle(const char* title);
-  bool _isPasswordOK();
+  void _getPassword();
+  bool _isPasswordOK() { return _bPasswordOK; };
+  void _showStoringMessage();
 public:
   CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
-  void keyHandler(uint8_t event);
+  bool show();
+  bool keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };
 };
+
+#endif

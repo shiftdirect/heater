@@ -28,8 +28,8 @@ class CScreenManager;
 class CRebootScreen : public CScreen {
 public:
   CRebootScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void show();
-  void keyHandler(uint8_t event);
+  bool show();
+  bool keyHandler(uint8_t event);
   void setMessage(const char* content[2], long delayTime);
 private:
   String _rebootMessage[2];

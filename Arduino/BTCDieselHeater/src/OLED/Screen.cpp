@@ -33,9 +33,10 @@ CScreen::animate()
 }
 
 
-void 
+bool 
 CScreen::show()
 {
+  return false;
 }
 
 void 

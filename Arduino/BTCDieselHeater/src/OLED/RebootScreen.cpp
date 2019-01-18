@@ -36,7 +36,7 @@ CRebootScreen::CRebootScreen(C128x64_OLED& display, CScreenManager& mgr) : CScre
 }
 
 
-void 
+bool 
 CRebootScreen::show()
 {
   int yPos = 0;
@@ -69,13 +69,14 @@ CRebootScreen::show()
     yPos += _display.textHeight() + 10;
   }
 
-
+  return true;
 }
 
 
-void 
+bool 
 CRebootScreen::keyHandler(uint8_t event)
 {
+  return true;
 }
 
 void

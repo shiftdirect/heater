@@ -73,7 +73,7 @@ CDetailedScreen::CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 }
 
 
-void 
+bool 
 CDetailedScreen::show()
 {
   CScreenHeader::show();
@@ -119,6 +119,7 @@ CDetailedScreen::show()
   }
 
   showRunState(runstate, errstate);
+  return true;
 }
 
 
@@ -165,7 +166,7 @@ CDetailedScreen::animate()
 }
 
 
-void 
+bool 
 CDetailedScreen::keyHandler(uint8_t event)
 {
   
@@ -214,6 +215,7 @@ CDetailedScreen::keyHandler(uint8_t event)
   if(event & keyReleased) {
     _keyRepeatCount = -1;
   }
+  return true;
 }
 
 

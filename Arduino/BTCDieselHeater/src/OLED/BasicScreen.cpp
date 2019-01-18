@@ -45,7 +45,7 @@ CBasicScreen::CBasicScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen
   _nModeSel = 0;
 }
 
-void 
+bool 
 CBasicScreen::show()
 {
   CScreenHeader::show();
@@ -118,10 +118,11 @@ CBasicScreen::show()
   if((_showMode == 0) && (_showSetMode == 0)) {
     showRunState();
   }
+  return true;
 }
 
 
-void 
+bool 
 CBasicScreen::keyHandler(uint8_t event)
 {
   static int repeatCount = -1;
@@ -227,6 +228,7 @@ CBasicScreen::keyHandler(uint8_t event)
 
     repeatCount = -1;
   }
+  return true;
 }
 
 void 

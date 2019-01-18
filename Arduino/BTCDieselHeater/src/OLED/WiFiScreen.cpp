@@ -46,7 +46,7 @@ CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHe
 }
 
 
-void 
+bool 
 CWiFiScreen::show()
 {
   CScreenHeader::show();
@@ -90,16 +90,11 @@ CWiFiScreen::show()
     // show next/prev screen navigation line
   _printMenuText(_display.xCentre(), 52, "<-             ->", _rowSel == 0, eCentreJustify);
 
-
-/*  yPos += _display.textHeight() + 2;
-  char msg[32];
-  int mins = NVstore.getDimTime() / 60000;
-  sprintf(msg, "Display Dim: %d min%c", mins, (mins > 1) ? 's' : ' ');
-  _printMenuText(0, yPos, msg);*/
+  return true;
 }
 
 
-void 
+bool 
 CWiFiScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
@@ -154,5 +149,6 @@ CWiFiScreen::keyHandler(uint8_t event)
     }
     _repeatCount = 0;
   }
+  return true;
 }
 

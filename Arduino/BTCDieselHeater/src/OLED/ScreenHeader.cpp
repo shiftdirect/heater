@@ -33,7 +33,7 @@ CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(
   _colon = false;
 }
 
-void 
+bool 
 CScreenHeader::show()
 {
   _display.clearDisplay();
@@ -53,6 +53,8 @@ CScreenHeader::show()
 
   // clock
   showTime(numTimers);
+
+  return true;
 }
 
 // Animate IN/OUT arrows against the WiFi icon, according to actual web server traffic:

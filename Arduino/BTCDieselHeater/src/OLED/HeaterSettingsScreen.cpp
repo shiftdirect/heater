@@ -34,16 +34,15 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-CHeaterSettingsScreen::CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CHeaterSettingsScreen::CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _rowSel = 0;
-  _SaveTime = 0;
   _fanSensor = 1;
   _glowPower = 5;
   _sysVoltage = 12;
 }
 
-void 
+bool 
 CHeaterSettingsScreen::show()
 {
   char msg[20];
@@ -52,71 +51,111 @@ CHeaterSettingsScreen::show()
 
   _printInverted(0, 0, " Heater Settings ", true);
 
-  if(_SaveTime) {
-    long tDelta = millis() - _SaveTime;
-    if(tDelta > 0) 
-      _SaveTime = 0;
-    _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
-    _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
-    _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
-  }
-  else {
+  if(!CPasswordScreen::show()) {
     yPos = 14;
-    _printMenuText(98, yPos, "Glow plug power:", false, eRightJustify);
-    sprintf(msg, "PF-%d", _glowPower);
-    _printMenuText(100, yPos, msg, _rowSel == 3);
-    yPos = 27;
-    _printMenuText(98, yPos, "Fan sensor:", false, eRightJustify);
-    sprintf(msg, "SN-%d", _fanSensor);
-    _printMenuText(100, yPos, msg, _rowSel == 2);
-    yPos = 40;
-    _printMenuText(98, yPos, "System voltage:", false, eRightJustify);
-    sprintf(msg, "%dV", _sysVoltage);
-    _printMenuText(100, yPos, msg, _rowSel == 1);
+
+    if(_rowSel == 4) {
+      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+    }
+    else {
+      _printMenuText(98, yPos, "Glow plug power:", false, eRightJustify);
+      sprintf(msg, "PF-%d", _glowPower);
+      _printMenuText(100, yPos, msg, _rowSel == 3);
+      yPos = 27;
+      _printMenuText(98, yPos, "Fan sensor:", false, eRightJustify);
+      sprintf(msg, "SN-%d", _fanSensor);
+      _printMenuText(100, yPos, msg, _rowSel == 2);
+      yPos = 40;
+      _printMenuText(98, yPos, "System voltage:", false, eRightJustify);
+      sprintf(msg, "%dV", _sysVoltage);
+      _printMenuText(100, yPos, msg, _rowSel == 1);
+    }
     // navigation line
     yPos = 53;
     xPos = _display.xCentre();
     _printMenuText(xPos, yPos, "<-             ->", _rowSel == 0, eCentreJustify);
   }
+  return true;
 }
 
 
-void 
+bool 
 CHeaterSettingsScreen::keyHandler(uint8_t event)
 {
-  if(event & keyPressed) {
-    // press LEFT to select previous screen, or Fixed Hz mode when in mode select
-    if(event & key_Left) {
-      if(_rowSel == 0)
-        _ScreenManager.prevScreen();
-      else {
-        _adjust(-1);
-      }
-    }
-    // press RIGHT to selecxt next screen, or Thermostat mode when in mode select
-    if(event & key_Right) {
-      if(_rowSel == 0)
-        _ScreenManager.nextScreen();
-      else {
-        _adjust(+1);
-      }
-    }
-    if(event & key_Down) {
-      _rowSel--;
-      LOWERLIMIT(_rowSel, 1);
-    }
-    if(event & key_Up) {
+  if(CPasswordScreen::keyHandler(event)) {
+    if(_isPasswordOK()) {
       _rowSel++;
-      UPPERLIMIT(_rowSel, 3);
     }
-    if(event & key_Centre) {
-      if(_rowSel) {
-        _SaveTime = millis() + 1500;
-        _ScreenManager.reqUpdate();
-        _rowSel = 0;
+  }
+  else {
+    if(event & keyPressed) {
+      // press LEFT to select previous screen
+      if(event & key_Left) {
+        switch(_rowSel) {
+          case 0:
+            _ScreenManager.prevScreen();
+            break;
+          case 1:
+          case 2:
+          case 3:
+            _adjust(-1);
+            break;
+          case 4:
+            _rowSel = 0;   // abort save
+            break;
+        }
+      }
+      // press RIGHT to select next screen
+      if(event & key_Right) {
+        switch(_rowSel) {
+          case 0:
+            _ScreenManager.nextScreen();
+            break;
+          case 1:
+          case 2:
+          case 3:
+            _adjust(+1);
+            break;
+          case 4:
+            _rowSel = 0;   // abort save
+            break;
+        }
+      }
+      if(event & key_Down) {
+        _rowSel--;
+        LOWERLIMIT(_rowSel, 0);
+      }
+      // UP press
+      if(event & key_Up) {
+        switch(_rowSel) {
+          case 0:
+            _getPassword();  // nav line ,request password
+            break;
+          case 1:
+          case 2:
+          case 3:
+            _rowSel++;
+            UPPERLIMIT(_rowSel, 3);
+            break;
+          case 4:    // confirmed save
+            _showStoringMessage();
+            break;
+        }
+      }
+      // CENTRE press
+      if(event & key_Centre) {
+        switch(_rowSel) {
+          case 1:
+          case 2:
+          case 3:
+            _rowSel = 4;
+            break;
+        }
       }
     }
   }
+  return true;
 }
 
 void 
