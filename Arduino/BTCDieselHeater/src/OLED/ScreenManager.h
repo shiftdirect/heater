@@ -32,8 +32,12 @@ class CRebootScreen;
 
 class CScreenManager {
   std::vector<CScreen*> _Screens;
+  std::vector<CScreen*> _TimerScreens;
+  CScreen* _SetTimeScreen;
   C128x64_OLED* _pDisplay;
   int _currentScreen;
+  int _timerScreen;
+  bool _bSetTime;
   unsigned long _DimTime;
   bool _bReqUpdate;
   void _switchScreen();
@@ -50,6 +54,8 @@ public:
   void keyHandler(uint8_t event);
   void reqUpdate();
   void showRebootMsg(const char* content[2], long delayTime);
+  void selectTimerScreen(bool showTimers);
+  void selectSetTimeScreen(bool show);
 };
 
 #endif // __SCREEN_MANAGER_H__

@@ -23,7 +23,7 @@
 #include "fonts/MiniFont.h"
 #include "fonts/Icons.h"
 #include "../Bluetooth/BluetoothAbstract.h" 
-#include "Screen1.h"
+#include "DetailedScreen.h"
 #include "../Wifi/BTCWifi.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
@@ -54,13 +54,13 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen1
+// CDetailedScreen
 //
 // This screen provides a detailed control/status function
 //
 ///////////////////////////////////////////////////////////////////////////
 
-CScreen1::CScreen1(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CDetailedScreen::CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _animatePump = false;
   _animateRPM = false;
@@ -74,7 +74,7 @@ CScreen1::CScreen1(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(d
 
 
 void 
-CScreen1::show()
+CDetailedScreen::show()
 {
   CScreenHeader::show();
 
@@ -123,7 +123,7 @@ CScreen1::show()
 
 
 bool 
-CScreen1::animate()
+CDetailedScreen::animate()
 {
   bool retval = CScreenHeader::animate();
 
@@ -166,7 +166,7 @@ CScreen1::animate()
 
 
 void 
-CScreen1::keyHandler(uint8_t event)
+CDetailedScreen::keyHandler(uint8_t event)
 {
   
   if(event & keyPressed) {
@@ -219,7 +219,7 @@ CScreen1::keyHandler(uint8_t event)
 
 #define TEMP_YPOS(A) ((20 - int(A)) + 27)  // 26 is location of 20deg tick
 void 
-CScreen1::showThermometer(float desired, float actual) 
+CDetailedScreen::showThermometer(float desired, float actual) 
 {
   char msg[16];
   // draw bulb design
@@ -266,7 +266,7 @@ CScreen1::showThermometer(float desired, float actual)
 
 #define BODY_YPOS(A) ((((100 - A) * 3) / 16) + 22)   // 100degC centre - ticks +- 80C
 void 
-CScreen1::showBodyThermometer(int actual) 
+CDetailedScreen::showBodyThermometer(int actual) 
 {
   // draw bulb design
   _display.drawBitmap(X_BODY_BULB, Y_BULB, bodyThermometerIcon, 8, 50, WHITE);
@@ -289,7 +289,7 @@ CScreen1::showBodyThermometer(int actual)
 
 
 void 
-CScreen1::showGlowPlug(float power)
+CDetailedScreen::showGlowPlug(float power)
 {
   _display.drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIcon, W_GLOW_ICON, H_GLOW_ICON, WHITE);
 //  _animateGlow = true;
@@ -304,7 +304,7 @@ CScreen1::showGlowPlug(float power)
 }
 
 void 
-CScreen1::showFan(int RPM)
+CDetailedScreen::showFan(int RPM)
 {
   // NOTE: fan rotation animation performed in animateOLED
   _animateRPM = RPM != 0;   // used by animation routine
@@ -319,7 +319,7 @@ CScreen1::showFan(int RPM)
 }
 
 void 
-CScreen1::showFuel(float rate)
+CDetailedScreen::showFuel(float rate)
 {
   // NOTE: fuel drop animation performed in animateOLED
   _animatePump = rate != 0;    // used by animation routine
@@ -334,7 +334,7 @@ CScreen1::showFuel(float rate)
 }
 
 void 
-CScreen1::showRunState(int runstate, int errstate) 
+CDetailedScreen::showRunState(int runstate, int errstate) 
 {
   static bool toggle = false;
   const char* toPrint = NULL;

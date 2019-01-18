@@ -21,17 +21,23 @@
 
 #include <stdint.h>
 #include "ScreenHeader.h"
+#include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
+class CProtocol;
 
-class CScreen4 : public CScreenHeader {
+class CSetTimerScreen : public CScreenHeader {
+  int  _rowSel;
+  int  _colSel;
+  int  _instance;
+  sTimer _timer;
+  void adjust(int dir);
+  void _printEnabledTimers();
+
 public:
-  CScreen4(C128x64_OLED& display, CScreenManager& mgr);
+  CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
+  void onSelect();
   void show();
   void keyHandler(uint8_t event);
-private:
-  int  _rowSel;
-  int  _repeatCount;
-  bool _bShowMAC;
 };

@@ -21,23 +21,23 @@
 
 #include <stdint.h>
 #include "ScreenHeader.h"
-#include "../RTC/BTCDateTime.h"
 
 class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CScreen6 : public CScreenHeader {
+class CFuelMixtureScreen : public CScreenHeader {
+  int  _PWdig[4];
+  float adjPump[2];
+  short adjFan[2];
   int  _rowSel;
   int  _colSel;
-  unsigned long _nextT;
-  BTCDateTime working;
-
-  void adjTimeDate(int dir);
+  void _showPassword();
+  void _adjustSetting(int dir);
 
 public:
-  CScreen6(C128x64_OLED& display, CScreenManager& mgr);
+  CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
-  void showTime(int);
   void keyHandler(uint8_t event);
+  bool animate() { return CScreen::animate(); };
 };

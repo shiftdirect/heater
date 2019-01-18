@@ -24,15 +24,16 @@
 
 class C128x64_OLED;
 class CScreenManager;
+class CProtocolPackage;
 
-class CScreen3 : public CScreenHeader {
-  unsigned long _PrimeStop;
-  unsigned long _PrimeCheck;
-  int _rowSel;
-  int _colSel;
-  void stopPump();
+class CBasicScreen : public CScreenHeader
+{
+  unsigned long _showSetMode;
+  unsigned long _showMode;
+  unsigned char _nModeSel;
+  void showRunState();
 public:
-  CScreen3(C128x64_OLED& display, CScreenManager& mgr);
+  CBasicScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };

@@ -22,7 +22,7 @@
 #include "128x64OLED.h"
 #include "fonts/tahoma16.h"
 #include "fonts/Icons.h"
-#include "Screen2.h"
+#include "BasicScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Utility/UtilClasses.h"
@@ -32,13 +32,13 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen2
+// CBasicScreen
 //
 // This screen provides a basic control function
 //
 ///////////////////////////////////////////////////////////////////////////
 
-CScreen2::CScreen2(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CBasicScreen::CBasicScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _showSetMode = 0;
   _showMode = 0;
@@ -46,7 +46,7 @@ CScreen2::CScreen2(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(d
 }
 
 void 
-CScreen2::show()
+CBasicScreen::show()
 {
   CScreenHeader::show();
 
@@ -122,7 +122,7 @@ CScreen2::show()
 
 
 void 
-CScreen2::keyHandler(uint8_t event)
+CBasicScreen::keyHandler(uint8_t event)
 {
   static int repeatCount = -1;
 
@@ -230,7 +230,7 @@ CScreen2::keyHandler(uint8_t event)
 }
 
 void 
-CScreen2::showRunState()
+CBasicScreen::showRunState()
 {
   int runstate = getHeaterInfo().getRunState(); 
   int errstate = getHeaterInfo().getErrState(); 

@@ -21,23 +21,32 @@
 
 #include <stdint.h>
 #include "ScreenHeader.h"
-#include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocol;
 
-class CScreen7 : public CScreenHeader {
-  int  _rowSel;
-  int  _colSel;
-  int  _instance;
-  sTimer _timer;
-  void adjust(int dir);
-  void _printEnabledTimers();
+class CDetailedScreen : public CScreenHeader
+{
+  bool _animatePump;
+  bool _animateRPM;
+  bool _animateGlow;
+  int  _fanAnimationState;
+  int  _dripAnimationState;
+  int  _heatAnimationState;
+  int  _keyRepeatCount;
 
+  unsigned long _showTarget;
+
+  void showRunState();
+  void showThermometer(float desired, float actual);
+  void showBodyThermometer(int actual);
+  void showGlowPlug(float power);
+  void showFan(int RPM);
+  void showFuel(float rate);
+  void showRunState(int state, int errstate);
 public:
-  CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance);
-  void onSelect();
+  CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
+  bool animate();
   void keyHandler(uint8_t event);
 };

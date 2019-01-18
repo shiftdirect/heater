@@ -24,17 +24,13 @@
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocolPackage;
 
-class CScreen2 : public CScreenHeader
-{
-  unsigned long _showSetMode;
-  unsigned long _showMode;
-  unsigned char _nModeSel;
-  void showRunState();
+class CClockScreen : public CScreenHeader {
+protected:
+  virtual void showTime(int numTimers);  
+  bool _colon;
 public:
-  CScreen2(C128x64_OLED& display, CScreenManager& mgr);
+  CClockScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
-  bool animate() { return CScreen::animate(); };
 };

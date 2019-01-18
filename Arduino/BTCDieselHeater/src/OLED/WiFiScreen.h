@@ -24,20 +24,14 @@
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocol;
 
-class CScreen5 : public CScreenHeader {
-  int  _PWdig[4];
-  float adjPump[2];
-  short adjFan[2];
-  int  _rowSel;
-  int  _colSel;
-  void _showPassword();
-  void _adjustSetting(int dir);
-
+class CWiFiScreen : public CScreenHeader {
 public:
-  CScreen5(C128x64_OLED& display, CScreenManager& mgr);
+  CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
-  bool animate() { return CScreen::animate(); };
+private:
+  int  _rowSel;
+  int  _repeatCount;
+  bool _bShowMAC;
 };

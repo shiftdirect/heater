@@ -22,13 +22,13 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen7
+// CSetTimerScreen
 //
 // This screen allows the timers to be adjusted
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#include "Screen7.h"
+#include "SetTimerScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Utility/NVStorage.h"
@@ -36,7 +36,7 @@
 
 const char* briefDOW[] = { "S", "M", "T", "W", "T", "F", "S" };
 
-CScreen7::CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
+CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
 {
   _rowSel = 0;
   _colSel = 0;
@@ -44,13 +44,13 @@ CScreen7::CScreen7(C128x64_OLED& display, CScreenManager& mgr, int instance) : C
 }
 
 void 
-CScreen7::onSelect()
+CSetTimerScreen::onSelect()
 {
   NVstore.getTimerInfo(_instance, _timer);
 }
 
 void 
-CScreen7::show()
+CSetTimerScreen::show()
 {
   CScreenHeader::show();
 
@@ -105,12 +105,13 @@ CScreen7::show()
   // navigation line
   yPos = 53;
   xPos = _display.xCentre();
-  _printMenuText(xPos, yPos, "<-             ->", _rowSel==0, eCentreJustify);
+  //_printMenuText(xPos, yPos, "<-             ->", _rowSel==0, eCentreJustify);
+  _printMenuText(xPos, yPos, "<-    return    ->", _rowSel==0, eCentreJustify);
 }
 
 
 void 
-CScreen7::keyHandler(uint8_t event)
+CSetTimerScreen::keyHandler(uint8_t event)
 {
   static bool bHeld = false;
   // handle initial key press
@@ -118,7 +119,10 @@ CScreen7::keyHandler(uint8_t event)
     bHeld = false;
     // press CENTRE
     if(event & key_Centre) {
-      if(_rowSel != 0) {
+      if(_rowSel == 0) {
+        _ScreenManager.selectTimerScreen(false);  // exit: return to clock screen
+      }
+      else {
         NVstore.setTimerInfo(_instance, _timer);
         NVstore.save();
         _rowSel = 0;
@@ -157,6 +161,12 @@ CScreen7::keyHandler(uint8_t event)
           break;
       }
     }
+    // press DOWN - return - only on row 0
+    if(event & key_Down) {
+      if(_rowSel == 0) {
+        _ScreenManager.selectTimerScreen(false);  // exit: return to clock screen
+      }
+    }
   }
 
   // handle held down keys
@@ -189,12 +199,15 @@ CScreen7::keyHandler(uint8_t event)
       int maskDOW = 0x01 << _colSel;
       if(event & key_Down) {
         // adjust selected item
-        if(_rowSel == 1) 
-          adjust(-1);
-        if(_rowSel == 2) {
-          // adjust selected item
-          _timer.enabled ^= maskDOW;
-          _timer.enabled &= 0x7f;
+        switch(_rowSel) {
+          case 1:
+            adjust(-1);
+            break;
+          case 2:
+            // adjust selected item
+            _timer.enabled ^= maskDOW;
+            _timer.enabled &= 0x7f;
+            break;
         }
       }
       // released UP 
@@ -224,7 +237,7 @@ CScreen7::keyHandler(uint8_t event)
 
 
 void 
-CScreen7::adjust(int dir)
+CSetTimerScreen::adjust(int dir)
 {
   int days;
   int maskDOW = 0x01 << _colSel;  // if doing Day of Week - (_rowSel == 2)  
@@ -267,7 +280,7 @@ CScreen7::adjust(int dir)
 }
 
 void
-CScreen7::_printEnabledTimers()
+CSetTimerScreen::_printEnabledTimers()
 {
   const int dayWidth = 8;
   int xPos = _display.width() - border;

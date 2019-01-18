@@ -19,7 +19,7 @@
  * 
  */
 
-#include "Screen4.h"
+#include "WiFiScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Wifi/BTCWifi.h"
@@ -30,7 +30,7 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen4
+// CWiFiScreen
 //
 // This screen presents sundry information
 // eg WiFi status
@@ -39,7 +39,7 @@
 
 #define STA_HOLD_TIME 10
 
-CScreen4::CScreen4(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _rowSel = 0;
   _bShowMAC = false;
@@ -47,7 +47,7 @@ CScreen4::CScreen4(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(d
 
 
 void 
-CScreen4::show()
+CWiFiScreen::show()
 {
   CScreenHeader::show();
   
@@ -100,7 +100,7 @@ CScreen4::show()
 
 
 void 
-CScreen4::keyHandler(uint8_t event)
+CWiFiScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
     _repeatCount = 0;

@@ -19,7 +19,7 @@
  * 
  */
 
-#include "Screen8.h"
+#include "ClockScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "fonts/Tahoma16.h"
@@ -27,27 +27,27 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen8
+// CClockScreen
 //
 // This screen presents a large format clock
 //
 ///////////////////////////////////////////////////////////////////////////
 
 
-CScreen8::CScreen8(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CClockScreen::CClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _colon = false;
 }
 
 void
-CScreen8::showTime(int)
+CClockScreen::showTime(int)
 {
   // override and DO NOTHING!
 }
 
 
 void 
-CScreen8::show()
+CClockScreen::show()
 {
   CScreenHeader::show();
   
@@ -72,7 +72,7 @@ CScreen8::show()
 
 
 void 
-CScreen8::keyHandler(uint8_t event)
+CClockScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
     // press CENTRE
@@ -86,6 +86,14 @@ CScreen8::keyHandler(uint8_t event)
     // press RIGHT 
     if(event & key_Right) {
       _ScreenManager.nextScreen(); 
+    }
+    // press UP
+    if(event & key_Up) {
+      _ScreenManager.selectSetTimeScreen(true);   // switch to clock set screen
+    }
+    // press DOWN
+    if(event & key_Down) {
+      _ScreenManager.selectTimerScreen(true);      // switch to timer set screen loop
     }
   }
 }

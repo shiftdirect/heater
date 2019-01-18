@@ -1,12 +1,12 @@
 #include "ScreenManager.h"
-#include "Screen1.h"
-#include "Screen2.h"
-#include "Screen3.h"
-#include "Screen4.h"
-#include "Screen5.h"
-#include "Screen6.h"
-#include "Screen7.h"
-#include "Screen8.h"
+#include "DetailedScreen.h"
+#include "BasicScreen.h"
+#include "PrimingScreen.h"
+#include "WiFiScreen.h"
+#include "FuelMixtureScreen.h"
+#include "SetClockScreen.h"
+#include "SetTimerScreen.h"
+#include "ClockScreen.h"
 #include "RebootScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
@@ -95,7 +95,9 @@ CScreenManager::CScreenManager()
 {
   _pDisplay = NULL;
   _currentScreen = -1;
+  _timerScreen = -1;
   _bReqUpdate = false;
+  _bSetTime = false;
   _DimTime = millis() + 60000;
   _pRebootScreen = NULL;
 }
@@ -108,6 +110,16 @@ CScreenManager::~CScreenManager()
 			_Screens[i] = NULL;
 		}
 	}
+	for(int i=0; i < _TimerScreens.size(); i++) {
+		if(_TimerScreens[i]) {
+			delete _TimerScreens[i];
+			_TimerScreens[i] = NULL;
+		}
+	}
+  if(_SetTimeScreen) {
+    delete _SetTimeScreen;
+    _SetTimeScreen = NULL;
+  }
   if(_pDisplay) {
     delete _pDisplay; _pDisplay = NULL;
   }
@@ -137,15 +149,15 @@ CScreenManager::begin()
   _pDisplay->display();
 
   DebugPort.println("Creating Screens");
-  _Screens.push_back(new CScreen1(*_pDisplay, *this));      // 0: detail control
-  _Screens.push_back(new CScreen2(*_pDisplay, *this));      // 1: basic control
-  _Screens.push_back(new CScreen8(*_pDisplay, *this));      // 2: clock
-  _Screens.push_back(new CScreen3(*_pDisplay, *this));      // 3: mode / priming
-  _Screens.push_back(new CScreen4(*_pDisplay, *this));      // 4: comms info
-  _Screens.push_back(new CScreen5(*_pDisplay, *this));      // 5: tuning
-  _Screens.push_back(new CScreen6(*_pDisplay, *this));      // 6: clock set
-  _Screens.push_back(new CScreen7(*_pDisplay, *this, 0));   // 7: set timer 1
-  _Screens.push_back(new CScreen7(*_pDisplay, *this, 1));   // 8: set timer 2
+  _Screens.push_back(new CDetailedScreen(*_pDisplay, *this));      // 0: detail control
+  _Screens.push_back(new CBasicScreen(*_pDisplay, *this));      // 1: basic control
+  _Screens.push_back(new CClockScreen(*_pDisplay, *this));      // 2: clock
+  _Screens.push_back(new CPrimingScreen(*_pDisplay, *this));      // 3: mode / priming
+  _Screens.push_back(new CWiFiScreen(*_pDisplay, *this));      // 4: comms info
+  _Screens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      // 5: tuning
+  _SetTimeScreen = new CSetClockScreen(*_pDisplay, *this);            // clock set
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 0)); // set timer 1
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 1)); // set timer 2
 
 #if RTC_USE_DS3231==0 && RTC_USE_DS1307==0 && RTC_USE_PCF8523==0
   _currentScreen = 6;   // bring up clock set screen first if using millis based RTC!
@@ -175,7 +187,17 @@ CScreenManager::checkUpdate()
       return true;
     }
     else {
-      if(_currentScreen >= 0) {
+      if(_bSetTime) {
+        _SetTimeScreen->show();
+        _bReqUpdate = false;
+        return true;
+      }
+      else if(_timerScreen >= 0) {
+        _TimerScreens[_timerScreen]->show();
+        _bReqUpdate = false;
+        return true;
+      }
+      else if(_currentScreen >= 0) {
         _Screens[_currentScreen]->show();
         _bReqUpdate = false;
         return true;
@@ -194,6 +216,9 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
+	if(_timerScreen >= 0) {
+		return _TimerScreens[_timerScreen]->animate();
+  }
 	if(_currentScreen >= 0) {
 		return _Screens[_currentScreen]->animate();
   }
@@ -210,7 +235,9 @@ CScreenManager::refresh()
 void 
 CScreenManager::_switchScreen()
 {
-	if(_currentScreen >= 0)
+	if(_timerScreen >= 0)
+		_TimerScreens[_timerScreen]->onSelect();
+	else if(_currentScreen >= 0)
 		_Screens[_currentScreen]->onSelect();
 		
   reqUpdate();
@@ -219,9 +246,20 @@ CScreenManager::_switchScreen()
 void 
 CScreenManager::nextScreen()
 {
-  _currentScreen++;
-  if(_currentScreen >= _Screens.size()) {
-    _currentScreen = 0;
+  if(_bSetTime) {
+
+  }
+  else if(_timerScreen >= 0) {
+    _timerScreen++;
+    if(_timerScreen >= _TimerScreens.size()) {
+      _timerScreen = 0;
+    }
+  }
+  else {
+    _currentScreen++;
+    if(_currentScreen >= _Screens.size()) {
+      _currentScreen = 0;
+    }
   }
   _switchScreen();
 }
@@ -229,9 +267,19 @@ CScreenManager::nextScreen()
 void 
 CScreenManager::prevScreen()
 {
-  _currentScreen--;
-  if(_currentScreen < 0) {
-    _currentScreen = _Screens.size()-1;
+  if(_bSetTime) {
+  }
+  else if(_timerScreen >=0) {
+    _timerScreen--;
+    if(_timerScreen < 0) {
+      _timerScreen = _TimerScreens.size()-1;
+    }
+  }
+  else {
+    _currentScreen--;
+    if(_currentScreen < 0) {
+      _currentScreen = _Screens.size()-1;
+    }
   }
   _switchScreen();
 }
@@ -239,7 +287,11 @@ CScreenManager::prevScreen()
 void 
 CScreenManager::keyHandler(uint8_t event)
 {
-	if(_currentScreen >= 0)
+  if(_bSetTime)
+    _SetTimeScreen->keyHandler(event);
+  else if(_timerScreen >= 0)
+    _TimerScreens[_timerScreen]->keyHandler(event);
+	else if(_currentScreen >= 0)
   	_Screens[_currentScreen]->keyHandler(event);
 
   if(_DimTime == 0)
@@ -248,6 +300,17 @@ CScreenManager::keyHandler(uint8_t event)
 //  _DimTime = (millis() + 60000) | 1;
 }
 
+void 
+CScreenManager::selectTimerScreen(bool showTimers)
+{
+  _timerScreen = showTimers ? 0 : -1;
+}
+
+void 
+CScreenManager::selectSetTimeScreen(bool show)
+{
+  _bSetTime = show;
+}
 
 void 
 CScreenManager::showRebootMsg(const char* content[2], long delayTime)
@@ -259,3 +322,4 @@ CScreenManager::showRebootMsg(const char* content[2], long delayTime)
   _bReqUpdate = true;
   _pDisplay->dim(false);
 }
+

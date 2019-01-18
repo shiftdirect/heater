@@ -19,13 +19,13 @@
  * 
  */
 
-#include "Screen3.h"
+#include "PrimingScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen3
+// CPrimingScreen
 //
 // This screen allows the temperature control mode to be selected and
 // allows pump priming
@@ -33,7 +33,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 
-CScreen3::CScreen3(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CPrimingScreen::CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _PrimeStop = 0;
   _PrimeCheck = 0;
@@ -43,7 +43,7 @@ CScreen3::CScreen3(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(d
 
 
 void 
-CScreen3::show()
+CPrimingScreen::show()
 {
   CScreenHeader::show();
   
@@ -103,7 +103,7 @@ CScreen3::show()
 
 
 void 
-CScreen3::keyHandler(uint8_t event)
+CPrimingScreen::keyHandler(uint8_t event)
 {
   
   if(event & keyPressed) {
@@ -181,7 +181,7 @@ CScreen3::keyHandler(uint8_t event)
 }
 
 void 
-CScreen3::stopPump()
+CPrimingScreen::stopPump()
 {
   reqPumpPrime(false);
   _PrimeCheck = 0;

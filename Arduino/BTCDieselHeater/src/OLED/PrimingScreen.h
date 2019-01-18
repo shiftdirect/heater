@@ -25,12 +25,15 @@
 class C128x64_OLED;
 class CScreenManager;
 
-class CScreen8 : public CScreenHeader {
-protected:
-  virtual void showTime(int numTimers);  
-  bool _colon;
+class CPrimingScreen : public CScreenHeader {
+  unsigned long _PrimeStop;
+  unsigned long _PrimeCheck;
+  int _rowSel;
+  int _colSel;
+  void stopPump();
 public:
-  CScreen8(C128x64_OLED& display, CScreenManager& mgr);
+  CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr);
   void show();
   void keyHandler(uint8_t event);
+  bool animate() { return CScreen::animate(); };
 };

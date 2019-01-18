@@ -22,20 +22,20 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// CScreen5
+// CFuelMixtureScreen
 //
 // This screen allows the fuel mixture endpoints to be adjusted
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#include "Screen5.h"
+#include "FuelMixtureScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Wifi/BTCWifi.h"
 #include "fonts/Arial.h"
 
 
-CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _rowSel = 0;
   _colSel = 0;
@@ -45,7 +45,7 @@ CScreen5::CScreen5(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(d
 
 
 void 
-CScreen5::show()
+CFuelMixtureScreen::show()
 {
   CScreenHeader::show();
 
@@ -125,7 +125,7 @@ CScreen5::show()
 
 
 void 
-CScreen5::keyHandler(uint8_t event)
+CFuelMixtureScreen::keyHandler(uint8_t event)
 {
 
   if(event & keyPressed) {
@@ -280,7 +280,7 @@ CScreen5::keyHandler(uint8_t event)
 }
 
 void
-CScreen5::_showPassword()
+CFuelMixtureScreen::_showPassword()
 {
   // determine metrics of character sizing
   CRect extents;
@@ -307,7 +307,7 @@ CScreen5::_showPassword()
 }
 
 void
-CScreen5::_adjustSetting(int dir)
+CFuelMixtureScreen::_adjustSetting(int dir)
 {
   switch(_rowSel) {
     case 2:
