@@ -32,6 +32,7 @@
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Wifi/BTCWifi.h"
+#include "../utility/debugPort.h"
 
 
 CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
@@ -40,48 +41,32 @@ CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mg
   _colSel = 0;
 }
 
+void
+CFuelMixtureScreen::onSelect()
+{
+  adjPump[0] = getHeaterInfo().getPump_Min();
+  adjPump[1] = getHeaterInfo().getPump_Max();
+  adjFan[0] = getHeaterInfo().getFan_Min();
+  adjFan[1] = getHeaterInfo().getFan_Max();
+}
 
 bool 
 CFuelMixtureScreen::show()
 {
-  CScreenHeader::show();
-
   char str[16];
   int xPos, yPos;
   const int col2 = 90;
   const int col3 = _display.width() - border;
-  _printInverted(0, 16, " Fuel Settings ", true);
+
+  _display.clearDisplay();
 
   if(!CPasswordScreen::show()) {
-
     switch(_rowSel) {
       case 0:
-        // show settings overview (initial screen entry)
-        // pump max/min
-        yPos = 28;
-        _printMenuText(0, yPos, "Pump (Hz)");
-        sprintf(str, "%.1f", getHeaterInfo().getPump_Min());
-        _printMenuText(col2, yPos, str, false, eRightJustify);
-        sprintf(str, "%.1f", getHeaterInfo().getPump_Max());
-        _printMenuText(col3, yPos, str, false, eRightJustify);
-        // fan max/min
-        yPos = 40;
-        _printMenuText(0, yPos, "Fan (RPM)");
-        sprintf(str, "%d", getHeaterInfo().getFan_Min());
-        _printMenuText(col2, yPos, str, false, eRightJustify);
-        sprintf(str, "%d", getHeaterInfo().getFan_Max());
-        _printMenuText(col3, yPos, str, false, eRightJustify);
-        // navigation line
-        yPos = 53;
-        xPos = _display.xCentre();
-        _printMenuText(xPos, yPos, "<-             ->", true, eCentreJustify);
-        break;
-
       case 1:
       case 2:
       case 3:
       case 4:
-        _display.clearDisplay();
         // Pump Minimum adjustment
         yPos = border + 36;
         _printMenuText(80, yPos, "Min", false, eRightJustify);
@@ -104,10 +89,12 @@ CFuelMixtureScreen::show()
         _printMenuText(col3, yPos, str, _rowSel == 4, eRightJustify);
         // navigation line
         yPos = 53;
-        _printMenuText(_display.xCentre(), yPos, "<-             ->", false, eCentreJustify);
+        xPos = _display.xCentre();
+        _printMenuText(xPos, yPos, "<-    exit    ->", _rowSel == 0, eCentreJustify);
         break;
 
       case 5:
+        _printInverted(_display.xCentre(), 0, " Save Fuel Settings ", true, eCentreJustify);
         _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
         _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
         break;
@@ -121,133 +108,124 @@ CFuelMixtureScreen::show()
 bool 
 CFuelMixtureScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {
-    if(_isPasswordOK()) {
-      _rowSel = 1;
-      _colSel = 0;
-      // grab current settings upon entry to edit mode
-      adjPump[0] = getHeaterInfo().getPump_Min();
-      adjPump[1] = getHeaterInfo().getPump_Max();
-      adjFan[0] = getHeaterInfo().getFan_Min();
-      adjFan[1] = getHeaterInfo().getFan_Max();
+  if(event & keyPressed) {
+    // press CENTRE
+    if(event & key_Centre) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.selectSettingsScreen(false);
+          break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+          _rowSel = 5;  // enter save confirm mode
+          break;
+        case 5:
+          _rowSel = 0;
+          break;
+      }
     }
-  }
-
-  else {
-
-    if(event & keyPressed) {
-      // press CENTRE
-      if(event & key_Centre) {
-        switch(_rowSel) {
-          case 1:
-          case 2:
-          case 3:
-          case 4:
-            _rowSel = 5;  // enter save confirm mode
-            break;
-          case 5:
-            _rowSel = 0;
-            break;
-        }
+    // press LEFT 
+    if(event & key_Left) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.prevScreen(); 
+          break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+          _adjustSetting(-1);
+          break;
+        case 5:
+          _rowSel = 0;
+          break;
       }
-      // press LEFT 
-      if(event & key_Left) {
+    }
+    // press RIGHT 
+    if(event & key_Right) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.nextScreen(); 
+          break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+          _adjustSetting(+1);
+          break;
+        case 5:
+          _rowSel = 0;
+          break;
+      }
+    }
+    // press UP 
+    if(event & key_Up) {
+      if(hasOEMcontroller())
+        _reqOEMWarning();
+      else {
         switch(_rowSel) {
           case 0:
-            _ScreenManager.prevScreen(); 
-            break;
+            // grab current settings upon entry to edit mode
+            adjPump[0] = getHeaterInfo().getPump_Min();
+            adjPump[1] = getHeaterInfo().getPump_Max();
+            adjFan[0] = getHeaterInfo().getFan_Min();
+            adjFan[1] = getHeaterInfo().getFan_Max();
           case 1:
           case 2:
           case 3:
-          case 4:
-            _adjustSetting(-1);
-            break;
-          case 5:
-            _rowSel = 0;
-            break;
-        }
-      }
-      // press RIGHT 
-      if(event & key_Right) {
-        switch(_rowSel) {
-          case 0:
-            _ScreenManager.nextScreen(); 
-            break;
-          case 1:
-          case 2:
-          case 3:
-          case 4:
-            _adjustSetting(+1);
-            break;
-          case 5:
-            _rowSel = 0;
-            break;
-        }
-      }
-      // press UP 
-      if(event & key_Up) {
-        if(hasOEMcontroller())
-          _reqOEMWarning();
-        else {
-          switch(_rowSel) {
-            case 0:
-              _getPassword();
-              break;
-            case 1:
-            case 2:
-            case 3:
-              _rowSel++;
-              _colSel = 0;
-              UPPERLIMIT(_rowSel, 4);
-              break;
-            case 5:
-              _showStoringMessage();
-              setPumpMin(adjPump[0]);
-              setPumpMax(adjPump[1]);
-              setFanMin(adjFan[0]);
-              setFanMax(adjFan[1]);
-              saveNV();
-              _rowSel = 0;
-              _ScreenManager.reqUpdate();
-              break;
-          }
-        }
-      }
-      // press DOWN
-      if(event & key_Down) {
-        switch(_rowSel) {
-          case 1:
-          case 2:
-          case 3:
-          case 4:
-            _rowSel--;
+            _rowSel++;
             _colSel = 0;
+            UPPERLIMIT(_rowSel, 4);
             break;
           case 5:
+            _showStoringMessage();
+            setPumpMin(adjPump[0]);
+            setPumpMax(adjPump[1]);
+            setFanMin(adjFan[0]);
+            setFanMax(adjFan[1]);
+            saveNV();
             _rowSel = 0;
             break;
         }
       }
     }
-
-    
-    if(event & keyRepeat) {
+    // press DOWN
+    if(event & key_Down) {
       switch(_rowSel) {
         case 1:
         case 2:
         case 3:
         case 4:
-          int adj = 0;
-          if(event & key_Right) adj = +1;
-          if(event & key_Left) adj = -1;
-          if(adj) {
-            _adjustSetting(adj);
-          }
+          _rowSel--;
+          _colSel = 0;
+          break;
+        case 5:
+          _rowSel = 0;
           break;
       }
     }
+    _ScreenManager.reqUpdate();
   }
-  _ScreenManager.reqUpdate();
+
+  
+  if(event & keyRepeat) {
+    switch(_rowSel) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        int adj = 0;
+        if(event & key_Right) adj = +1;
+        if(event & key_Left) adj = -1;
+        if(adj) {
+          _adjustSetting(adj);
+        }
+        break;
+    }
+    _ScreenManager.reqUpdate();
+  }
   return true;
 }
 
@@ -270,6 +248,10 @@ CFuelMixtureScreen::_adjustSetting(int dir)
   }
   LOWERLIMIT(adjPump[0], 0.5f);
   UPPERLIMIT(adjPump[0], 10.f);
+  LOWERLIMIT(adjPump[1], 0.5f);
+  UPPERLIMIT(adjPump[1], 10.f);
+  LOWERLIMIT(adjFan[0], 1000);
+  UPPERLIMIT(adjFan[0], 5000);
   LOWERLIMIT(adjFan[1], 1000);
   UPPERLIMIT(adjFan[1], 5000);
 }

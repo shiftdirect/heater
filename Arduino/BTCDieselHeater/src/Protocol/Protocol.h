@@ -46,7 +46,7 @@ public:
       unsigned char OperatingMode;      // [13] 0x32:Thermostat, 0xCD:Fixed
       unsigned char MinTemperature;     // [14] Minimum settable temperature
       unsigned char MaxTemperature;     // [15] Maximum settable temperature
-      unsigned char MinTempRise;        // [16] temp rise to sense running OK
+      unsigned char GlowDrive;          // [16] power to supply to glow plug
       unsigned char Prime;              // [17] 00: normal, 0x5A: fuel prime
       unsigned char Unknown1_MSB;       // [18] always 0x01
       unsigned char Unknown1_LSB;       // [19] always 0x2c  "300 secs = max run without burn detected"?
@@ -190,6 +190,8 @@ public:
   float getGlowPlug_Voltage() const;   // glow plug voltage
   void setGlowPlug_Current(short ampsx100);   // glow plug current
   void setGlowPlug_Voltage(short voltsx10);   // glow plug voltage
+  void setGlowDrive(unsigned char val) { Controller.GlowDrive = val; };
+  unsigned char getGlowDrive() const { return Controller.GlowDrive; };
   // heat exchanger
   short getTemperature_HeatExchg() const; // temperature of heat exchanger
   void setTemperature_HeatExchg(short degC); // temperature of heat exchanger
@@ -238,6 +240,7 @@ public:
   float getGlow_Voltage() const { return Heater.getGlowPlug_Voltage(); };
   float getGlow_Current() const { return Heater.getGlowPlug_Current(); };
   float getSystemVoltage() const { return Controller.getSystemVoltage(); };
+  int   getGlow_Drive() const { return Controller.getGlowDrive(); };
 
 //  void  setRefTime();
   void  reportFrames(bool isOEM);

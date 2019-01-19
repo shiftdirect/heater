@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __SETCLOCKSCREEN_H__
+#define __SETCLOCKSCREEN_H__
+
 #include <stdint.h>
 #include "ScreenHeader.h"
 #include "../RTC/BTCDateTime.h"
@@ -41,3 +44,5 @@ public:
   void showTime(int);
   bool keyHandler(uint8_t event);
 };
+
+#endif

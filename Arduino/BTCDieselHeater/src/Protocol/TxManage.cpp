@@ -121,6 +121,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     m_TxFrame.setTemperature_Desired(NVstore.getDesiredTemperature());
     m_TxFrame.Controller.OperatingVoltage = NVstore.getSysVoltage();
     m_TxFrame.Controller.FanSensor = NVstore.getFanSensor();
+    m_TxFrame.Controller.GlowDrive = NVstore.getGlowDrive();
   }
   else {
     m_TxFrame.setPassiveMode();    // this prevents the tuning parameters being saved by heater

@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __DETAILEDSCREEN_H__
+#define __DETAILEDSCREEN_H__
+
 #include <stdint.h>
 #include "ScreenHeader.h"
 
@@ -50,3 +53,5 @@ public:
   bool animate();
   bool keyHandler(uint8_t event);
 };
+
+#endif

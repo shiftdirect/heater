@@ -42,6 +42,14 @@ CHeaterSettingsScreen::CHeaterSettingsScreen(C128x64_OLED& display, CScreenManag
   _sysVoltage = 12;
 }
 
+void 
+CHeaterSettingsScreen::onSelect()
+{
+  _fanSensor = getHeaterInfo().getFan_Sensor();
+  _glowPower = getHeaterInfo().getGlow_Drive();
+  _sysVoltage = int(getHeaterInfo().getSystemVoltage());
+}
+
 bool 
 CHeaterSettingsScreen::show()
 {
@@ -49,16 +57,18 @@ CHeaterSettingsScreen::show()
   int xPos, yPos;
   _display.clearDisplay();
 
-  _printInverted(0, 0, " Heater Settings ", true);
 
-  if(!CPasswordScreen::show()) {
-    yPos = 14;
+  yPos = 14;
+
+  if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
     if(_rowSel == 4) {
+      _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
       _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
       _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
     }
     else {
+      _printInverted(_display.xCentre(), 0, " Heater Settings ", true, eCentreJustify);
       _printMenuText(98, yPos, "Glow plug power:", false, eRightJustify);
       sprintf(msg, "PF-%d", _glowPower);
       _printMenuText(100, yPos, msg, _rowSel == 3);
@@ -70,12 +80,13 @@ CHeaterSettingsScreen::show()
       _printMenuText(98, yPos, "System voltage:", false, eRightJustify);
       sprintf(msg, "%dV", _sysVoltage);
       _printMenuText(100, yPos, msg, _rowSel == 1);
+      // navigation line
+      yPos = 53;
+      xPos = _display.xCentre();
+      _printMenuText(xPos, yPos, "<-    exit    ->", _rowSel == 0, eCentreJustify);
     }
-    // navigation line
-    yPos = 53;
-    xPos = _display.xCentre();
-    _printMenuText(xPos, yPos, "<-             ->", _rowSel == 0, eCentreJustify);
   }
+
   return true;
 }
 
@@ -83,78 +94,79 @@ CHeaterSettingsScreen::show()
 bool 
 CHeaterSettingsScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {
-    if(_isPasswordOK()) {
-      _rowSel++;
-    }
-  }
-  else {
-    if(event & keyPressed) {
-      // press LEFT to select previous screen
-      if(event & key_Left) {
-        switch(_rowSel) {
-          case 0:
-            _ScreenManager.prevScreen();
-            break;
-          case 1:
-          case 2:
-          case 3:
-            _adjust(-1);
-            break;
-          case 4:
-            _rowSel = 0;   // abort save
-            break;
-        }
-      }
-      // press RIGHT to select next screen
-      if(event & key_Right) {
-        switch(_rowSel) {
-          case 0:
-            _ScreenManager.nextScreen();
-            break;
-          case 1:
-          case 2:
-          case 3:
-            _adjust(+1);
-            break;
-          case 4:
-            _rowSel = 0;   // abort save
-            break;
-        }
-      }
-      if(event & key_Down) {
-        _rowSel--;
-        LOWERLIMIT(_rowSel, 0);
-      }
-      // UP press
-      if(event & key_Up) {
-        switch(_rowSel) {
-          case 0:
-            _getPassword();  // nav line ,request password
-            break;
-          case 1:
-          case 2:
-          case 3:
-            _rowSel++;
-            UPPERLIMIT(_rowSel, 3);
-            break;
-          case 4:    // confirmed save
-            _showStoringMessage();
-            break;
-        }
-      }
-      // CENTRE press
-      if(event & key_Centre) {
-        switch(_rowSel) {
-          case 1:
-          case 2:
-          case 3:
-            _rowSel = 4;
-            break;
-        }
+  if(event & keyPressed) {
+    // press LEFT to select previous screen
+    if(event & key_Left) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.prevScreen();
+          break;
+        case 1:
+        case 2:
+        case 3:
+          _adjust(-1);
+          break;
+        case 4:
+          _rowSel = 0;   // abort save
+          break;
       }
     }
+    // press RIGHT to select next screen
+    if(event & key_Right) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.nextScreen();
+          break;
+        case 1:
+        case 2:
+        case 3:
+          _adjust(+1);
+          break;
+        case 4:
+          _rowSel = 0;   // abort save
+          break;
+      }
+    }
+    if(event & key_Down) {
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
+    }
+    // UP press
+    if(event & key_Up) {
+      switch(_rowSel) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          _rowSel++;
+          UPPERLIMIT(_rowSel, 3);
+          break;
+        case 4:    // confirmed save
+          _showStoringMessage();
+          setSystemVoltage(float(_sysVoltage));
+          setFanSensor(_fanSensor);
+          setGlowDrive(_glowPower);
+          saveNV();
+          _rowSel = 0;
+          break;
+      }
+    }
+    // CENTRE press
+    if(event & key_Centre) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.selectSettingsScreen(false);
+          break;
+        case 1:
+        case 2:
+        case 3:
+          _rowSel = 4;
+          break;
+      }
+    }
+    _ScreenManager.reqUpdate();
   }
+
   return true;
 }
 

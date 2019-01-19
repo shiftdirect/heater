@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __CLOCKSCREEN_H___
+#define __CLOCKSCREEN_H___
+
 #include <stdint.h>
 #include "ScreenHeader.h"
 
@@ -34,3 +37,5 @@ public:
   bool show();
   bool keyHandler(uint8_t event);
 };
+
+#endif

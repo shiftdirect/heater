@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __REBOOTSCREEN_H__
+#define __REBOOTSCREEN_H__
+
 #include <stdint.h>
 #include "ScreenHeader.h"
 
@@ -35,3 +38,5 @@ private:
   String _rebootMessage[2];
   long _restartTime;
 };
+
+#endif

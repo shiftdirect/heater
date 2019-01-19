@@ -19,21 +19,20 @@
  * 
  */
 
+#ifndef __FUELMIXTURESCREEN_H__
+#define __FUELMIXTURESCREEN_H__
+
 #include <stdint.h>
 #include "PasswordScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
-//class CProtocol;
 
 class CFuelMixtureScreen : public CPasswordScreen {
-  // int  _PWdig[4];
   float adjPump[2];
   short adjFan[2];
   int  _rowSel;
   int  _colSel;
-//  unsigned long _SaveTime;
-//  void _showPassword();
   void _adjustSetting(int dir);
 
 public:
@@ -41,4 +40,7 @@ public:
   bool show();
   bool keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };
+  void onSelect();
 };
+
+#endif

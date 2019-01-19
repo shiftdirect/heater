@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __WIFISCREEN_H__
+#define __WIFISCREEN_H__
+
 #include <stdint.h>
 #include "ScreenHeader.h"
 
@@ -35,3 +38,5 @@ private:
   int  _repeatCount;
   bool _bShowMAC;
 };
+
+#endif

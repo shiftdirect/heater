@@ -160,6 +160,21 @@ CHeaterStorage::getFanSensor()
   return _calValues.Heater.fanSensor;
 }
 
+void
+CHeaterStorage::setGlowDrive(unsigned char val)
+{
+  if(val >=1 && val <= 6)
+    _calValues.Heater.glowDrive = val;
+  else 
+    _calValues.Heater.glowDrive = 5;
+}
+
+unsigned char
+CHeaterStorage::getGlowDrive()
+{
+  return _calValues.Heater.glowDrive;
+}
+
 void 
 CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
 {
@@ -241,7 +256,7 @@ CESP32HeaterStorage::loadHeater()
   validatedLoad("setTemperature", _calValues.Heater.setTemperature, 22, u8inBounds, 0, 40);
   validatedLoad("systemVoltage", _calValues.Heater.sysVoltage, 12, u8Match2, 120, 240);
   validatedLoad("fanSensor", _calValues.Heater.fanSensor, 1, u8inBounds, 1, 2);
-  validatedLoad("glowPower", _calValues.Heater.glowPower, 5, u8inBounds, 1, 6);
+  validatedLoad("glowDrive", _calValues.Heater.glowDrive, 5, u8inBounds, 1, 6);
   preferences.end();    
 }
 
@@ -258,7 +273,7 @@ CESP32HeaterStorage::saveHeater()
   preferences.putUChar("setTemperature", _calValues.Heater.setTemperature);
   preferences.putUChar("systemVoltage", _calValues.Heater.sysVoltage);
   preferences.putUChar("fanSensor", _calValues.Heater.fanSensor);
-  preferences.putUChar("glowPower", _calValues.Heater.glowPower);
+  preferences.putUChar("glowDrive", _calValues.Heater.glowDrive);
   preferences.end();    
 }
 

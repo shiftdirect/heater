@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __PRIMINGSCREEN_H__
+#define __PRIMINGSCREEN_H__
+
 #include <stdint.h>
 #include "ScreenHeader.h"
 
@@ -37,3 +40,5 @@ public:
   bool keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };
 };
+
+#endif

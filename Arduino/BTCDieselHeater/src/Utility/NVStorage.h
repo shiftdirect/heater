@@ -31,7 +31,7 @@ struct sHeater {
   uint8_t   setTemperature;
   uint8_t   sysVoltage;
   uint8_t   fanSensor;
-  uint8_t   glowPower;
+  uint8_t   glowDrive;
 
   bool valid() {
     bool retval = true;
@@ -43,7 +43,7 @@ struct sHeater {
     retval &= setTemperature < 40;
     retval &= sysVoltage == 120 || sysVoltage == 240;
     retval &= fanSensor == 1 || fanSensor == 2;
-    retval &= glowPower >= 1 && glowPower <= 6;
+    retval &= glowDrive >= 1 && glowDrive <= 6;
     return retval;
   };
   void init() {
@@ -55,7 +55,7 @@ struct sHeater {
     setTemperature = 23;
     sysVoltage = 120;
     fanSensor = 1;
-    glowPower = 5;
+    glowDrive = 5;
   };
 };
 
@@ -148,6 +148,7 @@ public:
     unsigned char getThermostatMode();
     unsigned char getSysVoltage();
     unsigned char getFanSensor();
+    unsigned char getGlowDrive();
     unsigned long getDimTime();
 
     void setPmin(float);
@@ -158,6 +159,7 @@ public:
     void setThermostatMode(unsigned char val);
     void setSystemVoltage(float fVal);
     void setFanSensor(unsigned char val);
+    void setGlowDrive(unsigned char val);
     void setDimTime(unsigned long val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);

@@ -316,7 +316,7 @@ void setup() {
 
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
 #if USE_OTA == 1
-  initOTA();
+//  initOTA();
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
   initWebServer();
@@ -905,6 +905,11 @@ void setFanSensor(unsigned char cVal)
 void setSystemVoltage(float val) {
   NVstore.setSystemVoltage(val);
 }
+
+void setGlowDrive(unsigned char val) {
+  NVstore.setGlowDrive(val);
+} 
+
 
 void saveNV() 
 {

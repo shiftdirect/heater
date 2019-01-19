@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __SETTIMERSCREEN_H__
+#define __SETTIMERSCREEN_H__
+
 #include <stdint.h>
 #include "ScreenHeader.h"
 #include "../Utility/NVStorage.h"
@@ -42,3 +45,5 @@ public:
   bool show();
   bool keyHandler(uint8_t event);
 };
+
+#endif

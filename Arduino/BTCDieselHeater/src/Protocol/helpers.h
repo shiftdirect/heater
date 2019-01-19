@@ -41,6 +41,7 @@ extern void  setFanSensor(unsigned char cVal);
 extern void  setDateTime(const char* newTime);
 extern void  setDate(const char* newTime);
 extern void  setTime(const char* newTime);
+extern void  setGlowDrive(unsigned char val);
 extern void  saveNV();
 extern void  setSystemVoltage(float val);
 extern const CProtocolPackage& getHeaterInfo();
@@ -52,7 +53,7 @@ extern bool hasOEMcontroller();
 extern int getBlueWireStat();
 extern int getSmartError();
 
-#define LOWERLIMIT(A, B) if(A < B) A = B
-#define UPPERLIMIT(A, B) if(A > B) A = B
-#define ROLLUPPERLIMIT(A, B, C) if(A > B) A = C        
-#define ROLLLOWERLIMIT(A, B, C) if(A < B) A = C        
+#define LOWERLIMIT(A, B) if((A) < (B)) (A) = (B)
+#define UPPERLIMIT(A, B) if((A) > (B)) (A) = (B)
+#define ROLLUPPERLIMIT(A, B, C) if((A) > (B)) (A) = (C)        
+#define ROLLLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        

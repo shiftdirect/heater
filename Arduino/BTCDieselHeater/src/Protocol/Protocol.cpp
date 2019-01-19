@@ -263,14 +263,14 @@ CProtocol::Init(int FrameMode)
     Controller.OperatingVoltage = 120;  // 0.1V/digit
     Controller.FanSensor = 1;           // SN-1 or SN-2
     Controller.OperatingMode = 0x32;    // 0x32:Thermostat, 0xCD:Fixed
-    setTemperature_Min(8);      // Minimum settable temperature
-    setTemperature_Max(35);     // Maximum settable temperature
-    Controller.MinTempRise = 5;         // temp rise to sense fuel ignition - GLOW PLUG POWER?
-    Controller.Prime = 0;               // 00: normal, 0x5A: fuel prime
-    Controller.Unknown1_MSB = 0x01;     // always 0x01
-    Controller.Unknown1_LSB = 0x2c;     // always 0x2c  16bit: "300 secs = max run without burn detected" ??
-    Controller.Unknown2_MSB = 0x0d;     // always 0x0d
-    Controller.Unknown2_LSB = 0xac;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
+    setTemperature_Min(8);            // Minimum settable temperature
+    setTemperature_Max(35);           // Maximum settable temperature
+    Controller.GlowDrive = 5;         // GLOW PLUG POWER, 5 => 85W?
+    Controller.Prime = 0;             // 00: normal, 0x5A: fuel prime
+    Controller.Unknown1_MSB = 0x01;   // always 0x01
+    Controller.Unknown1_LSB = 0x2c;   // always 0x2c  16bit: "300 secs = max run without burn detected" ??
+    Controller.Unknown2_MSB = 0x0d;   // always 0x0d
+    Controller.Unknown2_LSB = 0xac;   // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
     setCRC();
   }
   else if(FrameMode == HeatMode){

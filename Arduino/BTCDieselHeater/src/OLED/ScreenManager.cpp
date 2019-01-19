@@ -9,9 +9,11 @@
 #include "ClockScreen.h"
 #include "RebootScreen.h"
 #include "HeaterSettingsScreen.h"
+#include "SettingsScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
+#include "../protocol/helpers.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,6 +99,7 @@ CScreenManager::CScreenManager()
   _pDisplay = NULL;
   _currentScreen = -1;
   _timerScreen = -1;
+  _settingScreen = -1;
   _bReqUpdate = false;
   _bSetTime = false;
   _DimTime = millis() + 60000;
@@ -155,11 +158,12 @@ CScreenManager::begin()
   _Screens.push_back(new CClockScreen(*_pDisplay, *this));            //  clock
   _Screens.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
   _Screens.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
-  _Screens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
-  _Screens.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
+  _Screens.push_back(new CSettingsScreen(*_pDisplay, *this));         // tuning info
   _SetTimeScreen = new CSetClockScreen(*_pDisplay, *this);            // clock set
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 0)); // set timer 1
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 1)); // set timer 2
+  _SettingsScreens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
+  _SettingsScreens.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
 
 #if RTC_USE_DS3231==0 && RTC_USE_DS1307==0 && RTC_USE_PCF8523==0
   _currentScreen = 6;   // bring up clock set screen first if using millis based RTC!
@@ -194,6 +198,12 @@ CScreenManager::checkUpdate()
         _bReqUpdate = false;
         return true;
       }
+      else if(_settingScreen >= 0) {
+        DebugPort.println("setting screen show");
+        _SettingsScreens[_settingScreen]->show();
+        _bReqUpdate = false;
+        return true;
+      }
       else if(_timerScreen >= 0) {
         _TimerScreens[_timerScreen]->show();
         _bReqUpdate = false;
@@ -218,6 +228,9 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
+	if(_settingScreen >= 0) {
+		return _SettingsScreens[_settingScreen]->animate();
+  }
 	if(_timerScreen >= 0) {
 		return _TimerScreens[_timerScreen]->animate();
   }
@@ -237,10 +250,13 @@ CScreenManager::refresh()
 void 
 CScreenManager::_switchScreen()
 {
-	if(_timerScreen >= 0)
-		_TimerScreens[_timerScreen]->onSelect();
-	else if(_currentScreen >= 0)
-		_Screens[_currentScreen]->onSelect();
+  if(_timerScreen >= 0)
+    _TimerScreens[_timerScreen]->onSelect();
+  else if(_settingScreen >= 0) {
+    _SettingsScreens[_settingScreen]->onSelect();
+  }
+  else if(_currentScreen >= 0)
+    _Screens[_currentScreen]->onSelect();
 		
   reqUpdate();
 }
@@ -253,15 +269,15 @@ CScreenManager::nextScreen()
   }
   else if(_timerScreen >= 0) {
     _timerScreen++;
-    if(_timerScreen >= _TimerScreens.size()) {
-      _timerScreen = 0;
-    }
+    ROLLUPPERLIMIT(_timerScreen, _TimerScreens.size()-1, 0);
+  }
+  else if(_settingScreen >= 0) {
+    _settingScreen++;
+    ROLLUPPERLIMIT(_settingScreen, _SettingsScreens.size()-1, 0);
   }
   else {
     _currentScreen++;
-    if(_currentScreen >= _Screens.size()) {
-      _currentScreen = 0;
-    }
+    ROLLUPPERLIMIT(_currentScreen, _Screens.size()-1, 0);
   }
   _switchScreen();
 }
@@ -273,15 +289,15 @@ CScreenManager::prevScreen()
   }
   else if(_timerScreen >=0) {
     _timerScreen--;
-    if(_timerScreen < 0) {
-      _timerScreen = _TimerScreens.size()-1;
-    }
+    ROLLLOWERLIMIT(_timerScreen, 0, _TimerScreens.size()-1);
+  }
+  else if(_settingScreen >= 0) {
+    _settingScreen--;
+    ROLLLOWERLIMIT(_settingScreen, 0, _SettingsScreens.size()-1);
   }
   else {
     _currentScreen--;
-    if(_currentScreen < 0) {
-      _currentScreen = _Screens.size()-1;
-    }
+    ROLLLOWERLIMIT(_currentScreen, 0, _Screens.size()-1);
   }
   _switchScreen();
 }
@@ -291,6 +307,10 @@ CScreenManager::keyHandler(uint8_t event)
 {
   if(_bSetTime)
     _SetTimeScreen->keyHandler(event);
+  else if(_settingScreen >= 0) {
+    DebugPort.println("setting screen keyhandler");
+    _SettingsScreens[_settingScreen]->keyHandler(event);
+  }
   else if(_timerScreen >= 0)
     _TimerScreens[_timerScreen]->keyHandler(event);
 	else if(_currentScreen >= 0)
@@ -303,15 +323,30 @@ CScreenManager::keyHandler(uint8_t event)
 }
 
 void 
-CScreenManager::selectTimerScreen(bool showTimers)
+CScreenManager::selectTimerScreen(bool show)
 {
-  _timerScreen = showTimers ? 0 : -1;
+  _timerScreen = show ? 0 : -1;
+  _settingScreen = -1;
+  _bSetTime = false;
+  _switchScreen();
+}
+
+void 
+CScreenManager::selectSettingsScreen(bool show)
+{
+  _settingScreen = show ? 0 : -1;
+  _timerScreen = -1;
+  _bSetTime = false;
+  _switchScreen();
 }
 
 void 
 CScreenManager::selectSetTimeScreen(bool show)
 {
   _bSetTime = show;
+  _settingScreen = -1;
+  _timerScreen = -1;
+  _switchScreen();
 }
 
 void 

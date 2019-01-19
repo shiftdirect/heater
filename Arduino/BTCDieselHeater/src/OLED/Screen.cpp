@@ -20,7 +20,7 @@ bool
 CScreen::animate()
 {
   if(_showOEMerror) {
-    DebugPort.println("CScreen::animate()");
+    _display.clearDisplay();
     _display.fillRect(8, 20, 112, 24, WHITE);
     if(_showOEMerror & 0x01) {
       _printInverted(_display.xCentre(), 23, "Other controller ", true, eCentreJustify);
