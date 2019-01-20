@@ -49,11 +49,8 @@ CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 bool 
 CPasswordScreen::show()
 {
-
+  CPasswordScreen::animate();  // precautionary, in case derived class forgets to call
   if(_SaveTime) {
-    long tDelta = millis() - _SaveTime;
-    if(tDelta > 0) 
-      _SaveTime = 0;
     _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
     _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
     _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
@@ -69,6 +66,18 @@ CPasswordScreen::show()
   }
 }
 
+bool 
+CPasswordScreen::animate()
+{
+  if(_SaveTime) {
+    long tDelta = millis() - _SaveTime;
+    if(tDelta > 0) {
+      _SaveTime = 0;
+      _ScreenManager.reqUpdate();
+    }
+  }
+  return false;
+}
 
 bool 
 CPasswordScreen::keyHandler(uint8_t event)

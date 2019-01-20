@@ -42,7 +42,7 @@ public:
   CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool keyHandler(uint8_t event);
-  bool animate() { return CScreen::animate(); };
+  bool animate();
   bool isPasswordBusy() { return (_SaveTime != 0) || _bGetPassword; };
 };
 

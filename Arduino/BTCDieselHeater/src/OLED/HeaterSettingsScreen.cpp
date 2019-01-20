@@ -93,6 +93,8 @@ CHeaterSettingsScreen::animate()
 { 
   char msg[16];
 
+  CPasswordScreen::animate();
+
   if(isPasswordBusy() || (_rowSel == 4)) {  // Password screen activity
     _printMenuText(Column, Line2, "    ");
     _printMenuText(Column, Line1, "    ");
@@ -121,7 +123,7 @@ CHeaterSettingsScreen::animate()
     _printMenuText(xPos, Line2, "    ", _rowSel == 2); // erase, but create selection loop
     if(_animateCount < 4) {
       sprintf(msg, "SN-%d", _fanSensor);
-      _printMenuText(Column, Line2, msg/*, _rowSel == 2*/);
+      _printMenuText(Column, Line2, msg);
     }
     else {
       _printMenuText(xPos, Line2, "(");
@@ -137,7 +139,6 @@ CHeaterSettingsScreen::animate()
       sprintf(msg, "%d)", _fanSensor);
       _printMenuText(xPos, Line2, msg);
     }
-
   }
   return true;
 }
