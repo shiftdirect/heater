@@ -199,7 +199,6 @@ CScreenManager::checkUpdate()
         return true;
       }
       else if(_settingScreen >= 0) {
-        DebugPort.println("setting screen show");
         _SettingsScreens[_settingScreen]->show();
         _bReqUpdate = false;
         return true;
@@ -228,15 +227,9 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
-	if(_settingScreen >= 0) {
-		return _SettingsScreens[_settingScreen]->animate();
-  }
-	if(_timerScreen >= 0) {
-		return _TimerScreens[_timerScreen]->animate();
-  }
-	if(_currentScreen >= 0) {
-		return _Screens[_currentScreen]->animate();
-  }
+	if(_settingScreen >= 0) return _SettingsScreens[_settingScreen]->animate();
+	if(_timerScreen >= 0)   return _TimerScreens[_timerScreen]->animate();
+	if(_currentScreen >= 0) return _Screens[_currentScreen]->animate();
 	return false;
 }
 
@@ -250,13 +243,9 @@ CScreenManager::refresh()
 void 
 CScreenManager::_switchScreen()
 {
-  if(_timerScreen >= 0)
-    _TimerScreens[_timerScreen]->onSelect();
-  else if(_settingScreen >= 0) {
-    _SettingsScreens[_settingScreen]->onSelect();
-  }
-  else if(_currentScreen >= 0)
-    _Screens[_currentScreen]->onSelect();
+  if(_timerScreen >= 0)        _TimerScreens[_timerScreen]->onSelect();
+  else if(_settingScreen >= 0) _SettingsScreens[_settingScreen]->onSelect();
+  else if(_currentScreen >= 0) _Screens[_currentScreen]->onSelect();
 		
   reqUpdate();
 }
@@ -305,21 +294,20 @@ CScreenManager::prevScreen()
 void 
 CScreenManager::keyHandler(uint8_t event)
 {
-  if(_bSetTime)
-    _SetTimeScreen->keyHandler(event);
-  else if(_settingScreen >= 0) {
-    DebugPort.println("setting screen keyhandler");
-    _SettingsScreens[_settingScreen]->keyHandler(event);
-  }
-  else if(_timerScreen >= 0)
-    _TimerScreens[_timerScreen]->keyHandler(event);
-	else if(_currentScreen >= 0)
-  	_Screens[_currentScreen]->keyHandler(event);
-
-  if(_DimTime == 0)
+  if(_DimTime == 0) {
     _pDisplay->dim(false);
+    _DimTime = (millis() + NVstore.getDimTime()) | 1;
+    return;   // initial press when dimmed is thrown away
+  }
+
   _DimTime = (millis() + NVstore.getDimTime()) | 1;
-//  _DimTime = (millis() + 60000) | 1;
+
+  // call handler for active screen
+  if(_bSetTime)                _SetTimeScreen->keyHandler(event);
+  else if(_settingScreen >= 0) _SettingsScreens[_settingScreen]->keyHandler(event);
+  else if(_timerScreen >= 0)   _TimerScreens[_timerScreen]->keyHandler(event);
+	else if(_currentScreen >= 0) _Screens[_currentScreen]->keyHandler(event);
+
 }
 
 void 

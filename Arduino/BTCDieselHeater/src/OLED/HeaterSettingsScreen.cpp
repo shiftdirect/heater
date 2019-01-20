@@ -25,7 +25,6 @@
 #include "../Protocol/helpers.h"
 #include "../Utility/UtilClasses.h"
 
-
 ///////////////////////////////////////////////////////////////////////////
 //
 // CHeaterSettingsScreen
@@ -34,19 +33,27 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+static const int Line3 = 14;
+static const int Line2 = 27;
+static const int Line1 = 40;
+static const int Column = 96;
+
+static const int plugPowers[] = { 35, 40, 45, 80, 85, 90};
+
 CHeaterSettingsScreen::CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _rowSel = 0;
   _fanSensor = 1;
-  _glowPower = 5;
+  _glowDrive = 5;
   _sysVoltage = 12;
+  _animateCount = 0;
 }
 
 void 
 CHeaterSettingsScreen::onSelect()
 {
   _fanSensor = getHeaterInfo().getFan_Sensor();
-  _glowPower = getHeaterInfo().getGlow_Drive();
+  _glowDrive = getHeaterInfo().getGlow_Drive();
   _sysVoltage = int(getHeaterInfo().getSystemVoltage());
 }
 
@@ -54,11 +61,7 @@ bool
 CHeaterSettingsScreen::show()
 {
   char msg[20];
-  int xPos, yPos;
   _display.clearDisplay();
-
-
-  yPos = 14;
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
@@ -69,24 +72,73 @@ CHeaterSettingsScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " Heater Settings ", true, eCentreJustify);
-      _printMenuText(98, yPos, "Glow plug power:", false, eRightJustify);
-      sprintf(msg, "PF-%d", _glowPower);
-      _printMenuText(100, yPos, msg, _rowSel == 3);
-      yPos = 27;
-      _printMenuText(98, yPos, "Fan sensor:", false, eRightJustify);
-      sprintf(msg, "SN-%d", _fanSensor);
-      _printMenuText(100, yPos, msg, _rowSel == 2);
-      yPos = 40;
-      _printMenuText(98, yPos, "System voltage:", false, eRightJustify);
+      _printMenuText(97, Line3, "System voltage:", false, eRightJustify);
+      _printMenuText(97, Line2, "Fan sensor:", false, eRightJustify);
+      _printMenuText(97, Line1, "Glowplug power:", false, eRightJustify);
       sprintf(msg, "%dV", _sysVoltage);
-      _printMenuText(100, yPos, msg, _rowSel == 1);
+      _printMenuText(Column, Line3, msg, _rowSel == 3);
       // navigation line
-      yPos = 53;
-      xPos = _display.xCentre();
+      int yPos = 53;
+      int xPos = _display.xCentre();
       _printMenuText(xPos, yPos, "<-    exit    ->", _rowSel == 0, eCentreJustify);
     }
   }
 
+  return true;
+}
+
+
+bool 
+CHeaterSettingsScreen::animate()
+{ 
+  char msg[16];
+
+  if(isPasswordBusy() || (_rowSel == 4)) {  // Password screen activity
+    _printMenuText(Column, Line2, "    ");
+    _printMenuText(Column, Line1, "    ");
+    if(_rowSel == 4)
+      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+  }
+  else {
+    _animateCount++;
+    ROLLUPPERLIMIT(_animateCount, 9, 0);
+
+    if(_rowSel == 1) {
+      _display.drawRect(Column-border, Line1-border, 34, 8+2*border, BLACK);
+      _display.drawRoundRect(Column-border, Line1-border, 34, 8+2*border, radius, WHITE);
+    }
+    else {
+      _printMenuText(Column, Line1, "     ");
+    }
+
+    if(_animateCount < 4) 
+      sprintf(msg, "PF-%d ", _glowDrive);
+    else
+      sprintf(msg, "(%dW)", plugPowers[_glowDrive-1]);
+    _printMenuText(Column, Line1, msg);
+
+    int xPos = Column;
+    _printMenuText(xPos, Line2, "    ", _rowSel == 2); // erase, but create selection loop
+    if(_animateCount < 4) {
+      sprintf(msg, "SN-%d", _fanSensor);
+      _printMenuText(Column, Line2, msg/*, _rowSel == 2*/);
+    }
+    else {
+      _printMenuText(xPos, Line2, "(");
+      xPos += 6;
+      //                                     .
+      // draw old fashioned divide symbol  -----
+      //                                     .
+      int barOfs = 3;
+      _display.drawLine(xPos, Line2+barOfs, xPos+4, Line2+barOfs, WHITE);
+      _display.drawPixel(xPos+2, Line2+barOfs-2, WHITE);
+      _display.drawPixel(xPos+2, Line2+barOfs+2, WHITE);
+      xPos += 6;
+      sprintf(msg, "%d)", _fanSensor);
+      _printMenuText(xPos, Line2, msg);
+    }
+
+  }
   return true;
 }
 
@@ -145,7 +197,7 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
           _showStoringMessage();
           setSystemVoltage(float(_sysVoltage));
           setFanSensor(_fanSensor);
-          setGlowDrive(_glowPower);
+          setGlowDrive(_glowDrive);
           saveNV();
           _rowSel = 0;
           break;
@@ -174,16 +226,16 @@ void
 CHeaterSettingsScreen::_adjust(int dir)
 {
   switch(_rowSel) {
-    case 1:   // system voltage
-      _sysVoltage = (_sysVoltage == 12) ? 24 : 12;
+    case 1:   // glow power
+      _glowDrive += dir;
+      UPPERLIMIT(_glowDrive, 6);
+      LOWERLIMIT(_glowDrive, 1);
       break;
     case 2:   // fan sensor
       _fanSensor = (_fanSensor == 1) ? 2 : 1;
       break;
-    case 3:   // glow power
-      _glowPower += dir;
-      UPPERLIMIT(_glowPower, 6);
-      LOWERLIMIT(_glowPower, 1);
+    case 3:   // system voltage
+      _sysVoltage = (_sysVoltage == 12) ? 24 : 12;
       break;
   }
 }

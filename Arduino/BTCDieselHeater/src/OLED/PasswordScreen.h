@@ -43,6 +43,7 @@ public:
   bool show();
   bool keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };
+  bool isPasswordBusy() { return (_SaveTime != 0) || _bGetPassword; };
 };
 
 #endif

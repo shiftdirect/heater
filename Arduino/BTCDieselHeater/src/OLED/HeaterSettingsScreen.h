@@ -34,10 +34,12 @@ class CHeaterSettingsScreen : public CPasswordScreen
   void _adjust(int dir);
   int _sysVoltage;
   int _fanSensor;
-  int _glowPower;
+  int _glowDrive;
+  int _animateCount;
 public:
   CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
   void onSelect();
 };
