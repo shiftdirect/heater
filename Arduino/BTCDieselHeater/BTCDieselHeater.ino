@@ -250,6 +250,38 @@ const char* print18B20Address(DeviceAddress deviceAddress)
   return addrStr;
 }
 
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels) 
+{
+  DebugPort.print("Listing directory: "); DebugPort.println(dirname);
+
+  File root = fs.open(dirname);
+  if (!root) {
+    DebugPort.println("Failed to open directory");
+    return;
+  }
+  if (!root.isDirectory()) {
+    DebugPort.println("Not a directory");
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    if (file.isDirectory()) {
+      DebugPort.print("  DIR : ");
+      DebugPort.println(file.name());
+      if (levels) {
+        listDir(fs, file.name(), levels - 1);
+      }
+    } else {
+      DebugPort.print("  FILE: ");
+      DebugPort.print(file.name());
+      DebugPort.print("  SIZE: ");
+      DebugPort.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+}    
+
 void setup() {
   char msg[128];
   TempSensor.begin();
@@ -276,11 +308,12 @@ void setup() {
   }
   else {
     DebugPort.println("Mounted SPIFFS OK");
+    listDir(SPIFFS, "/", 2);
   }
 #endif
 
   // locate devices on the bus
-  DebugPort.print("  Locating DS18B20 devices...");
+  DebugPort.print("Locating DS18B20 devices...");
   
   // initialise DS18B20 temperature sensor(s)
     // Grab a count of devices on the wire

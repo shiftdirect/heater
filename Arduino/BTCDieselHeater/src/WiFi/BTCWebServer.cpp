@@ -68,17 +68,9 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   return false;                                         // If the file doesn't exist, return false
 }
 
-void handleFavIcon() {
+/*void handleFavIcon() {
   handleFileRead("/favicon.ico");
-/*  if(SPIFFS.exists("/favicon.ico")) {
-    File favicon = SPIFFS.open("/favicon.ico");
-    server.streamFile(favicon, "image/x-icon");
-    favicon.close();
-  }
-  else {
-    DebugPort.println("\"/favicon.ico\" does not exist!!!");
-  }*/
-}
+}*/
 
 void handleBTCRoot() {
   handleFileRead("/index.html");
@@ -142,10 +134,10 @@ void initWebServer(void) {
 		DebugPort.println("MDNS responder started");
 	}
 	
-//  server.serveStatic("/", SPIFFS, "/index.html");
-//  server.serveStatic("/favicon.ico", SPIFFS, "/favicon.ico");
-	server.on("/", handleBTCRoot);
-//	server.on("/favicon.ico", handleFavIcon);
+//	server.on("/", handleBTCRoot);
+
+	server.on("/wmconfig", handleWMConfig);
+	server.on("/resetwifi",handleReset);
 #if USE_SPIFFS == 1  
   server.onNotFound([]() 
     {                              // If the client requests any URI
@@ -153,10 +145,9 @@ void initWebServer(void) {
          server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
     }
   );
-#endif
-	server.on("/wmconfig", handleWMConfig);
-	server.on("/resetwifi",handleReset);
+#else
 	server.onNotFound(handleBTCNotFound);
+#endif
 
 	server.begin();
 	webSocket.begin();
