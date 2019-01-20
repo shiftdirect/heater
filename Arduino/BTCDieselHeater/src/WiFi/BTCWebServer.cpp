@@ -30,6 +30,9 @@
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
 #include <WiFiManager.h>
+#if USE_SPIFFS == 1  
+#include <SPIFFS.h>
+#endif
 
 extern WiFiManager wm;
 
@@ -41,10 +44,60 @@ bool bTxWebData = false;
 
 const int led = 13;
 
+#if USE_SPIFFS == 1  
+
+String getContentType(String filename) { // convert the file extension to the MIME type
+  if (filename.endsWith(".html")) return "text/html";
+  else if (filename.endsWith(".css")) return "text/css";
+  else if (filename.endsWith(".js")) return "application/javascript";
+  else if (filename.endsWith(".ico")) return "image/x-icon";
+  return "text/plain";
+}
+
+bool handleFileRead(String path) { // send the right file to the client (if it exists)
+  DebugPort.println("handleFileRead: " + path);
+  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+  String contentType = getContentType(path);            // Get the MIME type
+  if (SPIFFS.exists(path)) {                            // If the file exists
+    File file = SPIFFS.open(path, "r");                 // Open it
+    size_t sent = server.streamFile(file, contentType); // And send it to the client
+    file.close();                                       // Then close the file again
+    return true;
+  }
+  DebugPort.println("\tFile Not Found");
+  return false;                                         // If the file doesn't exist, return false
+}
+
+void handleFavIcon() {
+  handleFileRead("/favicon.ico");
+/*  if(SPIFFS.exists("/favicon.ico")) {
+    File favicon = SPIFFS.open("/favicon.ico");
+    server.streamFile(favicon, "image/x-icon");
+    favicon.close();
+  }
+  else {
+    DebugPort.println("\"/favicon.ico\" does not exist!!!");
+  }*/
+}
+
+void handleBTCRoot() {
+  handleFileRead("/index.html");
+/*  if(SPIFFS.exists("/index.html")) {
+    File html = SPIFFS.open("/index.html");
+    server.streamFile(html, "text/html");
+    html.close();
+  }
+  else {
+    DebugPort.println("\"/index.html\" does not exist!!!");
+  }*/
+}
+#else
 void handleBTCRoot() {
 	String s = MAIN_PAGE; //Read HTML contents
 	server.send(200, "text/html", s); //Send web page
 }
+#endif
+
 
 void handleWMConfig() {
 	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
@@ -89,7 +142,18 @@ void initWebServer(void) {
 		DebugPort.println("MDNS responder started");
 	}
 	
+//  server.serveStatic("/", SPIFFS, "/index.html");
+//  server.serveStatic("/favicon.ico", SPIFFS, "/favicon.ico");
 	server.on("/", handleBTCRoot);
+//	server.on("/favicon.ico", handleFavIcon);
+#if USE_SPIFFS == 1  
+  server.onNotFound([]() 
+    {                              // If the client requests any URI
+      if (!handleFileRead(server.uri()))                  // send it if it exists
+         server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
+    }
+  );
+#endif
 	server.on("/wmconfig", handleWMConfig);
 	server.on("/resetwifi",handleReset);
 	server.onNotFound(handleBTCNotFound);

@@ -50,6 +50,7 @@ bool
 CPasswordScreen::show()
 {
   CPasswordScreen::animate();  // precautionary, in case derived class forgets to call
+  
   if(_SaveTime) {
     _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
     _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);

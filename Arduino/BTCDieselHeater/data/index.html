@@ -1,36 +1,10 @@
-/*
- * This file is part of the "bluetoothheater" distribution 
- * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
- *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
- * Copyright (C) 2018  James Clark
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- * 
- */
-
-#include <Arduino.h>
-#include "../cfg/BTCConfig.h"
-
-#if USE_SPIFFS != 1  
-
-const char* MAIN_PAGE PROGMEM = R"=====(
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<link rel="icon" href="data;,">
+<link rel="icon" href="favicon.ico" type="image/x-icon" />
+<title>Chinese Diesel Heater Web Controller Interface</title>
+
 <script>
 
 var Socket;
@@ -443,8 +417,8 @@ display: none
 
 </style>
 
-<title>Chinese Diesel Heater Web Controller Interface</title>
 </head>
+
 <body onload="javascript:init()">
 <div class="mobile-container">
 
@@ -456,9 +430,7 @@ display: none
 <a href="javascript:void(0);" onclick="funcdispSettings()">Settings</a>
 <a href="javascript:void(0);" onclick="funcdispAdvanced()">Advanced Settings</a>
 </div>
-<a href="javascript:void(0);" class="icon" onclick="funcNavLinks()">
-</i>=
-</a>
+<a href="javascript:void(0);" class="icon" onclick="funcNavLinks()">=</a>
 </div>
 <div style="padding-left:16px">
 <span class="MaingPage" id="Home">
@@ -486,12 +458,12 @@ display: none
 <span id="PumpFixed"></span>
 </div>
 <div>
-<b>Current Temp: </b><span id="TempCurrent">
+<b>Current Temp: </b><span id="TempCurrent"></span>
 </div>
 <div id="ErrorDiv" style="color:crimson" hidden>
-<b>Error <span id="ErrorString"> </b>
+<b>Error <span id="ErrorString"></span> </b>
 </div>
-</span>
+
 
 <div id="Advanced">
 Advanced Settings
@@ -520,7 +492,7 @@ Current Date:<br>
 Current Time (24 Hour Format):<br>
 <input type="time" id="curtime"> <input type="button" Value="Set Time" onclick="setcurrenttime()">
 
-<hr></hr>
+<hr>
 <br><br>
 Timer1: <input type="checkbox" border-radius="4px" name="Timer1" id="Timer1onoff"> <input type="text" class="schedule" id="Timer1Start">  <input type="text" id="Timer1End"> <br>
 Timer2: <input type="checkbox" border-radius="4px" name="Tue">  <input type="text" class="schedule" id="Timer2Start">    <input type="text" id="Timer2End"><br>
@@ -528,7 +500,3 @@ Timer2: <input type="checkbox" border-radius="4px" name="Tue">  <input type="tex
 </Div>
 </body>
 </html> 
-
-)=====";
-
-#endif

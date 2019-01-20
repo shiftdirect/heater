@@ -103,6 +103,9 @@
 #include "src/OLED/keypad.h"
 #include <DallasTemperature.h>
 #include "src/RTC/Clock.h"
+#if USE_SPIFFS == 1  
+#include <SPIFFS.h>
+#endif
 
 #define FAILEDSSID "BTCESP32"
 #define FAILEDPASSWORD "thereisnospoon"
@@ -266,6 +269,16 @@ void setup() {
   sprintf(msg, "  Temperature for device#1 (idx 0) is: %.1f", TempSensor.getTempCByIndex(0));
   DebugPort.println(msg);
 
+#if USE_SPIFFS == 1  
+ // Initialize SPIFFS
+  if(!SPIFFS.begin(true)){
+    DebugPort.println("An Error has occurred while mounting SPIFFS");
+  }
+  else {
+    DebugPort.println("Mounted SPIFFS OK");
+  }
+#endif
+
   // locate devices on the bus
   DebugPort.print("  Locating DS18B20 devices...");
   
@@ -316,7 +329,7 @@ void setup() {
 
   initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
 #if USE_OTA == 1
-//  initOTA();
+  initOTA();
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
   initWebServer();
