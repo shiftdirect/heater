@@ -178,18 +178,6 @@ CDetailedScreen::keyHandler(uint8_t event)
     if(event & key_Right) {
       _ScreenManager.nextScreen();
     }
-    if(event & key_Up) {
-      if(reqTempDelta(+1))
-        _showTarget = millis() + 3500;
-      else 
-        _reqOEMWarning();
-    }
-    if(event & key_Down) {
-      if(reqTempDelta(-1))
-        _showTarget = millis() + 3500;
-      else 
-        _reqOEMWarning();
-    }
   }
   // require hold to turn ON or OFF
   if(event & keyRepeat) {
@@ -204,17 +192,38 @@ CDetailedScreen::keyHandler(uint8_t event)
         }
         else {
           if(_keyRepeatCount > 3) {
-            _keyRepeatCount = -1;
+            _keyRepeatCount = -1;   // prevent double handling
             requestOn();
           }
+        }
+      }
+      if(event & key_Down) {
+        if(_keyRepeatCount > 1) {    // held Down - togle thermo/fixed mode
+          _keyRepeatCount = -1;      // prevent double handling
+          if(reqThermoToggle())  _showTarget = millis() + 3500;
+          else  _reqOEMWarning();
         }
       }
     }
   }
   // release event
   if(event & keyReleased) {
+    if(_keyRepeatCount == 0) {  // short Up press - lower target
+      if(event & key_Up) {
+        if(reqTempDelta(+1))  _showTarget = millis() + 3500;
+        else  _reqOEMWarning();
+      }
+      if(event & key_Down) {   // short Down press - lower target
+        if(reqTempDelta(-1))  _showTarget = millis() + 3500;
+        else  _reqOEMWarning();
+      }
+      if(event & key_Centre) {  // short Centre press - show target
+        _showTarget = millis() + 3500;
+      }
+    }
     _keyRepeatCount = -1;
   }
+
   return true;
 }
 

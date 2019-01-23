@@ -139,9 +139,10 @@ void initWebServer(void) {
 	server.on("/wmconfig", handleWMConfig);
 	server.on("/resetwifi",handleReset);
 #if USE_SPIFFS == 1  
+  // NOTE: this serves the default home page, and favicon.ico
   server.onNotFound([]() 
-    {                              // If the client requests any URI
-      if (!handleFileRead(server.uri()))                  // send it if it exists
+    {                                                      // If the client requests any URI
+      if (!handleFileRead(server.uri()))                   // send it if it exists
          server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
     }
   );

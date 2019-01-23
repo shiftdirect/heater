@@ -136,6 +136,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
       }
       else if(_rowSel == 2) {   // exit from per day settings
         _rowSel = 1;
+        _colSel = 4;
       }
       else {  // in config fields, save new settings
         _SaveTime = millis() + 1500;
@@ -175,16 +176,28 @@ CSetTimerScreen::keyHandler(uint8_t event)
     }
     // press UP  
     if(event & key_Up) {
-      if(_rowSel == 1) {
-        _colSel++;
-        ROLLUPPERLIMIT(_colSel, 5, 0);
+      switch(_rowSel) {
+        case 0:
+          _rowSel = 1;
+          _colSel = 5;
+          break;
+        case 1:
+          _colSel--;
+          ROLLLOWERLIMIT(_colSel, 0, 5);
+          break;
       }
     }
     // press DOWN
     if(event & key_Down) {
-      if(_rowSel == 1) {
-        _colSel--;
-        ROLLLOWERLIMIT(_colSel, 0, 5);
+      switch(_rowSel) {
+        case 0:
+          _rowSel = 1;
+          _colSel = 0;
+          break;
+        case 1:
+          _colSel++;
+          ROLLUPPERLIMIT(_colSel, 5, 0);
+          break;
       }
     }
   }
@@ -206,10 +219,10 @@ CSetTimerScreen::keyHandler(uint8_t event)
       }
     }
     if(_rowSel==2) {
-      if(event & key_Down) {
+/*      if(event & key_Right) {
         _rowSel = 1;
         _colSel = 4;
-      }
+      }*/
     }
   }
 
@@ -229,9 +242,10 @@ CSetTimerScreen::keyHandler(uint8_t event)
       if(event & key_Down) {
         // adjust selected item
         switch(_rowSel) {
-          // case 1:
-          //   adjust(-1);
-          //   break;
+/*          case 0:
+            _rowSel = 1;
+            _colSel = 0;
+            break;*/
           case 2:
             // adjust selected item
             _timer.enabled ^= maskDOW;
@@ -250,15 +264,11 @@ CSetTimerScreen::keyHandler(uint8_t event)
       // released UP 
       if(event & key_Up) {
         switch(_rowSel) {
-          case 0:
+/*          case 0:
             // move from screen navigation to field select & adjust
             _rowSel = 1;
-            _colSel = 0;
-            break;
-          // case 1:
-          //   // adjust selected item
-          //   adjust(+1);
-          //   break;
+            _colSel = 5;
+            break;*/
           case 2:
             // adjust selected item
             _timer.enabled ^= maskDOW;
