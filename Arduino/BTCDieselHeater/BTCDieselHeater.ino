@@ -250,6 +250,7 @@ const char* print18B20Address(DeviceAddress deviceAddress)
   return addrStr;
 }
 
+#if USE_SPIFFS == 1  
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels) 
 {
   DebugPort.print("Listing directory: "); DebugPort.println(dirname);
@@ -281,6 +282,7 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels)
     file = root.openNextFile();
   }
 }    
+#endif
 
 void setup() {
   char msg[128];
