@@ -254,7 +254,7 @@ CESP32HeaterStorage::loadHeater()
   validatedLoad("maxFan", _calValues.Heater.Fmax, 4500, u16inBounds, 100, 6000);
   validatedLoad("thermostat", _calValues.Heater.ThermostatMode, 1, u8inBounds, 0, 1);
   validatedLoad("setTemperature", _calValues.Heater.setTemperature, 22, u8inBounds, 0, 40);
-  validatedLoad("systemVoltage", _calValues.Heater.sysVoltage, 12, u8Match2, 120, 240);
+  validatedLoad("systemVoltage", _calValues.Heater.sysVoltage, 120, u8Match2, 120, 240);
   validatedLoad("fanSensor", _calValues.Heater.fanSensor, 1, u8inBounds, 1, 2);
   validatedLoad("glowDrive", _calValues.Heater.glowDrive, 5, u8inBounds, 1, 6);
   preferences.end();    

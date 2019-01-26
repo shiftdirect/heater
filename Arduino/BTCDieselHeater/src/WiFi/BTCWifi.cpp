@@ -36,9 +36,6 @@ bool shouldBootIntoConfigPortal();
 void saveParamsCallback();
 void APstartedCallback(WiFiManager*);
 
-#define FAILEDSSID "BTCESP32"
-#define FAILEDPASSWORD "thereisnospoon"
-
 WiFiManager wm;
 
 bool isPortalAP         = false;   // true if config portal is running
@@ -64,6 +61,9 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   sprintf(MACstr[1], "%02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
   DebugPort.print("   AP MAC address: "); DebugPort.println(MACstr[1]);
 
+  char APname[32];
+  sprintf(APname, "%s-%02X%02X", failedssid, MAC[4], MAC[5]);
+
   //reset settings - wipe credentials for testing
 //  wm.resetSettings();
 
@@ -84,7 +84,8 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
  
   DebugPort.println("Attempting to start STA mode (or config portal) via WifiManager...");
 
-  wm.setHostname(failedssid);
+//  wm.setHostname(failedssid);
+  wm.setHostname(APname);
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);  // ensure our webserver gets awoken when IP config changes to STA
@@ -93,7 +94,8 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 //REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
 // REMOVED    wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0)); 
  
-  bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
+//  bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
+  bool res = wm.autoConnect(APname, failedpassword); // auto generated AP name from chipid
   DebugPort.print("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
 
   int chnl = 1;
@@ -117,8 +119,10 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   DebugPort.println("Starting AP mode");
 //REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
 // REMOVED    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));  
-  WiFi.softAP(failedssid, failedpassword, chnl);
+//  WiFi.softAP(failedssid, failedpassword, chnl);
+  WiFi.softAP(APname, failedpassword, chnl);
   WiFi.enableAP(true);
+  DebugPort.print("  AP SSID: "); DebugPort.println(WiFi.softAPgetHostname());
   DebugPort.print("  AP IP address: "); DebugPort.println(WiFi.softAPIP());
   DebugPort.print("WifiMode after initWifi = "); DebugPort.println(WiFi.getMode());
 

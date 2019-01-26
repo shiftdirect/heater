@@ -101,7 +101,7 @@ CSmartError::monitor(unsigned char newRunState)
     }
     // check for transition to shutdown 
     // - force cancellation of an off request if we generated it
-    if(newRunState >= 7) {
+    if(newRunState >= 7 || newRunState == 0) {
       TxManage.queueOffRequest(false);  // ensure OFF request is cancelled
     }
   }
