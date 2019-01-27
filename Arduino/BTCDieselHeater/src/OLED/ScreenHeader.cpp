@@ -213,11 +213,16 @@ CScreenHeader::showTime(int numTimers)
   const BTCDateTime& now = Clock.get();
 
   char msg[16];
-  if(_colon)
-    sprintf(msg, "%02d:%02d", now.hour(), now.minute());
-  else
-    sprintf(msg, "%02d %02d", now.hour(), now.minute());
-  _colon = !_colon;
+  if(now.day() == 0xA5) {
+    sprintf(msg, "No RTC");    
+  }
+  else {
+    if(_colon)
+      sprintf(msg, "%02d:%02d", now.hour(), now.minute());
+    else
+      sprintf(msg, "%02d %02d", now.hour(), now.minute());
+    _colon = !_colon;
+  }
 
   {
     CTransientFont AF(_display, &arial_8ptFontInfo);

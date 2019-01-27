@@ -357,8 +357,13 @@ void setup() {
 
   // Initialize the rtc object
   Clock.begin();
+
+  bool bNoClock = true;
+  const BTCDateTime& now = Clock.get();
+  if(now.day() != 0xa5)
+    bNoClock = false;
   
-  ScreenManager.begin();
+  ScreenManager.begin(bNoClock);
 
 #if USE_WIFI == 1
 

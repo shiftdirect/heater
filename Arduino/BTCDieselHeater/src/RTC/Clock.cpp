@@ -66,6 +66,8 @@ DebugPort.println("Using millis() based psuedo \"Real Time Clock\"");
 #endif
 
   _nextRTCfetch = millis();
+
+  update();
 }
 
 const BTCDateTime& 

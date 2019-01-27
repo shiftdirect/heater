@@ -130,7 +130,7 @@ CScreenManager::~CScreenManager()
 }
 
 void 
-CScreenManager::begin()
+CScreenManager::begin(bool bNoClock)
 {
 
   // 128 x 64 OLED support (I2C)
@@ -155,7 +155,8 @@ CScreenManager::begin()
   DebugPort.println("Creating Screens");
   _Screens.push_back(new CDetailedScreen(*_pDisplay, *this));         //  detail control
   _Screens.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
-  _Screens.push_back(new CClockScreen(*_pDisplay, *this));            //  clock
+  if(!bNoClock)
+    _Screens.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
   _Screens.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
   _Screens.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
   _Screens.push_back(new CSettingsScreen(*_pDisplay, *this));         // tuning info
