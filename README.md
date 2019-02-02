@@ -43,3 +43,9 @@ To be implemented
 * Documentation
 * Regular Hot Burn cycle (DPF mode!)
 * list under construction.....
+* 
+
+Case for Green PCB
+--------------------------
+https://www.thingiverse.com/thing:3398068
+
