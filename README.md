@@ -9,7 +9,7 @@ Requirements
 * ESP32 dev module
 * HC-05 Bluetooth module - preferably exposing the key pin, not power control)
 * DS18B20 one wire temperature sensor
-* 13.3" I2C OLED using SH1106 controller
+* 1.3" I2C OLED using SH1106 controller
 * DS3231 Real Time Clock
 * Technical ability to solder SMD components
 * Technical ability to program/flash in the Arduino environement
