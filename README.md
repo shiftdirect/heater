@@ -49,6 +49,7 @@ Suggestions
 If you have a burning desire for a feature that you think will useful, please feel free to drop me a line at gitlab@mrjones.id.au.  
 Your request will be thoughtfully considered.  
 If deemed viable and worthwhile to the greater good it will be added to the "To be implemented list" above and worked on in good time.  
+Likewise, if it's really easy to implement, it may make it to "Working So Far" at speed :-)
 
 Please be aware that this is not my day job, so "good things take time".
 
