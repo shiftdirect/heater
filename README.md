@@ -5,7 +5,9 @@ Bluetooth & WiFi interface for Chinese Diesel Heaters
 Requirements
 --------------------------
 * Requires "blue wire" compatible heater unit
-* Blue wire interface circuitry - please refer to the hardware design schematics in the wiki for guidance. It is important to take note that the blue wire is 5V logic, an ESP32 is 3.3V. Level translation is important!
+* Blue wire interface circuitry - please refer to the hardware design schematics in the wiki for guidance.  
+  It is important to take note that the blue wire is 5V logic, an ESP32 is 3.3V.  
+  Level translation is important!
 * ESP32 dev module
 * HC-05 Bluetooth module - preferably exposing the key pin, not power control)
 * DS18B20 one wire temperature sensor
