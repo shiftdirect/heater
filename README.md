@@ -39,6 +39,7 @@ Working so far:
 
 To be implemented 
 --------------------------
+* Temperature readout in Celcius or Farenheit
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
 * Expand hardware compatability with different MCU setups.  IE Arduino Due/Mega/Pro ESP8266 & ESP32
