@@ -5,7 +5,9 @@ Bluetooth & WiFi interface for Chinese Diesel Heaters
 Requirements
 --------------------------
 * Requires "blue wire" compatible heater unit
-* Blue wire interface circuitry
+* Blue wire interface circuitry - please refer to the hardware design schematics in the wiki for guidance.  
+  It is important to take note that the blue wire is 5V logic, an ESP32 is 3.3V.  
+  Level translation is important!
 * ESP32 dev module
 * HC-05 Bluetooth module - preferably exposing the key pin, not power control)
 * DS18B20 one wire temperature sensor
@@ -31,14 +33,17 @@ Working so far:
 * WiFi Connection to existing network or Standalone Access Point Mode (Passwd: thereisnospoon)
 * Wifi control
 * DebugPort data sent via Telnet if/when available on the network.
-* Two 7 day timers - including repeat every day functionality
+* Two timers - including selectable day and repeat functionality
 * Battery backed Real Time Clock - DS3231
 * Prototype "Green PCB" in production, using naked ESP32 and HC-05 modules 
+* Temperature readout in Celcius or Farenheit
 
 To be implemented 
 --------------------------
+* Add 2 external digital inputs, 2 digital outputs, analogue input 433MHz Rx stream, 433MHz Tx stream connections. This would allow external timer units for example, or analogue temeprature demand (which is still only 1 degree resolution).
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
+* Proper 7 day timer with each day settable for at least 2 times (eg morning/evening)
 * Expand hardware compatability with different MCU setups.  IE Arduino Due/Mega/Pro ESP8266 & ESP32
 * Documentation
 * Regular Hot Burn cycle (DPF mode!)
