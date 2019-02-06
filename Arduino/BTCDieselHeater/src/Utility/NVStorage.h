@@ -110,6 +110,7 @@ struct sTimer {
 struct sNVStore {
   sHeater Heater;
   long DimTime;
+  uint8_t degF;
   sTimer timer[2];
   bool valid();
   void init();
@@ -150,6 +151,7 @@ public:
     unsigned char getFanSensor();
     unsigned char getGlowDrive();
     unsigned long getDimTime();
+    unsigned char getDegFMode();
 
     void setPmin(float);
     void setPmax(float);
@@ -161,6 +163,7 @@ public:
     void setFanSensor(unsigned char val);
     void setGlowDrive(unsigned char val);
     void setDimTime(unsigned long val);
+    void setDegFMode(unsigned char val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);

@@ -28,6 +28,7 @@
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Protocol/Protocol.h"
+#include "../Utility/NVStorage.h"
 
 
 #define MINIFONT miniFontInfo
@@ -204,6 +205,12 @@ CDetailedScreen::keyHandler(uint8_t event)
           else  _reqOEMWarning();
         }
       }
+      if(event & key_Up) {
+        if(_keyRepeatCount > 1) {    // held Down - togle thermo/fixed mode
+          _keyRepeatCount = -1;      // prevent double handling
+          NVstore.setDegFMode(NVstore.getDegFMode() ? 0 : 1);
+        }
+      }
     }
   }
   // release event
@@ -246,7 +253,13 @@ CDetailedScreen::showThermometer(float desired, float actual)
   if(actual > -80) {
 #ifdef MINI_TEMPLABEL  
     CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-    sprintf(msg, "%.1f`C", actual);
+    if(NVstore.getDegFMode()) {
+      actual = actual * 9 / 5 + 32;
+      sprintf(msg, "%.1f`F", actual);
+    }
+    else {
+      sprintf(msg, "%.1f`C", actual);
+    }
 #else
     sprintf(msg, "%.1f", actual);
 #endif
@@ -263,7 +276,13 @@ CDetailedScreen::showThermometer(float desired, float actual)
     if(desired > 0) {
       int yPos = Y_BULB + TEMP_YPOS(desired) - 2;
       _display.drawBitmap(X_BULB-1, yPos, thermoPtr, 3, 5, WHITE);   // set indicator against bulb
-      sprintf(msg, "%.0f`C", desired);
+      if(NVstore.getDegFMode()) {
+        desired = desired * 9 / 5 + 32;
+        sprintf(msg, "%.0f`F", desired);
+      }
+      else {
+        sprintf(msg, "%.0f`C", desired);
+      }
     }
     else {
       sprintf(msg, "%.1fHz", -desired);
@@ -291,7 +310,13 @@ CDetailedScreen::showBodyThermometer(int actual)
   // determine width and position right justified
 #ifdef MINI_BODYLABEL
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-  sprintf(label, "%d`C", actual);
+  if(NVstore.getDegFMode()) {
+    actual = actual * 9 / 5 + 32;
+    sprintf(label, "%d`F", actual);
+  }
+  else {
+    sprintf(label, "%d`C", actual);
+  }
 #else
   sprintf(label, "%d", actual);
 #endif

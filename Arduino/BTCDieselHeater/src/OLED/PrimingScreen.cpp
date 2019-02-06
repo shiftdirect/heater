@@ -22,6 +22,7 @@
 #include "PrimingScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
+#include "../Utility/NVStorage.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -65,11 +66,21 @@ CPrimingScreen::show()
     _printInverted(border, yPos, "Thermostat", col == 0);
     _printInverted(_display.width()-border, yPos, "Fixed Hz", col == 1, eRightJustify);
   }
+  yPos = 28;
+  if(_rowSel == 2) {
+    _printMenuText(border, yPos, "degC", _colSel == 0);
+    _printMenuText(_display.width()-border, yPos, "degF", _colSel == 1, eRightJustify);
+  }
+  else {
+    int col = NVstore.getDegFMode();              
+    _printInverted(border, yPos, "degC", col == 0);
+    _printInverted(_display.width()-border, yPos, "degF", col == 1, eRightJustify);
+  }
 
   // fuel pump priming menu
-  yPos = 28;
+  yPos = 16;
   _printMenuText(border, yPos, "Prime pump");
-  if(_rowSel == 2) {
+  if(_rowSel == 3) {
     _printMenuText(70, yPos, "OFF", _colSel == 1);
     if(_colSel != 2) {
       if(!getHeaterInfo().getRunState()) {                    // prevent option if heater is running
@@ -117,9 +128,13 @@ CPrimingScreen::keyHandler(uint8_t event)
           setThermostatMode(1);
           break;
         case 2: 
+          _colSel = 0; 
+          NVstore.setDegFMode(0);
+          break;
+        case 3: 
           _colSel = 1; 
           break;
-        case 3: break;
+        case 4: break;
       }
     }
     // press RIGHT 
@@ -133,10 +148,14 @@ CPrimingScreen::keyHandler(uint8_t event)
           setThermostatMode(0);
           break;
         case 2: 
+          _colSel = 1; 
+          NVstore.setDegFMode(1);
+          break;
+        case 3: 
           if(!getHeaterInfo().getRunState()) 
             _colSel = 2; 
           break;
-        case 3: break;
+        case 4: break;
       }
     }
     // press UP
@@ -145,9 +164,11 @@ CPrimingScreen::keyHandler(uint8_t event)
         _reqOEMWarning();
       else {
         _rowSel++;
-        UPPERLIMIT(_rowSel, 2);
-        if(_rowSel == 2)
+        UPPERLIMIT(_rowSel, 3);
+        if(_rowSel == 3)
           _colSel = 1;       // select OFF upon entry to priming menu
+        if(_rowSel == 2)
+          _colSel = NVstore.getDegFMode();
         if(_rowSel == 1)
           _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
       }
@@ -159,10 +180,12 @@ CPrimingScreen::keyHandler(uint8_t event)
       _colSel = 0;
       if(_rowSel == 1)
         _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+      if(_rowSel == 2)
+        _colSel = NVstore.getDegFMode();
     }
 
     // check if fuel priming was selected
-    if(_rowSel == 2 && _colSel == 2) {
+    if(_rowSel == 3 && _colSel == 2) {
       reqPumpPrime(true);
       _PrimeStop = millis() + 150000;   // allow 2.5 minutes - much the same as the heater itself cuts out at
       _PrimeCheck = millis() + 3000;    // holdoff upon start before testing for heater shutting off pump

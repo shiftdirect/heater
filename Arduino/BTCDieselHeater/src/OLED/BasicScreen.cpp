@@ -26,6 +26,7 @@
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Utility/UtilClasses.h"
+#include "../Utility/NVStorage.h"
 
 
 #define MAXIFONT tahoma_16ptFontInfo
@@ -55,7 +56,14 @@ CBasicScreen::show()
 
   float fTemp = getActualTemperature();
   if(fTemp > -80) {
-    sprintf(msg, "%.1f`", fTemp);
+    if(NVstore.getDegFMode()) {
+      fTemp = fTemp * 9 / 5 + 32;
+      sprintf(msg, "%.1f`F", fTemp);
+    }
+    else {
+      sprintf(msg, "%.1f`C", fTemp);
+    }
+
     {
       CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
       _printMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
@@ -103,7 +111,14 @@ CBasicScreen::show()
     if(tDelta < 0) {
       // Show current heat demand setting
       if(getHeaterInfo().isThermostat()) {
-        sprintf(msg, "Setpoint = %.0f`C", getHeaterInfo().getTemperature_Desired());
+        float fTemp = getHeaterInfo().getTemperature_Desired();
+        if(NVstore.getDegFMode()) {
+          fTemp = fTemp * 9 / 5 + 32;
+          sprintf(msg, "Setpoint = %.0f`F", fTemp);
+        }
+        else {
+          sprintf(msg, "Setpoint = %.0f`C", fTemp);
+        }
       }
       else {
         sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
@@ -177,6 +192,14 @@ CBasicScreen::keyHandler(uint8_t event)
           repeatCount = -1;        // prevent double handling
           _showMode = millis() + 5000;
           _nModeSel = getHeaterInfo().isThermostat() ? 0 : 1;
+        }
+      }
+      // hold UP to toggle degC/degF mode selection
+      if(event & key_Up) {
+        if(repeatCount > 2) {
+          repeatCount = -1;        // prevent double handling
+          _showMode = millis() + 5000;
+          NVstore.setDegFMode(NVstore.getDegFMode() ? 0 : 1);
         }
       }
       // hold CENTRE to turn ON or OFF

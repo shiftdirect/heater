@@ -203,6 +203,19 @@ CHeaterStorage::setDimTime(unsigned long val)
   _calValues.DimTime = val;
 }
 
+unsigned char 
+CHeaterStorage::getDegFMode()
+{
+  return _calValues.degF;
+}
+
+void 
+CHeaterStorage::setDegFMode(unsigned char val)
+{
+  _calValues.degF = val;
+  save();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
 //
@@ -289,7 +302,7 @@ CESP32HeaterStorage::loadTimer(int idx)
   validatedLoad("stopHour", timer.stop.hour, 0, s8inBounds, 0, 23);
   validatedLoad("stopMin", timer.stop.min, 0, s8inBounds, 0, 59);
   validatedLoad("enabled", timer.enabled, 0, u8inBounds, 0, 255);  // all 8 bits used!
-  validatedLoad("repeat", timer.repeat, 0, u8inBounds, 0, 1);
+  validatedLoad("repea*t", timer.repeat, 0, u8inBounds, 0, 1);
   preferences.end();    
 }
 
@@ -314,6 +327,7 @@ CESP32HeaterStorage::loadUI()
 {
   preferences.begin("user", false);
   validatedLoad("dimTime", _calValues.DimTime, 60000, s32inBounds, 0, 600000);
+  validatedLoad("degF", _calValues.degF, 0, u8inBounds, 0, 1);
   preferences.end();    
 }
 
@@ -321,7 +335,8 @@ void
 CESP32HeaterStorage::saveUI()
 {
   preferences.begin("user", false);
-  preferences.putUChar("dimTime", _calValues.DimTime);
+  preferences.putULong("dimTime", _calValues.DimTime);
+  preferences.putUChar("degF", _calValues.degF);
   preferences.end();    
 }
 

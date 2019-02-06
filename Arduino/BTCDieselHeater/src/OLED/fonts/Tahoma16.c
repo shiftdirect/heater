@@ -9,7 +9,7 @@
 // Dot Factory Settings
 // 
 // Flip/Rotate      Padding Removal           Line Wrap         Descriptors
-//   [X] Flip X       Height(Y): None           (O) At column     [X] Generate descriptor array
+//   [X] Flip X       Height(Y): Tightest       (O) At column     [X] Generate descriptor array
 //   [ ] Flip Y       Width(X):  Tightest       ( ) At bitmap       Char Width:  In Bits
 //       90deg                                                      Char Height: In Bits
 //                                                                  Font Height: In Bits
@@ -216,6 +216,18 @@ const uint8_t tahoma_16ptBitmaps[] PROGMEM =
 	0x03, 0xC0, //       ####
 	0x03, 0xC0, //       ####
 
+	// @300 'F' (9 pixels wide)
+	0xFF, 0xFF, // ################
+	0xFF, 0xFF, // ################
+	0xFF, 0xFF, // ################
+	0xFF, 0xFF, // ################
+	0xE3, 0x80, // ###   ###       
+	0xE3, 0x80, // ###   ###       
+	0xE3, 0x80, // ###   ###       
+	0xE3, 0x80, // ###   ###       
+	0xE3, 0x80, // ###   ###       
+	0xE3, 0x80, // ###   ###       
+
 };
 
 // Character descriptors for Tahoma 16pt
@@ -260,7 +272,7 @@ const FONT_CHAR_INFO tahoma_16ptDescriptors[] PROGMEM =
 	{12, 16, 244},   // 'C' 
 	{0, 0, 0},       // 'D' 
 	{0, 0, 0},       // 'E' 
-	{0, 0, 0},       // 'F' 
+	{10, 16, 300},    // 'F' 
 	{0, 0, 0},       // 'G' 
 	{0, 0, 0},       // 'H' 
 	{0, 0, 0},       // 'I' 
