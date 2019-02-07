@@ -184,6 +184,7 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("Timer2Days", getTimerStr(1, 2), root );
   bSend |= moderator.addJson("Timer2Repeat", getTimerStr(1, 3), root );
   bSend |= moderator.addJson("BluewireStat", getBlueWireStatStr(), root );
+	bSend |= moderator.addJson("TempMode", NVstore.getDegFMode(), root); 
 
   if(bSend) {
 		root.printTo(opStr, len);
