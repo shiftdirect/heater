@@ -262,7 +262,7 @@ CESP32HeaterStorage::loadHeater()
   // section for heater calibration params
   preferences.begin("Calibration", false);
   validatedLoad("minPump", _calValues.Heater.Pmin, 14, u8inBounds, 4, 100);
-  validatedLoad("maxPump", _calValues.Heater.Pmax, 14, u8inBounds, 4, 150);
+  validatedLoad("maxPump", _calValues.Heater.Pmax, 45, u8inBounds, 4, 150);
   validatedLoad("minFan", _calValues.Heater.Fmin, 1500, u16inBounds, 100, 5000);
   validatedLoad("maxFan", _calValues.Heater.Fmax, 4500, u16inBounds, 100, 6000);
   validatedLoad("thermostat", _calValues.Heater.ThermostatMode, 1, u8inBounds, 0, 1);
