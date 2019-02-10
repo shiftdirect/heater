@@ -68,7 +68,23 @@ function init() {
                         document.getElementById("TopBar").className = "active0";
                     }
                     break;
-                case "Thermostat":
+                case "PumpMin":
+					document.getElementById(key).value = heater[key];
+                    document.getElementById(key).innerHTML = heater[key];			
+					break;
+				case "PumpMax":
+					document.getElementById(key).value = heater[key];
+					document.getElementById(key).innerHTML = heater[key];
+					break;		
+				case "FanMin":
+					document.getElementById(key).value = heater[key];
+					document.getElementById(key).innerHTML = heater[key];
+					break;
+				case "FanMax":
+					document.getElementById(key).value = heater[key];
+					document.getElementById(key).innerHTML = heater[key];
+					break;					
+				case "Thermostat":
                     if(heater[key] != 0) {
                         document.getElementById("FixedDiv").hidden = true;
                         document.getElementById("ThermoDiv").hidden = false;
@@ -177,7 +193,6 @@ function funcdispAdvanced(){
     document.getElementById("Home").style.display = "none";
     document.getElementById("Advanced").style.display = "block";
     document.getElementById("myLinks").style.display ="none";
-    
 }
 
 // Function to check the power on/off slide switch.
@@ -220,7 +235,18 @@ function onSlide(newVal, JSONKey) {
     sendJSONobject(cmd);
 }
 
+function onSlideupdate(newVal, JSONKey) {
+    //elementid must equal the JSON name for each setting
+    
+    document.getElementById(JSONKey).innerHTML = newVal;
+}
 
+function SetPumpMin(){
+	var cmd = {};
+	cmd['PumpMin'] = document.getElementById("PumpMin").value;
+	cmd.NVsave = 8861;
+	sendJSONobject(cmd);
+}
 
 </script>
 
@@ -466,20 +492,22 @@ display: none
 </span>
 
 <div id="Advanced">
-Advanced Settings
-<b>Pump Min</b>
-<input type="range" id="PumpMinSlide" min=".5" max="35" step=".5" value="22" oninput="onSlide(this.value, 'PumpMin')" onchange="onSlide(this.value, 'PumpMin')"> <span id="PumpMin"></span>
+<h2><b>Advanced Settings</b></h2><br>
+
+<b>Pump Min: </b><span id="PumpMin"> </span><input type="range" id="PumpMin" min="1" max="10" step=".1" oninput="onSlide(this.value, 'PumpMin')" onchange="onSlide(this.value, 'PumpMin')"> <span id="PumpMin"></span>
+
 <div>
-<b>Pump Max</b>
-<input type="range" id="PumpMaxSlide" min=".5" max="5" step=".5" value="22" oninput="onSlide(this.value, 'PumpMax')" onchange="onSlide(this.value, 'PumpMax')"> <span id="PumpMax"></span>
+
+<b>Pump Max: </b><span id="PumpMax"> </span>
+<input type="range" id="PumpMax" min="1" max="10" step=".1" oninput="onSlide(this.value, 'PumpMax')" onchange="onSlide(this.value, 'PumpMax')"> <span id="PumpMax"></span>
 </div>
 <div>
-<b>Fan Min</b>
-<input type="range" id="FanMinSlide" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMin')" onchange="onSlide(this.value, 'FanMin')"> <span id="FanMin"></span>
+<b>Fan Min: </b><span id="FanMin"> </span>
+<input type="range" id="FanMin" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMin')" onchange="onSlide(this.value, 'FanMin')"> <span id="FanMin"></span>
 </div>
 <div>
-<b>Fan Max</b>
-<input type="range" id="FanMaxSlide" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMax')" onchange="onSlide(this.value, 'FanMax')"> <span id="FanMax"></span>
+<b>Fan Max: </b><span id="FanMax"> </span>
+<input type="range" id="FanMax" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMax')" onchange="onSlide(this.value, 'FanMax')"> <span id="FanMax"></span>
 </div>
 </div>
 
