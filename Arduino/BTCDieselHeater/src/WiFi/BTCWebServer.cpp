@@ -110,6 +110,17 @@ void handleReset() {
   wifiEnterConfigPortal(true, true, 3000);
 }
 
+void handleFormat() {
+	server.send(200, "text/plain", "Formatting SPIFFS partition!");
+	DebugPort.println("Formatting SPIFFS partition");
+  delay(500);
+  SPIFFS.format();
+	//client.disconnect();
+//	wifi_station_disconnect();
+//	wm.disconnect();
+//	wm.resetSettings();
+}
+
 void handleBTCNotFound() {
 	digitalWrite(led, 1);
 	String message = "File Not Found\n\n";
@@ -137,7 +148,8 @@ void initWebServer(void) {
 //	server.on("/", handleBTCRoot);
 
 	server.on("/wmconfig", handleWMConfig);
-	server.on("/resetwifi",handleReset);
+	server.on("/resetwifi", handleReset);
+	server.on("/formatspiffs", handleFormat);
 #if USE_SPIFFS == 1  
   // NOTE: this serves the default home page, and favicon.ico
   server.onNotFound([]() 

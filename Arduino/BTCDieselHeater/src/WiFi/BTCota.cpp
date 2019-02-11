@@ -20,6 +20,10 @@
  */
 
 #include "BTCota.h"
+#include "../cfg/BTCConfig.h"
+#if USE_SPIFFS == 1  
+#include <SPIFFS.h>
+#endif
 
 void initOTA(){
 	// ArduinoOTA.setHostname("myesp32");
@@ -34,6 +38,7 @@ void initOTA(){
 			type = "filesystem";
 
 		// NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+	    SPIFFS.end();
 		DebugPort.println("Start updating " + type);
     DebugPort.handle();    // keep telnet spy alive
 	})
