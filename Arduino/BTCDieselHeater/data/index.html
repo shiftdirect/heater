@@ -32,14 +32,17 @@ function init() {
                     document.getElementById("RunString").style.visibility = (heater[key] == 5 || heater[key] == 0) ? "hidden" : "visible";
                     break;
                 case "ErrorString":
-                case "PumpFixed":
                 case "RunString":
+                document.getElementById(key).innerHTML = heater[key];
+                    break;
+                case "PumpFixed":
                 case "TempCurrent":
-                    document.getElementById(key).innerHTML = heater[key];
+                    document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);
                     break;
                 case "TempDesired":
-                    document.getElementById("slide").value = heater[key];
-                    document.getElementById(key).innerHTML = heater[key];
+                    document.getElementById(key).value = heater[key];
+                    var ValKey = key + 'Val';  // eg 'PumpMinVal'
+                    document.getElementById(ValKey).innerHTML = heater[key];
                     break;
                 case "ErrorState":
                     document.getElementById("ErrorDiv").hidden = heater[key] <= 1;
@@ -68,16 +71,32 @@ function init() {
                         document.getElementById("TopBar").className = "active0";
                     }
                     break;
-                case "Thermostat":
-                    if(heater[key] != 0) {
-                        document.getElementById("FixedDiv").hidden = true;
-                        document.getElementById("ThermoDiv").hidden = false;
-                    }
-                    else {
-                        document.getElementById("FixedDiv").hidden = false;
-                        document.getElementById("ThermoDiv").hidden = true;
-                    }
-                    break;
+                case "PumpMin":
+                case "PumpMax":   
+                  var OneDecimalPlace = parseFloat(heater[key]).toFixed(1);
+                  var ValKey = key + 'Val';  // eg 'PumpMinVal'
+                  document.getElementById(key).value = OneDecimalPlace;
+                  document.getElementById(key).innerHTML = OneDecimalPlace;			
+                  document.getElementById(ValKey).innerHTML = OneDecimalPlace;			
+                  break;
+                case "FanMin":
+                case "FanMax":
+                  var RPM = heater[key];
+                  var ValKey = key + 'Val';   // eg 'FanMinVal'
+                  document.getElementById(key).value = RPM;
+                  document.getElementById(key).innerHTML = RPM;
+                  document.getElementById(ValKey).innerHTML = RPM;			
+                  break;					
+        				case "Thermostat":
+                  if(heater[key] != 0) {
+                    document.getElementById("FixedDiv").hidden = true;
+                    document.getElementById("ThermoDiv").hidden = false;
+                  }
+                  else {
+                    document.getElementById("FixedDiv").hidden = false;
+                    document.getElementById("ThermoDiv").hidden = true;
+                  }
+                  break;
             }
         }
     }
@@ -177,7 +196,6 @@ function funcdispAdvanced(){
     document.getElementById("Home").style.display = "none";
     document.getElementById("Advanced").style.display = "block";
     document.getElementById("myLinks").style.display ="none";
-    
 }
 
 // Function to check the power on/off slide switch.
@@ -209,7 +227,7 @@ function OnOffCheck(){
     }
 }
 
-function onSlide(newVal, JSONKey) {
+function onSlideDone(newVal, JSONKey) {
     //elementid must equal the JSON name for each setting
     
     document.getElementById(JSONKey).innerHTML = newVal;
@@ -220,7 +238,18 @@ function onSlide(newVal, JSONKey) {
     sendJSONobject(cmd);
 }
 
+function onSlideUpdate(newVal, JSONKey) {
+    //elementid must equal the JSON name for each setting
+    
+    document.getElementById(JSONKey).innerHTML = newVal;
+}
 
+function SetPumpMin(){
+	var cmd = {};
+	cmd['PumpMin'] = document.getElementById("PumpMin").value;
+	cmd.NVsave = 8861;
+	sendJSONobject(cmd);
+}
 
 </script>
 
@@ -448,10 +477,9 @@ display: none
 <div>
 <h2>Temperature Control</h2>
 </div>
-<input type="range" id="slide" min="8" max="35" step="1" value="22" oninput="onSlide(this.value, 'TempDesired')" onchange="onSlide(this.value, 'TempDesired')">
-<div id="ThermoDiv">
-<b>Desired Temp: </b>
-<span id="TempDesired"></span>
+  <input type="range" id="TempDesired" min="8" max="35" step="1" value="22" oninput="onSlideUpdate(this.value, 'TempDesiredVal')" onchange="onSlideDone(this.value, 'TempDesired')">
+  <div id="ThermoDiv">
+    <b>Desired Temp: </b> <span id="TempDesiredVal"></span>
 </div>
 <div id="FixedDiv">
 <b>Fixed Hz: </b>
@@ -466,20 +494,26 @@ display: none
 </span>
 
 <div id="Advanced">
-Advanced Settings
-<b>Pump Min</b>
-<input type="range" id="PumpMinSlide" min=".5" max="35" step=".5" value="22" oninput="onSlide(this.value, 'PumpMin')" onchange="onSlide(this.value, 'PumpMin')"> <span id="PumpMin"></span>
+<h2><b>Advanced Settings</b></h2>
+<br>
+<h3><b>Minimum Fuel Settings</b></h3>
 <div>
-<b>Pump Max</b>
-<input type="range" id="PumpMaxSlide" min=".5" max="5" step=".5" value="22" oninput="onSlide(this.value, 'PumpMax')" onchange="onSlide(this.value, 'PumpMax')"> <span id="PumpMax"></span>
+<b>Pump Min: </b><span id="PumpMinVal"> </span>
+<input type="range" id="PumpMin" min="1" max="10" step=".1" oninput="onSlideUpdate(parseFloat(this.value).toFixed(1), 'PumpMinVal')" onchange="onSlideDone(this.value, 'PumpMin')"> 
 </div>
 <div>
-<b>Fan Min</b>
-<input type="range" id="FanMinSlide" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMin')" onchange="onSlide(this.value, 'FanMin')"> <span id="FanMin"></span>
+<b>Fan Min: </b><span id="FanMinVal"> </span>
+<input type="range" id="FanMin" min="1000" max="5000" step="10" oninput="onSlideUpdate(this.value, 'FanMinVal')" onchange="onSlideDone(this.value, 'FanMin')"> 
+</div>
+<br>
+<h3><b>Maximum Fuel Settings</b></h3>
+<div>
+<b>Pump Max: </b><span id="PumpMaxVal"> </span>
+<input type="range" id="PumpMax" min=".5" max="10" step=".1" oninput="onSlideUpdate(parseFloat(this.value).toFixed(1), 'PumpMaxVal')" onchange="onSlideDone(this.value, 'PumpMax')"> 
 </div>
 <div>
-<b>Fan Max</b>
-<input type="range" id="FanMaxSlide" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMax')" onchange="onSlide(this.value, 'FanMax')"> <span id="FanMax"></span>
+<b>Fan Max: </b><span id="FanMaxVal"> </span>
+<input type="range" id="FanMax" min="1000" max="5000" step="10" oninput="onSlideUpdate(this.value, 'FanMaxVal')" onchange="onSlideDone(this.value, 'FanMax')"> 
 </div>
 </div>
 
@@ -494,7 +528,7 @@ Current Time (24 Hour Format):<br>
 
 <hr></hr>
 <br><br>
-Timer1: <input type="checkbox" border-radius="4px" name="Timer1" id="Timer1onoff"> <input type="text" class="schedule" id="Timer1Start">  <input type="text" id="Timer1End"> <br>
+Timer1: <input type="checkbox" border-radius="4px" name="Timer" id="Timer1onoff"> <input type="text" class="schedule" id="Timer1Start">  <input type="text" id="Timer1End"> <br>
 Timer2: <input type="checkbox" border-radius="4px" name="Tue">  <input type="text" class="schedule" id="Timer2Start">    <input type="text" id="Timer2End"><br>
 <input type="button" Value="Save Schedule" onclick="setSchedule()">
 </Div>
