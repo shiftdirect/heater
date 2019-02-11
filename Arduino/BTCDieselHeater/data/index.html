@@ -71,35 +71,31 @@ function init() {
                     }
                     break;
                 case "PumpMin":
-					document.getElementById(key).value = parseFloat(heater[key]).toFixed(1);
-                    document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);			
-                    document.getElementById('PumpMinVal').innerHTML = parseFloat(heater[key]).toFixed(1);			
-					break;
-				case "PumpMax":
-					document.getElementById(key).value = parseFloat(heater[key]).toFixed(1);
-					document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);
-          document.getElementById('PumpMaxVal').innerHTML = parseFloat(heater[key]).toFixed(1);			
-					break;		
-				case "FanMin":
-					document.getElementById(key).value = heater[key];
-					document.getElementById(key).innerHTML = heater[key];
-          document.getElementById('FanMinVal').innerHTML = heater[key];			
-					break;
-				case "FanMax":
-					document.getElementById(key).value = heater[key];
-					document.getElementById(key).innerHTML = heater[key];
-          document.getElementById('FanMaxVal').innerHTML = heater[key];			
-					break;					
-				case "Thermostat":
-                    if(heater[key] != 0) {
-                        document.getElementById("FixedDiv").hidden = true;
-                        document.getElementById("ThermoDiv").hidden = false;
-                    }
-                    else {
-                        document.getElementById("FixedDiv").hidden = false;
-                        document.getElementById("ThermoDiv").hidden = true;
-                    }
-                    break;
+                case "PumpMax":   
+                  var OneDecimalPlace = parseFloat(heater[key]).toFixed(1);
+                  var ValKey = key + 'Val';  // eg 'PumpMinVal'
+                  document.getElementById(key).value = OneDecimalPlace;
+                  document.getElementById(key).innerHTML = OneDecimalPlace;			
+                  document.getElementById(ValKey).innerHTML = OneDecimalPlace;			
+                  break;
+                case "FanMin":
+                case "FanMax":
+                  var RPM = heater[key];
+                  var ValKey = key + 'Val';   // eg 'FanMinVal'
+                  document.getElementById(key).value = RPM;
+                  document.getElementById(key).innerHTML = RPM;
+                  document.getElementById(ValKey).innerHTML = RPM;			
+                  break;					
+        				case "Thermostat":
+                  if(heater[key] != 0) {
+                    document.getElementById("FixedDiv").hidden = true;
+                    document.getElementById("ThermoDiv").hidden = false;
+                  }
+                  else {
+                    document.getElementById("FixedDiv").hidden = false;
+                    document.getElementById("ThermoDiv").hidden = true;
+                  }
+                  break;
             }
         }
     }
