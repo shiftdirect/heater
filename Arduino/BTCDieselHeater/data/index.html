@@ -32,10 +32,12 @@ function init() {
                     document.getElementById("RunString").style.visibility = (heater[key] == 5 || heater[key] == 0) ? "hidden" : "visible";
                     break;
                 case "ErrorString":
-                case "PumpFixed":
                 case "RunString":
+                document.getElementById(key).innerHTML = heater[key];
+                    break;
+                case "PumpFixed":
                 case "TempCurrent":
-                    document.getElementById(key).innerHTML = heater[key];
+                    document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);
                     break;
                 case "TempDesired":
                     document.getElementById("slide").value = heater[key];
@@ -69,20 +71,24 @@ function init() {
                     }
                     break;
                 case "PumpMin":
-					document.getElementById(key).value = heater[key];
-                    document.getElementById(key).innerHTML = heater[key];			
+					document.getElementById(key).value = parseFloat(heater[key]).toFixed(1);
+                    document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);			
+                    document.getElementById('PumpMinVal').innerHTML = parseFloat(heater[key]).toFixed(1);			
 					break;
 				case "PumpMax":
-					document.getElementById(key).value = heater[key];
-					document.getElementById(key).innerHTML = heater[key];
+					document.getElementById(key).value = parseFloat(heater[key]).toFixed(1);
+					document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);
+          document.getElementById('PumpMaxVal').innerHTML = parseFloat(heater[key]).toFixed(1);			
 					break;		
 				case "FanMin":
 					document.getElementById(key).value = heater[key];
 					document.getElementById(key).innerHTML = heater[key];
+          document.getElementById('FanMinVal').innerHTML = heater[key];			
 					break;
 				case "FanMax":
 					document.getElementById(key).value = heater[key];
 					document.getElementById(key).innerHTML = heater[key];
+          document.getElementById('FanMaxVal').innerHTML = heater[key];			
 					break;					
 				case "Thermostat":
                     if(heater[key] != 0) {
@@ -492,22 +498,26 @@ display: none
 </span>
 
 <div id="Advanced">
-<h2><b>Advanced Settings</b></h2><br>
-
-<b>Pump Min: </b><span id="PumpMin"> </span><input type="range" id="PumpMin" min="1" max="10" step=".1" oninput="onSlide(this.value, 'PumpMin')" onchange="onSlide(this.value, 'PumpMin')"> <span id="PumpMin"></span>
-
+<h2><b>Advanced Settings</b></h2>
+<br>
+<h3><b>Minimum Fuel Settings</b></h3>
 <div>
-
-<b>Pump Max: </b><span id="PumpMax"> </span>
-<input type="range" id="PumpMax" min=".5" max="10" step=".1" oninput="onSlide(this.value, 'PumpMax')" onchange="onSlide(this.value, 'PumpMax')"> <span id="PumpMax"></span>
+<b>Pump Min: </b><span id="PumpMinVal"> </span>
+<input type="range" id="PumpMin" min="1" max="10" step=".1" oninput="onSlideupdate(parseFloat(this.value).toFixed(1), 'PumpMinVal')" onchange="onSlide(this.value, 'PumpMin')"> 
 </div>
 <div>
-<b>Fan Min: </b><span id="FanMin"> </span>
-<input type="range" id="FanMin" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMin')" onchange="onSlide(this.value, 'FanMin')"> <span id="FanMin"></span>
+<b>Fan Min: </b><span id="FanMinVal"> </span>
+<input type="range" id="FanMin" min="1000" max="5000" step="10" oninput="onSlideupdate(this.value, 'FanMinVal')" onchange="onSlide(this.value, 'FanMin')"> 
+</div>
+<br>
+<h3><b>Maximum Fuel Settings</b></h3>
+<div>
+<b>Pump Max: </b><span id="PumpMaxVal"> </span>
+<input type="range" id="PumpMax" min=".5" max="10" step=".1" oninput="onSlideupdate(parseFloat(this.value).toFixed(1), 'PumpMaxVal')" onchange="onSlide(this.value, 'PumpMax')"> 
 </div>
 <div>
-<b>Fan Max: </b><span id="FanMax"> </span>
-<input type="range" id="FanMax" min="1000" max="5000" step="50" value="22" oninput="onSlide(this.value, 'FanMax')" onchange="onSlide(this.value, 'FanMax')"> <span id="FanMax"></span>
+<b>Fan Max: </b><span id="FanMaxVal"> </span>
+<input type="range" id="FanMax" min="1000" max="5000" step="10" oninput="onSlideupdate(this.value, 'FanMaxVal')" onchange="onSlide(this.value, 'FanMax')"> 
 </div>
 </div>
 
