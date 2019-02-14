@@ -78,10 +78,12 @@ struct sTimer {
   uint8_t enabled;     // timer enabled - each bit is a day of week flag
   uint8_t repeat;      // repeating timer
   uint8_t temperature;
+  uint8_t timerID;     // numeric ID
   sTimer() {
     enabled = 0;     
     repeat = false;
     temperature = 22;
+    timerID = 0;
   };
   sTimer& operator=(const sTimer& rhs) {
     start = rhs.start;
@@ -89,6 +91,7 @@ struct sTimer {
     enabled = rhs.enabled;
     repeat = rhs.repeat;
     temperature = rhs.temperature;
+    timerID = rhs.timerID;
   };
   void init() {
     start.hour = 0;

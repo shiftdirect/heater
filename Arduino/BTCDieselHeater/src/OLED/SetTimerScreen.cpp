@@ -161,8 +161,8 @@ CSetTimerScreen::keyHandler(uint8_t event)
         _colSel = 4;
       }
       else {  // in config fields, save new settings
-        NVstore.setTimerInfo(_timerID, _timerInfo);
-        _conflictID = CTimerManager::conflictTest(_timerID);
+        // test if the setting conflict with an already defined timer
+        _conflictID = CTimerManager::conflictTest(_timerInfo);  
         if(_conflictID) {
           _timerInfo.enabled = 0;   // cancel enabled status
           _ConflictTime = millis() + 1500;
@@ -174,7 +174,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
         }
         _rowSel = 0;
         _colSel = 0;
-        NVstore.setTimerInfo(_timerID, _timerInfo); // may have got disabled
+        NVstore.setTimerInfo(_timerID, _timerInfo); // save, but timer may have got disabled
         NVstore.save();
       }
     }

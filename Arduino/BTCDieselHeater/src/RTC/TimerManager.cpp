@@ -36,7 +36,6 @@
 void 
 CTimerManager::createMap(int timerMask, uint16_t timerMap[24*60], uint16_t timerIDs[24*60])
 {
-  int maxPoints = 24*60;
   memset(timerMap, 0, 24*60*sizeof(uint16_t));
   memset(timerIDs, 0, 24*60*sizeof(uint16_t));
   
@@ -48,45 +47,98 @@ CTimerManager::createMap(int timerMask, uint16_t timerMap[24*60], uint16_t timer
       // get timer settings
       NVstore.getTimerInfo(timerID, timer);
       // and add info to map if enabled
-      if(timer.enabled) {
-        // create linear minute of day values for start & stop
-        // note that if stop < start, that is treated as a timer that rolls over midnight
-        int timestart = timer.start.hour * 60 + timer.start.min;  // linear minute of day
-        int timestop = timer.stop.hour * 60 + timer.stop.min;
-        for(int dayMinute = 0; dayMinute < maxPoints; dayMinute++) {
-          for(int day = 0x01; day != 0x80; day <<= 1) {
-            if(timer.enabled & day || timer.enabled & 0x80) {  // specific or everyday
-              uint16_t activeday = day;  // may also hold non repeat flag later
-              if(!timer.repeat) {
-                // flag timers that should get cancelled
-                activeday |= (activeday << 8);  // combine one shot status in MS byte
-              }
-              if(timestop > timestart) {
-                // treat normal start < stop times (within same day)
-                if((dayMinute >= timestart) && (dayMinute < timestop)) {
-                  timerMap[dayMinute] |= activeday;
-                  timerIDs[dayMinute] |= timerBit;
-                }
-              }
-              else {  
-                // time straddles a day, start > stop, special treatment required
-                if(dayMinute >= timestart) {  
-                  // true from start until midnight
-                  timerMap[dayMinute] |= activeday;
-                  timerIDs[dayMinute] |= timerBit;
-                }
-                if(dayMinute < timestop) {
-                  // after midnight, before stop time, i.e. next day
-                  // adjust for next day, taking care to wrap week
-                  if(day & 0x40)      // last day of week?
-                    activeday >>= 6;  // roll back to start of week
-                  else 
-                    activeday <<= 1;  // next day
-                  timerMap[dayMinute] |= activeday; 
-                  timerIDs[dayMinute] |= timerBit;
-                } 
-              }
+      createMap(timer, timerMap, timerIDs);
+      // if(timer.enabled) {
+      //   // create linear minute of day values for start & stop
+      //   // note that if stop < start, that is treated as a timer that rolls over midnight
+      //   int timestart = timer.start.hour * 60 + timer.start.min;  // linear minute of day
+      //   int timestop = timer.stop.hour * 60 + timer.stop.min;
+      //   for(int dayMinute = 0; dayMinute < maxPoints; dayMinute++) {
+      //     for(int day = 0x01; day != 0x80; day <<= 1) {
+      //       if(timer.enabled & day || timer.enabled & 0x80) {  // specific or everyday
+      //         uint16_t activeday = day;  // may also hold non repeat flag later
+      //         if(!timer.repeat) {
+      //           // flag timers that should get cancelled
+      //           activeday |= (activeday << 8);  // combine one shot status in MS byte
+      //         }
+      //         if(timestop > timestart) {
+      //           // treat normal start < stop times (within same day)
+      //           if((dayMinute >= timestart) && (dayMinute < timestop)) {
+      //             timerMap[dayMinute] |= activeday;
+      //             timerIDs[dayMinute] |= timerBit;
+      //           }
+      //         }
+      //         else {  
+      //           // time straddles a day, start > stop, special treatment required
+      //           if(dayMinute >= timestart) {  
+      //             // true from start until midnight
+      //             timerMap[dayMinute] |= activeday;
+      //             timerIDs[dayMinute] |= timerBit;
+      //           }
+      //           if(dayMinute < timestop) {
+      //             // after midnight, before stop time, i.e. next day
+      //             // adjust for next day, taking care to wrap week
+      //             if(day & 0x40)      // last day of week?
+      //               activeday >>= 6;  // roll back to start of week
+      //             else 
+      //               activeday <<= 1;  // next day
+      //             timerMap[dayMinute] |= activeday; 
+      //             timerIDs[dayMinute] |= timerBit;
+      //           } 
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
+    }
+  }
+}
+
+// create a timer map, based only upon the supplied timer info
+// the other form of createMap uses the NV stored timer info
+void 
+CTimerManager::createMap(sTimer& timer, uint16_t timerMap[24*60], uint16_t timerIDs[24*60])
+{
+  int maxPoints = 24*60;
+  int timerBit = 0x0001 << timer.timerID;
+
+  if(timer.enabled) {
+    // create linear minute of day values for start & stop
+    // note that if stop < start, that is treated as a timer that rolls over midnight
+    int timestart = timer.start.hour * 60 + timer.start.min;  // linear minute of day
+    int timestop = timer.stop.hour * 60 + timer.stop.min;
+    for(int dayMinute = 0; dayMinute < maxPoints; dayMinute++) {
+      for(int day = 0x01; day != 0x80; day <<= 1) {
+        if(timer.enabled & day || timer.enabled & 0x80) {  // specific or everyday
+          uint16_t activeday = day;  // may also hold non repeat flag later
+          if(!timer.repeat) {
+            // flag timers that should get cancelled
+            activeday |= (activeday << 8);  // combine one shot status in MS byte
+          }
+          if(timestop > timestart) {
+            // treat normal start < stop times (within same day)
+            if((dayMinute >= timestart) && (dayMinute < timestop)) {
+              timerMap[dayMinute] |= activeday;
+              timerIDs[dayMinute] |= timerBit;
             }
+          }
+          else {  
+            // time straddles a day, start > stop, special treatment required
+            if(dayMinute >= timestart) {  
+              // true from start until midnight
+              timerMap[dayMinute] |= activeday;
+              timerIDs[dayMinute] |= timerBit;
+            }
+            if(dayMinute < timestop) {
+              // after midnight, before stop time, i.e. next day
+              // adjust for next day, taking care to wrap week
+              if(day & 0x40)      // last day of week?
+                activeday >>= 6;  // roll back to start of week
+              else 
+                activeday <<= 1;  // next day
+              timerMap[dayMinute] |= activeday; 
+              timerIDs[dayMinute] |= timerBit;
+            } 
           }
         }
       }
@@ -117,12 +169,17 @@ uint16_t selectedTimer[24*60];
 uint16_t timerIDs[24*60];
 
 int  
-CTimerManager::conflictTest(int timerID)
+CTimerManager::conflictTest(sTimer& timerInfo)
 {
-  int selectedMask = 0x0001 << timerID;
+//  int timerID = timerInfo.timerID; 
+  int selectedMask = 0x0001 << timerInfo.timerID;  // bit mask for timer we are testing
+  int othersMask = 0x3fff & ~selectedMask;
 
-  createMap(selectedMask, selectedTimer, timerIDs);  // create a map for the nominated timer (under test)
-  createMap(0x3fff & ~selectedMask, otherTimers, timerIDs);   // create a map for all other timers, and get their unique IDs
+  memset(selectedTimer, 0, sizeof(selectedTimer));
+
+  createMap(timerInfo, selectedTimer, timerIDs);  // create a map from the supplied timer info (under test)
+  createMap(othersMask, otherTimers, timerIDs);   // create a map for all other timers, and get their unique IDs
+
   for(int i=0; i< 24*60; i++) {
     if(otherTimers[i] & selectedTimer[i]) {  // both have the same day bit set - CONFLICT!
       uint16_t timerBit = timerIDs[i];

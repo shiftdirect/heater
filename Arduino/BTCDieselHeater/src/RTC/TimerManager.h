@@ -33,11 +33,14 @@
 
 #include <stdint.h>
 
+struct sTimer;
+
 class CTimerManager {
 public:
   static void createMap(int timermask, uint16_t map[24*60], uint16_t timerIDs[24*60]);
+  static void createMap(sTimer& timer, uint16_t timerMap[24*60], uint16_t timerIDs[24*60]);
   static void condenseMap(uint16_t timerMap[24*60], int factor);
-  static int  conflictTest(int timerID);
+  static int  conflictTest(sTimer& timer);
 };
 
 #endif //__TIMERMANAGER_H__

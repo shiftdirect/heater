@@ -294,6 +294,7 @@ void
 CESP32HeaterStorage::loadTimer(int idx) 
 {
   sTimer& timer = _calValues.timer[idx];
+  timer.timerID = idx;
   char SectionName[16];
   sprintf(SectionName, "timer%d", idx+1);
   preferences.begin(SectionName, false);
