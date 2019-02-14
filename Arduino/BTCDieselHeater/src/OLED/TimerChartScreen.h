@@ -19,8 +19,8 @@
  * 
  */
 
-#ifndef __SETTIMERSCREEN_H__
-#define __SETTIMERSCREEN_H__
+#ifndef __TIMERCHARTSCREEN_H__
+#define __TIMERCHARTSCREEN_H__
 
 #include <stdint.h>
 #include "ScreenHeader.h"
@@ -30,19 +30,14 @@ class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CSetTimerScreen : public CScreenHeader {
+class CTimerChartScreen : public CScreenHeader {
   int  _rowSel;
   int  _colSel;
-  int  _timerID;
+  int  _instance;
   unsigned long _SaveTime;
-  unsigned long _ConflictTime;
-  int _conflictID;
-  sTimer _timerInfo;
-  void adjust(int dir);
-  void _printEnabledTimers();
 
 public:
-  CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
+  CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
   void onSelect();
   bool show();
   bool keyHandler(uint8_t event);

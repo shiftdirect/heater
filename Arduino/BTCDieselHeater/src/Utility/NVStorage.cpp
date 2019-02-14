@@ -178,7 +178,7 @@ CHeaterStorage::getGlowDrive()
 void 
 CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
 {
-  if(idx >= 0 && idx <=1) {
+  if(idx >= 0 && idx < 14) {
     timerInfo = _calValues.timer[idx];
   }
 }
@@ -186,7 +186,7 @@ CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
 void 
 CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
 {
-  if(idx >= 0 && idx <=1) {
+  if(idx >= 0 && idx < 14) {
     _calValues.timer[idx] = timerInfo;
   }
 }
@@ -239,7 +239,7 @@ CESP32HeaterStorage::load()
 {
   DebugPort.println("Reading from NV storage");
   loadHeater();
-  for(int i=0; i<2; i++) {
+  for(int i=0; i<14; i++) {
     loadTimer(i);
   }
   loadUI();
@@ -250,7 +250,7 @@ CESP32HeaterStorage::save()
 {
   DebugPort.println("Saving to NV storage");
   saveHeater();
-  for(int i=0; i<2; i++) {
+  for(int i=0; i<14; i++) {
     saveTimer(i);
   }
   saveUI();
@@ -302,7 +302,8 @@ CESP32HeaterStorage::loadTimer(int idx)
   validatedLoad("stopHour", timer.stop.hour, 0, s8inBounds, 0, 23);
   validatedLoad("stopMin", timer.stop.min, 0, s8inBounds, 0, 59);
   validatedLoad("enabled", timer.enabled, 0, u8inBounds, 0, 255);  // all 8 bits used!
-  validatedLoad("repea*t", timer.repeat, 0, u8inBounds, 0, 1);
+  validatedLoad("repeat", timer.repeat, 0, u8inBounds, 0, 1);
+  validatedLoad("temperature", timer.temperature, 22, u8inBounds, 8, 35);
   preferences.end();    
 }
 
@@ -319,6 +320,7 @@ CESP32HeaterStorage::saveTimer(int idx)
   preferences.putChar("stopMin", timer.stop.min);
   preferences.putUChar("enabled", timer.enabled);
   preferences.putUChar("repeat", timer.repeat);
+  preferences.putUChar("temperature", timer.temperature);
   preferences.end();    
 }
 

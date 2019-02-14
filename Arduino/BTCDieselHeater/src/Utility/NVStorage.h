@@ -77,15 +77,18 @@ struct sTimer {
   sHourMin stop;       // stop time
   uint8_t enabled;     // timer enabled - each bit is a day of week flag
   uint8_t repeat;      // repeating timer
+  uint8_t temperature;
   sTimer() {
     enabled = 0;     
     repeat = false;
+    temperature = 22;
   };
   sTimer& operator=(const sTimer& rhs) {
     start = rhs.start;
     stop = rhs.stop;
     enabled = rhs.enabled;
     repeat = rhs.repeat;
+    temperature = rhs.temperature;
   };
   void init() {
     start.hour = 0;
@@ -94,6 +97,7 @@ struct sTimer {
     stop.min = 0;
     enabled = 0;
     repeat = 0;
+    temperature = 22;
   };
   bool valid() {
     bool retval = true;
@@ -102,6 +106,7 @@ struct sTimer {
     retval &= (stop.hour >= 0 && stop.hour < 24);
     retval &= (stop.min >= 0 && stop.min < 60);
     retval &= repeat <= 2;
+    retval &= (temperature >= 8 && temperature <= 35);
     return retval;
   };
 };
@@ -111,7 +116,7 @@ struct sNVStore {
   sHeater Heater;
   long DimTime;
   uint8_t degF;
-  sTimer timer[2];
+  sTimer timer[14];
   bool valid();
   void init();
 };

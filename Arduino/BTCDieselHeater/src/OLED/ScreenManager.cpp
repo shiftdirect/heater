@@ -10,6 +10,7 @@
 #include "RebootScreen.h"
 #include "HeaterSettingsScreen.h"
 #include "SettingsScreen.h"
+#include "TimerChartScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -161,8 +162,21 @@ CScreenManager::begin(bool bNoClock)
   _Screens.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
   _Screens.push_back(new CSettingsScreen(*_pDisplay, *this));         // tuning info
   _SetTimeScreen = new CSetClockScreen(*_pDisplay, *this);            // clock set
+  _TimerScreens.push_back(new CTimerChartScreen(*_pDisplay, *this, 0)); // timer chart
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 0)); // set timer 1
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 1)); // set timer 2
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 2)); // set timer 3
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 3)); // set timer 4
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 4)); // set timer 5
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 5)); // set timer 6
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 6)); // set timer 7
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 7)); // set timer 8
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 8)); // set timer 9
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 9)); // set timer 10
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 10)); // set timer 11
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 11)); // set timer 12
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 12)); // set timer 13
+  _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 13)); // set timer 14
   _SettingsScreens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
   _SettingsScreens.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
 

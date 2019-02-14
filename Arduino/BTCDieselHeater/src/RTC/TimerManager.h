@@ -3,7 +3,7 @@
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
  * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,33 +19,25 @@
  * 
  */
 
-#ifndef __SETTIMERSCREEN_H__
-#define __SETTIMERSCREEN_H__
+
+///////////////////////////////////////////////////////////////////////////
+//
+// CTimerManager
+//
+// This provides management of the timers
+//
+///////////////////////////////////////////////////////////////////////////
+
+#ifndef __TIMERMANAGER_H__
+#define __TIMERMANAGER_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
-#include "../Utility/NVStorage.h"
 
-class C128x64_OLED;
-class CScreenManager;
-class CProtocol;
-
-class CSetTimerScreen : public CScreenHeader {
-  int  _rowSel;
-  int  _colSel;
-  int  _timerID;
-  unsigned long _SaveTime;
-  unsigned long _ConflictTime;
-  int _conflictID;
-  sTimer _timerInfo;
-  void adjust(int dir);
-  void _printEnabledTimers();
-
+class CTimerManager {
 public:
-  CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
-  void onSelect();
-  bool show();
-  bool keyHandler(uint8_t event);
+  static void createMap(int timermask, uint16_t map[24*60], uint16_t timerIDs[24*60]);
+  static void condenseMap(uint16_t timerMap[24*60], int factor);
+  static int  conflictTest(int timerID);
 };
 
-#endif
+#endif //__TIMERMANAGER_H__
