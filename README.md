@@ -41,6 +41,7 @@ Working so far:
 To be implemented 
 --------------------------
 * Add 2 external digital inputs, 2 digital outputs, analogue input 433MHz Rx stream, 433MHz Tx stream connections. This would allow external timer units for example, or analogue temeprature demand (which is still only 1 degree resolution).
+* Implement narrow hysteresis to trick heater into a tighter thermostat temperature range. eg tell heater it is 23 degrees when it really is only 22.25 degrees (only 0.25 above set point).
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
 * Proper 7 day timer with each day settable for at least 2 times (eg morning/evening)
