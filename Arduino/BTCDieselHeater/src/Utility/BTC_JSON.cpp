@@ -133,6 +133,31 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("Timer2Repeat", it->key) == 0) {
       decodeTimerRepeat(1, it->value.as<unsigned char>());
 		}
+		else if(strncmp("TimerDays", it->key, 9) == 0) {
+      int idx = atoi(&it->key[9]) - 1;
+      DebugPort.print("TimerDays");DebugPort.println(idx);
+      if(idx >=0 && idx < 14)
+        decodeTimerDays(idx, it->value.as<const char*>());
+		}
+		else if(strncmp("TimerStart", it->key, 10) == 0) {
+      int idx = atoi(&it->key[10]) - 1;
+      DebugPort.print("TimerStart");DebugPort.println(idx);
+      if(idx >=0 && idx < 14)
+        decodeTimerTime(idx, 0, it->value.as<const char*>());
+		}
+		else if(strncmp("TimerStop", it->key, 9) == 0) {
+      int idx = atoi(&it->key[9]) - 1;
+      DebugPort.print("TimerStop");DebugPort.println(idx);
+      if(idx >=0 && idx < 14)
+        decodeTimerTime(idx, 1, it->value.as<const char*>());
+		}
+		else if(strncmp("TimerRepeat", it->key, 11) == 0) {
+      int idx = atoi(&it->key[11]) - 1;
+      DebugPort.print("TimerRepeat");DebugPort.println(idx);
+      if(idx >=0 && idx < 14) {
+        decodeTimerRepeat(idx, it->value.as<unsigned char>());
+      }
+		}
 		else if(strcmp("FanSensor", it->key) == 0) {
       setFanSensor(it->value.as<unsigned char>());
 		}
@@ -175,14 +200,14 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getSystemVoltage(), root );
 	bSend |= moderator.addJson("GlowVoltage", getHeaterInfo().getGlow_Voltage(), root );
 	bSend |= moderator.addJson("GlowCurrent", getHeaterInfo().getGlow_Current(), root );
-  bSend |= moderator.addJson("Timer1Start", getTimerStr(0, 0), root );
-  bSend |= moderator.addJson("Timer1Stop", getTimerStr(0, 1), root );
-  bSend |= moderator.addJson("Timer1Days", getTimerStr(0, 2), root );
-  bSend |= moderator.addJson("Timer1Repeat", getTimerStr(0, 3), root );
-  bSend |= moderator.addJson("Timer2Start", getTimerStr(1, 0), root );
-  bSend |= moderator.addJson("Timer2Stop", getTimerStr(1, 1), root );
-  bSend |= moderator.addJson("Timer2Days", getTimerStr(1, 2), root );
-  bSend |= moderator.addJson("Timer2Repeat", getTimerStr(1, 3), root );
+  bSend |= moderator.addJson("TimerStart1", getTimerStr(0, 0), root );
+  bSend |= moderator.addJson("TimerStop1", getTimerStr(0, 1), root );
+  bSend |= moderator.addJson("TimerDays1", getTimerStr(0, 2), root );
+  bSend |= moderator.addJson("TimerRepeat1", getTimerStr(0, 3), root );
+  bSend |= moderator.addJson("TimerStart2", getTimerStr(1, 0), root );
+  bSend |= moderator.addJson("TimerStop2", getTimerStr(1, 1), root );
+  bSend |= moderator.addJson("TimerDays2", getTimerStr(1, 2), root );
+  bSend |= moderator.addJson("TimerRepeat2", getTimerStr(1, 3), root );
   bSend |= moderator.addJson("BluewireStat", getBlueWireStatStr(), root );
 	bSend |= moderator.addJson("TempMode", NVstore.getDegFMode(), root); 
 

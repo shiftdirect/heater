@@ -37,10 +37,24 @@ struct sTimer;
 
 class CTimerManager {
 public:
-  static void createMap(int timermask, uint16_t map[24*60], uint16_t timerIDs[24*60]);
-  static void createMap(sTimer& timer, uint16_t timerMap[24*60], uint16_t timerIDs[24*60]);
-  static void condenseMap(uint16_t timerMap[24*60], int factor);
+  static const int _dayMinutes = 24*60;
+  static void createMap(int timermask = 0x3fff, uint16_t* timerMap = NULL, uint16_t* timerIDs = NULL);
+  static void createMap(sTimer& timer, uint16_t* timerMap = NULL, uint16_t* timerIDs = NULL);
+  static void condenseMap(uint16_t timerMap[_dayMinutes], int factor);
+  static void condenseMap(uint8_t timerMap[7][120]);
   static int  conflictTest(sTimer& timer);
+  static int  manageTime(int hour, int minute, int dow);
+  static int  findNextTimer(int hour, int minute, int dow);
+  static int  getNextTimer();
+  static void getTimer(int idx, sTimer& timerInfo);
+  static int  setTimer(sTimer& timerInfo);
+private:
+  static int activeTimer;
+  static int activeDow;
+  static int prevState;
+  static int nextTimer;
+  static int nextStart;
+  static uint8_t weekTimerIDs[7][_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
 };
 
 #endif //__TIMERMANAGER_H__

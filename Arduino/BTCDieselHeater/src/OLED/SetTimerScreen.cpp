@@ -167,15 +167,18 @@ CSetTimerScreen::keyHandler(uint8_t event)
           _timerInfo.enabled = 0;   // cancel enabled status
           _ConflictTime = millis() + 1500;
           _ScreenManager.reqUpdate();
+          _rowSel = 1;
+          _colSel = 4;   // select enable/disable 
         }
         else {
           _SaveTime = millis() + 1500;
           _ScreenManager.reqUpdate();
+          _rowSel = 0;
+          _colSel = 0;
         }
-        _rowSel = 0;
-        _colSel = 0;
-        NVstore.setTimerInfo(_timerID, _timerInfo); // save, but timer may have got disabled
-        NVstore.save();
+        CTimerManager::setTimer(_timerInfo);
+//        NVstore.setTimerInfo(_timerID, _timerInfo); // save, but timer may have got disabled
+//        NVstore.save();
       }
     }
     // press LEFT - navigate fields, or screens

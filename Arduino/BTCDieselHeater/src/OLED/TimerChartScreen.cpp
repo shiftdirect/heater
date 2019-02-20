@@ -37,8 +37,7 @@
 #include "../RTC/TimerManager.h"
 
 
-static uint16_t timerMap[24*60];
-static uint16_t timerIDs[24*60];
+static uint8_t condensed[7][120];
 
 CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
 {
@@ -51,8 +50,8 @@ CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr,
 void 
 CTimerChartScreen::onSelect()
 {
-  CTimerManager::createMap(0x3fff, timerMap, timerIDs);
-  CTimerManager::condenseMap(timerMap, 12);
+  CTimerManager::createMap();
+  CTimerManager::condenseMap(condensed);
 }
 
 bool 
@@ -89,11 +88,15 @@ CTimerChartScreen::show()
     int ypos = dow*linespacing + 7;  // top of first line
     int pixel = 0;
     int subpixel = 0;
+    int blockStart = -1;
     for(int interval = 0; interval < 120; interval++) {
-//      if(Chart[interval] & day) {
-      if(timerMap[interval] & day) {
-//        if(Chart[interval] & (day << 8)) {  
-        if(timerMap[interval] & (day << 8)) {  
+      int IDcentre = 0;
+      int ID = 0;
+      if(condensed[dow][interval] & 0xf) {
+        if(blockStart == -1) {
+          blockStart = interval;
+        }
+        if((condensed[dow][interval] & 0x80) == 0) {  
           // one shot timer - draw peppered
           for(int yscan = interval & 1; yscan < 6; yscan+=2)
             _display.drawPixel(interval+hour0, ypos+yscan, WHITE);   // peppered vertical bar
@@ -104,6 +107,11 @@ CTimerChartScreen::show()
         }
       }
       else {
+        if(blockStart >= 0) {
+          IDcentre = hour0 + (interval + blockStart) / 2;
+          ID = condensed[dow][interval-1];
+          blockStart = -1;
+        }
         if(pixel == 0)  // every 5th pixel draw a base line
           _display.drawPixel(interval+hour0, ypos+2, subpixel ? WHITE : BLACK);   // base line
       }
@@ -112,6 +120,26 @@ CTimerChartScreen::show()
         pixel = 0;
         subpixel++;
         ROLLUPPERLIMIT(subpixel, 2, 0);
+      }
+      if((interval == 119) && blockStart >=0) {  // timer ran up until midnight
+        IDcentre = hour0 + (blockStart + 120) / 2;
+        ID = condensed[dow][interval];
+      }
+      if(IDcentre) {
+        char str[8];
+        sprintf(str, "%d", ID & 0xf);
+        int width = 4;
+        IDcentre -= 1;
+        if((ID & 0xf) >= 10) {
+          IDcentre -= 2;
+          width = 8;
+        }
+        _display.fillRect(IDcentre, ypos, width, 6, WHITE);
+        _display.setTextColor(BLACK, WHITE);
+        _display.setCursor(IDcentre, ypos);
+        _display.print(str);
+        _display.setTextColor(WHITE, BLACK);
+        IDcentre = 0;
       }
     }
   }

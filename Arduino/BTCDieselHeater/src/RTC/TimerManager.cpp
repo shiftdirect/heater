@@ -30,66 +30,40 @@
 
 #include <Arduino.h>
 #include "TimerManager.h"
+#include "Clock.h"
 #include "../Utility/NVStorage.h"
+#include "../Protocol/helpers.h"
+
+uint8_t CTimerManager::weekTimerIDs[7][CTimerManager::_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
+
+int  CTimerManager::activeTimer = 0;
+int  CTimerManager::activeDow = 0;
+int  CTimerManager::nextTimer = 0;
+int  CTimerManager::nextStart = 0;
 
 // create a bitmap that describes the pattern of on/off times
 void 
-CTimerManager::createMap(int timerMask, uint16_t timerMap[24*60], uint16_t timerIDs[24*60])
+CTimerManager::createMap(int timerMask, uint16_t* pTimerMap, uint16_t* pTimerIDs)
 {
-  memset(timerMap, 0, 24*60*sizeof(uint16_t));
-  memset(timerIDs, 0, 24*60*sizeof(uint16_t));
+  if(pTimerMap) {
+    memset(pTimerMap, 0, _dayMinutes*sizeof(uint16_t));
+    if(pTimerIDs) 
+      memset(pTimerIDs, 0, _dayMinutes*sizeof(uint16_t));
+  }
+  else {
+    memset(weekTimerIDs, 0, _dayMinutes*7*sizeof(uint8_t));
+  }
   
   for(int timerID=0; timerID < 14; timerID++) {
-    // only process timer if it is nominated in timerMask (bitfield), timer0 = bit0 .. timerN = bitN
+    // only process timer if it was nominated in supplied timerMask (bitfield), 
+    // timer0 = bit0 .. timerN = bitN
     uint16_t timerBit = 0x0001 << timerID;
     if(timerMask & timerBit) {
       sTimer timer;
       // get timer settings
       NVstore.getTimerInfo(timerID, timer);
       // and add info to map if enabled
-      createMap(timer, timerMap, timerIDs);
-      // if(timer.enabled) {
-      //   // create linear minute of day values for start & stop
-      //   // note that if stop < start, that is treated as a timer that rolls over midnight
-      //   int timestart = timer.start.hour * 60 + timer.start.min;  // linear minute of day
-      //   int timestop = timer.stop.hour * 60 + timer.stop.min;
-      //   for(int dayMinute = 0; dayMinute < maxPoints; dayMinute++) {
-      //     for(int day = 0x01; day != 0x80; day <<= 1) {
-      //       if(timer.enabled & day || timer.enabled & 0x80) {  // specific or everyday
-      //         uint16_t activeday = day;  // may also hold non repeat flag later
-      //         if(!timer.repeat) {
-      //           // flag timers that should get cancelled
-      //           activeday |= (activeday << 8);  // combine one shot status in MS byte
-      //         }
-      //         if(timestop > timestart) {
-      //           // treat normal start < stop times (within same day)
-      //           if((dayMinute >= timestart) && (dayMinute < timestop)) {
-      //             timerMap[dayMinute] |= activeday;
-      //             timerIDs[dayMinute] |= timerBit;
-      //           }
-      //         }
-      //         else {  
-      //           // time straddles a day, start > stop, special treatment required
-      //           if(dayMinute >= timestart) {  
-      //             // true from start until midnight
-      //             timerMap[dayMinute] |= activeday;
-      //             timerIDs[dayMinute] |= timerBit;
-      //           }
-      //           if(dayMinute < timestop) {
-      //             // after midnight, before stop time, i.e. next day
-      //             // adjust for next day, taking care to wrap week
-      //             if(day & 0x40)      // last day of week?
-      //               activeday >>= 6;  // roll back to start of week
-      //             else 
-      //               activeday <<= 1;  // next day
-      //             timerMap[dayMinute] |= activeday; 
-      //             timerIDs[dayMinute] |= timerBit;
-      //           } 
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
+      createMap(timer, pTimerMap, pTimerIDs);
     }
   }
 }
@@ -97,9 +71,8 @@ CTimerManager::createMap(int timerMask, uint16_t timerMap[24*60], uint16_t timer
 // create a timer map, based only upon the supplied timer info
 // the other form of createMap uses the NV stored timer info
 void 
-CTimerManager::createMap(sTimer& timer, uint16_t timerMap[24*60], uint16_t timerIDs[24*60])
+CTimerManager::createMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pTimerIDs)
 {
-  int maxPoints = 24*60;
   int timerBit = 0x0001 << timer.timerID;
 
   if(timer.enabled) {
@@ -107,10 +80,12 @@ CTimerManager::createMap(sTimer& timer, uint16_t timerMap[24*60], uint16_t timer
     // note that if stop < start, that is treated as a timer that rolls over midnight
     int timestart = timer.start.hour * 60 + timer.start.min;  // linear minute of day
     int timestop = timer.stop.hour * 60 + timer.stop.min;
-    for(int dayMinute = 0; dayMinute < maxPoints; dayMinute++) {
-      for(int day = 0x01; day != 0x80; day <<= 1) {
-        if(timer.enabled & day || timer.enabled & 0x80) {  // specific or everyday
-          uint16_t activeday = day;  // may also hold non repeat flag later
+    for(int dayMinute = 0; dayMinute < _dayMinutes; dayMinute++) {
+      for(int dow = 0; dow < 7; dow++) {
+        int dayBit = 0x01 << dow;
+        if(timer.enabled & dayBit || timer.enabled & 0x80) {  // specific or everyday
+          uint16_t activeday = dayBit;  // may also hold non repeat flag later
+          uint8_t recordTimer = (timer.timerID + 1) | (timer.repeat ? 0x80 : 0x00);
           if(!timer.repeat) {
             // flag timers that should get cancelled
             activeday |= (activeday << 8);  // combine one shot status in MS byte
@@ -118,26 +93,49 @@ CTimerManager::createMap(sTimer& timer, uint16_t timerMap[24*60], uint16_t timer
           if(timestop > timestart) {
             // treat normal start < stop times (within same day)
             if((dayMinute >= timestart) && (dayMinute < timestop)) {
-              timerMap[dayMinute] |= activeday;
-              timerIDs[dayMinute] |= timerBit;
+              if(pTimerMap) {
+                pTimerMap[dayMinute] |= activeday;
+                if(pTimerIDs) 
+                  pTimerIDs[dayMinute] |= timerBit;
+              }
+              else {
+                weekTimerIDs[dow][dayMinute] = recordTimer;
+              }
             }
           }
           else {  
             // time straddles a day, start > stop, special treatment required
             if(dayMinute >= timestart) {  
               // true from start until midnight
-              timerMap[dayMinute] |= activeday;
-              timerIDs[dayMinute] |= timerBit;
+              if(pTimerMap) {
+                pTimerMap[dayMinute] |= activeday;
+                if(pTimerIDs) 
+                  pTimerIDs[dayMinute] |= timerBit;
+              }
+              else {
+                weekTimerIDs[dow][dayMinute] = recordTimer;
+              }
             }
             if(dayMinute < timestop) {
               // after midnight, before stop time, i.e. next day
               // adjust for next day, taking care to wrap week
-              if(day & 0x40)      // last day of week?
+              if(dow == 6) {     // last day of week?
                 activeday >>= 6;  // roll back to start of week
-              else 
+                if(pTimerMap == NULL) {
+                  weekTimerIDs[0][dayMinute] = recordTimer;
+                }
+              }
+              else {
                 activeday <<= 1;  // next day
-              timerMap[dayMinute] |= activeday; 
-              timerIDs[dayMinute] |= timerBit;
+                if(pTimerMap == NULL) {
+                  weekTimerIDs[dow+1][dayMinute] = recordTimer;
+                }
+              }
+              if(pTimerMap) {
+                pTimerMap[dayMinute] |= activeday; 
+                if(pTimerIDs)
+                  pTimerIDs[dayMinute] |= timerBit;
+              }
             } 
           }
         }
@@ -146,17 +144,16 @@ CTimerManager::createMap(sTimer& timer, uint16_t timerMap[24*60], uint16_t timer
   }
 }
 
-void 
-CTimerManager::condenseMap(uint16_t timerMap[24*60], int factor)
-{
-  int maxPoints = 24*60;
 
+void 
+CTimerManager::condenseMap(uint16_t timerMap[_dayMinutes], int factor)
+{
   int opIndex = 0;
-  for(int dayMinute = 0; dayMinute < maxPoints; ) {
+  for(int dayMinute = 0; dayMinute < _dayMinutes; ) {
     uint16_t condense = 0;
     for(int subInterval = 0; subInterval < factor; subInterval++) {
       condense |= timerMap[dayMinute++];
-      if(dayMinute == maxPoints) {
+      if(dayMinute == _dayMinutes) {
         break;
       }
     }
@@ -164,23 +161,23 @@ CTimerManager::condenseMap(uint16_t timerMap[24*60], int factor)
   }
 }
 
-uint16_t otherTimers[24*60];
-uint16_t selectedTimer[24*60];
-uint16_t timerIDs[24*60];
+uint16_t otherTimers[CTimerManager::_dayMinutes];
+uint16_t selectedTimer[CTimerManager::_dayMinutes];
+uint16_t timerIDs[CTimerManager::_dayMinutes];
+
 
 int  
 CTimerManager::conflictTest(sTimer& timerInfo)
 {
-//  int timerID = timerInfo.timerID; 
   int selectedMask = 0x0001 << timerInfo.timerID;  // bit mask for timer we are testing
   int othersMask = 0x3fff & ~selectedMask;
 
   memset(selectedTimer, 0, sizeof(selectedTimer));
 
-  createMap(timerInfo, selectedTimer, timerIDs);  // create a map from the supplied timer info (under test)
+  createMap(timerInfo, selectedTimer);            // create a usage map from the supplied timer info (under test)
   createMap(othersMask, otherTimers, timerIDs);   // create a map for all other timers, and get their unique IDs
 
-  for(int i=0; i< 24*60; i++) {
+  for(int i=0; i< _dayMinutes; i++) {
     if(otherTimers[i] & selectedTimer[i]) {  // both have the same day bit set - CONFLICT!
       uint16_t timerBit = timerIDs[i];
       int ID = 0;
@@ -193,3 +190,108 @@ CTimerManager::conflictTest(sTimer& timerInfo)
   }
   return 0; // no conflicts :-)
  }
+
+void
+CTimerManager::condenseMap(uint8_t timerMap[7][120])
+{
+  for(int dow = 0; dow < 7; dow++) {
+    int opIndex = 0;
+    for(int dayMinute = 0; dayMinute < _dayMinutes; ) {
+      uint8_t condense = 0;
+      for(int subInterval = 0; subInterval < 12; subInterval++, dayMinute++) {
+        if(!condense)
+          condense = weekTimerIDs[dow][dayMinute];
+      }
+      timerMap[dow][opIndex++] = condense;
+    }
+  }
+}
+
+int  
+CTimerManager::manageTime(int _hour, int _minute, int _dow)
+{
+  const BTCDateTime& currentTime = Clock.get();
+  int hour = currentTime.hour();
+  int minute = currentTime.minute();
+  int dow = currentTime.dayOfTheWeek();
+
+  int retval = 0;
+  int dayMinute = (hour * 60) + minute;
+  int lookup = weekTimerIDs[dow][dayMinute];
+  int newID = lookup & 0x0f;
+  if(activeTimer != newID) {
+    if(newID) {
+      requestOn();
+      activeDow = dow;   // dow when timer interval started
+      retval = 1;
+    }
+    else {
+      requestOff();
+      // delete one shot timer - note that this may require ticking off each day as they appear
+      if((lookup & 0x80) == 0) {  // non repeating timer
+        sTimer timer;
+        // get timer settings
+        NVstore.getTimerInfo(activeTimer-1, timer);
+        if(timer.enabled & 0x80)
+          timer.enabled = 0;   // ouright cancel anyday timer
+        else 
+          timer.enabled &= ~(0x01 << activeDow);  // cancel specific day that started the timer
+        NVstore.setTimerInfo(activeTimer-1, timer);
+        NVstore.save();
+        createMap();
+      }
+      retval = 2;
+    }
+    activeTimer = newID;
+  }
+  findNextTimer(hour, minute, dow);
+  return retval;
+}
+
+int  
+CTimerManager::findNextTimer(int hour, int minute, int dow)
+{
+  int dayMinute = hour*60 + minute;
+
+  int limit = 24*60*7;  
+  while(limit--) {
+    if(weekTimerIDs[dow][dayMinute] & 0x0f) {
+      nextTimer = weekTimerIDs[dow][dayMinute];
+      nextStart = dow*_dayMinutes + dayMinute;
+      return nextTimer;
+    }
+    dayMinute++;
+    if(dayMinute == _dayMinutes) {
+      dayMinute = 0;
+      dow++;
+      ROLLUPPERLIMIT(dow, 6, 0);
+    }
+  }
+  nextTimer = 0;
+  return 0;
+}
+
+int 
+CTimerManager::getNextTimer()
+{
+  return nextTimer;
+}
+
+void
+CTimerManager::getTimer(int idx, sTimer& timerInfo)
+{
+  NVstore.getTimerInfo(idx, timerInfo);
+}
+
+int 
+CTimerManager::setTimer(sTimer& timerInfo)
+{
+  if(!conflictTest(timerInfo)) {
+    NVstore.setTimerInfo(timerInfo.timerID, timerInfo);
+    NVstore.save();
+    createMap();
+    manageTime(0,0,0);
+    return 1;
+  }
+  return 0;
+}

@@ -40,9 +40,8 @@ class CClock {
 #endif
   unsigned long _nextRTCfetch;
   BTCDateTime _currentTime;
+  int _prevMinute;
 
-  void _checkTimers();
-  void _checkTimer(int timer, const DateTime& now);
 public:
   // constructors for ONE of the RTClib supported RTC chips
 #if RTC_USE_DS3231 == 1

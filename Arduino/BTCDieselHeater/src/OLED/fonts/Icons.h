@@ -92,4 +92,10 @@ extern const unsigned char TargetIcon [];
 extern const unsigned char repeatIcon [];
 extern const unsigned char timerID1Icon [];
 extern const unsigned char timerID2Icon [];
+extern const unsigned char timerIcon [];
+extern const unsigned char largeTimerIcon [];
+extern const uint8_t verticalRepeatIcon [];
+// Bitmap sizes for verticalRepeat
+const uint8_t verticalRepeatWidthPixels = 6;
+const uint8_t verticalRepeatHeightPixels = 15;
 

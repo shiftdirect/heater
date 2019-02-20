@@ -9,6 +9,7 @@
 #include "fonts/Arial.h"
 #include "fonts/Icons.h"
 #include "fonts/MiniFont.h"
+#include "../RTC/TimerManager.h"
 
 
 #define MINIFONT miniFontInfo
@@ -20,7 +21,7 @@
 #define X_BT_ICON      10
 #define Y_BT_ICON       0
 #define X_TIMER1_ICON  69
-#define X_TIMER2_ICON  85
+#define X_TIMER2_ICON  83
 #define Y_TIMER_ICON    0
 #define X_CLOCK        52  
 #define Y_CLOCK         0
@@ -177,32 +178,22 @@ CScreenHeader::showBatteryIcon(float voltage)
 int
 CScreenHeader::showTimers()
 {
-  sTimer timerInfo1;
-  sTimer timerInfo2;
+  int nextTimer = CTimerManager::getNextTimer();
+  if(nextTimer) {
+    int xPos = X_TIMER2_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
+    _display.drawBitmap(xPos, Y_TIMER_ICON, largeTimerIcon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
+    if(nextTimer & 0x80) 
+      _display.drawBitmap(xPos-3, Y_TIMER_ICON, verticalRepeatIcon, verticalRepeatWidthPixels, verticalRepeatHeightPixels, WHITE);
 
-  NVstore.getTimerInfo(0, timerInfo1);
-  NVstore.getTimerInfo(1, timerInfo2);
-
-  int drawn = 0;
-  int xPos = X_TIMER2_ICON;   // initially assume a single timer, locate to right of screen
-
-  if(timerInfo1.enabled) {
-    drawn++;
-    if(timerInfo2.enabled)    // check if other timer is also enabled
-      xPos = X_TIMER1_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
-    _display.drawBitmap(xPos, Y_TIMER_ICON, timerID1Icon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
-    if(timerInfo1.repeat) 
-      _display.drawBitmap(xPos, Y_TIMER_ICON+1, repeatIcon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
+    CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
+    if((nextTimer & 0x0f) >= 10) 
+      _display.setCursor(xPos+4, Y_TIMER_ICON+8);
+    else
+      _display.setCursor(xPos+6, Y_TIMER_ICON+8);
+    _display.print(nextTimer & 0x0f);
+    return 1;
   }
-  xPos = X_TIMER2_ICON;        // logically the second icon attempt is always to the right!
-  if(timerInfo2.enabled) {     
-    drawn++;
-    _display.drawBitmap(xPos, Y_TIMER_ICON, timerID2Icon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
-    if(timerInfo2.repeat) 
-      _display.drawBitmap(xPos, Y_TIMER_ICON+1, repeatIcon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
-  }
-
-  return drawn;
+  return 0;
 }
 
 
