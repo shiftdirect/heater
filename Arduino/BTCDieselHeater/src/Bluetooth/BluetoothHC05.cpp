@@ -122,7 +122,29 @@ CBluetoothHC05::begin()
     else {
       DebugPort.println("OK");
     }
+    DebugPort.print("  Lowering power consumption...");
+    if(!ATCommand("AT+IPSCAN=1024,1,1024,1\r\n")) {
+      DebugPort.println("FAILED");
+    }
+    else {
+      DebugPort.println("OK");
+    }
+/*
+    DebugPort.print("  Lowering power consumption...");
+    if(!ATCommand("AT+SNIFF=40,20,1,8\r\n")) {
+      DebugPort.println("FAILED");
+    }
+    else {
+      DebugPort.println("OK");
+    }
 
+    DebugPort.print("  Lowering power consumption...");
+    if(!ATCommand("AT+ENSNIFF=0002,72,0A3C7F\r\n")) {
+      DebugPort.println("FAILED");
+    }
+    else {
+      DebugPort.println("OK");
+    }*/
     openSerial(9600); 
 
     // leave HC-05 command mode, return to data mode

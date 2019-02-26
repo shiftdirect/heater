@@ -29,6 +29,8 @@
 #include "esp_system.h"
 #include <Preferences.h>
 
+#define USE_AP  
+
 // function to control the behaviour upon reboot if no wifi manager credentials exist
 // or connection fails
 void prepBootIntoConfigPortal(bool state);
@@ -115,6 +117,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     DebugPort.print("Now promoting to STA+AP mode"); 
     retval = true;
   }
+#ifdef USE_AP  
   // always setup an AP - for STA+AP mode we *must* use the same RF channel as STA
   DebugPort.println("Starting AP mode");
 //REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
@@ -125,6 +128,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   DebugPort.print("  AP SSID: "); DebugPort.println(WiFi.softAPgetHostname());
   DebugPort.print("  AP IP address: "); DebugPort.println(WiFi.softAPIP());
   DebugPort.print("WifiMode after initWifi = "); DebugPort.println(WiFi.getMode());
+  #endif
 
   // even though we may have started in STA mode - start the config portal if demanded via the NV flag
   if(shouldBootIntoConfigPortal()) {

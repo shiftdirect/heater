@@ -39,7 +39,7 @@
 // *** Presently ESP32 Bluetooth and WiFi do not co-exist well (ala don't work!) ***
 //     HC-05 works OK with WiFi
 //
-#define USE_WIFI      0
+#define USE_WIFI      1
 #define USE_OTA       1
 #define USE_WEBSERVER 1
 #define USE_SPIFFS    1  
