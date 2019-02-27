@@ -112,7 +112,10 @@ CDetailedScreen::show()
       showGlowPlug(power);
     }
 
-    showFan(getHeaterInfo().getFan_Actual());
+    if(_showTarget)
+      showFanV(getHeaterInfo().getFan_Voltage());
+    else
+      showFan(getHeaterInfo().getFan_Actual());
 
     showFuel(getHeaterInfo().getPump_Actual());
 
@@ -227,6 +230,7 @@ CDetailedScreen::keyHandler(uint8_t event)
       if(event & key_Centre) {  // short Centre press - show target
         _showTarget = millis() + 3500;
       }
+      _ScreenManager.reqUpdate();
     }
     _keyRepeatCount = -1;
   }
@@ -348,6 +352,21 @@ CDetailedScreen::showFan(int RPM)
   _display.setTextColor(WHITE);
   char msg[16];
   sprintf(msg, "%d", RPM);
+#ifdef MINI_FANLABEL  
+  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+#endif
+  _printMenuText(X_FAN_ICON + (W_FAN_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
+}
+
+void 
+CDetailedScreen::showFanV(float volts)
+{
+  // NOTE: fan rotation animation performed in animateOLED
+  _animateRPM = volts != 0;   // used by animation routine
+
+  _display.setTextColor(WHITE);
+  char msg[16];
+  sprintf(msg, "%.1fV", volts);
 #ifdef MINI_FANLABEL  
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif

@@ -30,6 +30,7 @@ class CScreenManager;
 
 class CSettingsScreen : public CPasswordScreen {
   int _animateCount;
+  int _nAdoptSettings;
 public:
   CSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

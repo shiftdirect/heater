@@ -159,6 +159,7 @@ TelnetSpy DebugPort;
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool bHasOEMController = false;
+bool bHasOEMLCDController = false;
 bool bHasHtrData = false;
 
 bool bReportBlueWireData = REPORT_RAW_DATA;
@@ -488,6 +489,7 @@ void loop()
         }
         if(CommState.is(CommStates::OEMCtrlRx)) {
           bHasOEMController = false;
+          bHasOEMLCDController = false;
           if(bReportRecyleEvents) 
             DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
         }
@@ -532,6 +534,7 @@ void loop()
         // Skip state machine immediately to BTC_Tx, sending our own settings.
         bHasHtrData = false;
         bHasOEMController = false;
+        bHasOEMLCDController = false;
         bool isBTCmaster = true;
         TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
         TxManage.Start(timenow);
@@ -593,6 +596,9 @@ void loop()
 
       // filled OEM controller frame
       OEMCtrlFrame.setTime();
+      // LCD controllers use 0x76 as first byte, rotary knobs use 0x78
+      bHasOEMLCDController = (OEMCtrlFrame.Controller.Byte0 != 0x78);
+
       CommState.set(CommStates::HeaterRx1);
       break;
 
@@ -1123,6 +1129,11 @@ const char* getBlueWireStatStr()
 bool hasOEMcontroller()
 {
   return bHasOEMController;
+}
+
+bool hasOEMLCDcontroller()
+{
+  return bHasOEMLCDController;
 }
 
 int getSmartError()

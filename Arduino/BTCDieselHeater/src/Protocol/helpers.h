@@ -50,6 +50,7 @@ extern void resetWebModerator();
 extern void resetJSONmoderator();
 extern const char* getBlueWireStatStr();
 extern bool hasOEMcontroller();
+extern bool hasOEMLCDcontroller();
 extern int getBlueWireStat();
 extern int getSmartError();
 

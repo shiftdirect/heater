@@ -43,6 +43,7 @@ static const int plugPowers[] = { 35, 40, 45, 80, 85, 90};
 CSettingsScreen::CSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _animateCount = 0;
+  _nAdoptSettings = 0;
 }
 
 
@@ -58,22 +59,35 @@ CSettingsScreen::show()
 
   if(!CPasswordScreen::show()) {
 
-    sprintf(str, "%.0fV", getHeaterInfo().getSystemVoltage());
-    _printMenuText(_display.width(), Line3, str, false, eRightJustify);
+    if(_nAdoptSettings == 1) {
+      _display.clearDisplay();
+      _display.writeFillRect(0, 0, 128, 20, WHITE);
+      _printInverted(_display.xCentre(),  2, "Adopt LCD controller", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 11, "settings?           ", true, eCentreJustify);
+      _printMenuText(_display.xCentre(), 35, "Press RIGHT to", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 45, "inherit and save", false, eCentreJustify);
+    }
+    else if(_nAdoptSettings == 2) {
+      _display.clearDisplay();
+      _printInverted(_display.xCentre(), 2, " Cannot inherit knob ", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 11, " controller settings ", true, eCentreJustify);
+      _printMenuText(_display.xCentre(), 35, "Press any key", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 45, "to abort", false, eCentreJustify);
+    }
+    else {
+      sprintf(str, "%.0fV", getHeaterInfo().getSystemVoltage());
+      _printMenuText(_display.width(), Line3, str, false, eRightJustify);
 
-    sprintf(str, "Min: %.1f/%d", getHeaterInfo().getPump_Min(), getHeaterInfo().getFan_Min());
-    _printMenuText(0, Line2, str);
-    // sprintf(str, "SN-%d", getHeaterInfo().getFan_Sensor());
-    // _printMenuText(_display.width(), yPos, str, false, eRightJustify);
+      sprintf(str, "Min: %.1f/%d", getHeaterInfo().getPump_Min(), getHeaterInfo().getFan_Min());
+      _printMenuText(0, Line2, str);
 
-    sprintf(str, "Max: %.1f/%d", getHeaterInfo().getPump_Max(), getHeaterInfo().getFan_Max());
-    _printMenuText(0, Line1, str);
-    // sprintf(str, "PF-%d", getHeaterInfo().getGlow_Drive());
-    // _printMenuText(_display.width(), yPos, str, false, eRightJustify);
-    // navigation line
-    int yPos = 53;
-    int xPos = _display.xCentre();
-    _printMenuText(xPos, yPos, "<-    enter    ->", true, eCentreJustify);
+      sprintf(str, "Max: %.1f/%d", getHeaterInfo().getPump_Max(), getHeaterInfo().getFan_Max());
+      _printMenuText(0, Line1, str);
+
+      int yPos = 53;
+      int xPos = _display.xCentre();
+      _printMenuText(xPos, yPos, "<-    enter    ->", true, eCentreJustify);
+    }
   }
   
   return true;
@@ -82,13 +96,16 @@ CSettingsScreen::show()
 bool 
 CSettingsScreen::animate()
 { 
+  if(CScreen::animate())
+    return true;
+
   char msg[16];
 
   if(isPasswordBusy()) {  // Password screen activity
     _printMenuText(Column, Line1, "    ");
     _printMenuText(Column, Line2, "    ");
   }
-  else {
+  else if(_nAdoptSettings == 0) {
     _animateCount++;
     ROLLUPPERLIMIT(_animateCount, 9, 0);
 
@@ -134,8 +151,23 @@ CSettingsScreen::keyHandler(uint8_t event)
 {
   if(CPasswordScreen::keyHandler(event)) {
     if(_isPasswordOK()) {
-      _ScreenManager.selectSettingsScreen(true);
+      if(_nAdoptSettings == 3) {
+        setPumpMin(getHeaterInfo().getPump_Min());
+        setPumpMax(getHeaterInfo().getPump_Max());
+        setFanMin(getHeaterInfo().getFan_Min());
+        setFanMax(getHeaterInfo().getFan_Max());
+        setFanSensor(getHeaterInfo().getFan_Sensor());
+        setSystemVoltage(getHeaterInfo().getSystemVoltage());
+        saveNV();
+        _showStoringMessage();
+        _nAdoptSettings = 0;
+      }
+      else {
+        _ScreenManager.selectSettingsScreen(true);
+      }
     }
+    if(!isPasswordBusy())
+      _nAdoptSettings = 0;
   }
 
   else {
@@ -143,19 +175,47 @@ CSettingsScreen::keyHandler(uint8_t event)
     if(event & keyPressed) {
       // press LEFT 
       if(event & key_Left) {
-        _ScreenManager.prevScreen(); 
+        if(_nAdoptSettings == 0)
+          _ScreenManager.prevScreen(); 
+        _nAdoptSettings = 0;
       }
       // press RIGHT 
       if(event & key_Right) {
-        _ScreenManager.nextScreen(); 
+        if(_nAdoptSettings == 1) {
+          _nAdoptSettings = 3;
+          _getPassword();
+        }
+        else {
+          if(_nAdoptSettings == 0)
+            _ScreenManager.nextScreen(); 
+          _nAdoptSettings = 0;
+        }
       }
       // press UP 
       if(event & (key_Up | key_Centre)) {
-        if(hasOEMcontroller())
-          _reqOEMWarning();
-        else {
-          _getPassword();
+        if(_nAdoptSettings == 0) {
+          if(hasOEMcontroller()) {
+            if(event & key_Centre)
+              _reqOEMWarning();
+            else {
+              if(hasOEMLCDcontroller()) {
+                _nAdoptSettings = 1;
+              }
+              else {
+                _nAdoptSettings = 2;
+              }
+            }
+          }
+          else {
+            _getPassword();
+          }
         }
+        else {
+          _nAdoptSettings = 0;
+        }
+      }
+      if(event & key_Down) {
+        _nAdoptSettings = 0;
       }
     }
   }
