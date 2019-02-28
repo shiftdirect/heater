@@ -61,16 +61,17 @@ CSettingsScreen::show()
 
     if(_nAdoptSettings == 1) {
       _display.clearDisplay();
-      _display.writeFillRect(0, 0, 128, 20, WHITE);
-      _printInverted(_display.xCentre(),  2, "Adopt LCD controller", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 11, "settings?           ", true, eCentreJustify);
+      _display.writeFillRect(0, 0, 128, 24, WHITE);
+      _printInverted(_display.xCentre(),  4, "Adopt LCD controller", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 13, "settings?           ", true, eCentreJustify);
       _printMenuText(_display.xCentre(), 35, "Press RIGHT to", false, eCentreJustify);
       _printMenuText(_display.xCentre(), 45, "inherit and save", false, eCentreJustify);
     }
     else if(_nAdoptSettings == 2) {
       _display.clearDisplay();
-      _printInverted(_display.xCentre(), 2, " Cannot inherit knob ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 11, " controller settings ", true, eCentreJustify);
+      _display.writeFillRect(0, 0, 128, 24, WHITE);
+      _printInverted(_display.xCentre(), 4, " Cannot inherit knob ", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 13, " controller settings ", true, eCentreJustify);
       _printMenuText(_display.xCentre(), 35, "Press any key", false, eCentreJustify);
       _printMenuText(_display.xCentre(), 45, "to abort", false, eCentreJustify);
     }

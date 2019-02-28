@@ -181,9 +181,20 @@ CScreenManager::checkUpdate()
   if(_DimTime) {
     long tDelta = millis() - _DimTime;
     if(tDelta > 0) {
+      // time to dim the display
 //      if(NVstore.getDimTime())
         _pDisplay->dim(true);
       _DimTime = 0;
+
+      // fall back to main menu 
+      selectTimerScreen(false);
+      selectSetTimeScreen(false);
+      selectSettingsScreen(false);
+      // sticky screens are Detailed Control, Basic Control, or Clock.
+      // otherwise return to Basic Control screen
+      if(_currentScreen > 2) {
+        _currentScreen = 1;
+      }
     }
   }
 
