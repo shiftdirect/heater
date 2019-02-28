@@ -38,8 +38,10 @@ protected:
   void _getPassword();
   bool _isPasswordOK() { return _bPasswordOK; };
   void _showStoringMessage();
+  void _initUI();
 public:
   CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr);
+  void onSelect();
   bool show();
   bool keyHandler(uint8_t event);
   bool animate();

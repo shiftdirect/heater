@@ -42,7 +42,8 @@ class CScreenManager {
   bool _bSetTime;
   unsigned long _DimTime;
   bool _bReqUpdate;
-  void _switchScreen();
+  void _enterScreen();
+  void _leaveScreen();
   CRebootScreen* _pRebootScreen;
 public:
   CScreenManager();

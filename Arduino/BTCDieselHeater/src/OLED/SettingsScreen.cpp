@@ -42,10 +42,24 @@ static const int plugPowers[] = { 35, 40, 45, 80, 85, 90};
 
 CSettingsScreen::CSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
+  _initUI();
+}
+
+void 
+CSettingsScreen::onSelect()
+{
+  // ensure standard entry to screen - especially after a dimming timeout
+  CPasswordScreen::onSelect();
+  _initUI();
+}
+
+void 
+CSettingsScreen::_initUI()
+{
+  // ensure standard entry to screen - especially after a dimming timeout
   _animateCount = 0;
   _nAdoptSettings = 0;
 }
-
 
 bool 
 CSettingsScreen::show()

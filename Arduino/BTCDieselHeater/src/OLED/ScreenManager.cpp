@@ -172,7 +172,7 @@ CScreenManager::begin(bool bNoClock)
 	_currentScreen = 1;   // basic control screen
 #endif
 
-  _switchScreen();
+  _enterScreen();
 }
 
 bool 
@@ -186,6 +186,7 @@ CScreenManager::checkUpdate()
         _pDisplay->dim(true);
       _DimTime = 0;
 
+      _leaveScreen();
       // fall back to main menu 
       selectTimerScreen(false);
       selectSetTimeScreen(false);
@@ -195,6 +196,7 @@ CScreenManager::checkUpdate()
       if(_currentScreen > 2) {
         _currentScreen = 1;
       }
+      _enterScreen();
     }
   }
 
@@ -253,7 +255,7 @@ CScreenManager::refresh()
 }
 
 void 
-CScreenManager::_switchScreen()
+CScreenManager::_enterScreen()
 {
   if(_timerScreen >= 0)        _TimerScreens[_timerScreen]->onSelect();
   else if(_settingScreen >= 0) _SettingsScreens[_settingScreen]->onSelect();
@@ -262,9 +264,19 @@ CScreenManager::_switchScreen()
   reqUpdate();
 }
 
+void
+CScreenManager::_leaveScreen()
+{
+  if(_timerScreen >= 0)        _TimerScreens[_timerScreen]->onExit();
+  else if(_settingScreen >= 0) _SettingsScreens[_settingScreen]->onExit();
+  else if(_currentScreen >= 0) _Screens[_currentScreen]->onExit();
+}
+
 void 
 CScreenManager::nextScreen()
 {
+  _leaveScreen();
+
   if(_bSetTime) {
 
   }
@@ -280,12 +292,15 @@ CScreenManager::nextScreen()
     _currentScreen++;
     ROLLUPPERLIMIT(_currentScreen, _Screens.size()-1, 0);
   }
-  _switchScreen();
+
+  _enterScreen();
 }
 
 void 
 CScreenManager::prevScreen()
 {
+  _leaveScreen();
+
   if(_bSetTime) {
   }
   else if(_timerScreen >=0) {
@@ -300,7 +315,7 @@ CScreenManager::prevScreen()
     _currentScreen--;
     ROLLLOWERLIMIT(_currentScreen, 0, _Screens.size()-1);
   }
-  _switchScreen();
+  _enterScreen();
 }
 
 void 
@@ -325,28 +340,31 @@ CScreenManager::keyHandler(uint8_t event)
 void 
 CScreenManager::selectTimerScreen(bool show)
 {
+  _leaveScreen();
   _timerScreen = show ? 0 : -1;
   _settingScreen = -1;
   _bSetTime = false;
-  _switchScreen();
+  _enterScreen();
 }
 
 void 
 CScreenManager::selectSettingsScreen(bool show)
 {
+  _leaveScreen();
   _settingScreen = show ? 0 : -1;
   _timerScreen = -1;
   _bSetTime = false;
-  _switchScreen();
+  _enterScreen();
 }
 
 void 
 CScreenManager::selectSetTimeScreen(bool show)
 {
+  _leaveScreen();
   _bSetTime = show;
   _settingScreen = -1;
   _timerScreen = -1;
-  _switchScreen();
+  _enterScreen();
 }
 
 void 

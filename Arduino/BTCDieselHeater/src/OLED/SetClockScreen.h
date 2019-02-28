@@ -36,10 +36,12 @@ class CSetClockScreen : public CScreenHeader {
   BTCDateTime working;
   unsigned long _SaveTime;
 
-  void adjTimeDate(int dir);
+  void _adjTimeDate(int dir);
+  void _initUI();
 
 public:
   CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr);
+  void onSelect();
   bool show();
   void showTime(int);
   bool keyHandler(uint8_t event);

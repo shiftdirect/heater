@@ -33,9 +33,12 @@ class CPrimingScreen : public CScreenHeader {
   unsigned long _PrimeCheck;
   int _rowSel;
   int _colSel;
-  void stopPump();
+  void _stopPump();
+  void _initUI();
 public:
   CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr);
+  void onSelect();
+  void onExit();
   bool show();
   bool keyHandler(uint8_t event);
   bool animate() { return CScreen::animate(); };

@@ -37,17 +37,25 @@
 
 CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
-  _rowSel = 0;
-  _colSel = 0;
+  _initUI();
 }
 
 void
 CFuelMixtureScreen::onSelect()
 {
+  CPasswordScreen::onSelect();
+  _initUI();
   adjPump[0] = getHeaterInfo().getPump_Min();
   adjPump[1] = getHeaterInfo().getPump_Max();
   adjFan[0] = getHeaterInfo().getFan_Min();
   adjFan[1] = getHeaterInfo().getFan_Max();
+}
+
+void
+CFuelMixtureScreen::_initUI()
+{
+  _rowSel = 0;
+  _colSel = 0;
 }
 
 bool 

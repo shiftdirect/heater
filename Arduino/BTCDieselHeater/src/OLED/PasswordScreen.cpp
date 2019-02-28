@@ -37,6 +37,18 @@
 
 CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
+  _initUI();
+}
+
+void
+CPasswordScreen::onSelect()
+{
+  _initUI();
+}
+
+void
+CPasswordScreen::_initUI()
+{
   _bGetPassword = false;
   _bPasswordOK = false;
   _PWcol = 0;
@@ -44,7 +56,6 @@ CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : C
     _PWdig[i] = -1;
   _SaveTime = 0;
 }
-
 
 bool 
 CPasswordScreen::show()

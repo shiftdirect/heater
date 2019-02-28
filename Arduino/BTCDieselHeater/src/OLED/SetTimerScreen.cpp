@@ -38,16 +38,23 @@ const char* briefDOW[] = { "S", "M", "T", "W", "T", "F", "S" };
 
 CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
 {
-  _rowSel = 0;
-  _colSel = 0;
-  _SaveTime = 0;
+  _initUI();
   _instance = instance;
 }
 
 void 
 CSetTimerScreen::onSelect()
 {
+  _initUI();
   NVstore.getTimerInfo(_instance, _timer);
+}
+
+void 
+CSetTimerScreen::_initUI()
+{
+  _rowSel = 0;
+  _colSel = 0;
+  _SaveTime = 0;
 }
 
 bool 
@@ -207,8 +214,8 @@ CSetTimerScreen::keyHandler(uint8_t event)
     bHeld = true;
     if(_rowSel == 1) {
       if(_colSel < 4) {
-        if(event & key_Left) adjust(-1);
-        if(event & key_Right) adjust(+1);
+        if(event & key_Left) _adjust(-1);
+        if(event & key_Right) _adjust(+1);
       }
       else if(_colSel == 4) {
         if(event & key_Right) {
@@ -233,7 +240,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
       if(event & key_Left) {
         switch(_rowSel) {
           case 1:
-            adjust(-1);
+            _adjust(-1);
             break;
         }
       }
@@ -257,7 +264,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
         switch(_rowSel) {
           case 1:
             // adjust selected item
-            adjust(+1);
+            _adjust(+1);
             break;
         }
       }
@@ -285,7 +292,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
 
 
 void 
-CSetTimerScreen::adjust(int dir)
+CSetTimerScreen::_adjust(int dir)
 {
   int days;
   int maskDOW = 0x01 << _colSel;  // if doing Day of Week - (_rowSel == 2)  
