@@ -38,8 +38,9 @@ class CSetTimerScreen : public CScreenHeader {
   unsigned long _ConflictTime;
   int _conflictID;
   sTimer _timerInfo;
-  void adjust(int dir);
+  void _adjust(int dir);
   void _printEnabledTimers();
+  void _initUI();
 
 public:
   CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);

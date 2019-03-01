@@ -42,19 +42,27 @@ static const int plugPowers[] = { 35, 40, 45, 80, 85, 90};
 
 CHeaterSettingsScreen::CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
-  _rowSel = 0;
+  _initUI();
   _fanSensor = 1;
   _glowDrive = 5;
   _sysVoltage = 12;
-  _animateCount = 0;
 }
 
 void 
 CHeaterSettingsScreen::onSelect()
 {
+  CPasswordScreen::onSelect();
+  _initUI();
   _fanSensor = getHeaterInfo().getFan_Sensor();
   _glowDrive = getHeaterInfo().getGlow_Drive();
   _sysVoltage = int(getHeaterInfo().getSystemVoltage());
+}
+
+void
+CHeaterSettingsScreen::_initUI()
+{
+  _rowSel = 0;
+  _animateCount = 0;
 }
 
 bool 

@@ -30,11 +30,13 @@ class CScreenManager;
 
 class CSettingsScreen : public CPasswordScreen {
   int _animateCount;
+  void _initUI();
 public:
   CSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool keyHandler(uint8_t event);
   bool animate();
+  void onSelect();
 };
 
 #endif

@@ -23,9 +23,6 @@
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Wifi/BTCWifi.h"
-// #include "fonts/Tahoma8.h"
-// #include "fonts/FranklinGothic.h"
-// #include "fonts/Arial.h"
 #include "../Utility/NVstorage.h"
 
 ///////////////////////////////////////////////////////////////////////////
@@ -41,10 +38,21 @@
 
 CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
+  _initUI();
+}
+
+void
+CWiFiScreen::onSelect()
+{
+  _initUI();
+}
+
+void
+CWiFiScreen::_initUI()
+{
   _rowSel = 0;
   _bShowMAC = false;
 }
-
 
 bool 
 CWiFiScreen::show()

@@ -49,6 +49,7 @@ public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 
   virtual void onSelect();
+  virtual void onExit();
   virtual bool animate();
   virtual bool show();
   virtual bool keyHandler(uint8_t event) {  return false; };

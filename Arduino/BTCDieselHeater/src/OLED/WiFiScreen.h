@@ -31,12 +31,14 @@ class CScreenManager;
 class CWiFiScreen : public CScreenHeader {
 public:
   CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr);
+  void onSelect();
   bool show();
   bool keyHandler(uint8_t event);
 private:
   int  _rowSel;
   int  _repeatCount;
   bool _bShowMAC;
+  void _initUI();
 };
 
 #endif

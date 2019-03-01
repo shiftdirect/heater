@@ -34,6 +34,7 @@ class CFuelMixtureScreen : public CPasswordScreen {
   int  _rowSel;
   int  _colSel;
   void _adjustSetting(int dir);
+  void _initUI();
 
 public:
   CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr);

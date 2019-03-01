@@ -36,6 +36,7 @@ class CHeaterSettingsScreen : public CPasswordScreen
   int _fanSensor;
   int _glowDrive;
   int _animateCount;
+  void _initUI();
 public:
   CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

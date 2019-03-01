@@ -42,9 +42,23 @@ static const int plugPowers[] = { 35, 40, 45, 80, 85, 90};
 
 CSettingsScreen::CSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
-  _animateCount = 0;
+  _initUI();
 }
 
+void 
+CSettingsScreen::onSelect()
+{
+  // ensure standard entry to screen - especially after a dimming timeout
+  CPasswordScreen::onSelect();
+  _initUI();
+}
+
+void 
+CSettingsScreen::_initUI()
+{
+  // ensure standard entry to screen - especially after a dimming timeout
+  _animateCount = 0;
+}
 
 bool 
 CSettingsScreen::show()
@@ -63,14 +77,10 @@ CSettingsScreen::show()
 
     sprintf(str, "Min: %.1f/%d", getHeaterInfo().getPump_Min(), getHeaterInfo().getFan_Min());
     _printMenuText(0, Line2, str);
-    // sprintf(str, "SN-%d", getHeaterInfo().getFan_Sensor());
-    // _printMenuText(_display.width(), yPos, str, false, eRightJustify);
 
     sprintf(str, "Max: %.1f/%d", getHeaterInfo().getPump_Max(), getHeaterInfo().getFan_Max());
     _printMenuText(0, Line1, str);
-    // sprintf(str, "PF-%d", getHeaterInfo().getGlow_Drive());
-    // _printMenuText(_display.width(), yPos, str, false, eRightJustify);
-    // navigation line
+
     int yPos = 53;
     int xPos = _display.xCentre();
     _printMenuText(xPos, yPos, "<-    enter    ->", true, eCentreJustify);
@@ -82,6 +92,9 @@ CSettingsScreen::show()
 bool 
 CSettingsScreen::animate()
 { 
+  if(CScreen::animate())
+    return true;
+
   char msg[16];
 
   if(isPasswordBusy()) {  // Password screen activity
@@ -151,8 +164,13 @@ CSettingsScreen::keyHandler(uint8_t event)
       }
       // press UP 
       if(event & (key_Up | key_Centre)) {
-        if(hasOEMcontroller())
-          _reqOEMWarning();
+        if(hasOEMcontroller()) {
+          if(event & key_Centre)
+            _reqOEMWarning();
+          else {
+            _ScreenManager.selectInheritScreen(true);
+          }
+        }
         else {
           _getPassword();
         }

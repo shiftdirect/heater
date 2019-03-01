@@ -37,6 +37,18 @@
 
 CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
+  _initUI();
+}
+
+void
+CSetClockScreen::onSelect()
+{
+  _initUI();
+}
+
+void
+CSetClockScreen::_initUI()
+{
   _rowSel = 0;
   _nextT = millis();
   _SaveTime = 0;
@@ -148,7 +160,7 @@ CSetClockScreen::keyHandler(uint8_t event)
         _ScreenManager.selectSetTimeScreen(false);
       }
       else {
-        adjTimeDate(-1);
+        _adjTimeDate(-1);
       }
     }
     // press RIGHT 
@@ -157,7 +169,7 @@ CSetClockScreen::keyHandler(uint8_t event)
         _ScreenManager.selectSetTimeScreen(false);
       }
       else {
-        adjTimeDate(+1);
+        _adjTimeDate(+1);
       }
     }
     // press UP 
@@ -179,11 +191,11 @@ CSetClockScreen::keyHandler(uint8_t event)
     if(_rowSel>=1) {
       // hold RIGHT 
       if(event & key_Right) {
-        adjTimeDate(+1);
+        _adjTimeDate(+1);
       }
       // hold LEFT
       if(event & key_Left) {
-        adjTimeDate(-1);
+        _adjTimeDate(-1);
       }
     }
   }
@@ -194,7 +206,7 @@ CSetClockScreen::keyHandler(uint8_t event)
 }
 
 void 
-CSetClockScreen::adjTimeDate(int dir)
+CSetClockScreen::_adjTimeDate(int dir)
 {
   int days;
   switch(_rowSel) {

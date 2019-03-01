@@ -45,6 +45,7 @@ class CDetailedScreen : public CScreenHeader
   void showBodyThermometer(int actual);
   void showGlowPlug(float power);
   void showFan(int RPM);
+  void showFanV(float volts);
   void showFuel(float rate);
   void showRunState(int state, int errstate);
 public:

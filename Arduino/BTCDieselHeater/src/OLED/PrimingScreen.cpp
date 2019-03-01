@@ -36,12 +36,31 @@
 
 CPrimingScreen::CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
+  _initUI();
+}
+
+void
+CPrimingScreen::onSelect()
+{
+  _stopPump();
+  _initUI();
+}
+
+void 
+CPrimingScreen::onExit()
+{
+  _stopPump();
+}
+
+
+void
+CPrimingScreen::_initUI()
+{
   _PrimeStop = 0;
   _PrimeCheck = 0;
   _rowSel = 0;
   _colSel = 0;
 }
-
 
 bool 
 CPrimingScreen::show()
@@ -92,12 +111,12 @@ CPrimingScreen::show()
       // recognise if heater has stopped pump, after an initial holdoff upon first starting
       long tDelta = millis() - _PrimeCheck;
       if(_PrimeCheck && tDelta > 0 && pumpHz < 0.1) {
-        stopPump();
+        _stopPump();
       }
       // test if time is up, stop priming if so
       tDelta = millis() - _PrimeStop;
       if(_PrimeStop && tDelta > 0) {
-        stopPump();
+        _stopPump();
       }
 
       if(_PrimeStop) {
@@ -191,7 +210,7 @@ CPrimingScreen::keyHandler(uint8_t event)
       _PrimeCheck = millis() + 3000;    // holdoff upon start before testing for heater shutting off pump
     }
     else {
-      stopPump();
+      _stopPump();
     }
 
     _ScreenManager.reqUpdate();
@@ -200,7 +219,7 @@ CPrimingScreen::keyHandler(uint8_t event)
 }
 
 void 
-CPrimingScreen::stopPump()
+CPrimingScreen::_stopPump()
 {
   reqPumpPrime(false);
   _PrimeCheck = 0;
