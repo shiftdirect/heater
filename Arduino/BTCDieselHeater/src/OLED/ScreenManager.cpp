@@ -10,6 +10,7 @@
 #include "RebootScreen.h"
 #include "HeaterSettingsScreen.h"
 #include "SettingsScreen.h"
+#include "InheritSettingsScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -101,7 +102,8 @@ CScreenManager::CScreenManager()
   _timerScreen = -1;
   _settingScreen = -1;
   _bReqUpdate = false;
-  _bSetTime = false;
+  _bSetTimeScreenActive = false;
+  _bInheritScreenActive = false;
   _DimTime = millis() + 60000;
   _pRebootScreen = NULL;
 }
@@ -165,6 +167,7 @@ CScreenManager::begin(bool bNoClock)
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 1)); // set timer 2
   _SettingsScreens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
   _SettingsScreens.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
+  _InheritScreen = new CInheritSettingsScreen(*_pDisplay, *this);   // inherit OEM settings
 
 #if RTC_USE_DS3231==0 && RTC_USE_DS1307==0 && RTC_USE_PCF8523==0
   _currentScreen = 6;   // bring up clock set screen first if using millis based RTC!
@@ -191,6 +194,7 @@ CScreenManager::checkUpdate()
       selectTimerScreen(false);
       selectSetTimeScreen(false);
       selectSettingsScreen(false);
+      selectInheritScreen(false);
       // sticky screens are Detailed Control, Basic Control, or Clock.
       // otherwise return to Basic Control screen
       if(_currentScreen > 2) {
@@ -207,8 +211,13 @@ CScreenManager::checkUpdate()
       return true;
     }
     else {
-      if(_bSetTime) {
+      if(_bSetTimeScreenActive) {
         _SetTimeScreen->show();
+        _bReqUpdate = false;
+        return true;
+      }
+      else if(_bInheritScreenActive) {
+        _InheritScreen->show();
         _bReqUpdate = false;
         return true;
       }
@@ -242,6 +251,8 @@ bool
 CScreenManager::animate()
 {
 	if(_settingScreen >= 0) return _SettingsScreens[_settingScreen]->animate();
+  if(_bSetTimeScreenActive) return _SetTimeScreen->animate();
+  if(_bInheritScreenActive) return _InheritScreen->animate();
 	if(_timerScreen >= 0)   return _TimerScreens[_timerScreen]->animate();
 	if(_currentScreen >= 0) return _Screens[_currentScreen]->animate();
 	return false;
@@ -257,7 +268,9 @@ CScreenManager::refresh()
 void 
 CScreenManager::_enterScreen()
 {
-  if(_timerScreen >= 0)        _TimerScreens[_timerScreen]->onSelect();
+  if(_bSetTimeScreenActive)   _SetTimeScreen->onSelect();
+  else if(_bInheritScreenActive) _InheritScreen->onSelect();
+  else if(_timerScreen >= 0)        _TimerScreens[_timerScreen]->onSelect();
   else if(_settingScreen >= 0) _SettingsScreens[_settingScreen]->onSelect();
   else if(_currentScreen >= 0) _Screens[_currentScreen]->onSelect();
 		
@@ -267,7 +280,9 @@ CScreenManager::_enterScreen()
 void
 CScreenManager::_leaveScreen()
 {
-  if(_timerScreen >= 0)        _TimerScreens[_timerScreen]->onExit();
+  if(_bSetTimeScreenActive)   _SetTimeScreen->onExit();
+  else if(_bInheritScreenActive) _InheritScreen->onExit();
+  else if(_timerScreen >= 0)        _TimerScreens[_timerScreen]->onExit();
   else if(_settingScreen >= 0) _SettingsScreens[_settingScreen]->onExit();
   else if(_currentScreen >= 0) _Screens[_currentScreen]->onExit();
 }
@@ -277,8 +292,9 @@ CScreenManager::nextScreen()
 {
   _leaveScreen();
 
-  if(_bSetTime) {
-
+  if(_bSetTimeScreenActive) {
+  }
+  else if(_bInheritScreenActive) {
   }
   else if(_timerScreen >= 0) {
     _timerScreen++;
@@ -301,7 +317,9 @@ CScreenManager::prevScreen()
 {
   _leaveScreen();
 
-  if(_bSetTime) {
+  if(_bSetTimeScreenActive) {
+  }
+  else if (_bInheritScreenActive) {
   }
   else if(_timerScreen >=0) {
     _timerScreen--;
@@ -330,7 +348,8 @@ CScreenManager::keyHandler(uint8_t event)
   _DimTime = (millis() + NVstore.getDimTime()) | 1;
 
   // call handler for active screen
-  if(_bSetTime)                _SetTimeScreen->keyHandler(event);
+  if(_bSetTimeScreenActive)    _SetTimeScreen->keyHandler(event);
+  else if(_bInheritScreenActive) _InheritScreen->keyHandler(event);
   else if(_settingScreen >= 0) _SettingsScreens[_settingScreen]->keyHandler(event);
   else if(_timerScreen >= 0)   _TimerScreens[_timerScreen]->keyHandler(event);
 	else if(_currentScreen >= 0) _Screens[_currentScreen]->keyHandler(event);
@@ -343,7 +362,8 @@ CScreenManager::selectTimerScreen(bool show)
   _leaveScreen();
   _timerScreen = show ? 0 : -1;
   _settingScreen = -1;
-  _bSetTime = false;
+  _bSetTimeScreenActive = false;
+  _bInheritScreenActive = false;
   _enterScreen();
 }
 
@@ -353,7 +373,8 @@ CScreenManager::selectSettingsScreen(bool show)
   _leaveScreen();
   _settingScreen = show ? 0 : -1;
   _timerScreen = -1;
-  _bSetTime = false;
+  _bSetTimeScreenActive = false;
+  _bInheritScreenActive = false;
   _enterScreen();
 }
 
@@ -361,9 +382,21 @@ void
 CScreenManager::selectSetTimeScreen(bool show)
 {
   _leaveScreen();
-  _bSetTime = show;
+  _bSetTimeScreenActive = show;
+  _bInheritScreenActive = false;
   _settingScreen = -1;
   _timerScreen = -1;
+  _enterScreen();
+}
+
+void 
+CScreenManager::selectInheritScreen(bool show)
+{
+  _leaveScreen();
+  _bInheritScreenActive = show;
+  _bSetTimeScreenActive = false;
+  _timerScreen = -1;
+  _settingScreen = -1;
   _enterScreen();
 }
 

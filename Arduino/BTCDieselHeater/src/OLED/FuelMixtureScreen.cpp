@@ -45,6 +45,7 @@ CFuelMixtureScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _initUI();
+  
   adjPump[0] = getHeaterInfo().getPump_Min();
   adjPump[1] = getHeaterInfo().getPump_Max();
   adjFan[0] = getHeaterInfo().getFan_Min();

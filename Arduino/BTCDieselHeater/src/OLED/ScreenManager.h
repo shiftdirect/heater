@@ -35,11 +35,13 @@ class CScreenManager {
   std::vector<CScreen*> _TimerScreens;
   std::vector<CScreen*> _SettingsScreens;
   CScreen* _SetTimeScreen;
+  CScreen* _InheritScreen;
   C128x64_OLED* _pDisplay;
   int _currentScreen;
   int _timerScreen;
   int _settingScreen;
-  bool _bSetTime;
+  bool _bSetTimeScreenActive;
+  bool _bInheritScreenActive;
   unsigned long _DimTime;
   bool _bReqUpdate;
   void _enterScreen();
@@ -60,6 +62,7 @@ public:
   void selectTimerScreen(bool show);
   void selectSetTimeScreen(bool show);
   void selectSettingsScreen(bool show);
+  void selectInheritScreen(bool show);
 };
 
 #endif // __SCREEN_MANAGER_H__
