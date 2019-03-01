@@ -31,21 +31,22 @@ class CScreen;
 class CRebootScreen;
 
 class CScreenManager {
-  std::vector<CScreen*> _Screens;
+  std::vector<CScreen*> _RootScreens;
   std::vector<CScreen*> _TimerScreens;
-  std::vector<CScreen*> _SettingsScreens;
+  std::vector<CScreen*> _TuningScreens;
   CScreen* _SetTimeScreen;
   CScreen* _InheritScreen;
   C128x64_OLED* _pDisplay;
-  int _currentScreen;
+  int _rootMenuScreen;
   int _timerScreen;
-  int _settingScreen;
+  int _tuningScreen;
   bool _bSetTimeScreenActive;
   bool _bInheritScreenActive;
   unsigned long _DimTime;
   bool _bReqUpdate;
   void _enterScreen();
   void _leaveScreen();
+  void _cancelBranchScreens();
   CRebootScreen* _pRebootScreen;
 public:
   CScreenManager();
