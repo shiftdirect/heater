@@ -89,6 +89,8 @@
 #include <Wire.h>
 #include "src/cfg/BTCConfig.h"
 #include "src/cfg/pins.h"
+#include "src/RTC/Timers.h"
+#include "src/RTC/Clock.h"
 #include "src/Wifi/BTCWebServer.h"
 #include "src/Wifi/BTCota.h"
 #include "src/Protocol/Protocol.h"
@@ -102,7 +104,6 @@
 #include "src/OLED/ScreenManager.h"
 #include "src/OLED/keypad.h"
 #include <DallasTemperature.h>
-#include "src/RTC/Clock.h"
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif

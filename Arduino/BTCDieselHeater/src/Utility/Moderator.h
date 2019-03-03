@@ -24,7 +24,20 @@
 
 #include <map>
 #include <ArduinoJSON.h>
+#include "../RTC/Timers.h"
 #include "DebugPort.h"
+
+class CTimerModerator {
+  sTimer Memory[14];
+  enum eType { eStart, eStop, eDays, eRpt, eTemp};
+  const char* _getName(eType type);
+  int _shouldSend(int channel, const sTimer& toSend);
+public:
+  CTimerModerator();
+  bool addJson(int channel, const sTimer& toSend, JsonObject& root);
+	void reset();
+};
+
 
 template <class T>
 class TModerator {

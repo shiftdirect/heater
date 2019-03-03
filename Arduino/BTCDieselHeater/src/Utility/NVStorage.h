@@ -22,6 +22,8 @@
 #ifndef __BTC_NV_STORAGE_H__
 #define __BTC_NV_STORAGE_H__
 
+#include "../RTC/Timers.h"   // for sTimer
+
 struct sHeater { 
   uint8_t   Pmin;
   uint8_t   Pmax;
@@ -59,60 +61,6 @@ struct sHeater {
   };
 };
 
-struct sHourMin {
-  int8_t hour;
-  int8_t min;
-  sHourMin() {
-    hour = 0;
-    min = 0;
-  };
-  sHourMin& operator=(const sHourMin& rhs) {
-    hour = rhs.hour;
-    min = rhs.min;
-  };
-};
-
-struct sTimer {
-  sHourMin start;      // start time
-  sHourMin stop;       // stop time
-  uint8_t enabled;     // timer enabled - each bit is a day of week flag
-  uint8_t repeat;      // repeating timer
-  uint8_t temperature;
-  uint8_t timerID;     // numeric ID
-  sTimer() {
-    enabled = 0;     
-    repeat = false;
-    temperature = 22;
-    timerID = 0;
-  };
-  sTimer& operator=(const sTimer& rhs) {
-    start = rhs.start;
-    stop = rhs.stop;
-    enabled = rhs.enabled;
-    repeat = rhs.repeat;
-    temperature = rhs.temperature;
-    timerID = rhs.timerID;
-  };
-  void init() {
-    start.hour = 0;
-    start.min = 0;
-    stop.hour = 0;
-    stop.min = 0;
-    enabled = 0;
-    repeat = 0;
-    temperature = 22;
-  };
-  bool valid() {
-    bool retval = true;
-    retval &= (start.hour >= 0 && start.hour < 24);
-    retval &= (start.min >= 0 && start.min < 60);
-    retval &= (stop.hour >= 0 && stop.hour < 24);
-    retval &= (stop.min >= 0 && stop.min < 60);
-    retval &= repeat <= 2;
-    retval &= (temperature >= 8 && temperature <= 35);
-    return retval;
-  };
-};
 
 // the actual data stored to NV memory
 struct sNVStore {

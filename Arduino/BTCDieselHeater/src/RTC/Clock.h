@@ -19,8 +19,8 @@
  * 
  */
 
-#ifndef __BTC_TIMERS_H__
-#define __BTC_TIMERS_H__
+#ifndef __BTC_CLOCK_H__
+#define __BTC_CLOCK_H__
 
 #include "BTCDateTime.h"
 #include "../cfg/BTCConfig.h"

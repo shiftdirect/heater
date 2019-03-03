@@ -25,62 +25,99 @@
 #include "BTCDateTime.h"
 
 
-void decodeTimerDays(int ID, const char* str)
+void decodeTimerDays(const char* ipStr)
 {
-  sTimer timer;
-  NVstore.getTimerInfo(ID, timer);
-  unsigned char days = 0;
-  if(strstr(str, "Next"))  {
-    days = 0x80;
-  }
-  else {
-    for(int i=0; i< 7; i++) {
-      int mask = 0x01 << i;
-      if(strstr(str, daysOfTheWeek[i]))  
-        days |= mask;
+  char dayInfo[32];
+  int timerIdx;
+  if(2 == sscanf(ipStr, "%d %31s", &timerIdx, dayInfo)) {
+    dayInfo[31] = 0;
+    timerIdx--;
+    if(timerIdx >= 0 && timerIdx < 14) {
+      sTimer timer;
+      NVstore.getTimerInfo(timerIdx, timer);
+      unsigned char days = 0;
+      if(strstr(dayInfo, "Next"))  {
+        days = 0x80;
+      }
+      else {
+        for(int i=0; i< 7; i++) {
+          int mask = 0x01 << i;
+          if(strstr(dayInfo, daysOfTheWeek[i]))  
+            days |= mask;
+        }
+      }
+      timer.enabled = days;
+      NVstore.setTimerInfo(timerIdx, timer);
     }
-  }
-  timer.enabled = days;
-  NVstore.setTimerInfo(ID, timer);
-}
-
-
-void decodeTimerTime(int ID, int stop, const char* str)
-{
-  sTimer timer;
-  NVstore.getTimerInfo(ID, timer);
-  int hour, minute;
-  if(2 == sscanf(str, "%d:%d", &hour, &minute)) {
-    if(stop) {
-      timer.stop.hour = hour;
-      timer.stop.min = minute;
-    }
-    else {
-      timer.start.hour = hour;
-      timer.start.min = minute;
-    }
-    NVstore.setTimerInfo(ID, timer);
   }
 }
 
 
-void decodeTimerRepeat(int ID, int state)
+void decodeTimerTime(int stop, const char* ipStr)
 {
-  sTimer timer;
-  NVstore.getTimerInfo(ID, timer);
-  timer.repeat = state;
-  NVstore.setTimerInfo(ID, timer);
+  int hour, min;
+  int timerIdx;
+  if(3 == sscanf(ipStr, "%d %d:%d", &timerIdx, &hour, &min)) {
+    timerIdx--;
+    if(timerIdx >= 0 && timerIdx < 14) {
+      sTimer timer;
+      NVstore.getTimerInfo(timerIdx, timer);
+      if(stop) {
+        timer.stop.hour = hour;
+        timer.stop.min = min;
+      }
+      else {
+        timer.start.hour = hour;
+        timer.start.min = min;
+      }
+      NVstore.setTimerInfo(timerIdx, timer);
+    }
+  }
+}
+
+void decodeTimerNumeric(int valID, const char* ipStr)
+{
+  int value;
+  int timerIdx;
+  if(2 == sscanf(ipStr, "%d %d", &timerIdx, &value)) {
+    timerIdx--;
+    if(timerIdx >= 0 && timerIdx < 14) {
+      sTimer timer;
+      NVstore.getTimerInfo(timerIdx, timer);
+      switch(valID) {
+        case 0: timer.repeat = value; break;
+        case 1: timer.temperature = value; break;
+      }
+      NVstore.setTimerInfo(timerIdx, timer);
+    }
+  }
+}
+
+void decodeTimerTemp(const char* ipStr)
+{
+  int degC;
+  int timerIdx;
+  if(2 == sscanf(ipStr, "%d %d", &timerIdx, &degC)) {
+    timerIdx--;
+    if(timerIdx >= 0 && timerIdx < 14) {
+      sTimer timer;
+      NVstore.getTimerInfo(timerIdx, timer);
+      timer.temperature = degC;
+      NVstore.setTimerInfo(timerIdx, timer);
+    }
+  }
 }
 
 
-const char* getTimerStr(int timer, int param)
+const char* getTimerJSONStr(int timer, int param)
 {
   sTimer timerInfo;
   // due to how ArduinoJSON builds the JSON string, we need to create and store each string individually here.
-  static char StartStr[2][8];
-  static char StopStr[2][8];
-  static char DayStr[2][32];
-  static char RptStr[2][2];
+  static char StartStr[10];
+  static char StopStr[10];
+  static char DayStr[32];
+  static char RptStr[8];
+  static char TmpStr[8];
 
   NVstore.getTimerInfo(timer, timerInfo);
   int i = 0;
@@ -88,34 +125,37 @@ const char* getTimerStr(int timer, int param)
 
   switch(param) {
     case 0:
-      sprintf(StartStr[timer], "%02d:%02d", timerInfo.start.hour, timerInfo.start.min);
-      return StartStr[timer];
+      sprintf(StartStr, "%d %02d:%02d", timer+1, timerInfo.start.hour, timerInfo.start.min);
+      return StartStr;
     case 1:
-      sprintf(StopStr[timer], "%02d:%02d", timerInfo.stop.hour, timerInfo.stop.min);
-      return StopStr[timer];
+      sprintf(StopStr, "%d %02d:%02d", timer+1, timerInfo.stop.hour, timerInfo.stop.min);
+      return StopStr;
     case 2:
       if(timerInfo.enabled == 0) {
-        strcpy(DayStr[timer], "None");
+        sprintf(DayStr, "%d None", timer+1);
       }
       else if(timerInfo.enabled & 0x80) {
-        strcpy(DayStr[timer], "Next");
+        sprintf(DayStr, "%d Next", timer+1);
       }
       else {
         comma = 0;
-        DayStr[timer][0] = 0;
+        sprintf(DayStr, "%d ", timer+1);
         for(i=0; i<7; i++) {
           if(timerInfo.enabled & (0x01<<i)) {
             if(comma)
-              strcat(DayStr[timer], ",");
-            strcat(DayStr[timer], daysOfTheWeek[i]);
+              strcat(DayStr, ",");
+            strcat(DayStr, daysOfTheWeek[i]);
             comma = 1;
           }
         }
       }
-      return DayStr[timer];
+      return DayStr;
     case 3:
-      strcpy(RptStr[timer], timerInfo.repeat ? "1" : "0");
-      return RptStr[timer];
+      sprintf(RptStr, "%d %s", timer+1, timerInfo.repeat ? "1" : "0");
+      return RptStr;
+    case 4:
+      sprintf(TmpStr, "%d %d", timer+1, timerInfo.temperature);
+      return TmpStr;
     default:
       return "BadParam";
   }
