@@ -295,3 +295,19 @@ CTimerManager::setTimer(sTimer& timerInfo)
   }
   return 0;
 }
+
+int 
+CTimerManager::conflictTest(int ID)
+{
+  if(!(ID >= 0 && ID < 14))
+    return 0;
+
+  sTimer timerInfo;
+  CTimerManager::getTimer(ID, timerInfo);   // get info for selected timer
+  int conflictID = CTimerManager::conflictTest(timerInfo);   // test against all others
+  if(conflictID) {
+    timerInfo.enabled = 0;   // cancel enabled status if it conflicts with others
+    CTimerManager::setTimer(timerInfo);  // stage the timer settings, without being enabled
+  }
+  return conflictID;
+}

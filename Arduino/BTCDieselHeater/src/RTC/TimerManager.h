@@ -43,6 +43,7 @@ public:
   static void condenseMap(uint16_t timerMap[_dayMinutes], int factor);
   static void condenseMap(uint8_t timerMap[7][120]);
   static int  conflictTest(sTimer& timer);
+  static int  conflictTest(int ID);
   static int  manageTime(int hour, int minute, int dow);
   static int  findNextTimer(int hour, int minute, int dow);
   static int  getNextTimer();

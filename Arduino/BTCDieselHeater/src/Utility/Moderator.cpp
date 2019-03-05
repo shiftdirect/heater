@@ -86,3 +86,15 @@ CTimerModerator::reset()
   } 
 }
 
+void
+CTimerModerator::reset(int timer)
+{
+  if(timer >= 0 && timer < 14) {
+    Memory[timer].start.hour = -1;  // force full update
+    Memory[timer].stop.hour = -1;  // force full update
+    Memory[timer].enabled = 0xff;  // invalid combination - force full update
+    Memory[timer].repeat = 0xff;    
+    Memory[timer].temperature = 0xff;  
+  } 
+}
+

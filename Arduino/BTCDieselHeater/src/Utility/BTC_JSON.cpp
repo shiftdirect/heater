@@ -25,6 +25,7 @@
 #include "NVstorage.h"
 #include "../RTC/BTCDateTime.h"
 #include "../RTC/Timers.h"
+#include "../RTC/TimerManager.h"
 #include "../Bluetooth/BluetoothAbstract.h"
 #include "../WiFi/BTCWebServer.h"
 #include "../cfg/BTCConfig.h"
@@ -33,7 +34,9 @@
 char defaultJSONstr[64];
 CModerator JSONmoderator;
 CTimerModerator TimerModerator;
+int timerConflict = 0;
 
+void validateTimer(int ID);
 
 void interpretJsonCommand(char* pLine)
 {
@@ -129,13 +132,28 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("TimerTemp", it->key) == 0) {
       decodeTimerNumeric(1, it->value.as<const char*>());
 		}
+		else if(strcmp("TimerConflict", it->key) == 0) {
+      validateTimer(it->value.as<int>());
+		}
+		else if(strcmp("TimerRefresh", it->key) == 0) {
+      TimerModerator.reset();
+		}
 		else if(strcmp("FanSensor", it->key) == 0) {
       setFanSensor(it->value.as<unsigned char>());
 		}
 	}
 }
 
+void validateTimer(int ID)
+{
+  ID--;  // supplied as +1
+  if(!(ID >= 0 && ID < 14))
+    return;
 
+  timerConflict = CTimerManager::conflictTest(ID);  // check targeted timer against other timers
+
+  TimerModerator.reset(ID);  // ensure we fully update client with our understanding of selected timer
+}
 
 bool makeJsonString(CModerator& moderator, char* opStr, int len)
 {
@@ -209,9 +227,8 @@ bool makeJsonTimerString(int channel, char* opStr, int len)
 void updateJSONclients(bool report)
 {
   // update general parameters
+  char jsonStr[800];
   {
-
-    char jsonStr[800];
     if(makeJsonString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
@@ -221,16 +238,33 @@ void updateJSONclients(bool report)
     }
   }
   // update timer parameters
+  bool bNewTimerInfo = false;
   for(int tmr=0; tmr<14; tmr++) 
   {
-    char jsonStr[800];
     if(makeJsonTimerString(tmr, jsonStr, sizeof(jsonStr))) {
       if (report) { 
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
       }
       getBluetoothClient().send( jsonStr );
       sendWebServerString( jsonStr );
+      bNewTimerInfo = true;
     }
+  }
+  // request timer refesh upon clients
+  if(bNewTimerInfo) {
+    StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+    JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+    if(timerConflict) {
+      root.set("TimerConflict", timerConflict);
+      timerConflict = 0;
+    }
+    root.set("TimerRefresh", 1);
+    root.printTo(jsonStr, 800);
+
+    DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
+    getBluetoothClient().send( jsonStr );
+    sendWebServerString( jsonStr );
   }
 }
 
@@ -238,6 +272,7 @@ void updateJSONclients(bool report)
 void resetJSONmoderator()
 {
   JSONmoderator.reset();
+  TimerModerator.reset();
 }
 
 

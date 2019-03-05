@@ -36,6 +36,7 @@ public:
   CTimerModerator();
   bool addJson(int channel, const sTimer& toSend, JsonObject& root);
 	void reset();
+	void reset(int channel);
 };
 
 
