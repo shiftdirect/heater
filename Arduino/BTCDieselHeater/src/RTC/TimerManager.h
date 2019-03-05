@@ -49,6 +49,7 @@ public:
   static int  getNextTimer();
   static void getTimer(int idx, sTimer& timerInfo);
   static int  setTimer(sTimer& timerInfo);
+  static bool hasTimerChanged() { return timerChanged; };
 private:
   static int activeTimer;
   static int activeDow;
@@ -56,6 +57,7 @@ private:
   static int nextTimer;
   static int nextStart;
   static uint8_t weekTimerIDs[7][_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
+  static bool timerChanged;
 };
 
 #endif //__TIMERMANAGER_H__

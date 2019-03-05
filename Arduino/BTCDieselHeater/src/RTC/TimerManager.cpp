@@ -40,6 +40,7 @@ int  CTimerManager::activeTimer = 0;
 int  CTimerManager::activeDow = 0;
 int  CTimerManager::nextTimer = 0;
 int  CTimerManager::nextStart = 0;
+bool CTimerManager::timerChanged = false;
 
 // create a bitmap that describes the pattern of on/off times
 void 
@@ -205,6 +206,7 @@ CTimerManager::condenseMap(uint8_t timerMap[7][120])
       timerMap[dow][opIndex++] = condense;
     }
   }
+  timerChanged = false;
 }
 
 int  
@@ -291,6 +293,7 @@ CTimerManager::setTimer(sTimer& timerInfo)
     NVstore.save();
     createMap();
     manageTime(0,0,0);
+    timerChanged = true;
     return 1;
   }
   return 0;
@@ -309,5 +312,8 @@ CTimerManager::conflictTest(int ID)
     timerInfo.enabled = 0;   // cancel enabled status if it conflicts with others
     CTimerManager::setTimer(timerInfo);  // stage the timer settings, without being enabled
   }
+  createMap();
+  manageTime(0,0,0);
+  timerChanged = true;
   return conflictID;
 }

@@ -57,6 +57,9 @@ CTimerChartScreen::onSelect()
 bool 
 CTimerChartScreen::show()
 {
+  if(CTimerManager::hasTimerChanged()) {
+    CTimerManager::condenseMap(condensed);
+  }
   _display.clearDisplay();
 
   CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
