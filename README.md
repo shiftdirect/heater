@@ -33,7 +33,11 @@ Working so far:
 * WiFi Connection to existing network or Standalone Access Point Mode (Passwd: thereisnospoon)
 * Wifi control
 * DebugPort data sent via Telnet if/when available on the network.
-* Two timers - including selectable day and repeat functionality
+* 14 timers - including selectable day and repeat functionality    
+  Simplisticly this allows each day to have 2 individual start stop regimes, but 
+  a single timer can be set to repeat every day if desired, or on certain days.
+  Timers can also be set to be one-shot.
+  This is an extremely flexible system!   
 * Battery backed Real Time Clock - DS3231
 * Prototype "Green PCB" in production, using naked ESP32 and HC-05 modules 
 * Temperature readout in Celcius or Farenheit
@@ -44,7 +48,6 @@ To be implemented
 * Implement narrow hysteresis to trick heater into a tighter thermostat temperature range. eg tell heater it is 23 degrees when it really is only 22.25 degrees (only 0.25 above set point).
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
-* Proper 7 day timer with each day settable for at least 2 times (eg morning/evening)
 * Expand hardware compatability with different MCU setups.  IE Arduino Due/Mega/Pro ESP8266 & ESP32
 * Documentation
 * Regular Hot Burn cycle (DPF mode!)
