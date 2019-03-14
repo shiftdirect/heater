@@ -28,12 +28,14 @@ bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim);
 bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2);
 bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
 bool s32inBounds(long test, long minLim, long maxLim);
+bool thermoMethodinBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
 
 bool 
 sNVStore::valid()
 {
   bool retval = true;
   retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
+  retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
   for(int i=0; i<2; i++) {
     retval &= timer[i].valid();
   }
@@ -48,6 +50,7 @@ sNVStore::init()
     timer[i].init();
   }
   DimTime = 60000;  // 1 minute
+  ThermostatMethod = 10 << 2;  // 1 degree hysteresis, normal thermostat
   Heater.init();
 }
 
@@ -92,6 +95,18 @@ CHeaterStorage::getThermostatMode()
   return _calValues.Heater.ThermostatMode;
 }
 
+unsigned char 
+CHeaterStorage::getThermostatMethodMode()
+{
+  return _calValues.ThermostatMethod & 0x03;
+}
+
+float
+CHeaterStorage::getThermostatMethodHysteresis()
+{
+  return float((_calValues.ThermostatMethod >> 2) & 0x3f) * 0.05f;  // top 5 bits / 10, then / 2
+}
+
 void
 CHeaterStorage::setPmin(float val)
 {
@@ -129,6 +144,22 @@ CHeaterStorage::setThermostatMode(unsigned char val)
 {
   _calValues.Heater.ThermostatMode = val;
 }
+
+void
+CHeaterStorage::setThermostatMethodMode(unsigned char val)
+{
+  _calValues.ThermostatMethod &= 0xF3;
+  _calValues.ThermostatMethod |= (val & 0x03);
+}
+
+void
+CHeaterStorage::setThermostatMethodHysteresis(float val)
+{
+  _calValues.ThermostatMethod &= 0x03;
+  int nVal = int(val * 10 + 0.5);
+  _calValues.ThermostatMethod |= ((nVal & 0x3F) << 2);
+}
+
 
 void 
 CHeaterStorage::setSystemVoltage(float fVal)
@@ -331,6 +362,8 @@ CESP32HeaterStorage::loadUI()
   preferences.begin("user", false);
   validatedLoad("dimTime", _calValues.DimTime, 60000, s32inBounds, 0, 600000);
   validatedLoad("degF", _calValues.degF, 0, u8inBounds, 0, 1);
+  validatedLoad("thermoMethod", _calValues.ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
+//  validatedLoad("thermoMethod", _calValues.ThermostatMethod, (10 << 2) + 0, u8inBounds, 0, 2);  // TESTO!!!!
   preferences.end();    
 }
 
@@ -340,14 +373,15 @@ CESP32HeaterStorage::saveUI()
   preferences.begin("user", false);
   preferences.putULong("dimTime", _calValues.DimTime);
   preferences.putUChar("degF", _calValues.degF);
+  preferences.putUChar("thermoMethod", _calValues.ThermostatMethod);
   preferences.end();    
 }
 
 bool
-CESP32HeaterStorage::validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max)
+CESP32HeaterStorage::validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask)
 {
   val = preferences.getUChar(key, defVal);
-  if(!validator(val, min, max)) {
+  if(!validator(val & mask, min, max)) {
 
     DebugPort.print("CESP32HeaterStorage::validatedLoad<uint8_t> invalid read ");
     DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);

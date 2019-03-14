@@ -25,7 +25,7 @@
 #include "BTCDateTime.h"
 
 
-void decodeTimerDays(const char* ipStr)
+void decodeJSONTimerDays(const char* ipStr)
 {
   char dayInfo[32];
   int timerIdx;
@@ -53,7 +53,7 @@ void decodeTimerDays(const char* ipStr)
 }
 
 
-void decodeTimerTime(int stop, const char* ipStr)
+void decodeJSONTimerTime(int stop, const char* ipStr)
 {
   int hour, min;
   int timerIdx;
@@ -75,7 +75,7 @@ void decodeTimerTime(int stop, const char* ipStr)
   }
 }
 
-void decodeTimerNumeric(int valID, const char* ipStr)
+void decodeJSONTimerNumeric(int valID, const char* ipStr)
 {
   int value;
   int timerIdx;

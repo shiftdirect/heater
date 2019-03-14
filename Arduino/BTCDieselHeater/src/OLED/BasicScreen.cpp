@@ -54,7 +54,7 @@ CBasicScreen::show()
   char msg[20];
   int xPos, yPos;
 
-  float fTemp = getActualTemperature();
+  float fTemp = getTemperatureSensor();
   if(fTemp > -80) {
     if(NVstore.getDegFMode()) {
       fTemp = fTemp * 9 / 5 + 32;
@@ -110,8 +110,8 @@ CBasicScreen::show()
     long tDelta = millis() - _showSetMode;  
     if(tDelta < 0) {
       // Show current heat demand setting
-      if(getHeaterInfo().isThermostat()) {
-        float fTemp = getHeaterInfo().getTemperature_Desired();
+      if(getThermostatModeActive()) {
+        float fTemp = getTemperatureDesired();
         if(NVstore.getDegFMode()) {
           fTemp = fTemp * 9 / 5 + 32;
           sprintf(msg, "Setpoint = %.0f`F", fTemp);
@@ -191,7 +191,7 @@ CBasicScreen::keyHandler(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
           _showMode = millis() + 5000;
-          _nModeSel = getHeaterInfo().isThermostat() ? 0 : 1;
+          _nModeSel = getThermostatModeActive() ? 0 : 1;
         }
       }
       // hold UP to toggle degC/degF mode selection

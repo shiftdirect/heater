@@ -30,8 +30,10 @@ extern bool  reqTempDelta(int delta);
 extern bool  reqTemp(unsigned char newTemp);
 extern bool  reqThermoToggle();
 extern bool  setThermostatMode(unsigned char);
+extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC: or our NV
 extern void  reqPumpPrime(bool on);
-extern float getActualTemperature();
+float getTemperatureDesired();    // OEM: the advertised value, BTC our setpoint
+extern float getTemperatureSensor();
 extern int   getSetTemp();
 extern void  setPumpMin(float);
 extern void  setPumpMax(float);

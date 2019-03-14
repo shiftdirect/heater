@@ -310,11 +310,9 @@ CProtocol::DebugReport(const char* hdr, const char* ftr)
 }
 
 void 
-CProtocol::setThermostatMode(unsigned on) 
+CProtocol::setThermostatModeProtocol(unsigned on) 
 { 
   Controller.OperatingMode = on ? 0x32 : 0xCD; 
-  if(!on)
-    setTemperature_Actual(0);   // if using fixed mode, actual must be reported as 0
 };
 
 void 

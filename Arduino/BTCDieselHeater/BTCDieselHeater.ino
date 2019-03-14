@@ -770,7 +770,6 @@ void loop()
           DS18B20holdoff = 2;
           fFilteredTemperature = -100;
         }
-        DefaultBTCParams.setTemperature_Actual((unsigned char)(fFilteredTemperature + 0.5));  // update [BTC] frame to send
         // Added DISABLE INTERRUPTS to test for parasitic fix.
 //        portDISABLE_INTERRUPTS();
         TempSensor.requestTemperatures();               // prep sensor for future reading
@@ -891,7 +890,7 @@ int getSetTemp()
 
 bool reqThermoToggle()
 {
-  return setThermostatMode(getThermostatMode() ? 0 : 1);
+  return setThermostatMode(getThermostatModeActive() ? 0 : 1);
 }
 
 bool setThermostatMode(unsigned char val)
@@ -904,9 +903,14 @@ bool setThermostatMode(unsigned char val)
 }
 
 
-bool getThermostatMode()
+bool getThermostatModeActive()
 {
-  return NVstore.getThermostatMode() != 0;
+  if(bHasOEMController) {
+    return getHeaterInfo().isThermostat();
+  }
+  else {
+    return NVstore.getThermostatMode() != 0;
+  }
 }
 
 void checkDisplayUpdate()
@@ -932,7 +936,17 @@ void reqPumpPrime(bool on)
   DefaultBTCParams.setPump_Prime(on);
 }
 
-float getActualTemperature()
+float getTemperatureDesired()
+{
+  if(bHasOEMController) {
+    return getHeaterInfo().getTemperature_Desired();
+  }
+  else {
+    return NVstore.getDesiredTemperature();
+  }
+}
+
+float getTemperatureSensor()
 {
   return fFilteredTemperature;
 }

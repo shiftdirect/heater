@@ -115,22 +115,22 @@ void interpretJsonCommand(char* pLine)
 		}
 		else if(strcmp("TimerDays", it->key) == 0) {
       // value encoded as "ID Days,Days"
-      decodeTimerDays(it->value.as<const char*>());
+      decodeJSONTimerDays(it->value.as<const char*>());
 		}
 		else if(strcmp("TimerStart", it->key) == 0) {
       // value encoded as "ID HH:MM"
-      decodeTimerTime(0, it->value.as<const char*>());
+      decodeJSONTimerTime(0, it->value.as<const char*>());
 		}
 		else if(strcmp("TimerStop", it->key) == 0) {
       // value encoded as "ID HH:MM"
-      decodeTimerTime(1, it->value.as<const char*>());
+      decodeJSONTimerTime(1, it->value.as<const char*>());
 		}
 		else if(strcmp("TimerRepeat", it->key) == 0) {
       // value encoded as "ID val"
-      decodeTimerNumeric(0, it->value.as<const char*>());
+      decodeJSONTimerNumeric(0, it->value.as<const char*>());
 		}
 		else if(strcmp("TimerTemp", it->key) == 0) {
-      decodeTimerNumeric(1, it->value.as<const char*>());
+      decodeJSONTimerNumeric(1, it->value.as<const char*>());
 		}
 		else if(strcmp("TimerConflict", it->key) == 0) {
       validateTimer(it->value.as<int>());
@@ -152,22 +152,22 @@ void validateTimer(int ID)
 
   timerConflict = CTimerManager::conflictTest(ID);  // check targeted timer against other timers
 
-  TimerModerator.reset(ID);  // ensure we fully update client with our understanding of selected timer
+  TimerModerator.reset(ID);  // ensure we update client with our (real) version of the selected timer
 }
 
-bool makeJsonString(CModerator& moderator, char* opStr, int len)
+bool makeJSONString(CModerator& moderator, char* opStr, int len)
 {
   StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
 	bool bSend = false;  // reset should send flag
 
-  float tidyTemp = getActualTemperature();
+  float tidyTemp = getTemperatureSensor();
   tidyTemp = int(tidyTemp * 10) * 0.1f;  // round to 0.1 resolution 
   if(tidyTemp > -80) {
 	  bSend |= moderator.addJson("TempCurrent", tidyTemp, root); 
   }
-	bSend |= moderator.addJson("TempDesired", getHeaterInfo().getTemperature_Desired(), root); 
+  bSend |= moderator.addJson("TempDesired", getTemperatureDesired(), root); 
 	bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
 	bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
 	bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root); 
@@ -175,7 +175,7 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
 	bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
   bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!
-	bSend |= moderator.addJson("Thermostat", getHeaterInfo().isThermostat(), root );
+	bSend |= moderator.addJson("Thermostat", getThermostatModeActive(), root );
 	bSend |= moderator.addJson("PumpFixed", getHeaterInfo().getPump_Fixed(), root );
 	bSend |= moderator.addJson("PumpMin", getHeaterInfo().getPump_Min(), root );
 	bSend |= moderator.addJson("PumpMax", getHeaterInfo().getPump_Max(), root );
@@ -204,7 +204,7 @@ bool makeJsonString(CModerator& moderator, char* opStr, int len)
 // timer
 // Only timer parameters that have changed will be sent, after reset the typical string will be
 // {"TimerStart":XX:XX,"TimerStop":XX:XX,"TimerDays":XX,"TimerRepeat":X}
-bool makeJsonTimerString(int channel, char* opStr, int len)
+bool makeJSONTimerString(int channel, char* opStr, int len)
 {
   StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
@@ -229,7 +229,7 @@ void updateJSONclients(bool report)
   // update general parameters
   char jsonStr[800];
   {
-    if(makeJsonString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
+    if(makeJSONString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
       }
@@ -241,7 +241,7 @@ void updateJSONclients(bool report)
   bool bNewTimerInfo = false;
   for(int tmr=0; tmr<14; tmr++) 
   {
-    if(makeJsonTimerString(tmr, jsonStr, sizeof(jsonStr))) {
+    if(makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr))) {
       if (report) { 
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
       }

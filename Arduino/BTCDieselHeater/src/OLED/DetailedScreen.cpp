@@ -79,7 +79,7 @@ CDetailedScreen::show()
 {
   CScreenHeader::show();
 
-  const char* c = String(getActualTemperature()).c_str();
+  const char* c = String(getTemperatureSensor()).c_str();
   
   int runstate = getHeaterInfo().getRunState();//HtrFrame.getRunState(); 
   int errstate = getHeaterInfo().getErrState(); //HtrFrame.getErrState(); 
@@ -92,13 +92,13 @@ CDetailedScreen::show()
 
   float desiredT = 0;
   if((runstate && (runstate <= 5)) || _showTarget) {
-    if(getHeaterInfo().isThermostat())
+    if(getThermostatModeActive())
       desiredT = getHeaterInfo().getTemperature_Desired();
     else
       desiredT = -getHeaterInfo().getPump_Fixed();
   }
 
-  float fTemp = getActualTemperature();
+  float fTemp = getTemperatureSensor();
   showThermometer(desiredT,    // read values from most recently sent [BTC] frame
                   fTemp);
 

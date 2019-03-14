@@ -27,8 +27,8 @@
 
 extern char defaultJSONstr[64];
 
-bool makeJsonString(CModerator& moderator, char* opStr, int len);
-bool makeJsonTimerString(int channel, char* opStr, int len);
+bool makeJSONString(CModerator& moderator, char* opStr, int len);
+bool makeJSONTimerString(int channel, char* opStr, int len);
 void updateJSONclients(bool report);
 
 template<class T>

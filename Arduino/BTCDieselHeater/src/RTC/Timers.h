@@ -81,8 +81,8 @@ struct sTimer {
 };
 
 const char* getTimerJSONStr(int timer, int param);
-void decodeTimerDays(const char* str);
-void decodeTimerTime(int stop, const char*);
-void decodeTimerNumeric(int repeat, const char*);
+void decodeJSONTimerDays(const char* str);
+void decodeJSONTimerTime(int stop, const char*);
+void decodeJSONTimerNumeric(int repeat, const char*);
 
 #endif

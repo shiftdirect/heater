@@ -67,6 +67,7 @@ struct sNVStore {
   sHeater Heater;
   long DimTime;
   uint8_t degF;
+  uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   sTimer timer[14];
   bool valid();
   void init();
@@ -103,6 +104,8 @@ public:
     unsigned short getFmax();
     unsigned char getDesiredTemperature();
     unsigned char getThermostatMode();
+    unsigned char getThermostatMethodMode();
+    float         getThermostatMethodHysteresis();
     unsigned char getSysVoltage();
     unsigned char getFanSensor();
     unsigned char getGlowDrive();
@@ -115,6 +118,8 @@ public:
     void setFmax(unsigned short val);
     void setDesiredTemperature(unsigned char val);
     void setThermostatMode(unsigned char val);
+    void setThermostatMethodMode(unsigned char val);
+    void setThermostatMethodHysteresis(float val);
     void setSystemVoltage(float fVal);
     void setFanSensor(unsigned char val);
     void setGlowDrive(unsigned char val);
@@ -146,7 +151,7 @@ public:
   void loadUI();
   void saveUI();
   bool validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max);
-  bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max);
+  bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask=0xff);
   bool validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max);
   bool validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max);
 };
