@@ -79,19 +79,19 @@ CClockScreen::keyHandler(uint8_t event)
   if(event & keyPressed) {
     // press LEFT 
     if(event & key_Left) {
-      _ScreenManager.prevScreen(); 
+      _ScreenManager.prevMenu(); 
     }
     // press RIGHT 
     if(event & key_Right) {
-      _ScreenManager.nextScreen(); 
+      _ScreenManager.nextMenu(); 
     }
     // press UP
     if(event & key_Up) {
-      _ScreenManager.select(CScreenManager::SetClock);   // switch to clock set screen
+      _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::SetClock);   // switch to clock set screen
     }
     // press DOWN
     if(event & key_Down) {
-      _ScreenManager.select(CScreenManager::TimerMenuLoop);    // switch to timer set screen loop
+      _ScreenManager.selectMenu(CScreenManager::TimerMenuLoop);    // switch to timer set screen loop
     }
   }
   return true;

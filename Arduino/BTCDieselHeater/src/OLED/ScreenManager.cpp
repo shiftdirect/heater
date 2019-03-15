@@ -213,9 +213,12 @@ CScreenManager::checkUpdate()
 
       _leaveScreen();
       // fall back to main menu 
-      select(RootMenuLoop);
-      // sticky screens are Detailed Control, Basic Control, or Clock.
-      // otherwise return to Basic Control screen
+      selectMenu(RootMenuLoop);
+      // upon dim timeout - sticky root menu screens are the first 3 in the list:
+      //   Detailed Control
+      //   Basic Control
+      //   Clock
+      // return to those upon timeout, otherwise return to Basic Control screen
       if(_rootMenu > 2) {
         _subMenu = 1;
         _rootMenu = 1;
@@ -278,29 +281,32 @@ CScreenManager::_leaveScreen()
     _Screens[_menu][_subMenu]->onExit();
 }
 
-void 
-CScreenManager::nextScreen()
+void
+CScreenManager::_changeSubMenu(int dir)
 {
-  if(_menu >= 0 && _menu != BranchMenus) {
-    _leaveScreen();
-    _subMenu++;
-    ROLLUPPERLIMIT(_subMenu, _Screens[_menu].size()-1, 0);
-    if(_menu == 0)
-      _rootMenu = _subMenu;  // track the root menu for when we branch then return
-    _enterScreen();
+  _leaveScreen();
+  _subMenu += dir;
+  int bounds = _Screens[_menu].size() - 1;
+  ROLLUPPERLIMIT(_subMenu, bounds, 0);
+  ROLLLOWERLIMIT(_subMenu, 0, bounds);
+  if(_menu == 0)
+    _rootMenu = _subMenu;  // track the root menu for when we branch then return
+  _enterScreen();
+}
+
+void 
+CScreenManager::nextMenu()
+{
+  if(_menu >= 0 && _menu != BranchMenu) {
+    _changeSubMenu(+1);
   }
 }
 
 void 
-CScreenManager::prevScreen()
+CScreenManager::prevMenu()
 {
-  if(_menu >= 0 && _menu != BranchMenus) {
-    _leaveScreen();
-    _subMenu--;
-    ROLLLOWERLIMIT(_subMenu, 0, _Screens[_menu].size()-1);
-    if(_menu == 0)
-      _rootMenu = _subMenu;  // track the root menu for when we branch then return
-    _enterScreen();
+  if(_menu >= 0 && _menu != BranchMenu) {
+    _changeSubMenu(-1);
   }
 }
 
@@ -321,26 +327,23 @@ CScreenManager::keyHandler(uint8_t event)
 }
 
 void
-CScreenManager::select(eUIMenuSets menu)
+CScreenManager::selectMenu(eUIMenuSets menuSet, int specific)
 {
   _leaveScreen();
-  if(_menu >= 0) {
-    _menu = menu;
-    if(_menu == 0)
-      _subMenu = _rootMenu;
-    else
-      _subMenu = 0;
-  }
-  _enterScreen();
-}
-
-void 
-CScreenManager::select(eUIBranches branch)
-{
-  _leaveScreen();
-  if(_menu >= 0) {
-    _menu = BranchMenus;
-    _subMenu = branch;
+  if(_menu >= 0) {   // only true once we have created the screens
+    _menu = menuSet;
+    if(specific >= 0) {
+      // targetting a specific menu
+      _subMenu = specific;
+      UPPERLIMIT(_subMenu, _Screens[_menu].size()-1);  // check bounds!
+    }
+    else {
+      // default sub menu behaviour
+      if(_menu == 0)
+        _subMenu = _rootMenu; // return to last used root menu
+      else
+        _subMenu = 0;  // branches always go to first sub menu
+    }
   }
   _enterScreen();
 }

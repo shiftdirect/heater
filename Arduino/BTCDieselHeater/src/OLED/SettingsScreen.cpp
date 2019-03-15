@@ -147,7 +147,7 @@ CSettingsScreen::keyHandler(uint8_t event)
 {
   if(CPasswordScreen::keyHandler(event)) {
     if(_isPasswordOK()) {
-      _ScreenManager.select(CScreenManager::TuningMenuLoop);
+      _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop);
     }
   }
 
@@ -156,11 +156,11 @@ CSettingsScreen::keyHandler(uint8_t event)
     if(event & keyPressed) {
       // press LEFT 
       if(event & key_Left) {
-        _ScreenManager.prevScreen(); 
+        _ScreenManager.prevMenu(); 
       }
       // press RIGHT 
       if(event & key_Right) {
-        _ScreenManager.nextScreen(); 
+        _ScreenManager.nextMenu(); 
       }
       // press UP 
       if(event & (key_Up | key_Centre)) {
@@ -168,7 +168,7 @@ CSettingsScreen::keyHandler(uint8_t event)
           if(event & key_Centre)
             _reqOEMWarning();
           else {
-            _ScreenManager.select(CScreenManager::InheritSettings);
+            _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::InheritSettings);
           }
         }
         else {
@@ -177,7 +177,7 @@ CSettingsScreen::keyHandler(uint8_t event)
       }
       // press DOWN
       if(event & key_Down) {
-        _ScreenManager.select(CScreenManager::Experimental);
+        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::Experimental);
       }
     }
   }

@@ -66,7 +66,7 @@ CInheritSettingsScreen::show()
 
     switch(_nAdoptSettings) {
       case 0:
-        _ScreenManager.select(CScreenManager::RootMenuLoop);  // force return to main menu
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
         _ScreenManager.reqUpdate();
         return false;
       case 1:

@@ -81,7 +81,7 @@ CExperimentalSettingsScreen::show()
       _printInverted(_display.xCentre(), 0, " Experimental ", true, eCentreJustify);
       _printMenuText(65, Line2, "Thermostat:", false, eRightJustify);
       _printMenuText(65, Line1, "Window:", false, eRightJustify);
-      sprintf(msg, "%.1f", _window);
+      sprintf(msg, "%.1f`C", _window);
       _printMenuText(Column, Line1, msg, _rowSel == 1);
       switch(_thermoMode) {
         case 1: 
@@ -162,7 +162,7 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.select(CScreenManager::RootMenuLoop);  // force return to main menu
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
           break;
         case 1:
         case 2:

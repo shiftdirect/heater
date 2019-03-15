@@ -96,7 +96,7 @@ CWiFiScreen::show()
   }
 
     // show next/prev screen navigation line
-  _printMenuText(_display.xCentre(), 52, "<-             ->", _rowSel == 0, eCentreJustify);
+  _printMenuText(_display.xCentre(), 53, "<-             ->", _rowSel == 0, eCentreJustify);
 
   return true;
 }
@@ -112,12 +112,12 @@ CWiFiScreen::keyHandler(uint8_t event)
     }
     // press LEFT 
     if(event & key_Left) {
-      _ScreenManager.prevScreen(); 
+      _ScreenManager.prevMenu(); 
       _rowSel = 0;
     }
     // press RIGHT 
     if(event & key_Right) {
-      _ScreenManager.nextScreen(); 
+      _ScreenManager.nextMenu(); 
       _rowSel = 0;
     }
     // press UP

@@ -160,7 +160,7 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
     if(event & key_Left) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.prevScreen();
+          _ScreenManager.prevMenu();
           break;
         case 1:
         case 2:
@@ -176,7 +176,7 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
     if(event & key_Right) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.nextScreen();
+          _ScreenManager.nextMenu();
           break;
         case 1:
         case 2:
@@ -216,7 +216,7 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.select(CScreenManager::RootMenuLoop);
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
           break;
         case 1:
         case 2:

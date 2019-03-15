@@ -160,15 +160,15 @@ CTimerChartScreen::keyHandler(uint8_t event)
     bHeld = false;
     // press CENTRE
     if(event & key_Centre) {
-      _ScreenManager.select(CScreenManager::RootMenuLoop);  // exit: return to clock screen
+      _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // exit: return to clock screen
     }
     // press LEFT - navigate fields, or screens
     if(event & key_Left) {
-      _ScreenManager.prevScreen(); 
+      _ScreenManager.prevMenu(); 
     }
     // press RIGHT - navigate fields, or screens
     if(event & key_Right) {
-      _ScreenManager.nextScreen(); 
+      _ScreenManager.nextMenu(); 
     }
     // press UP  
     if(event & key_Up) {

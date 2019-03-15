@@ -161,7 +161,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
     // press CENTRE
     if(event & key_Centre) {
       if(_rowSel == 0) {
-        _ScreenManager.select(CScreenManager::RootMenuLoop);  // exit: return to clock screen
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // exit: return to clock screen
       }
       else if(_rowSel == 2) {   // exit from per day settings
         _rowSel = 1;
@@ -184,15 +184,13 @@ CSetTimerScreen::keyHandler(uint8_t event)
           _colSel = 0;
         }
         CTimerManager::setTimer(_timerInfo);
-//        NVstore.setTimerInfo(_timerID, _timerInfo); // save, but timer may have got disabled
-//        NVstore.save();
       }
     }
     // press LEFT - navigate fields, or screens
     if(event & key_Left) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.prevScreen(); 
+          _ScreenManager.prevMenu(); 
           break;
         case 2:
           _colSel--;
@@ -204,7 +202,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
     if(event & key_Right) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.nextScreen(); 
+          _ScreenManager.nextMenu(); 
           break;
         // case 1:
         //   _colSel++;

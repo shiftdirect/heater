@@ -147,7 +147,7 @@ CBasicScreen::keyHandler(uint8_t event)
     // press LEFT to select previous screen, or Fixed Hz mode when in mode select
     if(event & key_Left) {
       if(!_showMode)
-        _ScreenManager.prevScreen();
+        _ScreenManager.prevMenu();
       else {
         if(hasOEMcontroller())
           _reqOEMWarning();
@@ -161,7 +161,7 @@ CBasicScreen::keyHandler(uint8_t event)
     // press RIGHT to selecxt next screen, or Thermostat mode when in mode select
     if(event & key_Right) {
       if(!_showMode)
-        _ScreenManager.nextScreen();
+        _ScreenManager.nextMenu();
       else {
         if(hasOEMcontroller())
           _reqOEMWarning();

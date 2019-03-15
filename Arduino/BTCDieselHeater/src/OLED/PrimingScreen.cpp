@@ -68,8 +68,8 @@ CPrimingScreen::show()
   CScreenHeader::show();
   
   CRect extents;
-  int yPos = 52;
 
+  int yPos = 53;
   // show next/prev screen navigation line
   _printMenuText(_display.xCentre(), yPos, "<-             ->", _rowSel == 0, eCentreJustify);
 
@@ -140,7 +140,7 @@ CPrimingScreen::keyHandler(uint8_t event)
     if(event & key_Left) {
       switch(_rowSel) {
         case 0: 
-          _ScreenManager.prevScreen(); 
+          _ScreenManager.prevMenu(); 
           break;
         case 1: 
           _colSel = 0; 
@@ -160,7 +160,7 @@ CPrimingScreen::keyHandler(uint8_t event)
     if(event & key_Right) {
       switch(_rowSel) {
         case 0: 
-          _ScreenManager.nextScreen(); 
+          _ScreenManager.nextMenu(); 
           break;
         case 1: 
           _colSel = 1; 

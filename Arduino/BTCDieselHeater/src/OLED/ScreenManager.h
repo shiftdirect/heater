@@ -41,23 +41,27 @@ class CScreenManager {
   bool _bReqUpdate;
   void _enterScreen();
   void _leaveScreen();
+  void _changeSubMenu(int dir);
 public:
-  enum eUIBranches { SetClock, InheritSettings, Experimental };
-  enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, TuningMenuLoop, BranchMenus };
+  enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, TuningMenuLoop, BranchMenu };
+  enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, CommsUI, SettingsUI };
+  enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
+                       Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
+  enum eUITuningMenus { MixtureUI, ProtectedConfigUI };
+  enum eUIBranchMenus { SetClock, InheritSettings, Experimental };
 public:
   CScreenManager();
   ~CScreenManager();
   void begin(bool bNoClock);
   bool checkUpdate();
   bool animate();
-  void refresh();
-  void nextScreen();
-  void prevScreen();
   void keyHandler(uint8_t event);
+  void refresh();
+  void nextMenu();
+  void prevMenu();
   void reqUpdate();
+  void selectMenu(eUIMenuSets menuset, int specific = -1);   // use to select loop menus, including the root or branches
   void showRebootMsg(const char* content[2], long delayTime);
-  void select(eUIBranches branch);   // use to select branch menus
-  void select(eUIMenuSets loop);  // use to select loop menus, including the root or branches
 };
 
 #endif // __SCREEN_MANAGER_H__
