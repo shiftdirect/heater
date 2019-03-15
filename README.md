@@ -41,8 +41,8 @@ Working so far:
 * Battery backed Real Time Clock - DS3231
 * Prototype "Green PCB" in production, using naked ESP32 and HC-05 modules 
 * Temperature readout in Celcius or Farenheit
-* Two new experimental thermostat modes (No practical testing - presently too hot in .au!):
-    Tighten or loosen the thermostat temperature range by specifying a hysteresis value. eg tell the heater it is 23 degrees when it really is only 22.25 degrees (only 0.25 above set point).
+* Two new experimental thermostat modes (No practical testing - presently too hot in .au!):  
+    Tighten or loosen the thermostat temperature range by specifying a hysteresis value. eg tell the heater it is 23 degrees when it really is only 22.25 degrees (only 0.25 above set point).  
     Request a linear change in Hz according to the deviation from the setpoint
  
 
