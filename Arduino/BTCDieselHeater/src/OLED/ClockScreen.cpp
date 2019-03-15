@@ -87,11 +87,11 @@ CClockScreen::keyHandler(uint8_t event)
     }
     // press UP
     if(event & key_Up) {
-      _ScreenManager.selectSetTimeScreen(true);   // switch to clock set screen
+      _ScreenManager.selectBranchMenu(CScreenManager::SetClock);   // switch to clock set screen
     }
     // press DOWN
     if(event & key_Down) {
-      _ScreenManager.selectTimerScreen(true);      // switch to timer set screen loop
+      _ScreenManager.selectTimerMenuLoop();      // switch to timer set screen loop
     }
   }
   return true;

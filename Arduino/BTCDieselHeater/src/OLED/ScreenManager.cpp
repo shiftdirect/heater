@@ -100,13 +100,9 @@ const unsigned char DieselSplash [] PROGMEM = {
 CScreenManager::CScreenManager() 
 {
   _pDisplay = NULL;
-  _rootMenuScreen = -1;
-  _timerScreen = -1;
-  _tuningScreen = -1;
+  _rootMenu = -1;
+  _cancelSideMenus();
   _bReqUpdate = false;
-  _bSetTimeScreenActive = false;
-  _bInheritScreenActive = false;
-  _bExperimentalScreenActive = false;
   _DimTime = millis() + 60000;
   _pRebootScreen = NULL;
 }
@@ -125,9 +121,11 @@ CScreenManager::~CScreenManager()
 			_TimerScreens[i] = NULL;
 		}
 	}
-  if(_SetTimeScreen) {
-    delete _SetTimeScreen;
-    _SetTimeScreen = NULL;
+	for(int i=0; i < _BranchScreens.size(); i++) {
+		if(_BranchScreens[i]) {
+			delete _BranchScreens[i];
+			_BranchScreens[i] = NULL;
+		}
   }
   if(_pDisplay) {
     delete _pDisplay; _pDisplay = NULL;
@@ -165,6 +163,7 @@ CScreenManager::begin(bool bNoClock)
   _RootScreens.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
   _RootScreens.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
   _RootScreens.push_back(new CSettingsScreen(*_pDisplay, *this));         // tuning info
+  // timer screens
   _TimerScreens.push_back(new CTimerChartScreen(*_pDisplay, *this, 0)); // timer chart
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 0)); // set timer 1
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 1)); // set timer 2
@@ -180,16 +179,18 @@ CScreenManager::begin(bool bNoClock)
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 11)); // set timer 12
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 12)); // set timer 13
   _TimerScreens.push_back(new CSetTimerScreen(*_pDisplay, *this, 13)); // set timer 14
+  // Heater tuning screens - password protected
   _TuningScreens.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
   _TuningScreens.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
-  _SetTimeScreen = new CSetClockScreen(*_pDisplay, *this);            // clock set
-  _InheritScreen = new CInheritSettingsScreen(*_pDisplay, *this);     // inherit OEM settings
-  _ExperimentalScreen = new CExperimentalSettingsScreen(*_pDisplay, *this);     // experimental settings
+  // create branch screens
+  _BranchScreens.push_back(new CSetClockScreen(*_pDisplay, *this));         // clock set branch screen
+  _BranchScreens.push_back(new CInheritSettingsScreen(*_pDisplay, *this));  // inherit OEM settings branch screen
+  _BranchScreens.push_back(new CExperimentalSettingsScreen(*_pDisplay, *this)); // experimental settings branch screen
 
 #if RTC_USE_DS3231==0 && RTC_USE_DS1307==0 && RTC_USE_PCF8523==0
   _rootMenuScreen = 6;   // bring up clock set screen first if using millis based RTC!
 #else
-	_rootMenuScreen = 1;   // basic control screen
+	_rootMenu = 1;   // basic control screen
 #endif
 
   _enterScreen();
@@ -208,15 +209,11 @@ CScreenManager::checkUpdate()
 
       _leaveScreen();
       // fall back to main menu 
-      selectTimerScreen(false);
-      selectSetTimeScreen(false);
-      selectSettingsScreen(false);
-      selectInheritScreen(false);
-      selectExperimentalScreen(false);
+      selectRootMenuLoop();
       // sticky screens are Detailed Control, Basic Control, or Clock.
       // otherwise return to Basic Control screen
-      if(_rootMenuScreen > 2) {
-        _rootMenuScreen = 1;
+      if(_rootMenu > 2) {
+        _rootMenu = 1;
       }
       _enterScreen();
     }
@@ -229,33 +226,23 @@ CScreenManager::checkUpdate()
       return true;
     }
     else {
-      if(_bSetTimeScreenActive) {
-        _SetTimeScreen->show();
+      if(_branchMenu >= 0) {
+        _BranchScreens[_branchMenu]->show();
         _bReqUpdate = false;
         return true;
       }
-      else if(_bInheritScreenActive) {
-        _InheritScreen->show();
+      else if(_tuningMenu >= 0) {
+        _TuningScreens[_tuningMenu]->show();
         _bReqUpdate = false;
         return true;
       }
-      else if(_bExperimentalScreenActive) {
-        _ExperimentalScreen->show();
+      else if(_timerMenu >= 0) {
+        _TimerScreens[_timerMenu]->show();
         _bReqUpdate = false;
         return true;
       }
-      else if(_tuningScreen >= 0) {
-        _TuningScreens[_tuningScreen]->show();
-        _bReqUpdate = false;
-        return true;
-      }
-      else if(_timerScreen >= 0) {
-        _TimerScreens[_timerScreen]->show();
-        _bReqUpdate = false;
-        return true;
-      }
-      else if(_rootMenuScreen >= 0) {
-        _RootScreens[_rootMenuScreen]->show();
+      else if(_rootMenu >= 0) {
+        _RootScreens[_rootMenu]->show();
         _bReqUpdate = false;
         return true;
       }
@@ -273,12 +260,10 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
-	if(_tuningScreen >= 0)    return _TuningScreens[_tuningScreen]->animate();
-  if(_bSetTimeScreenActive) return _SetTimeScreen->animate();
-  if(_bInheritScreenActive) return _InheritScreen->animate();
-  if(_bExperimentalScreenActive) return _ExperimentalScreen->animate();
-	if(_timerScreen >= 0)     return _TimerScreens[_timerScreen]->animate();
-	if(_rootMenuScreen >= 0)  return _RootScreens[_rootMenuScreen]->animate();
+	if(_tuningMenu >= 0) return _TuningScreens[_tuningMenu]->animate();
+  if(_branchMenu >= 0) return _BranchScreens[_branchMenu]->animate();
+	if(_timerMenu >= 0)  return _TimerScreens[_timerMenu]->animate();
+	if(_rootMenu >= 0)   return _RootScreens[_rootMenu]->animate();
 	return false;
 }
 
@@ -292,12 +277,10 @@ CScreenManager::refresh()
 void 
 CScreenManager::_enterScreen()
 {
-  if(_bSetTimeScreenActive)      _SetTimeScreen->onSelect();
-  else if(_bInheritScreenActive) _InheritScreen->onSelect();
-  else if(_bExperimentalScreenActive) _ExperimentalScreen->onSelect();
-  else if(_timerScreen >= 0)     _TimerScreens[_timerScreen]->onSelect();
-  else if(_tuningScreen >= 0)    _TuningScreens[_tuningScreen]->onSelect();
-  else if(_rootMenuScreen >= 0)  _RootScreens[_rootMenuScreen]->onSelect();
+  if(_branchMenu >= 0)      _BranchScreens[_branchMenu]->onSelect();
+  else if(_timerMenu >= 0)  _TimerScreens[_timerMenu]->onSelect();
+  else if(_tuningMenu >= 0) _TuningScreens[_tuningMenu]->onSelect();
+  else if(_rootMenu >= 0)   _RootScreens[_rootMenu]->onSelect();
 		
   reqUpdate();
 }
@@ -305,35 +288,33 @@ CScreenManager::_enterScreen()
 void
 CScreenManager::_leaveScreen()
 {
-  if(_bSetTimeScreenActive)      _SetTimeScreen->onExit();
-  else if(_bInheritScreenActive) _InheritScreen->onExit();
-  else if(_bExperimentalScreenActive) _ExperimentalScreen->onExit();
-  else if(_timerScreen >= 0)     _TimerScreens[_timerScreen]->onExit();
-  else if(_tuningScreen >= 0)    _TuningScreens[_tuningScreen]->onExit();
-  else if(_rootMenuScreen >= 0)  _RootScreens[_rootMenuScreen]->onExit();
+  if(_branchMenu >= 0)      _BranchScreens[_branchMenu]->onExit();
+  else if(_timerMenu >= 0)  _TimerScreens[_timerMenu]->onExit();
+  else if(_tuningMenu >= 0) _TuningScreens[_tuningMenu]->onExit();
+  else if(_rootMenu >= 0)   _RootScreens[_rootMenu]->onExit();
 }
 
 void 
 CScreenManager::nextScreen()
 {
-  if(_bSetTimeScreenActive || _bInheritScreenActive || _bExperimentalScreenActive) {
+  if(_branchMenu >= 0) {
   }
-  else if(_timerScreen >= 0) {
+  else if(_timerMenu >= 0) {
     _leaveScreen();
-    _timerScreen++;
-    ROLLUPPERLIMIT(_timerScreen, _TimerScreens.size()-1, 0);
+    _timerMenu++;
+    ROLLUPPERLIMIT(_timerMenu, _TimerScreens.size()-1, 0);
     _enterScreen();
   }
-  else if(_tuningScreen >= 0) {
+  else if(_tuningMenu >= 0) {
     _leaveScreen();
-    _tuningScreen++;
-    ROLLUPPERLIMIT(_tuningScreen, _TuningScreens.size()-1, 0);
+    _tuningMenu++;
+    ROLLUPPERLIMIT(_tuningMenu, _TuningScreens.size()-1, 0);
     _enterScreen();
   }
   else {
     _leaveScreen();
-    _rootMenuScreen++;
-    ROLLUPPERLIMIT(_rootMenuScreen, _RootScreens.size()-1, 0);
+    _rootMenu++;
+    ROLLUPPERLIMIT(_rootMenu, _RootScreens.size()-1, 0);
     _enterScreen();
   }
 }
@@ -341,24 +322,24 @@ CScreenManager::nextScreen()
 void 
 CScreenManager::prevScreen()
 {
-  if(_bSetTimeScreenActive || _bInheritScreenActive || _bExperimentalScreenActive) {
+  if(_branchMenu >= 0) {
   }
-  else if(_timerScreen >=0) {
+  else if(_timerMenu >=0) {
     _leaveScreen();
-    _timerScreen--;
-    ROLLLOWERLIMIT(_timerScreen, 0, _TimerScreens.size()-1);
+    _timerMenu--;
+    ROLLLOWERLIMIT(_timerMenu, 0, _TimerScreens.size()-1);
     _enterScreen();
   }
-  else if(_tuningScreen >= 0) {
+  else if(_tuningMenu >= 0) {
     _leaveScreen();
-    _tuningScreen--;
-    ROLLLOWERLIMIT(_tuningScreen, 0, _TuningScreens.size()-1);
+    _tuningMenu--;
+    ROLLLOWERLIMIT(_tuningMenu, 0, _TuningScreens.size()-1);
     _enterScreen();
   }
   else {
     _leaveScreen();
-    _rootMenuScreen--;
-    ROLLLOWERLIMIT(_rootMenuScreen, 0, _RootScreens.size()-1);
+    _rootMenu--;
+    ROLLLOWERLIMIT(_rootMenu, 0, _RootScreens.size()-1);
     _enterScreen();
   }
 }
@@ -375,70 +356,56 @@ CScreenManager::keyHandler(uint8_t event)
   _DimTime = (millis() + NVstore.getDimTime()) | 1;
 
   // call key handler for active screen
-  if(_bSetTimeScreenActive)    _SetTimeScreen->keyHandler(event);
-  else if(_bInheritScreenActive) _InheritScreen->keyHandler(event);
-  else if(_bExperimentalScreenActive) _ExperimentalScreen->keyHandler(event);
-  else if(_tuningScreen >= 0) _TuningScreens[_tuningScreen]->keyHandler(event);
-  else if(_timerScreen >= 0)   _TimerScreens[_timerScreen]->keyHandler(event);
-	else if(_rootMenuScreen >= 0) _RootScreens[_rootMenuScreen]->keyHandler(event);
+  if(_branchMenu >= 0)      _BranchScreens[_branchMenu]->keyHandler(event);
+  else if(_tuningMenu >= 0) _TuningScreens[_tuningMenu]->keyHandler(event);
+  else if(_timerMenu >= 0)  _TimerScreens[_timerMenu]->keyHandler(event);
+	else if(_rootMenu >= 0)   _RootScreens[_rootMenu]->keyHandler(event);
 
 }
 
 void
-CScreenManager::_cancelBranchScreens()
+CScreenManager::_cancelSideMenus()
 {
-  _timerScreen = -1;
-  _tuningScreen = -1;
-  _bSetTimeScreenActive = false;
-  _bInheritScreenActive = false;
-  _bExperimentalScreenActive = false;
+  _timerMenu = -1;
+  _tuningMenu = -1;
+  _branchMenu = -1;
 }
 
 void 
-CScreenManager::selectTimerScreen(bool show)
+CScreenManager::selectTimerMenuLoop()
 {
   _leaveScreen();
-  _cancelBranchScreens();
-  _timerScreen = show ? 0 : -1;
+  _cancelSideMenus();
+  _timerMenu = 0;
   _enterScreen();
 }
 
 void 
-CScreenManager::selectSettingsScreen(bool show)
+CScreenManager::selectTuningMenuLoop()
 {
   _leaveScreen();
-  _cancelBranchScreens();
-  _tuningScreen = show ? 0 : -1;
+  _cancelSideMenus();
+  _tuningMenu = 0;
   _enterScreen();
 }
 
 void 
-CScreenManager::selectSetTimeScreen(bool show)
+CScreenManager::selectRootMenuLoop()
 {
   _leaveScreen();
-  _cancelBranchScreens();
-  _bSetTimeScreenActive = show;
+  _cancelSideMenus();
   _enterScreen();
 }
+
 
 void 
-CScreenManager::selectInheritScreen(bool show)
+CScreenManager::selectBranchMenu(eUIBranches branch)
 {
   _leaveScreen();
-  _cancelBranchScreens();
-  _bInheritScreenActive = show;
+  _cancelSideMenus();
+  _branchMenu = branch;
   _enterScreen();
 }
-
-void 
-CScreenManager::selectExperimentalScreen(bool show)
-{
-  _leaveScreen();
-  _cancelBranchScreens();
-  _bExperimentalScreenActive = show;
-  _enterScreen();
-}
-
 
 void 
 CScreenManager::showRebootMsg(const char* content[2], long delayTime)

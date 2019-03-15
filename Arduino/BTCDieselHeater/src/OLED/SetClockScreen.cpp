@@ -144,7 +144,7 @@ CSetClockScreen::keyHandler(uint8_t event)
     // press CENTRE
     if(event & key_Centre) {
       if(_rowSel == 0) {
-        _ScreenManager.selectSetTimeScreen(false);
+        _ScreenManager.selectRootMenuLoop(); // exit, return to clock screen
       }
       else {
         if(_rowSel == 7) {  // set the RTC!
@@ -157,7 +157,7 @@ CSetClockScreen::keyHandler(uint8_t event)
     // press LEFT 
     if(event & key_Left) {
       if(_rowSel == 0) {
-        _ScreenManager.selectSetTimeScreen(false);
+        _ScreenManager.selectRootMenuLoop(); // exit, return to clock screen
       }
       else {
         _adjTimeDate(-1);
@@ -166,7 +166,7 @@ CSetClockScreen::keyHandler(uint8_t event)
     // press RIGHT 
     if(event & key_Right) {
       if(_rowSel == 0) {
-        _ScreenManager.selectSetTimeScreen(false);
+        _ScreenManager.selectRootMenuLoop(); // exit, return to clock screen
       }
       else {
         _adjTimeDate(+1);
@@ -180,7 +180,7 @@ CSetClockScreen::keyHandler(uint8_t event)
     // press DOWN
     if(event & key_Down) {
       if(_rowSel == 0) {
-        _ScreenManager.selectSetTimeScreen(false);  // exit: return to clock screen
+        _ScreenManager.selectRootMenuLoop(); // exit, return to clock screen
       } else {
         _rowSel--;
         ROLLLOWERLIMIT(_rowSel, 1, 7);

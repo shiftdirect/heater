@@ -162,7 +162,7 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.selectExperimentalScreen(false);
+          _ScreenManager.selectRootMenuLoop();  // force return to main menu
           break;
         case 1:
         case 2:

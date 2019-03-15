@@ -34,22 +34,20 @@ class CScreenManager {
   std::vector<CScreen*> _RootScreens;
   std::vector<CScreen*> _TimerScreens;
   std::vector<CScreen*> _TuningScreens;
-  CScreen* _SetTimeScreen;
-  CScreen* _InheritScreen;
-  CScreen* _ExperimentalScreen;
+  std::vector<CScreen*> _BranchScreens;
+  CRebootScreen* _pRebootScreen;
   C128x64_OLED* _pDisplay;
-  int _rootMenuScreen;
-  int _timerScreen;
-  int _tuningScreen;
-  bool _bSetTimeScreenActive;
-  bool _bInheritScreenActive;
-  bool _bExperimentalScreenActive;
+  int _rootMenu;
+  int _timerMenu;
+  int _tuningMenu;
+  int _branchMenu;
   unsigned long _DimTime;
   bool _bReqUpdate;
   void _enterScreen();
   void _leaveScreen();
-  void _cancelBranchScreens();
-  CRebootScreen* _pRebootScreen;
+  void _cancelSideMenus();
+public:
+  enum eUIBranches { SetClock, InheritSettings, Experimental };
 public:
   CScreenManager();
   ~CScreenManager();
@@ -62,11 +60,10 @@ public:
   void keyHandler(uint8_t event);
   void reqUpdate();
   void showRebootMsg(const char* content[2], long delayTime);
-  void selectTimerScreen(bool show);
-  void selectSetTimeScreen(bool show);
-  void selectSettingsScreen(bool show);
-  void selectInheritScreen(bool show);
-  void selectExperimentalScreen(bool show);
+  void selectBranchMenu(eUIBranches branch);
+  void selectTimerMenuLoop();
+  void selectTuningMenuLoop();
+  void selectRootMenuLoop();
 };
 
 #endif // __SCREEN_MANAGER_H__

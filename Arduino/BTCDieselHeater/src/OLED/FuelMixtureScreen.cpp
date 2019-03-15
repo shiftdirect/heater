@@ -122,7 +122,7 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.selectSettingsScreen(false);
+          _ScreenManager.selectRootMenuLoop();
           break;
         case 1:
         case 2:
