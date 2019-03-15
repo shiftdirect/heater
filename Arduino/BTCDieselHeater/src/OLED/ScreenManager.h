@@ -31,24 +31,19 @@ class CScreen;
 class CRebootScreen;
 
 class CScreenManager {
-  std::vector<CScreen*> _RootScreens;
-  std::vector<CScreen*> _TimerScreens;
-  std::vector<CScreen*> _TuningScreens;
-  std::vector<CScreen*> _BranchScreens;
+  std::vector<std::vector<CScreen*>> _Screens;
   CRebootScreen* _pRebootScreen;
   C128x64_OLED* _pDisplay;
+  int _menu;
+  int _subMenu;
   int _rootMenu;
-  int _timerMenu;
-  int _tuningMenu;
-  int _branchMenu;
   unsigned long _DimTime;
   bool _bReqUpdate;
   void _enterScreen();
   void _leaveScreen();
-  void _cancelNonRootMenus();
 public:
   enum eUIBranches { SetClock, InheritSettings, Experimental };
-  enum eUILoops { RootMenuLoop, TimerMenuLoop, TuningMenuLoop };
+  enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, TuningMenuLoop, BranchMenus };
 public:
   CScreenManager();
   ~CScreenManager();
@@ -62,7 +57,7 @@ public:
   void reqUpdate();
   void showRebootMsg(const char* content[2], long delayTime);
   void select(eUIBranches branch);   // use to select branch menus
-  void select(eUILoops loop);  // use to select loop menus, including the root or branches
+  void select(eUIMenuSets loop);  // use to select loop menus, including the root or branches
 };
 
 #endif // __SCREEN_MANAGER_H__
