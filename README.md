@@ -41,11 +41,14 @@ Working so far:
 * Battery backed Real Time Clock - DS3231
 * Prototype "Green PCB" in production, using naked ESP32 and HC-05 modules 
 * Temperature readout in Celcius or Farenheit
+* Two new experimental thermostat modes (No practical testing - presently too hot in .au!):  
+    Tighten or loosen the thermostat temperature range by specifying a hysteresis value. eg tell the heater it is 23 degrees when it really is only 22.25 degrees (only 0.25 above set point).  
+    Request a linear change in Hz according to the deviation from the setpoint
+ 
 
 To be implemented 
 --------------------------
 * Add 2 external digital inputs, 2 digital outputs, analogue input 433MHz Rx stream, 433MHz Tx stream connections. This would allow external timer units for example, or analogue temeprature demand (which is still only 1 degree resolution).
-* Implement narrow hysteresis to trick heater into a tighter thermostat temperature range. eg tell heater it is 23 degrees when it really is only 22.25 degrees (only 0.25 above set point).
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
 * Expand hardware compatability with different MCU setups.  IE Arduino Due/Mega/Pro ESP8266 & ESP32
