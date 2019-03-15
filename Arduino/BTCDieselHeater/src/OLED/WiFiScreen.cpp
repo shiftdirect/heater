@@ -95,8 +95,8 @@ CWiFiScreen::show()
     _printInverted(0, yPos, " WiFi Inactive ", true);
   }
 
-    // show next/prev screen navigation line
-  _printMenuText(_display.xCentre(), 53, "<-             ->", _rowSel == 0, eCentreJustify);
+    // show next/prev menu navigation line
+  _printMenuText(_display.xCentre(), 53, "\021             \020", _rowSel == 0, eCentreJustify);
 
   return true;
 }

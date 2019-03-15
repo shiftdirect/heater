@@ -99,7 +99,7 @@ CFuelMixtureScreen::show()
         // navigation line
         yPos = 53;
         xPos = _display.xCentre();
-        _printMenuText(xPos, yPos, "<-    exit    ->", _rowSel == 0, eCentreJustify);
+        _printMenuText(xPos, yPos, "\021    exit    \020", _rowSel == 0, eCentreJustify);
         break;
 
       case 5:

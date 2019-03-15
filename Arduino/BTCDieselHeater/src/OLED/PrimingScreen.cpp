@@ -70,8 +70,8 @@ CPrimingScreen::show()
   CRect extents;
 
   int yPos = 53;
-  // show next/prev screen navigation line
-  _printMenuText(_display.xCentre(), yPos, "<-             ->", _rowSel == 0, eCentreJustify);
+  // show next/prev menu navigation line
+  _printMenuText(_display.xCentre(), yPos, "\021             \020", _rowSel == 0, eCentreJustify);
 
   yPos = 40;
   if(_rowSel == 1) {

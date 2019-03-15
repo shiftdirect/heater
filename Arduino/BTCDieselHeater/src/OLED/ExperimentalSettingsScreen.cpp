@@ -26,6 +26,8 @@
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
 
+static unsigned char  _testoStart = 1;
+
 ///////////////////////////////////////////////////////////////////////////
 //
 // CExperimentalSettingsScreen
@@ -81,7 +83,7 @@ CExperimentalSettingsScreen::show()
       _printInverted(_display.xCentre(), 0, " Experimental ", true, eCentreJustify);
       _printMenuText(65, Line2, "Thermostat:", false, eRightJustify);
       _printMenuText(65, Line1, "Window:", false, eRightJustify);
-      sprintf(msg, "%.1f`C", _window);
+      sprintf(msg, "%.1f\367C", _window);  // \367 is octal for Adafruit degree symbol
       _printMenuText(Column, Line1, msg, _rowSel == 1);
       switch(_thermoMode) {
         case 1: 
@@ -98,6 +100,16 @@ CExperimentalSettingsScreen::show()
       int yPos = 53;
       int xPos = _display.xCentre();
       _printMenuText(xPos, yPos, "exit", _rowSel == 0, eCentreJustify);
+
+      // TESTO - dump Adafruit font
+      char testo[17];
+      for(int i=0; i<16; i++) {
+        testo[i] = i+_testoStart;
+      }
+      testo[16] = 0;
+      _printMenuText(0, Line3, testo);
+      sprintf(testo, "\\%03o", _testoStart, _testoStart);
+      _printMenuText(124, Line3, testo, _rowSel == 3, eRightJustify);
     }
   }
 
@@ -147,7 +159,7 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _rowSel++;
-          UPPERLIMIT(_rowSel, 2);
+          UPPERLIMIT(_rowSel, 3);
           break;
         case 4:    // confirmed save
           _showStoringMessage();
@@ -190,6 +202,9 @@ CExperimentalSettingsScreen::_adjust(int dir)
       _thermoMode += dir;
       ROLLLOWERLIMIT(_thermoMode, 0, 2);
       ROLLUPPERLIMIT(_thermoMode, 2, 0);
+      break;
+    case 3:   // font dump mode
+      _testoStart += dir * 16;
       break;
   }
 }

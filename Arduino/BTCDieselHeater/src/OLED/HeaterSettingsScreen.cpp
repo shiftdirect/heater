@@ -88,7 +88,7 @@ CHeaterSettingsScreen::show()
       // navigation line
       int yPos = 53;
       int xPos = _display.xCentre();
-      _printMenuText(xPos, yPos, "<-    exit    ->", _rowSel == 0, eCentreJustify);
+      _printMenuText(xPos, yPos, "\021    exit    \020", _rowSel == 0, eCentreJustify);
     }
   }
 
@@ -134,7 +134,9 @@ CHeaterSettingsScreen::animate()
       _printMenuText(Column, Line2, msg);
     }
     else {
-      _printMenuText(xPos, Line2, "(");
+      sprintf(msg, "(\365%d)", _fanSensor);  // \365 is division character
+      _printMenuText(xPos, Line2, msg);  
+/*      _printMenuText(xPos, Line2, "(\");  
       xPos += 6;
       //                                     .
       // draw old fashioned divide symbol  -----
@@ -145,7 +147,7 @@ CHeaterSettingsScreen::animate()
       _display.drawPixel(xPos+2, Line2+barOfs+2, WHITE);
       xPos += 6;
       sprintf(msg, "%d)", _fanSensor);
-      _printMenuText(xPos, Line2, msg);
+      _printMenuText(xPos, Line2, msg);*/
     }
   }
   return true;

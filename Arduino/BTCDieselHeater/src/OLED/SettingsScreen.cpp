@@ -83,7 +83,7 @@ CSettingsScreen::show()
 
     int yPos = 53;
     int xPos = _display.xCentre();
-    _printMenuText(xPos, yPos, "<-    enter    ->", true, eCentreJustify);
+    _printMenuText(xPos, yPos, "\021    enter    \020", true, eCentreJustify);
   }
   
   return true;
@@ -124,7 +124,9 @@ CSettingsScreen::animate()
     else {
       int xPos = Column+6;
       _printMenuText(xPos, Line2, "    "); // erase
-      _printMenuText(xPos, Line2, "(");
+      sprintf(msg, "(\365%d)", fanSensor);   // \365 is division character
+      _printMenuText(xPos, Line2, msg);
+/*    _printMenuText(xPos, Line2, "(");
       xPos += 6;
       //                                     .
       // draw old fashioned divide symbol  -----
@@ -135,7 +137,7 @@ CSettingsScreen::animate()
       _display.drawPixel(xPos+2, Line2+barOfs+2, WHITE);
       xPos += 6;
       sprintf(msg, "%d)", fanSensor);
-      _printMenuText(xPos, Line2, msg);
+      _printMenuText(xPos, Line2, msg); */
     }
 
   }
