@@ -50,7 +50,7 @@ sNVStore::init()
     timer[i].init();
   }
   DimTime = 60000;  // 1 minute
-  ThermostatMethod = 10 << 2;  // 1 degree hysteresis, normal thermostat
+  ThermostatMethod = 10 << 2;  // 1 degree window, normal thermostat
   Heater.init();
 }
 
@@ -102,9 +102,9 @@ CHeaterStorage::getThermostatMethodMode()
 }
 
 float
-CHeaterStorage::getThermostatMethodHysteresis()
+CHeaterStorage::getThermostatMethodWindow()
 {
-  return float((_calValues.ThermostatMethod >> 2) & 0x3f) * 0.05f;  // top 5 bits / 10, then / 2
+  return float((_calValues.ThermostatMethod >> 2) & 0x3f) * 0.1f;  // top 5 bits / 10, then / 2
 }
 
 void
@@ -148,12 +148,12 @@ CHeaterStorage::setThermostatMode(unsigned char val)
 void
 CHeaterStorage::setThermostatMethodMode(unsigned char val)
 {
-  _calValues.ThermostatMethod &= 0xF3;
+  _calValues.ThermostatMethod &= ~0x03;
   _calValues.ThermostatMethod |= (val & 0x03);
 }
 
 void
-CHeaterStorage::setThermostatMethodHysteresis(float val)
+CHeaterStorage::setThermostatMethodWindow(float val)
 {
   _calValues.ThermostatMethod &= 0x03;
   int nVal = int(val * 10 + 0.5);
@@ -363,7 +363,6 @@ CESP32HeaterStorage::loadUI()
   validatedLoad("dimTime", _calValues.DimTime, 60000, s32inBounds, 0, 600000);
   validatedLoad("degF", _calValues.degF, 0, u8inBounds, 0, 1);
   validatedLoad("thermoMethod", _calValues.ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
-//  validatedLoad("thermoMethod", _calValues.ThermostatMethod, (10 << 2) + 0, u8inBounds, 0, 2);  // TESTO!!!!
   preferences.end();    
 }
 

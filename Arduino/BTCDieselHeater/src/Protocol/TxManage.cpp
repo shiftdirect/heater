@@ -23,6 +23,9 @@
 #include "../Utility/NVStorage.h"
 #include "../Protocol/helpers.h"
 
+//#define DEBUG_THERMOSTAT
+
+
 extern void DebugReportFrame(const char* hdr, const CProtocol&, const char* ftr);
 
 // CTxManage is used to send a data frame to the blue wire
@@ -126,15 +129,19 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 
     if(NVstore.getThermostatMode()) {
       uint8_t ThermoMode = NVstore.getThermostatMethodMode();  // get the METHOD of thermostat control
-      float Hysteresis = NVstore.getThermostatMethodHysteresis();
+      float Window = NVstore.getThermostatMethodWindow();
       float tCurrent = getTemperatureSensor();
       float tDesired = float(NVstore.getDesiredTemperature());
       float tDelta = tCurrent - tDesired;
+      float fTemp;
 #ifdef DEBUG_THERMOSTAT
-      DebugPort.print("Hysteresis = "); DebugPort.print(Hysteresis); DebugPort.print(" tCurrent = "); DebugPort.print(tCurrent); DebugPort.print(" tDesired = "); DebugPort.print(tDesired); DebugPort.print(" tDelta = "); DebugPort.println(tDelta); 
+      DebugPort.print("Window = "); DebugPort.print(Window); DebugPort.print(" tCurrent = "); DebugPort.print(tCurrent); DebugPort.print(" tDesired = "); DebugPort.print(tDesired); DebugPort.print(" tDelta = "); DebugPort.println(tDelta); 
 #endif
+      Window /= 2;
       switch(ThermoMode) {
+
         case 0:  // conventional heater controlled thermostat mode
+        case 3:  // conventional heater controlled thermostat mode
           m_TxFrame.setThermostatModeProtocol(1);  // using heater thermostat control
           u8Temp = (uint8_t)(tActual + 0.5);
           m_TxFrame.setTemperature_Actual(u8Temp);
@@ -142,38 +149,40 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           DebugPort.print("Conventional thermostat mode: tActual = "); DebugPort.println(u8Temp); 
 #endif
           break;
-        case 1:  // heater controlled thermostat mode - BUT actual temp is tweaked via a changed hysteresis
+
+        case 1:  // heater controlled thermostat mode - BUT actual temp is tweaked via a changed window
           m_TxFrame.setThermostatModeProtocol(1);  // using heater thermostat control
-          u8Temp = (uint8_t)(tActual + 0.5);  // use rounded actual unless within hysteresis window
-          if(fabs(tDelta) < Hysteresis) {
-            // hold at desired if inside hysteresis
+          u8Temp = (uint8_t)(tActual + 0.5);  // use rounded actual unless within window
+          if(fabs(tDelta) < Window) {
+            // hold at desired if inside window
             u8Temp = NVstore.getDesiredTemperature();   
           }
           else if(fabs(tDelta) <= 1.0) {
-            // force outside if delta is <= 1 but greater than hysteresis
+            // force outside if delta is <= 1 but greater than window
             u8Temp = NVstore.getDesiredTemperature() + ((tDelta > 0) ? 1 : -1); 
           }
           m_TxFrame.setTemperature_Actual(u8Temp);  
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.print("Heater hysteresis thermostat mode: tActual = "); DebugPort.println(u8Temp); 
+          DebugPort.print("Heater controlled windowed thermostat mode: tActual = "); DebugPort.println(u8Temp); 
 #endif
           break;
+
         case 2:  // BTC controlled thermostat mode
-          // map Hysteresis to a Hz value,
+          // map linear deviation within thermostat window to a Hz value,
           // Hz mode however uses the desired temperature field, somewhere between 8 - 35 for min/max
           // so create a desired "temp" according the the current hystersis
-          tDelta /= Hysteresis;  // convert tDelta to fraction of hysteresis (CAUTION - may be > +-1 !)
+          tDelta /= Window;  // convert tDelta to fraction of window (CAUTION - may be > +-1 !)
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.print("Controller hysteresis thermostat mode: Fraction = "); DebugPort.print(tDelta);
+          DebugPort.print("Linear window thermostat mode: Fraction = "); DebugPort.print(tDelta);
 #endif
-          Hysteresis = (m_TxFrame.getTemperature_Max() + m_TxFrame.getTemperature_Min()) * 0.5;  // midpoint - tDelta = 0 hinges here
-          tDelta *= (m_TxFrame.getTemperature_Max() - Hysteresis);  // linear offset from setpoint
-          Hysteresis -= tDelta;  // lower Hz when over temp, higher Hz when under!
+          fTemp = (m_TxFrame.getTemperature_Max() + m_TxFrame.getTemperature_Min()) * 0.5;  // midpoint - tDelta = 0 hinges here
+          tDelta *= (m_TxFrame.getTemperature_Max() - fTemp);  // linear offset from setpoint
+          fTemp -= tDelta;  // lower Hz when over temp, higher Hz when under!
           // bounds limit - recall original tDelta was NOT managed prior!
-          LOWERLIMIT(Hysteresis, m_TxFrame.getTemperature_Min());
-          UPPERLIMIT(Hysteresis, m_TxFrame.getTemperature_Max());
+          LOWERLIMIT(fTemp, m_TxFrame.getTemperature_Min());
+          UPPERLIMIT(fTemp, m_TxFrame.getTemperature_Max());
           // apply modifed desired temperature (works in conjunction with thermostatmode = 0!)
-          u8Temp = (uint8_t)(Hysteresis + 0.5);
+          u8Temp = (uint8_t)(fTemp + 0.5);
           m_TxFrame.setTemperature_Desired(u8Temp);
           m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
           m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode

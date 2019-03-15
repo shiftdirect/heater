@@ -105,7 +105,7 @@ public:
     unsigned char getDesiredTemperature();
     unsigned char getThermostatMode();
     unsigned char getThermostatMethodMode();
-    float         getThermostatMethodHysteresis();
+    float         getThermostatMethodWindow();
     unsigned char getSysVoltage();
     unsigned char getFanSensor();
     unsigned char getGlowDrive();
@@ -119,7 +119,7 @@ public:
     void setDesiredTemperature(unsigned char val);
     void setThermostatMode(unsigned char val);
     void setThermostatMethodMode(unsigned char val);
-    void setThermostatMethodHysteresis(float val);
+    void setThermostatMethodWindow(float val);
     void setSystemVoltage(float fVal);
     void setFanSensor(unsigned char val);
     void setGlowDrive(unsigned char val);

@@ -175,6 +175,10 @@ CSettingsScreen::keyHandler(uint8_t event)
           _getPassword();
         }
       }
+      // press DOWN
+      if(event & key_Down) {
+        _ScreenManager.selectExperimentalScreen(true);
+      }
     }
   }
   _ScreenManager.reqUpdate();
