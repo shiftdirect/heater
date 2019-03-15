@@ -161,7 +161,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
     // press CENTRE
     if(event & key_Centre) {
       if(_rowSel == 0) {
-        _ScreenManager.selectRootMenuLoop();  // exit: return to clock screen
+        _ScreenManager.select(CScreenManager::RootMenuLoop);  // exit: return to clock screen
       }
       else if(_rowSel == 2) {   // exit from per day settings
         _rowSel = 1;

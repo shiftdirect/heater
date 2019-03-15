@@ -216,7 +216,7 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.selectRootMenuLoop();
+          _ScreenManager.select(CScreenManager::RootMenuLoop);
           break;
         case 1:
         case 2:

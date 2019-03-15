@@ -45,9 +45,10 @@ class CScreenManager {
   bool _bReqUpdate;
   void _enterScreen();
   void _leaveScreen();
-  void _cancelSideMenus();
+  void _cancelNonRootMenus();
 public:
   enum eUIBranches { SetClock, InheritSettings, Experimental };
+  enum eUILoops { RootMenuLoop, TimerMenuLoop, TuningMenuLoop };
 public:
   CScreenManager();
   ~CScreenManager();
@@ -60,10 +61,8 @@ public:
   void keyHandler(uint8_t event);
   void reqUpdate();
   void showRebootMsg(const char* content[2], long delayTime);
-  void selectBranchMenu(eUIBranches branch);
-  void selectTimerMenuLoop();
-  void selectTuningMenuLoop();
-  void selectRootMenuLoop();
+  void select(eUIBranches branch);   // use to select branch menus
+  void select(eUILoops loop);  // use to select loop menus, including the root or branches
 };
 
 #endif // __SCREEN_MANAGER_H__

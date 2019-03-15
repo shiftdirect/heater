@@ -101,7 +101,7 @@ CScreenManager::CScreenManager()
 {
   _pDisplay = NULL;
   _rootMenu = -1;
-  _cancelSideMenus();
+  _cancelNonRootMenus();
   _bReqUpdate = false;
   _DimTime = millis() + 60000;
   _pRebootScreen = NULL;
@@ -209,7 +209,7 @@ CScreenManager::checkUpdate()
 
       _leaveScreen();
       // fall back to main menu 
-      selectRootMenuLoop();
+      select(RootMenuLoop);
       // sticky screens are Detailed Control, Basic Control, or Clock.
       // otherwise return to Basic Control screen
       if(_rootMenu > 2) {
@@ -364,45 +364,36 @@ CScreenManager::keyHandler(uint8_t event)
 }
 
 void
-CScreenManager::_cancelSideMenus()
+CScreenManager::_cancelNonRootMenus()
 {
   _timerMenu = -1;
   _tuningMenu = -1;
   _branchMenu = -1;
 }
 
-void 
-CScreenManager::selectTimerMenuLoop()
+void
+CScreenManager::select(eUILoops loop)
 {
   _leaveScreen();
-  _cancelSideMenus();
-  _timerMenu = 0;
+  _cancelNonRootMenus();
+  switch(loop) {
+    case RootMenuLoop:
+      break;
+    case TimerMenuLoop:
+      _timerMenu = 0;
+      break;
+    case TuningMenuLoop:
+      _tuningMenu = 0;
+      break;
+  }
   _enterScreen();
 }
 
 void 
-CScreenManager::selectTuningMenuLoop()
+CScreenManager::select(eUIBranches branch)
 {
   _leaveScreen();
-  _cancelSideMenus();
-  _tuningMenu = 0;
-  _enterScreen();
-}
-
-void 
-CScreenManager::selectRootMenuLoop()
-{
-  _leaveScreen();
-  _cancelSideMenus();
-  _enterScreen();
-}
-
-
-void 
-CScreenManager::selectBranchMenu(eUIBranches branch)
-{
-  _leaveScreen();
-  _cancelSideMenus();
+  _cancelNonRootMenus();
   _branchMenu = branch;
   _enterScreen();
 }
