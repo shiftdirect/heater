@@ -37,7 +37,7 @@
 static const int Line3 = 14;
 static const int Line2 = 27;
 static const int Line1 = 40;
-static const int Column = 75;
+static const int Column = 70;
 
 static const int plugPowers[] = { 35, 40, 45, 80, 85, 90};
 
@@ -79,8 +79,8 @@ CExperimentalSettingsScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " Experimental ", true, eCentreJustify);
-      _printMenuText(67, Line2, "Thermostat:", false, eRightJustify);
-      _printMenuText(67, Line1, "Window:", false, eRightJustify);
+      _printMenuText(65, Line2, "Thermostat:", false, eRightJustify);
+      _printMenuText(65, Line1, "Window:", false, eRightJustify);
       sprintf(msg, "%.1f", _window);
       _printMenuText(Column, Line1, msg, _rowSel == 1);
       switch(_thermoMode) {

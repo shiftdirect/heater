@@ -86,6 +86,12 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("FanMax", it->key) == 0) {
 			setFanMax(it->value.as<short>());
 		}
+		else if(strcmp("ThermostatMethod", it->key) == 0) {
+			NVstore.setThermostatMethodMode(it->value.as<unsigned char>());
+		}
+		else if(strcmp("ThermostatWindow", it->key) == 0) {
+			NVstore.setThermostatMethodWindow(it->value.as<float>());
+		}
 		else if(strcmp("Thermostat", it->key) == 0) {
 			if(!setThermostatMode(it->value.as<unsigned char>())) {  // this request is blocked if OEM controller active
         JSONmoderator.reset("ThermoStat");   
@@ -199,6 +205,23 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
   return bSend;
 }
 
+bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
+{
+  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+	bool bSend = false;  // reset should send flag
+
+  bSend |= moderator.addJson("ThermostatMethod", NVstore.getThermostatMethodMode(), root); 
+  bSend |= moderator.addJson("ThermostatWindow", NVstore.getThermostatMethodWindow(), root); 
+
+  if(bSend) {
+		root.printTo(opStr, len);
+  }
+
+  return bSend;
+}
+
 // the way the JSON timer strings are crafted, we have to iterate over each timer's parameters
 // individually, the JSON name is always the same for each timer, the payload IDs the specific
 // timer
@@ -230,6 +253,16 @@ void updateJSONclients(bool report)
   char jsonStr[800];
   {
     if(makeJSONString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
+      if (report) {
+        DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
+      }
+      getBluetoothClient().send( jsonStr );
+      sendWebServerString( jsonStr );
+    }
+  }
+  // update extended params
+  {
+    if(makeJSONStringEx(JSONmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
       }
