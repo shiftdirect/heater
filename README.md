@@ -49,6 +49,7 @@ Working so far:
 To be implemented 
 --------------------------
 * Add 2 external digital inputs, 2 digital outputs, analogue input 433MHz Rx stream, 433MHz Tx stream connections. This would allow external timer units for example, or analogue temeprature demand (which is still only 1 degree resolution).
+* Low voltage cut out 
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
 * Expand hardware compatability with different MCU setups.  IE Arduino Due/Mega/Pro ESP8266 & ESP32
