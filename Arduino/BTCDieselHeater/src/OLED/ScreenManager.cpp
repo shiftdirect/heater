@@ -11,6 +11,7 @@
 #include "HeaterSettingsScreen.h"
 #include "SettingsScreen.h"
 #include "ExperimentalSettingsScreen.h"
+#include "FontDumpScreen.h"
 #include "TimerChartScreen.h"
 #include "InheritSettingsScreen.h"
 #include <Wire.h>
@@ -186,6 +187,7 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CSetClockScreen(*_pDisplay, *this));         // clock set branch screen
   menuloop.push_back(new CInheritSettingsScreen(*_pDisplay, *this));  // inherit OEM settings branch screen
   menuloop.push_back(new CExperimentalSettingsScreen(*_pDisplay, *this)); // experimental settings branch screen
+  menuloop.push_back(new CFontDumpScreen(*_pDisplay, *this)); // font dump branch screen
   _Screens.push_back(menuloop);
 
   _menu = 0;

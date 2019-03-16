@@ -47,8 +47,8 @@ public:
   enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, CommsUI, SettingsUI };
   enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
-  enum eUITuningMenus { MixtureUI, ProtectedConfigUI };
-  enum eUIBranchMenus { SetClock, InheritSettings, Experimental };
+  enum eUITuningMenus { MixtureUI, HeaterSettingsUI };
+  enum eUIBranchMenus { SetClockUI, InheritSettingsUI, ExperimentalUI, FontDumpUI };
 public:
   CScreenManager();
   ~CScreenManager();

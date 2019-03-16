@@ -26,7 +26,6 @@
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
 
-static unsigned char  _testoStart = 1;
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -40,8 +39,6 @@ static const int Line3 = 14;
 static const int Line2 = 27;
 static const int Line1 = 40;
 static const int Column = 70;
-
-static const int plugPowers[] = { 35, 40, 45, 80, 85, 90};
 
 CExperimentalSettingsScreen::CExperimentalSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
@@ -101,15 +98,6 @@ CExperimentalSettingsScreen::show()
       int xPos = _display.xCentre();
       _printMenuText(xPos, yPos, "exit", _rowSel == 0, eCentreJustify);
 
-      // TESTO - dump Adafruit font
-      char testo[17];
-      for(int i=0; i<16; i++) {
-        testo[i] = i+_testoStart;
-      }
-      testo[16] = 0;
-      _printMenuText(0, Line3, testo);
-      sprintf(testo, "\\%03o", _testoStart, _testoStart);
-      _printMenuText(124, Line3, testo, _rowSel == 3, eRightJustify);
     }
   }
 
@@ -148,8 +136,13 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
       }
     }
     if(event & key_Down) {
-      _rowSel--;
-      LOWERLIMIT(_rowSel, 0);
+      if(_rowSel == 0) {
+        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
+      }
+      else {
+        _rowSel--;
+        LOWERLIMIT(_rowSel, 0);
+      }
     }
     // UP press
     if(event & key_Up) {
@@ -159,7 +152,7 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _rowSel++;
-          UPPERLIMIT(_rowSel, 3);
+          UPPERLIMIT(_rowSel, 2);
           break;
         case 4:    // confirmed save
           _showStoringMessage();
@@ -202,9 +195,6 @@ CExperimentalSettingsScreen::_adjust(int dir)
       _thermoMode += dir;
       ROLLLOWERLIMIT(_thermoMode, 0, 2);
       ROLLUPPERLIMIT(_thermoMode, 2, 0);
-      break;
-    case 3:   // font dump mode
-      _testoStart += dir * 16;
       break;
   }
 }

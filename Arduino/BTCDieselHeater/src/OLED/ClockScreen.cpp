@@ -87,7 +87,7 @@ CClockScreen::keyHandler(uint8_t event)
     }
     // press UP
     if(event & key_Up) {
-      _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::SetClock);   // switch to clock set screen
+      _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::SetClockUI);   // switch to clock set screen
     }
     // press DOWN
     if(event & key_Down) {

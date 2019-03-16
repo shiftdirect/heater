@@ -170,7 +170,7 @@ CSettingsScreen::keyHandler(uint8_t event)
           if(event & key_Centre)
             _reqOEMWarning();
           else {
-            _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::InheritSettings);
+            _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::InheritSettingsUI);
           }
         }
         else {
@@ -179,7 +179,7 @@ CSettingsScreen::keyHandler(uint8_t event)
       }
       // press DOWN
       if(event & key_Down) {
-        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::Experimental);
+        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);
       }
     }
   }
