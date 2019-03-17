@@ -35,10 +35,12 @@ class CExperimentalSettingsScreen : public CPasswordScreen
   float _window;
   int _thermoMode;
   int _animateCount;
+  int _startChar;
   void _initUI();
 public:
   CExperimentalSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
   void onSelect();
 };

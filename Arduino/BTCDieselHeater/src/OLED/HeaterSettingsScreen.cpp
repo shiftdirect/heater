@@ -88,7 +88,17 @@ CHeaterSettingsScreen::show()
       // navigation line
       int yPos = 53;
       int xPos = _display.xCentre();
-      _printMenuText(xPos, yPos, "\021    exit    \020", _rowSel == 0, eCentreJustify);
+
+      switch(_rowSel) {
+        case 0:
+          _printMenuText(xPos, yPos, " \021     Exit     \020 ", true, eCentreJustify);
+          break;
+        default:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          _printMenuText(xPos, 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
+          _printMenuText(xPos, 56, "Save", false, eCentreJustify);
+          break;
+      }
     }
   }
 
@@ -107,7 +117,7 @@ CHeaterSettingsScreen::animate()
     _printMenuText(Column, Line2, "    ");
     _printMenuText(Column, Line1, "    ");
     if(_rowSel == 4)
-      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 43, "Confirm save", false, eCentreJustify);
   }
   else {
     _animateCount++;
@@ -136,18 +146,6 @@ CHeaterSettingsScreen::animate()
     else {
       sprintf(msg, "(\365%d)", _fanSensor);  // \365 is division character
       _printMenuText(xPos, Line2, msg);  
-/*      _printMenuText(xPos, Line2, "(\");  
-      xPos += 6;
-      //                                     .
-      // draw old fashioned divide symbol  -----
-      //                                     .
-      int barOfs = 3;
-      _display.drawLine(xPos, Line2+barOfs, xPos+4, Line2+barOfs, WHITE);
-      _display.drawPixel(xPos+2, Line2+barOfs-2, WHITE);
-      _display.drawPixel(xPos+2, Line2+barOfs+2, WHITE);
-      xPos += 6;
-      sprintf(msg, "%d)", _fanSensor);
-      _printMenuText(xPos, Line2, msg);*/
     }
   }
   return true;

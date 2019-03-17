@@ -201,9 +201,9 @@ void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay)
   const char* content[2];
 
   if(isWifiSTA() && !erase)
-    content[0] = "WiFi Mode -> STA+AP";
+    content[0] = "WiFi Mode \032 STA+AP";
   else 
-    content[0] = "WiFi Mode -> AP only";
+    content[0] = "WiFi Mode \032 AP only";
 
   if(erase) {
     wm.resetSettings();
@@ -212,11 +212,11 @@ void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay)
 
   if(state) {
     DebugPort.println("*** Rebooting into config portal ***");
-    content[1] = "Web -> Config Portal";
+    content[1] = "Web \032 Config Portal";
   }
   else {
     DebugPort.println("*** Rebooting into web server ***");
-    content[1] = "Web -> Heater control";
+    content[1] = "Web \032 Heater control";
   }
 
   restartServer = (millis() + rebootDelay) | 1;      // prepare to reboot in the future - ensure non zero!

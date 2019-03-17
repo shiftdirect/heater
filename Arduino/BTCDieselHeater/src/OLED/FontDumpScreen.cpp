@@ -87,12 +87,12 @@ bool
 CFontDumpScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
-    // press LEFT or DOWN to show prior 64 characters
-    if(event & (key_Left | key_Down)) {
+    // press LEFT or UP to show prior 64 characters
+    if(event & (key_Left | key_Up)) {
       _startChar -= 64;
     }
-    // press RIGHT or UP to show next 64 characters
-    if(event & (key_Right | key_Up)) {
+    // press RIGHT or DOWN to show next 64 characters
+    if(event & (key_Right | key_Down)) {
       _startChar += 64;
     }
     // CENTRE press

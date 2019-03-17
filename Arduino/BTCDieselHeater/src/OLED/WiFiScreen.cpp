@@ -36,6 +36,10 @@
 
 #define STA_HOLD_TIME 10
 
+static const int LIMIT_AWAY = 0;
+static const int LIMIT_LEFT = 1;
+static const int LIMIT_RIGHT = 2;
+
 CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _initUI();
@@ -52,6 +56,27 @@ CWiFiScreen::_initUI()
 {
   _rowSel = 0;
   _bShowMAC = false;
+
+  if(isWifiAP()) {
+    if(isWifiConfigPortal()) {
+      _colSel = 0;  // " WiFi: CFG AP only "
+      _colLimit = LIMIT_LEFT;   // left most selection
+    }
+    else {
+      _colSel = 1;  //  " WiFi: AP only ";
+      _colLimit = LIMIT_RIGHT;   // right most selection
+    }
+  }
+  else {
+    if(isWifiConfigPortal()) {
+      _colSel = 2;  // " WiFi: CFG STA+AP "
+      _colLimit = LIMIT_AWAY;   // away from menu limits
+    }
+    else {
+      _colSel = 3;  //  " WiFi: STA+AP ";
+      _colLimit = LIMIT_RIGHT;   // right most selection
+    }
+  }
 }
 
 bool 
@@ -63,15 +88,25 @@ CWiFiScreen::show()
   if(isWifiConnected() || isWifiAP()) {
     
     const char* pTitle = NULL;
-    if(isWifiAP()) 
-      pTitle = isWifiConfigPortal() ? " WiFi: CFG AP only " : " WiFi: AP only ";
-    else 
-      pTitle = isWifiConfigPortal() ? " WiFi: CFG STA+AP " : " WiFi: STA+AP ";
+    switch(_colSel) {
+      case 0:
+        pTitle = " WiFi: CFG AP only ";
+        break;
+      case 1:
+        pTitle = " WiFi: AP only ";
+        break;
+      case 2:
+        pTitle = " WiFi: CFG STA+AP ";
+        break;
+      case 3:
+        pTitle = " WiFi: STA+AP ";
+        break;
+    }
     
+    if(_rowSel == 0) 
+      _printInverted(3, yPos, pTitle, true);   // inverted title bar
     if(_rowSel == 1) 
       _printMenuText(3, yPos, pTitle, true);   // selection box
-    else  
-      _printInverted(3, yPos, pTitle, true);   // inverted title bar
     yPos += 3;
 
     // only show STA IP address if available!
@@ -95,12 +130,41 @@ CWiFiScreen::show()
     _printInverted(0, yPos, " WiFi Inactive ", true);
   }
 
-    // show next/prev menu navigation line
-  _printMenuText(_display.xCentre(), 53, "\021             \020", _rowSel == 0, eCentreJustify);
-
   return true;
 }
 
+bool
+CWiFiScreen::animate()
+{
+  bool retval = false;
+  // show next/prev menu navigation line
+  if(_rowSel == 0) {
+    _printMenuText(_display.xCentre(), 53, " \021               \020 ", true, eCentreJustify);
+    if(_bShowMAC)
+      _printMenuText(_display.xCentre(), 53, "\030Sel  \031IP", false, eCentreJustify);
+    else
+      _printMenuText(_display.xCentre(), 53, "\030Sel  \031MAC", false, eCentreJustify);
+  }
+  if(_rowSel == 1) {
+    _display.drawFastHLine(0, 52, 128, WHITE);
+    const char* pMsg = NULL;
+    switch(_colLimit) {
+      case LIMIT_AWAY:
+        pMsg = "\031 ESC   Set   \033\032 Sel";  // both Sel arrows
+        break;
+      case LIMIT_LEFT:
+        pMsg = "\031 ESC   Set    \032 Sel";  // only right Sel arrow
+        break;
+      case LIMIT_RIGHT:
+        pMsg = "\031 ESC   Set    \033 Sel";  // only left Sel arrow
+        break;
+    }
+    if(pMsg)
+      _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
+  }
+  CScreen::animate();
+  return true;
+}
 
 bool 
 CWiFiScreen::keyHandler(uint8_t event)
@@ -112,13 +176,37 @@ CWiFiScreen::keyHandler(uint8_t event)
     }
     // press LEFT 
     if(event & key_Left) {
-      _ScreenManager.prevMenu(); 
-      _rowSel = 0;
+      if(_rowSel == 0) {
+        _ScreenManager.prevMenu(); 
+      }
+      else {
+        if(isWifiAP()) {
+          _colSel = 0;
+          _colLimit = LIMIT_LEFT;
+        }
+        else {
+          _colSel--;
+          LOWERLIMIT(_colSel, 0);
+          _colLimit = (_colSel == 0) ? LIMIT_LEFT : LIMIT_AWAY;
+        }
+      }
     }
     // press RIGHT 
     if(event & key_Right) {
-      _ScreenManager.nextMenu(); 
-      _rowSel = 0;
+      if(_rowSel == 0) {
+        _ScreenManager.nextMenu(); 
+      }
+      else {
+        if(isWifiAP()) {
+          _colSel = 1;
+          _colLimit = LIMIT_RIGHT;
+        }
+        else {
+          _colSel++;
+          UPPERLIMIT(_colSel, 3);
+          _colLimit = (_colSel == 3) ? LIMIT_RIGHT : LIMIT_AWAY;
+        }
+      }
     }
     // press UP
     if(event & key_Up) {
@@ -135,24 +223,30 @@ CWiFiScreen::keyHandler(uint8_t event)
   }
 
   if(event & keyRepeat) {    // track key hold time
-    _repeatCount++;
+    if(event & key_Centre) {
+      _repeatCount++;
+    }
   }
 
   if(event & keyReleased) {
     if(event & key_Centre) {
       if(_rowSel) {
 
-        if(_repeatCount > STA_HOLD_TIME) {
-          wifiEnterConfigPortal(true, _repeatCount > STA_HOLD_TIME, 5000);    // press - reboot into portal, long press - erase credentials
+        switch(_colSel) {
+          case 0:
+            wifiEnterConfigPortal(true, true, 5000);    //  CFG AP: erase credentials, reboot into portal
+            break;
+          case 1:
+            wifiEnterConfigPortal(false, true, 5000);   //  AP Only: erase credentials, reboot into webserver
+            break;
+          case 2:
+            wifiEnterConfigPortal(true, false, 5000);   //  CFG STA+AP: keep credentials, reboot into portal
+            break;
+          case 3:
+            wifiEnterConfigPortal(false, false, 5000);   //  STA+AP: keep credentials, reboot into webserver
+            break;
         }
-        else {
-          if(isWifiConfigPortal()) {
-            wifiEnterConfigPortal(false, false, 5000);  // stop config portal, reboot
-          }
-          else {
-            wifiEnterConfigPortal(true, false, 5000);  // stop config portal, reboot
-          }
-        }
+        _rowSel = 2;  // stop ticker display
       }
     }
     _repeatCount = 0;

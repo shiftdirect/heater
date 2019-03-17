@@ -74,7 +74,7 @@ CSetClockScreen::show()
     const int col2 = 90;
     const int col3 = _display.width() - border;
 
-    _printInverted(0, 16, " Set Clock ", true);
+    _printInverted(0, 15, " Set Clock ", true);
 
     const BTCDateTime& now = Clock.get();
     if(_rowSel == 0) {
@@ -127,10 +127,22 @@ CSetClockScreen::show()
         _printMenuText(_display.width()-border, yPos, "SET", _rowSel==7, eRightJustify);
     }
     // navigation line
-    yPos = 53;
     xPos = _display.xCentre();
-    _printMenuText(xPos, yPos, " return ", _rowSel==0, eCentreJustify);
-
+    if(_rowSel == 0) {
+      yPos = 53;
+      _printMenuText(_display.width(), yPos, "\030Edit", false, eRightJustify);
+      _printMenuText(xPos, yPos, " Exit ", true, eCentreJustify);
+    }
+    else {
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      _printMenuText(xPos, 56, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
+      if(_rowSel == 7) {
+        _printMenuText(xPos, 56, "Save", false, eCentreJustify);
+      }
+      else {
+        _printMenuText(xPos, 56, "Abort", false, eCentreJustify);
+      }
+    }
   }    
   return true;
 }
@@ -160,7 +172,8 @@ CSetClockScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop); // exit, return to clock screen
       }
       else {
-        _adjTimeDate(-1);
+        _rowSel--;
+        ROLLLOWERLIMIT(_rowSel, 1, 7);
       }
     }
     // press RIGHT 
@@ -169,32 +182,34 @@ CSetClockScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop); // exit, return to clock screen
       }
       else {
-        _adjTimeDate(+1);
+        _rowSel++;
+        ROLLUPPERLIMIT(_rowSel, 7, 1);
       }
     }
     // press UP 
     if(event & key_Up) {
-      _rowSel++;
-      ROLLUPPERLIMIT(_rowSel, 7, 1);
+      if(_rowSel == 0)
+        _rowSel = 1;
+      _adjTimeDate(+1);
     }
     // press DOWN
     if(event & key_Down) {
       if(_rowSel == 0) {
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop); // exit, return to clock screen
       } else {
-        _rowSel--;
-        ROLLLOWERLIMIT(_rowSel, 1, 7);
+        _adjTimeDate(-1);
       }
     }
   }
+
   if(event & keyRepeat) {
-    if(_rowSel>=1) {
+    if(_rowSel >= 1) {
       // hold RIGHT 
-      if(event & key_Right) {
+      if(event & key_Up) {
         _adjTimeDate(+1);
       }
       // hold LEFT
-      if(event & key_Left) {
+      if(event & key_Down) {
         _adjTimeDate(-1);
       }
     }

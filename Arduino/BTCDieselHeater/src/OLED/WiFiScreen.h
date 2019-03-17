@@ -33,9 +33,11 @@ public:
   CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr);
   void onSelect();
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
 private:
-  int  _rowSel;
+  int  _colLimit;
+  int  _rowSel, _colSel;
   int  _repeatCount;
   bool _bShowMAC;
   void _initUI();

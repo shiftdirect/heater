@@ -99,7 +99,22 @@ CFuelMixtureScreen::show()
         // navigation line
         yPos = 53;
         xPos = _display.xCentre();
-        _printMenuText(xPos, yPos, "\021    exit    \020", _rowSel == 0, eCentreJustify);
+        switch(_rowSel) {
+          case 0:
+            _printMenuText(xPos, yPos, " \021     Exit     \020 ", _rowSel == 0, eCentreJustify);     // " <     Exit     > "
+            break;
+          case 1:
+          case 2:
+            _display.drawFastHLine(0, 52, 128, WHITE);
+            _printMenuText(xPos, 56, "\030\031Sel   Save  \033\032 \3600.1", false, eCentreJustify);  // "^vSel   Save  <> +-0.1"
+            break;
+          case 3:
+          case 4:
+            _display.drawFastHLine(0, 52, 128, WHITE);
+            _printMenuText(xPos, 56, "\030\031Sel   Save   \033\032 \36010", false, eCentreJustify);  // "^vSel   Save   <> +-10"
+            break;
+        }
+
         break;
 
       case 5:

@@ -95,6 +95,20 @@ CScreen::_printInverted(int x, int y, const char* str, bool selected, eJUSTIFY j
   _display.setTextColor(WHITE, BLACK);
 }
 
+void
+CScreen::_scrollMessage(int y, const char* str, int& charOffset)
+{
+  char msg[20];
+  int maxIndex = strlen(str) - 20;
+  strncpy(msg, &str[charOffset], 19);
+  msg[19] = 0;
+  _printMenuText(_display.xCentre(), y, msg, false, eCentreJustify);
+
+  charOffset++;
+  if(charOffset >= maxIndex) {
+    charOffset = 0;
+  }
+}
 
 void
 CScreen::_adjustExtents(CRect& extents, eJUSTIFY justify, const char* str)

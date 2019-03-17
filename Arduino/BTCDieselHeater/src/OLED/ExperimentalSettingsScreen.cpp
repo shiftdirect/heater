@@ -93,17 +93,50 @@ CExperimentalSettingsScreen::show()
           _printMenuText(Column, Line2, "Standard", _rowSel == 2);
           break;
       }
-      // navigation line
-      int yPos = 53;
-      int xPos = _display.xCentre();
-      _printMenuText(xPos, yPos, "exit", _rowSel == 0, eCentreJustify);
-
     }
   }
 
   return true;
 }
 
+bool 
+CExperimentalSettingsScreen::animate()
+{
+  if(_rowSel != 4) {
+    int yPos = 53;
+    int xPos = _display.xCentre();
+    const char* pMsg = NULL;
+    switch(_rowSel) {
+      case 0:
+        _printMenuText(xPos, yPos, " Exit ", true, eCentreJustify);
+        _printMenuText(_display.width(), yPos, "\030Edit", false, eRightJustify);
+        break;
+      case 1:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    User defined window for custom thermostat modes.                    ";
+        _scrollMessage(56, pMsg, _startChar);
+        break;
+      case 2:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        switch(_thermoMode) {
+          case 1:
+            pMsg = "                   Controller holds measured temperature at the set point whilst within the window.                    ";
+            break;
+          case 2:
+            pMsg = "                   Controller uses Fixed Hz mode, adjusting pump rate linearly across the set point window.                    ";
+            break;
+          default:
+            pMsg = "                   Use heater's standard thermostat control.                    ";
+            break;
+        }
+        if(pMsg)
+          _scrollMessage(56, pMsg, _startChar);
+        break;
+    }
+    return true;
+  }
+  return false;
+}
 
 bool 
 CExperimentalSettingsScreen::keyHandler(uint8_t event)
@@ -116,6 +149,7 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _adjust(-1);
+          _startChar = 0;
           break;
         case 4:
           _rowSel = 0;   // abort save
@@ -129,6 +163,7 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _adjust(+1);
+          _startChar = 0;
           break;
         case 4:
           _rowSel = 0;   // abort save
@@ -151,6 +186,7 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
+          _startChar = 0;
           _rowSel++;
           UPPERLIMIT(_rowSel, 2);
           break;

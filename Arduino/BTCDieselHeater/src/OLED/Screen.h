@@ -44,6 +44,7 @@ protected:
   void _printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify = eLeftJustify);
   void _adjustExtents(CRect& rect, eJUSTIFY justify, const char* str);
   void _drawMenuSelection(CRect extents, const char* str, int border = 3, int radius = 4);
+  void _scrollMessage(int y, const char* str, int& charOffset);
   void _reqOEMWarning();
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 

@@ -71,7 +71,25 @@ CPrimingScreen::show()
 
   int yPos = 53;
   // show next/prev menu navigation line
-  _printMenuText(_display.xCentre(), yPos, "\021             \020", _rowSel == 0, eCentreJustify);
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(_display.xCentre(), yPos, " \021    \030Edit    \020 ", _rowSel == 0, eCentreJustify);
+      break;
+    case 1:
+    case 2:
+      _display.drawFastHLine(0, 53, 128, WHITE);
+      _printMenuText(_display.xCentre(), 57, "\030\031 Sel       \033\032 Adj", false, eCentreJustify);
+      break;
+    case 3:
+      _display.drawFastHLine(0, 53, 128, WHITE);
+      if(_colSel == 2) {
+        _printMenuText(_display.xCentre(), 57, "\033\030\031 Stop", false, eCentreJustify);
+      }
+      else {
+        _printMenuText(_display.xCentre(), 57, "\032 Start     \031 Sel", false, eCentreJustify);
+      }
+      break;
+  }
 
   yPos = 40;
   if(_rowSel == 1) {
@@ -98,12 +116,12 @@ CPrimingScreen::show()
 
   // fuel pump priming menu
   yPos = 16;
-  _printMenuText(border, yPos, "Prime pump");
+  _printMenuText(border, yPos, "Pump");
   if(_rowSel == 3) {
-    _printMenuText(70, yPos, "OFF", _colSel == 1);
+    _printMenuText(40, yPos, "OFF", _colSel == 1);
     if(_colSel != 2) {
       if(!getHeaterInfo().getRunState()) {                    // prevent option if heater is running
-        _printMenuText(100, yPos, "ON");  // becomes Hz when actually priming 
+        _printMenuText(70, yPos, "ON");  // becomes Hz when actually priming 
       }
     }
     else {
@@ -122,7 +140,7 @@ CPrimingScreen::show()
       if(_PrimeStop) {
         char msg[16];
         sprintf(msg, "%.1fHz", pumpHz);
-        _printMenuText(_display.width()-border, yPos, msg, true, eRightJustify);
+        _printMenuText(70, yPos, msg, true);
       }
     }
   }
