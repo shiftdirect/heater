@@ -21,7 +21,9 @@
 
 #include <stdint.h>
 
+const uint8_t UART_Tx = 1;
 const uint8_t LED_Pin = 2;
+const uint8_t UART_Rx = 3;
 const uint8_t HC05_KeyPin = 4;
 const uint8_t TxEnbPin = 5;
 const uint8_t GPIO12_pin = 12;    // HSPI std pins

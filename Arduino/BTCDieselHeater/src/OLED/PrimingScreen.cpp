@@ -99,7 +99,8 @@ CPrimingScreen::show()
   }
   else {
     // follow actual heater settings
-    int col = getHeaterInfo().isThermostat() ? 0 : 1;              
+    // int col = getHeaterInfo().isThermostat() ? 0 : 1;              
+    int col = getThermostatModeActive() ? 0 : 1;
     _printInverted(border, yPos, "Thermostat", col == 0);
     _printInverted(_display.width()-border, yPos, "Fixed Hz", col == 1, eRightJustify);
   }
@@ -163,6 +164,7 @@ CPrimingScreen::keyHandler(uint8_t event)
         case 1: 
           _colSel = 0; 
           setThermostatMode(1);
+          saveNV();
           break;
         case 2: 
           _colSel = 0; 
@@ -183,6 +185,7 @@ CPrimingScreen::keyHandler(uint8_t event)
         case 1: 
           _colSel = 1; 
           setThermostatMode(0);
+          saveNV();
           break;
         case 2: 
           _colSel = 1; 
@@ -207,7 +210,8 @@ CPrimingScreen::keyHandler(uint8_t event)
         if(_rowSel == 2)
           _colSel = NVstore.getDegFMode();
         if(_rowSel == 1)
-          _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+          // _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+          _colSel = getThermostatModeActive() ? 0 : 1;              
       }
     }
     // press DOWN
@@ -216,7 +220,8 @@ CPrimingScreen::keyHandler(uint8_t event)
       LOWERLIMIT(_rowSel, 0);
       _colSel = 0;
       if(_rowSel == 1)
-        _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+        // _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+        _colSel = getThermostatModeActive() ? 0 : 1;              
       if(_rowSel == 2)
         _colSel = NVstore.getDegFMode();
     }

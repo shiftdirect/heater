@@ -37,7 +37,7 @@ public:
   bool keyHandler(uint8_t event);
 private:
   int  _colLimit;
-  int  _rowSel, _colSel;
+  int  _rowSel, _colSel, _OTAsel;
   int  _repeatCount;
   bool _bShowMAC;
   void _initUI();

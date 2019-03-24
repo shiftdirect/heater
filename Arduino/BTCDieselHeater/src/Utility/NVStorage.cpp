@@ -34,8 +34,7 @@ bool
 sNVStore::valid()
 {
   bool retval = true;
-  retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
-  retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
+  retval &= Options.valid();
   for(int i=0; i<2; i++) {
     retval &= timer[i].valid();
   }
@@ -49,8 +48,7 @@ sNVStore::init()
   for(int i=0; i<2; i++) {
     timer[i].init();
   }
-  DimTime = 60000;  // 1 minute
-  ThermostatMethod = 10 << 2;  // 1 degree window, normal thermostat
+  Options.init();
   Heater.init();
 }
 
@@ -98,13 +96,13 @@ CHeaterStorage::getThermostatMode()
 unsigned char 
 CHeaterStorage::getThermostatMethodMode()
 {
-  return _calValues.ThermostatMethod & 0x03;
+  return _calValues.Options.ThermostatMethod & 0x03;
 }
 
 float
 CHeaterStorage::getThermostatMethodWindow()
 {
-  return float((_calValues.ThermostatMethod >> 2) & 0x3f) * 0.1f;  // top 5 bits / 10, then / 2
+  return float((_calValues.Options.ThermostatMethod >> 2) & 0x3f) * 0.1f;  // top 5 bits / 10, then / 2
 }
 
 void
@@ -148,16 +146,16 @@ CHeaterStorage::setThermostatMode(unsigned char val)
 void
 CHeaterStorage::setThermostatMethodMode(unsigned char val)
 {
-  _calValues.ThermostatMethod &= ~0x03;
-  _calValues.ThermostatMethod |= (val & 0x03);
+  _calValues.Options.ThermostatMethod &= ~0x03;
+  _calValues.Options.ThermostatMethod |= (val & 0x03);
 }
 
 void
 CHeaterStorage::setThermostatMethodWindow(float val)
 {
-  _calValues.ThermostatMethod &= 0x03;
+  _calValues.Options.ThermostatMethod &= 0x03;
   int nVal = int(val * 10 + 0.5);
-  _calValues.ThermostatMethod |= ((nVal & 0x3F) << 2);
+  _calValues.Options.ThermostatMethod |= ((nVal & 0x3F) << 2);
 }
 
 
@@ -225,25 +223,51 @@ CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
 unsigned long 
 CHeaterStorage::getDimTime()
 {
-  return _calValues.DimTime;
+  return _calValues.Options.DimTime;
 }
 
 void 
 CHeaterStorage::setDimTime(unsigned long val)
 {
-  _calValues.DimTime = val;
+  _calValues.Options.DimTime = val;
 }
 
 unsigned char 
 CHeaterStorage::getDegFMode()
 {
-  return _calValues.degF;
+  return _calValues.Options.degF;
 }
 
 void 
 CHeaterStorage::setDegFMode(unsigned char val)
 {
-  _calValues.degF = val;
+  _calValues.Options.degF = val;
+  save();
+}
+
+unsigned char 
+CHeaterStorage::getWifiEnabled()
+{
+  return _calValues.Options.enableWifi;
+}
+
+void 
+CHeaterStorage::setWifiEnabled(unsigned char val)
+{
+  _calValues.Options.enableWifi = val;
+  save();
+}
+
+unsigned char 
+CHeaterStorage::getOTAEnabled()
+{
+  return _calValues.Options.enableOTA;
+}
+
+void 
+CHeaterStorage::setOTAEnabled(unsigned char val)
+{
+  _calValues.Options.enableOTA = val;
   save();
 }
 
@@ -360,9 +384,11 @@ void
 CESP32HeaterStorage::loadUI()
 {
   preferences.begin("user", false);
-  validatedLoad("dimTime", _calValues.DimTime, 60000, s32inBounds, 0, 600000);
-  validatedLoad("degF", _calValues.degF, 0, u8inBounds, 0, 1);
-  validatedLoad("thermoMethod", _calValues.ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
+  validatedLoad("dimTime", _calValues.Options.DimTime, 60000, s32inBounds, 0, 600000);
+  validatedLoad("degF", _calValues.Options.degF, 0, u8inBounds, 0, 1);
+  validatedLoad("thermoMethod", _calValues.Options.ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
+  validatedLoad("enableWifi", _calValues.Options.enableWifi, 1, u8inBounds, 0, 1);
+  validatedLoad("enableOTA", _calValues.Options.enableOTA, 1, u8inBounds, 0, 1);
   preferences.end();    
 }
 
@@ -370,9 +396,11 @@ void
 CESP32HeaterStorage::saveUI()
 {
   preferences.begin("user", false);
-  preferences.putULong("dimTime", _calValues.DimTime);
-  preferences.putUChar("degF", _calValues.degF);
-  preferences.putUChar("thermoMethod", _calValues.ThermostatMethod);
+  preferences.putULong("dimTime", _calValues.Options.DimTime);
+  preferences.putUChar("degF", _calValues.Options.degF);
+  preferences.putUChar("thermoMethod", _calValues.Options.ThermostatMethod);
+  preferences.putUChar("enableWifi", _calValues.Options.enableWifi);
+  preferences.putUChar("enableOTA", _calValues.Options.enableOTA);
   preferences.end();    
 }
 

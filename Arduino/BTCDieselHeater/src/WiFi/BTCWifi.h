@@ -40,6 +40,7 @@
   bool hasWebClientSpoken(bool reset = false);
   bool hasWebServerSpoken(bool reset = false);
   void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000);
+  void wifiDisable(long rebootDelay = 7000);
   int  isWifiButton();
 
 #endif __BTCWIFI_H__

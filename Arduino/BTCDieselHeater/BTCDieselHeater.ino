@@ -369,13 +369,17 @@ void setup() {
 
 #if USE_WIFI == 1
 
-  initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
+  if(NVstore.getWifiEnabled()) {
+    initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
 #if USE_OTA == 1
-  initOTA();
+    if(NVstore.getOTAEnabled()) {
+      initOTA();
+    }
 #endif // USE_OTA
 #if USE_WEBSERVER == 1
-  initWebServer();
+    initWebServer();
 #endif // USE_WEBSERVER
+  }
 
 #endif // USE_WIFI
 

@@ -61,13 +61,35 @@ struct sHeater {
   };
 };
 
+struct sBTCoptions {
+  long DimTime;
+  uint8_t degF;
+  uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
+  uint8_t enableWifi;
+  uint8_t enableOTA;
+  bool valid() {
+    bool retval = true;
+    retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
+    retval &= (degF == 0) || (degF == 1);
+    retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
+    retval &= (enableWifi == 0) || (enableWifi == 1);
+    retval &= (enableOTA == 0) || (enableOTA == 1);
+    return retval;  
+  }
+  void init() {
+    DimTime = 60000;
+    degF = 0;
+    ThermostatMethod = 0;
+    enableWifi = 1;
+    enableOTA = 1;
+  };
+};
+
 
 // the actual data stored to NV memory
 struct sNVStore {
   sHeater Heater;
-  long DimTime;
-  uint8_t degF;
-  uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
+  sBTCoptions Options;
   sTimer timer[14];
   bool valid();
   void init();
@@ -111,6 +133,8 @@ public:
     unsigned char getGlowDrive();
     unsigned long getDimTime();
     unsigned char getDegFMode();
+    unsigned char getWifiEnabled();
+    unsigned char getOTAEnabled();
 
     void setPmin(float);
     void setPmax(float);
@@ -125,6 +149,8 @@ public:
     void setGlowDrive(unsigned char val);
     void setDimTime(unsigned long val);
     void setDegFMode(unsigned char val);
+    void setWifiEnabled(unsigned char val);
+    void setOTAEnabled(unsigned char val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);

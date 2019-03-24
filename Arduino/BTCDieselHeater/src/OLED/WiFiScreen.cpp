@@ -55,26 +55,31 @@ void
 CWiFiScreen::_initUI()
 {
   _rowSel = 0;
+  _colSel = 0;
+  _OTAsel = NVstore.getOTAEnabled();
+  _colLimit = LIMIT_LEFT;   // left most selection
   _bShowMAC = false;
 
-  if(isWifiAP()) {
-    if(isWifiConfigPortal()) {
-      _colSel = 0;  // " WiFi: CFG AP only "
-      _colLimit = LIMIT_LEFT;   // left most selection
+  if(NVstore.getWifiEnabled()) {
+    if(isWifiAP()) {
+      if(isWifiConfigPortal()) {
+        _colSel = 0;  // " WiFi: CFG AP only "
+        _colLimit = LIMIT_LEFT;   // left most selection
+      }
+      else {
+        _colSel = 1;  //  " WiFi: AP only ";
+        _colLimit = LIMIT_RIGHT;   // right most selection
+      }
     }
     else {
-      _colSel = 1;  //  " WiFi: AP only ";
-      _colLimit = LIMIT_RIGHT;   // right most selection
-    }
-  }
-  else {
-    if(isWifiConfigPortal()) {
-      _colSel = 2;  // " WiFi: CFG STA+AP "
-      _colLimit = LIMIT_AWAY;   // away from menu limits
-    }
-    else {
-      _colSel = 3;  //  " WiFi: STA+AP ";
-      _colLimit = LIMIT_RIGHT;   // right most selection
+      if(isWifiConfigPortal()) {
+        _colSel = 2;  // " WiFi: CFG STA+AP "
+        _colLimit = LIMIT_AWAY;   // away from menu limits
+      }
+      else {
+        _colSel = 3;  //  " WiFi: STA+AP ";
+        _colLimit = LIMIT_RIGHT;   // right most selection
+      }
     }
   }
 }
@@ -85,30 +90,39 @@ CWiFiScreen::show()
   CScreenHeader::show();
   
   int yPos = 18;
-  if(isWifiConnected() || isWifiAP()) {
     
-    const char* pTitle = NULL;
-    switch(_colSel) {
-      case 0:
-        pTitle = " WiFi: CFG AP only ";
-        break;
-      case 1:
-        pTitle = " WiFi: AP only ";
-        break;
-      case 2:
-        pTitle = " WiFi: CFG STA+AP ";
-        break;
-      case 3:
-        pTitle = " WiFi: STA+AP ";
-        break;
-    }
+  const char* pTitle = NULL;
+  switch(_colSel) {
+    case 0:
+      pTitle = " WiFi: DISABLED ";
+      break;
+    case 1:
+      pTitle = " WiFi: CFG AP only ";
+      break;
+    case 2:
+      pTitle = " WiFi: AP only ";
+      break;
+    case 3:
+      pTitle = " WiFi: CFG STA+AP ";
+      break;
+    case 4:
+      pTitle = " WiFi: STA+AP ";
+      break;
+  }
     
-    if(_rowSel == 0) 
-      _printInverted(3, yPos, pTitle, true);   // inverted title bar
-    if(_rowSel == 1) 
-      _printMenuText(3, yPos, pTitle, true);   // selection box
-    yPos += 3;
+  if(_rowSel == 0) 
+    _printInverted(3, yPos, pTitle, true);   // inverted title bar
+  if(_rowSel == 1) 
+    _printMenuText(3, yPos, pTitle, true);   // selection box
+  if(_rowSel == 2) {
+    if(_OTAsel == 0)
+      _printMenuText(3, yPos, " OTA: DISABLED ", true);   // selection box
+    else
+      _printMenuText(3, yPos, " OTA: ENABLED ", true);   // selection box
+  }
+  yPos += 3;
 
+  if(_colSel) {
     // only show STA IP address if available!
     if(isWifiSTA() && _repeatCount <= STA_HOLD_TIME) {
       yPos += _display.textHeight() + 2;
@@ -125,9 +139,6 @@ CWiFiScreen::show()
       _printMenuText(25, yPos, getWifiAPMACStr());
     else
       _printMenuText(25, yPos, getWifiAPAddrStr());
-  }
-  else {
-    _printInverted(0, yPos, " WiFi Inactive ", true);
   }
 
   return true;
@@ -162,6 +173,20 @@ CWiFiScreen::animate()
     if(pMsg)
       _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
   }
+  if(_rowSel == 2) {
+    _display.drawFastHLine(0, 52, 128, WHITE);
+    const char* pMsg = NULL;
+    switch(_OTAsel) {
+      case 0:
+        pMsg = "\031 ESC  Set  \032 Enable";  // only right Sel arrow
+        break;
+      case 1:
+        pMsg = "\031 ESC  Set  \033 Disable";  // only left Sel arrow
+        break;
+    }
+    if(pMsg)
+      _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
+  }
   CScreen::animate();
   return true;
 }
@@ -176,48 +201,68 @@ CWiFiScreen::keyHandler(uint8_t event)
     }
     // press LEFT 
     if(event & key_Left) {
-      if(_rowSel == 0) {
-        _ScreenManager.prevMenu(); 
-      }
-      else {
-        if(isWifiAP()) {
-          _colSel = 0;
-          _colLimit = LIMIT_LEFT;
-        }
-        else {
-          _colSel--;
-          LOWERLIMIT(_colSel, 0);
-          _colLimit = (_colSel == 0) ? LIMIT_LEFT : LIMIT_AWAY;
-        }
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.prevMenu(); 
+          break;
+        case 1:
+          if(isWifiAP()) {
+            // _colSel = 0;
+            // _colLimit = LIMIT_LEFT;
+            _colSel--;
+            LOWERLIMIT(_colSel, 0);
+            _colLimit = (_colSel == 0) ? LIMIT_LEFT : LIMIT_AWAY;
+          }
+          else {
+            _colSel--;
+            LOWERLIMIT(_colSel, 0);
+            _colLimit = (_colSel == 0) ? LIMIT_LEFT : LIMIT_AWAY;
+          }
+          break;
+        case 2:
+          _OTAsel = 0;
+          break;
       }
     }
     // press RIGHT 
     if(event & key_Right) {
-      if(_rowSel == 0) {
-        _ScreenManager.nextMenu(); 
-      }
-      else {
-        if(isWifiAP()) {
-          _colSel = 1;
-          _colLimit = LIMIT_RIGHT;
-        }
-        else {
-          _colSel++;
-          UPPERLIMIT(_colSel, 3);
-          _colLimit = (_colSel == 3) ? LIMIT_RIGHT : LIMIT_AWAY;
-        }
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.nextMenu(); 
+          break;
+        case 1:
+          if(isWifiAP()) {
+            // _colSel = 1;
+            // _colLimit = LIMIT_RIGHT;
+            _colSel++;
+            UPPERLIMIT(_colSel, 2);
+            _colLimit = (_colSel == 3) ? LIMIT_RIGHT : LIMIT_AWAY;
+          }
+          else {
+            _colSel++;
+            UPPERLIMIT(_colSel, 4);
+            _colLimit = (_colSel == 4) ? LIMIT_RIGHT : LIMIT_AWAY;
+            // UPPERLIMIT(_colSel, 3);
+            // _colLimit = (_colSel == 3) ? LIMIT_RIGHT : LIMIT_AWAY;
+          }
+          break;
+        case 2:
+          _OTAsel = 1;
+          break;
       }
     }
     // press UP
     if(event & key_Up) {
-      _rowSel = 1;
+      _rowSel++;
+      UPPERLIMIT(_rowSel, 2);
     }
     // press DOWN
     if(event & key_Down) {
       if(_rowSel == 0) {
         _bShowMAC = !_bShowMAC;   // toogle MAC/IP address if on navigation row
       }
-      _rowSel = 0;
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
     }
     _ScreenManager.reqUpdate();
   }
@@ -230,23 +275,38 @@ CWiFiScreen::keyHandler(uint8_t event)
 
   if(event & keyReleased) {
     if(event & key_Centre) {
-      if(_rowSel) {
+      if(_rowSel == 1) {
 
         switch(_colSel) {
           case 0:
-            wifiEnterConfigPortal(true, true, 5000);    //  CFG AP: erase credentials, reboot into portal
+            wifiDisable(5000);
             break;
           case 1:
-            wifiEnterConfigPortal(false, true, 5000);   //  AP Only: erase credentials, reboot into webserver
+            wifiEnterConfigPortal(true, true, 5000);    //  CFG AP: erase credentials, reboot into portal
             break;
           case 2:
-            wifiEnterConfigPortal(true, false, 5000);   //  CFG STA+AP: keep credentials, reboot into portal
+            wifiEnterConfigPortal(false, true, 5000);   //  AP Only: erase credentials, reboot into webserver
             break;
           case 3:
+            wifiEnterConfigPortal(true, false, 5000);   //  CFG STA+AP: keep credentials, reboot into portal
+            break;
+          case 4:
             wifiEnterConfigPortal(false, false, 5000);   //  STA+AP: keep credentials, reboot into webserver
             break;
         }
-        _rowSel = 2;  // stop ticker display
+        _rowSel = 3;  // stop ticker display
+      }
+      if(_rowSel == 2) {
+        NVstore.setOTAEnabled(_OTAsel);
+        NVstore.save();
+        const char* content[2];
+        if(_OTAsel)
+          content[0] = "Enabling OTA";
+        else
+          content[0] = "Disabling OTA";
+        content[1] = "";
+
+        _ScreenManager.showRebootMsg(content, 5000);
       }
     }
     _repeatCount = 0;

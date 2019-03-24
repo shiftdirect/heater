@@ -28,6 +28,7 @@
 
 #include "esp_system.h"
 #include <Preferences.h>
+#include "../Utility/NVStorage.h"
 
 #define USE_AP  
 
@@ -193,9 +194,28 @@ void doWiFiManager()
   }
 }
 
+void wifiDisable(long rebootDelay) 
+{
+  NVstore.setWifiEnabled(0); 
+  NVstore.save(); 
+
+  DebugPort.println("*** Disabling WiFi ***");
+
+  restartServer = (millis() + rebootDelay) | 1;      // prepare to reboot in the future - ensure non zero!
+
+  const char* content[2];
+  content[0] = "WiFi Mode \032 DISABLED";
+  content[1] = "";
+  ScreenManager.showRebootMsg(content, rebootDelay);
+}
+
 void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay) 
 {
 	wm.disconnect();
+
+  NVstore.setWifiEnabled(1); 
+  NVstore.save(); 
+
   prepBootIntoConfigPortal(state);  
 
   const char* content[2];

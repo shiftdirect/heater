@@ -154,6 +154,12 @@ CScreenHeader::showWifiIcon()
       _display.setCursor(X_WIFI_ICON+9, Y_WIFI_ICON+6);
       _display.print("AP");
     }
+    if(NVstore.getOTAEnabled()) {
+      _display.fillRect(X_WIFI_ICON +11, Y_WIFI_ICON, 14, 6, BLACK);
+      CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+      _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON);
+      _display.print("OTA");
+    }
   }
 }
 
