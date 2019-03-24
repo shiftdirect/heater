@@ -63,21 +63,21 @@ CWiFiScreen::_initUI()
   if(NVstore.getWifiEnabled()) {
     if(isWifiAP()) {
       if(isWifiConfigPortal()) {
-        _colSel = 0;  // " WiFi: CFG AP only "
-        _colLimit = LIMIT_LEFT;   // left most selection
+        _colSel = 1;  // " WiFi: CFG AP only "
+        _colLimit = LIMIT_AWAY;   // inner selection
       }
       else {
-        _colSel = 1;  //  " WiFi: AP only ";
+        _colSel = 2;  //  " WiFi: AP only ";
         _colLimit = LIMIT_RIGHT;   // right most selection
       }
     }
     else {
       if(isWifiConfigPortal()) {
-        _colSel = 2;  // " WiFi: CFG STA+AP "
+        _colSel = 3;  // " WiFi: CFG STA+AP "
         _colLimit = LIMIT_AWAY;   // away from menu limits
       }
       else {
-        _colSel = 3;  //  " WiFi: STA+AP ";
+        _colSel = 4;  //  " WiFi: STA+AP ";
         _colLimit = LIMIT_RIGHT;   // right most selection
       }
     }
