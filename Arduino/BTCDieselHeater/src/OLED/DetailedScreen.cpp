@@ -197,7 +197,10 @@ CDetailedScreen::keyHandler(uint8_t event)
         else {
           if(_keyRepeatCount > 3) {
             _keyRepeatCount = -1;   // prevent double handling
-            requestOn();
+            if(isCyclicActive()) 
+              requestOff();
+            else 
+              requestOn();
           }
         }
       }
@@ -396,7 +399,8 @@ CDetailedScreen::showRunState(int runstate, int errstate)
   int yPos = 25;
   _display.setTextColor(WHITE, BLACK);
   if(runstate >= 0 && runstate <= 8) {
-    if(((runstate == 0) || (runstate > 5)) && errstate) {
+    if(errstate && ((runstate == 0) || (runstate > 5))) {
+      // an error is present in idle or states beyond running, show it
       // create an "E-XX" message to display
       char msg[16];
       sprintf(msg, "E-%02d", errstate);
@@ -414,7 +418,15 @@ CDetailedScreen::showRunState(int runstate, int errstate)
       toPrint = getHeaterInfo().getErrStateStr();
     }
     else {
-      toPrint = getHeaterInfo().getRunStateStr();
+      // no errors, heater normal
+      if(isCyclicActive()) {
+        if(runstate == 0) toPrint = "Suspended";
+        else if(runstate > 5) toPrint = "Suspending...";
+        else toPrint = getHeaterInfo().getRunStateStr();
+      }
+      else {
+        toPrint = getHeaterInfo().getRunStateStr();
+      }
     }
   }
   if(toPrint) {

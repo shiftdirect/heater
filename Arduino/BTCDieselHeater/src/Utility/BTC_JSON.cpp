@@ -177,7 +177,8 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
 	bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
 	bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root); 
-	bSend |= moderator.addJson("RunState", getHeaterInfo().getRunState(), root);
+//	bSend |= moderator.addJson("RunState", getHeaterInfo().getRunState(), root);
+	bSend |= moderator.addJson("RunState", getRunStateEx(), root);
   bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
 	bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
   bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!

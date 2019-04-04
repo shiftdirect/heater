@@ -271,6 +271,19 @@ CHeaterStorage::setOTAEnabled(unsigned char val)
   save();
 }
 
+unsigned char
+CHeaterStorage::getCyclicMode()
+{
+  return _calValues.Options.cyclicMode;
+}
+
+void 
+CHeaterStorage::setCyclicMode(unsigned char val)
+{
+  _calValues.Options.cyclicMode = val;
+  save();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
 //
@@ -389,6 +402,7 @@ CESP32HeaterStorage::loadUI()
   validatedLoad("thermoMethod", _calValues.Options.ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
   validatedLoad("enableWifi", _calValues.Options.enableWifi, 1, u8inBounds, 0, 1);
   validatedLoad("enableOTA", _calValues.Options.enableOTA, 1, u8inBounds, 0, 1);
+  validatedLoad("cyclicMode", _calValues.Options.cyclicMode, 0, u8inBounds, 0, 10);
   preferences.end();    
 }
 
@@ -401,6 +415,7 @@ CESP32HeaterStorage::saveUI()
   preferences.putUChar("thermoMethod", _calValues.Options.ThermostatMethod);
   preferences.putUChar("enableWifi", _calValues.Options.enableWifi);
   preferences.putUChar("enableOTA", _calValues.Options.enableOTA);
+  preferences.putUChar("cyclicMode", _calValues.Options.cyclicMode);
   preferences.end();    
 }
 

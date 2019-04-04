@@ -55,6 +55,10 @@ extern bool hasOEMcontroller();
 extern bool hasOEMLCDcontroller();
 extern int getBlueWireStat();
 extern int getSmartError();
+extern bool isCyclicActive();
+extern int getRunStateEx();
+
+
 
 #define LOWERLIMIT(A, B) if((A) < (B)) (A) = (B)
 #define UPPERLIMIT(A, B) if((A) > (B)) (A) = (B)

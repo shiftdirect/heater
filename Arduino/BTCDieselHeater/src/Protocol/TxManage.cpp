@@ -97,6 +97,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
   m_TxFrame = basisFrame;  
 
   // ALWAYS install on/off commands if required
+#ifndef PROTOCOL_INVESTIGATION    
   m_TxFrame.resetCommand();   // no command upon blue wire initially, unless a request is pending
   if(_rawCommand) {
     m_TxFrame.setRawCommand(_rawCommand);
@@ -112,6 +113,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
       m_TxFrame.offCommand();
     }
   }
+#endif
 
   // 0x78 prevents the controller showing bum information when we parrot the OEM controller
   // heater is happy either way, the OEM controller has set the max/min stuff already

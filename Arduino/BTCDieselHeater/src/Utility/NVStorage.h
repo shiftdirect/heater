@@ -67,6 +67,7 @@ struct sBTCoptions {
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   uint8_t enableWifi;
   uint8_t enableOTA;
+  uint8_t cyclicMode;
   bool valid() {
     bool retval = true;
     retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
@@ -74,6 +75,7 @@ struct sBTCoptions {
     retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
     retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= (enableOTA == 0) || (enableOTA == 1);
+    retval &= cyclicMode < 10;
     return retval;  
   }
   void init() {
@@ -82,6 +84,7 @@ struct sBTCoptions {
     ThermostatMethod = 0;
     enableWifi = 1;
     enableOTA = 1;
+    cyclicMode = 0;
   };
 };
 
@@ -135,6 +138,7 @@ public:
     unsigned char getDegFMode();
     unsigned char getWifiEnabled();
     unsigned char getOTAEnabled();
+    unsigned char getCyclicMode();
 
     void setPmin(float);
     void setPmax(float);
@@ -151,6 +155,7 @@ public:
     void setDegFMode(unsigned char val);
     void setWifiEnabled(unsigned char val);
     void setOTAEnabled(unsigned char val);
+    void setCyclicMode(unsigned char val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);

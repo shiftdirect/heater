@@ -34,6 +34,7 @@ class CExperimentalSettingsScreen : public CPasswordScreen
   void _adjust(int dir);
   float _window;
   int _thermoMode;
+  int _cyclicMode;
   int _animateCount;
   int _startChar;
   void _initUI();

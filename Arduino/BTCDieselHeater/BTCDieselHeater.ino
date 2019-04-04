@@ -114,7 +114,6 @@
 #define RX_DATA_TIMOUT 50
 
 
-
 #ifdef ESP32
 #include "src/Bluetooth/BluetoothESP32.h"
 #else
@@ -135,6 +134,7 @@ void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
+void manageCyclicMode();
 
 // DS18B20 temperature sensor support
 OneWire  ds(15);  // on pin 5 (a 4.7K resistor is necessary)
@@ -162,6 +162,7 @@ long lastRxTime;                     // used to observe inter character delays
 bool bHasOEMController = false;
 bool bHasOEMLCDController = false;
 bool bHasHtrData = false;
+bool bUserON = false;
 
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
@@ -768,6 +769,8 @@ void loop()
             }
             // exponential mean to stabilse readings
             fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
+
+            manageCyclicMode();
           }
         }
         else {
@@ -775,9 +778,7 @@ void loop()
           fFilteredTemperature = -100;
         }
         // Added DISABLE INTERRUPTS to test for parasitic fix.
-//        portDISABLE_INTERRUPTS();
         TempSensor.requestTemperatures();               // prep sensor for future reading
-//        portENABLE_INTERRUPTS();
 
         ScreenManager.reqUpdate();
       }
@@ -801,7 +802,40 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
   DebugPort.print(ftr);                     // footer
 }
 
+void manageCyclicMode()
+{
+  uint8_t cyclic = NVstore.getCyclicMode();
+  if(cyclic && bUserON) {   // cyclic mode enabled, and user has started heater
+    cyclic += 1;  // bump up by 1 degree - no point invoking at 1 deg over!
+    float deltaT = fFilteredTemperature - getSetTemp();
+//    DebugPort.print("Cyclic = "); DebugPort.print(cyclic); DebugPort.print(" bUserON = "); DebugPort.print(bUserON);
+//    DebugPort.print(" deltaT = "); DebugPort.println(deltaT);
 
+    // ensure we cancel user ON mode if heater throws an error
+    int errState = getHeaterInfo().getErrState();
+    if(errState > 1 && errState < 12) {
+      // excludes errors 0,1(OK) & 12(Retry)
+      DebugPort.println("CYCLIC MODE: cancelling user ON status"); 
+      requestOff();   // forcibly cancel cyclic operation - pretend user pressed OFF
+    }
+    int heaterState = getHeaterInfo().getRunState();
+    // check if over temp, turn off heater
+    if(deltaT > cyclic) {
+      if(heaterState > 0 && heaterState <= 5) {  
+        DebugPort.print("CYCLIC MODE: Stopping heater, deltaT > +"); DebugPort.println(cyclic);
+        heaterOff();    // over temp - request heater stop
+      }
+    }
+    // check if under temp, turn on heater
+    if(deltaT < -1) {
+      // 1 degree below set point - restart heater
+      if(heaterState == 0) {
+        DebugPort.println("CYCLIC MODE: Restarting heater, deltaT < -1");
+        heaterOn();
+      }
+    }
+  }
+}
 
 void initBlueWireSerial()
 {
@@ -837,16 +871,26 @@ bool validateFrame(const CProtocol& frame, const char* name)
 
 void requestOn()
 {
-  TxManage.queueOnRequest();
-  SmartError.reset();
-//  HeaterData.setRefTime();
+  heaterOn();
+  bUserON = true;    // for cyclic mode
 }
 
 void requestOff()
 {
+  heaterOff();
+  bUserON = false;   // for cyclic mode
+}
+
+void heaterOn() 
+{
+  TxManage.queueOnRequest();
+  SmartError.reset();
+}
+
+void heaterOff()
+{
   TxManage.queueOffRequest();
   SmartError.inhibit();
-//  HeaterData.setRefTime();
 }
 
 void ToggleOnOff()
@@ -1018,7 +1062,7 @@ void checkDebugCommands()
 #ifdef PROTOCOL_INVESTIGATION    
     bool bSendVal = false;
 #endif
-    if(isControl(rxVal)) {    // "End of Line"
+    if(rxVal == '\n') {    // "End of Line"
 #ifdef PROTOCOL_INVESTIGATION    
       String convert(PCline.Line);
       val = convert.toInt();
@@ -1062,6 +1106,16 @@ void checkDebugCommands()
       else if(rxVal == 'i') {
         DebugPort.println("Test fan bytes");
         mode = 3;
+      }
+      else if(rxVal == 'c') {
+        DebugPort.println("Test Command Byte... ");
+        mode = 4;
+      }
+      else if(rxVal == 'x') {
+        DebugPort.println("Special mode cancelled");
+        val = 0;
+        mode = 0;
+        DefaultBTCParams.Controller.Command = 0;
       }
       else if(rxVal == ']') {
         val++;
@@ -1110,11 +1164,15 @@ void checkDebugCommands()
           DefaultBTCParams.Controller.Prime = val & 0xff;     // always  0x32:Thermostat, 0xCD:Fixed
           break;
         case 2:
-          DefaultBTCParams.Controller.MinTempRise = val & 0xff;     // always 0x05
+          DefaultBTCParams.Controller.GlowDrive = val & 0xff;     // always 0x05
           break;
         case 3:
           DefaultBTCParams.Controller.Unknown2_MSB = (val >> 8) & 0xff;     // always 0x0d
           DefaultBTCParams.Controller.Unknown2_LSB = (val >> 0) & 0xff;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
+          break;
+        case 4:
+          DebugPort.print("Forced controller command = "); DebugPort.println(val&0xff);
+          DefaultBTCParams.Controller.Command = val & 0xff;
           break;
       }
     }
@@ -1159,3 +1217,19 @@ int getSmartError()
 {
   return SmartError.getError();
 }
+
+bool isCyclicActive()
+{
+  return bUserON && (NVstore.getCyclicMode() != 0);
+}
+
+int getRunStateEx()
+{
+  int heaterstate = getHeaterInfo().getRunState();
+  if(heaterstate == 0) {
+    if(isCyclicActive()) {
+      heaterstate = 10;   // special state for cyclic suspended
+    }
+  }
+  return heaterstate;
+}	

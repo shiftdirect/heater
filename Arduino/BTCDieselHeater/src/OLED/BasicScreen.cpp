@@ -98,7 +98,7 @@ CBasicScreen::show()
       xPos = border;
       _printMenuText(xPos, yPos, msg, _nModeSel == 0);
 
-      setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
+      // setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
     }
     else {
       // cancel selection mode, apply whatever is boxed
@@ -154,11 +154,13 @@ CBasicScreen::keyHandler(uint8_t event)
         else {
           _showMode = millis() + 5000;
           _nModeSel = 0;
+          setThermostatMode(1);    // set the new mode
+          NVstore.save();
         }
         _ScreenManager.reqUpdate();
       }
     }
-    // press RIGHT to selecxt next screen, or Thermostat mode when in mode select
+    // press RIGHT to select next screen, or Thermostat mode when in mode select
     if(event & key_Right) {
       if(!_showMode)
         _ScreenManager.nextMenu();
@@ -168,6 +170,8 @@ CBasicScreen::keyHandler(uint8_t event)
         else {
           _showMode = millis() + 5000;
           _nModeSel = 1;
+          setThermostatMode(0);    // set the new mode
+          NVstore.save();
         }
         _ScreenManager.reqUpdate();
       }
@@ -215,7 +219,10 @@ CBasicScreen::keyHandler(uint8_t event)
           // standby, request ON
           if(repeatCount > 3) {
             repeatCount = -1;
-            requestOn();
+            if(isCyclicActive()) 
+              requestOff();         // actually shut off cyclic mode if already in idle
+            else 
+              requestOn();
           }
         }
       }
@@ -288,8 +295,18 @@ CBasicScreen::showRunState()
       if(runstate) {
         if(runstate < 5)        toPrint = "Starting";
         else if(runstate == 5)  toPrint = "Running";
-        else if(runstate == 8)  toPrint = "Cooling";
-        else                    toPrint = "Shutting down";
+        else if(isCyclicActive()) {
+          if(runstate > 5)      toPrint = "Suspending...";
+        }
+        else {
+          if(runstate == 8)     toPrint = "Cooling";
+          else                  toPrint = "Shutting down";
+        }
+      }
+      else {
+        if(isCyclicActive()) {
+          toPrint = "Suspended";
+        }
       }
     }
   }

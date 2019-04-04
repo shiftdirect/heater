@@ -45,6 +45,7 @@ CExperimentalSettingsScreen::CExperimentalSettingsScreen(C128x64_OLED& display, 
   _initUI();
   _window = 10;
   _thermoMode = 0;
+  _cyclicMode = 0;
 }
 
 void 
@@ -54,6 +55,7 @@ CExperimentalSettingsScreen::onSelect()
   _initUI();
   _window = NVstore.getThermostatMethodWindow();
   _thermoMode = NVstore.getThermostatMethodMode();
+  _cyclicMode = NVstore.getCyclicMode();
 }
 
 void
@@ -78,6 +80,7 @@ CExperimentalSettingsScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " Experimental ", true, eCentreJustify);
+      _printMenuText(65, Line3, "Overtemp:", false, eRightJustify);
       _printMenuText(65, Line2, "Thermostat:", false, eRightJustify);
       _printMenuText(65, Line1, "Window:", false, eRightJustify);
       sprintf(msg, "%.1f\367C", _window);  // \367 is octal for Adafruit degree symbol
@@ -93,6 +96,13 @@ CExperimentalSettingsScreen::show()
           _printMenuText(Column, Line2, "Standard", _rowSel == 2);
           break;
       }
+      if(_cyclicMode) {
+        sprintf(msg, "> %d\367C", _cyclicMode+1);  // \367 is octal for Adafruit degree symbol
+      }
+      else {
+        strcpy(msg, "OFF");
+      }
+      _printMenuText(Column, Line3, msg, _rowSel == 3);
     }
   }
 
@@ -132,6 +142,11 @@ CExperimentalSettingsScreen::animate()
         if(pMsg)
           _scrollMessage(56, pMsg, _startChar);
         break;
+      case 3:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    Controller auto cycles heater if over temperature occurs.                    ";
+        _scrollMessage(56, pMsg, _startChar);
+        break;
     }
     return true;
   }
@@ -145,11 +160,11 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
     // press LEFT to select previous screen
     if(event & key_Left) {
       switch(_rowSel) {
-        case 1:
         case 2:
+          _startChar = 0;
+        case 1:
         case 3:
           _adjust(-1);
-          _startChar = 0;
           break;
         case 4:
           _rowSel = 0;   // abort save
@@ -159,11 +174,11 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
     // press RIGHT to select next screen
     if(event & key_Right) {
       switch(_rowSel) {
-        case 1:
         case 2:
+          _startChar = 0;
+        case 1:
         case 3:
           _adjust(+1);
-          _startChar = 0;
           break;
         case 4:
           _rowSel = 0;   // abort save
@@ -188,12 +203,13 @@ CExperimentalSettingsScreen::keyHandler(uint8_t event)
         case 3:
           _startChar = 0;
           _rowSel++;
-          UPPERLIMIT(_rowSel, 2);
+          UPPERLIMIT(_rowSel, 3);
           break;
         case 4:    // confirmed save
           _showStoringMessage();
           NVstore.setThermostatMethodMode(_thermoMode);
           NVstore.setThermostatMethodWindow(_window);
+          NVstore.setCyclicMode(_cyclicMode);
           saveNV();
           _rowSel = 0;
           break;
@@ -231,6 +247,11 @@ CExperimentalSettingsScreen::_adjust(int dir)
       _thermoMode += dir;
       ROLLLOWERLIMIT(_thermoMode, 0, 2);
       ROLLUPPERLIMIT(_thermoMode, 2, 0);
+      break;
+    case 3:
+      _cyclicMode += dir;
+      UPPERLIMIT(_cyclicMode, 10);
+      LOWERLIMIT(_cyclicMode, 0);
       break;
   }
 }

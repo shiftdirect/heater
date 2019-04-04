@@ -324,17 +324,18 @@ CProtocol::setSystemVoltage(float fVal)
 }
 
 const char* Runstates [] PROGMEM = {
-  " Stopped/Ready ",
-  "Starting...",
-  "Igniting...",
-  "Ignition retry pause",
-  "Ignited",
-  "Running",
-  "Stopping",
-  "Shutting down",
-  "Cooling",
-  "Heating glow plug",    // interpreted state - actually runstate 2 with no pump action!
-  "Unknown run state"
+  " Stopped/Ready ",      // 0
+  "Starting...",          // 1
+  "Igniting...",          // 2
+  "Ignition retry pause", // 3
+  "Ignited",              // 4
+  "Running",              // 5
+  "Stopping",             // 6 
+  "Shutting down",        // 7
+  "Cooling",              // 8
+  "Heating glow plug",    // 9  - interpreted state - actually runstate 2 with no pump action!
+  "Suspended",            // 10 - interpreted state - cyclic mode has suspended heater
+  "Unknown run state"     
 };
 
  
@@ -342,7 +343,7 @@ const char* Runstates [] PROGMEM = {
 const char* 
 CProtocolPackage::getRunStateStr() const 
 { 
-  uint8_t runstate = getRunState();
+  uint8_t runstate = getRunStateEx();
   UPPERLIMIT(runstate, 10);
   if(runstate == 2 && getPump_Actual() == 0) {  // split runstate 2 - glow, then fuel
     runstate = 9;
