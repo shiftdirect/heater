@@ -1223,13 +1223,3 @@ bool isCyclicActive()
   return bUserON && (NVstore.getCyclicMode() != 0);
 }
 
-int getRunStateEx()
-{
-  int heaterstate = getHeaterInfo().getRunState();
-  if(heaterstate == 0) {
-    if(isCyclicActive()) {
-      heaterstate = 10;   // special state for cyclic suspended
-    }
-  }
-  return heaterstate;
-}	

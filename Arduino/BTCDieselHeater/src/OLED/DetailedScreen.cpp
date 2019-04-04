@@ -81,8 +81,8 @@ CDetailedScreen::show()
 
   const char* c = String(getTemperatureSensor()).c_str();
   
-  int runstate = getHeaterInfo().getRunState();//HtrFrame.getRunState(); 
-  int errstate = getHeaterInfo().getErrState(); //HtrFrame.getErrState(); 
+  int runstate = getHeaterInfo().getRunStateEx();
+  int errstate = getHeaterInfo().getErrState(); 
   if(errstate) errstate--;  // correct for +1 biased return value
   
   long tDelta = millis() - _showTarget;
@@ -106,7 +106,7 @@ CDetailedScreen::show()
   _animatePump = false;
   _animateGlow = false;
 
-  if(runstate) {
+  if(runstate != 0 && runstate != 10) {  // not idle modes
     float power = getHeaterInfo().getGlowPlug_Power();
     if(power > 1) {
       showGlowPlug(power);
@@ -188,7 +188,8 @@ CDetailedScreen::keyHandler(uint8_t event)
     if(_keyRepeatCount >= 0) {
       _keyRepeatCount++;
       if(event & key_Centre) {
-        if(getHeaterInfo().getRunState()) {
+        int runstate = getHeaterInfo().getRunStateEx();
+        if(runstate) {   // running, including cyclic mode idle
           if(_keyRepeatCount > 5) {
             _keyRepeatCount = -1;        // prevent double handling
             requestOff();
@@ -197,17 +198,17 @@ CDetailedScreen::keyHandler(uint8_t event)
         else {
           if(_keyRepeatCount > 3) {
             _keyRepeatCount = -1;   // prevent double handling
-            if(isCyclicActive()) 
-              requestOff();
-            else 
-              requestOn();
+            requestOn();
           }
         }
       }
       if(event & key_Down) {
         if(_keyRepeatCount > 1) {    // held Down - togle thermo/fixed mode
           _keyRepeatCount = -1;      // prevent double handling
-          if(reqThermoToggle())  _showTarget = millis() + 3500;
+          if(reqThermoToggle()) {
+            _showTarget = millis() + 3500;
+            NVstore.save();
+          } 
           else  _reqOEMWarning();
         }
       }
@@ -398,36 +399,27 @@ CDetailedScreen::showRunState(int runstate, int errstate)
   const char* toPrint = NULL;
   int yPos = 25;
   _display.setTextColor(WHITE, BLACK);
-  if(runstate >= 0 && runstate <= 8) {
-    if(errstate && ((runstate == 0) || (runstate > 5))) {
-      // an error is present in idle or states beyond running, show it
-      // create an "E-XX" message to display
-      char msg[16];
-      sprintf(msg, "E-%02d", errstate);
-      if(runstate > 5)
-        yPos -= _display.textHeight();
-      _display.setCursor(_display.xCentre(), yPos);
-      // flash error code
-      toggle = !toggle;
-      if(toggle)
-        _display.printCentreJustified(msg);
-      else {
-        _display.printCentreJustified("          ");
-      }
-      yPos += _display.textHeight();
-      toPrint = getHeaterInfo().getErrStateStr();
-    }
+  if(errstate && ((runstate == 0) || (runstate > 5))) {
+    // an error is present in idle or states beyond running, show it
+    // create an "E-XX" message to display
+    char msg[16];
+    sprintf(msg, "E-%02d", errstate);
+    if(runstate > 5)
+      yPos -= _display.textHeight();
+    _display.setCursor(_display.xCentre(), yPos);
+    // flash error code
+    toggle = !toggle;
+    if(toggle)
+      _display.printCentreJustified(msg);
     else {
-      // no errors, heater normal
-      if(isCyclicActive()) {
-        if(runstate == 0) toPrint = "Suspended";
-        else if(runstate > 5) toPrint = "Suspending...";
-        else toPrint = getHeaterInfo().getRunStateStr();
-      }
-      else {
-        toPrint = getHeaterInfo().getRunStateStr();
-      }
+      _display.printCentreJustified("          ");
     }
+    yPos += _display.textHeight();
+    toPrint = getHeaterInfo().getErrStateStr();
+  }
+  else {
+    // no errors, heater normal
+    toPrint = getHeaterInfo().getRunStateStr();
   }
   if(toPrint) {
     _printMenuText(_display.xCentre(), yPos, toPrint, false, eCentreJustify);

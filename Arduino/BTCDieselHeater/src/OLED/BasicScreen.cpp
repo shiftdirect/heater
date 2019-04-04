@@ -180,8 +180,10 @@ CBasicScreen::keyHandler(uint8_t event)
     // impossible with 5 way switch!
     uint8_t doubleKey = key_Down | key_Up;
     if((event & doubleKey) == doubleKey) {
-      if(reqThermoToggle())
+      if(reqThermoToggle()) {
         _showSetMode = millis() + 2000;
+        NVstore.save();
+      }
       else 
         _reqOEMWarning();
     }
@@ -208,21 +210,18 @@ CBasicScreen::keyHandler(uint8_t event)
       }
       // hold CENTRE to turn ON or OFF
       if(event & key_Centre) {
-        if(getHeaterInfo().getRunState()) {
-          // running, request OFF
+        int runstate = getHeaterInfo().getRunStateEx();
+        if(runstate) {   // running, including cyclic mode idle
           if(repeatCount > 5) {
-            repeatCount = -2;        // prevent double handling
-            requestOff();
+            repeatCount = -1;
+            requestOff();         
           }
         }
-        else {
+        else {  // standard idle state
           // standby, request ON
           if(repeatCount > 3) {
             repeatCount = -1;
-            if(isCyclicActive()) 
-              requestOff();         // actually shut off cyclic mode if already in idle
-            else 
-              requestOn();
+            requestOn();
           }
         }
       }
@@ -264,7 +263,7 @@ CBasicScreen::keyHandler(uint8_t event)
 void 
 CBasicScreen::showRunState()
 {
-  int runstate = getHeaterInfo().getRunState(); 
+  int runstate = getHeaterInfo().getRunStateEx(); 
   int errstate = getHeaterInfo().getErrState(); 
 
   if(errstate) errstate--;  // correct for +1 biased return value
@@ -272,8 +271,8 @@ CBasicScreen::showRunState()
   static bool toggle = false;
   const char* toPrint = NULL;
   _display.setTextColor(WHITE, BLACK);
-  if(runstate >= 0 && runstate <= 8) {
-    if(((runstate == 0) || (runstate > 5)) && errstate) {
+//  if(runstate >= 0 && runstate <= 8) {
+    if(errstate && ((runstate == 0) || (runstate > 5))) {
 
       // flash error code
       char msg[16];
@@ -293,22 +292,18 @@ CBasicScreen::showRunState()
     }
     else {
       if(runstate) {
-        if(runstate < 5)        toPrint = "Starting";
-        else if(runstate == 5)  toPrint = "Running";
-        else if(isCyclicActive()) {
-          if(runstate > 5)      toPrint = "Suspending...";
-        }
-        else {
-          if(runstate == 8)     toPrint = "Cooling";
-          else                  toPrint = "Shutting down";
-        }
-      }
-      else {
-        if(isCyclicActive()) {
-          toPrint = "Suspended";
+        toPrint = getHeaterInfo().getRunStateStr();
+        // simplify starting states
+        switch(runstate) {
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+            toPrint = "Starting"; 
+            break;
         }
       }
-    }
+  //  }
   }
   if(toPrint) {
     // locate at bottom centre

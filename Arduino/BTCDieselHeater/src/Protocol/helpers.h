@@ -56,7 +56,6 @@ extern bool hasOEMLCDcontroller();
 extern int getBlueWireStat();
 extern int getSmartError();
 extern bool isCyclicActive();
-extern int getRunStateEx();
 
 
 

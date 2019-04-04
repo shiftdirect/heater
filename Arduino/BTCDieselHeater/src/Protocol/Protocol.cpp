@@ -323,6 +323,24 @@ CProtocol::setSystemVoltage(float fVal)
     Controller.OperatingVoltage = val;
 }
 
+
+int CProtocolPackage::getRunStateEx() const
+{
+  int runstate = getRunState();
+  if(isCyclicActive()) {
+    // special states for cyclic suspended
+    switch(runstate) {
+      case 0:  runstate = 10; break;   // standby, awaiting temperature drop
+      case 7:  runstate = 11; break;   // shutting down due to cyclic trip
+      case 8:  runstate = 12; break;   // cooling due to cyclic trip
+    }
+  }
+  if(runstate == 2 && getPump_Actual() == 0) {  // split runstate 2 - glow, then fuel
+    runstate = 9;
+  }
+  return runstate;
+}	
+
 const char* Runstates [] PROGMEM = {
   " Stopped/Ready ",      // 0
   "Starting...",          // 1
@@ -335,6 +353,8 @@ const char* Runstates [] PROGMEM = {
   "Cooling",              // 8
   "Heating glow plug",    // 9  - interpreted state - actually runstate 2 with no pump action!
   "Suspended",            // 10 - interpreted state - cyclic mode has suspended heater
+  "Suspending...",        // 11 - interpreted state - cyclic mode is suspending heater
+  "Suspend cooling",      // 12 - interpreted state - cyclic mode is suspending heater
   "Unknown run state"     
 };
 
@@ -344,7 +364,7 @@ const char*
 CProtocolPackage::getRunStateStr() const 
 { 
   uint8_t runstate = getRunStateEx();
-  UPPERLIMIT(runstate, 10);
+  UPPERLIMIT(runstate, 13);
   if(runstate == 2 && getPump_Actual() == 0) {  // split runstate 2 - glow, then fuel
     runstate = 9;
   }

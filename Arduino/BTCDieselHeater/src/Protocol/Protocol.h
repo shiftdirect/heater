@@ -217,6 +217,7 @@ class CProtocolPackage {
 public:
   void  set(const CProtocol& htr, const CProtocol& ctl) { Heater = htr; Controller = ctl; };
   int   getRunState() const { return Heater.getRunState(); };
+  int   getRunStateEx() const; // extra support for cyclic thermostat mode
   const char* getRunStateStr() const;
   int   getErrState() const;
   const char* getErrStateStr() const;

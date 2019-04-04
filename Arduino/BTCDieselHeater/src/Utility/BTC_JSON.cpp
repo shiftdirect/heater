@@ -86,6 +86,9 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("FanMax", it->key) == 0) {
 			setFanMax(it->value.as<short>());
 		}
+		else if(strcmp("ThermostatOvertemp", it->key) == 0) {
+			NVstore.setCyclicMode(it->value.as<unsigned char>());
+		}
 		else if(strcmp("ThermostatMethod", it->key) == 0) {
 			NVstore.setThermostatMethodMode(it->value.as<unsigned char>());
 		}
@@ -178,7 +181,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
 	bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root); 
 //	bSend |= moderator.addJson("RunState", getHeaterInfo().getRunState(), root);
-	bSend |= moderator.addJson("RunState", getRunStateEx(), root);
+	bSend |= moderator.addJson("RunState", getHeaterInfo().getRunStateEx(), root);
   bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
 	bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
   bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!
@@ -215,6 +218,7 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 
   bSend |= moderator.addJson("ThermostatMethod", NVstore.getThermostatMethodMode(), root); 
   bSend |= moderator.addJson("ThermostatWindow", NVstore.getThermostatMethodWindow(), root); 
+  bSend |= moderator.addJson("ThermostatOvertemp", NVstore.getCyclicMode(), root); 
 
   if(bSend) {
 		root.printTo(opStr, len);
