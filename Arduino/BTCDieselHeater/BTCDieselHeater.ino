@@ -410,7 +410,7 @@ void setup() {
   bBTconnected = false;
   Bluetooth.begin();
  
-  GPIOin.begin(GPIOin1_pin, GPIOin2_pin, GPIOinOn1Off2);
+  GPIOin.begin(GPIOin1_pin, GPIOin2_pin, GPIOinOn1Off1);
 }
 
 
