@@ -80,7 +80,7 @@ CExperimentalSettingsScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " Experimental ", true, eCentreJustify);
-      _printMenuText(65, Line3, "Overtemp:", false, eRightJustify);
+      _printMenuText(65, Line3, "Suspend:", false, eRightJustify);
       _printMenuText(65, Line2, "Thermostat:", false, eRightJustify);
       _printMenuText(65, Line1, "Window:", false, eRightJustify);
       sprintf(msg, "%.1f\367C", _window);  // \367 is octal for Adafruit degree symbol

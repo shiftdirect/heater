@@ -271,39 +271,37 @@ CBasicScreen::showRunState()
   static bool toggle = false;
   const char* toPrint = NULL;
   _display.setTextColor(WHITE, BLACK);
-//  if(runstate >= 0 && runstate <= 8) {
     if(errstate && ((runstate == 0) || (runstate > 5))) {
 
-      // flash error code
-      char msg[16];
-      toggle = !toggle;
-      if(toggle) {
-        // create an "E-XX" message to display
-        sprintf(msg, "E-%02d", errstate);
-      }
-      else {
-        strcpy(msg, "          ");
-      }
-      int xPos = _display.xCentre();
-      int yPos = _display.height() - 2*_display.textHeight();
-      _printMenuText(xPos, yPos, msg, false, eCentreJustify);
-
-      toPrint = getHeaterInfo().getErrStateStr();
+    // flash error code
+    char msg[16];
+    toggle = !toggle;
+    if(toggle) {
+      // create an "E-XX" message to display
+      sprintf(msg, "E-%02d", errstate);
     }
     else {
-      if(runstate) {
-        toPrint = getHeaterInfo().getRunStateStr();
-        // simplify starting states
-        switch(runstate) {
-          case 1:
-          case 2:
-          case 3:
-          case 4:
-            toPrint = "Starting"; 
-            break;
-        }
+      strcpy(msg, "          ");
+    }
+    int xPos = _display.xCentre();
+    int yPos = _display.height() - 2*_display.textHeight();
+    _printMenuText(xPos, yPos, msg, false, eCentreJustify);
+
+    toPrint = getHeaterInfo().getErrStateStr();
+  }
+  else {
+    if(runstate) {
+      toPrint = getHeaterInfo().getRunStateStr();
+      // simplify starting states
+      switch(runstate) {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+          toPrint = "Starting"; 
+          break;
       }
-  //  }
+    }
   }
   if(toPrint) {
     // locate at bottom centre

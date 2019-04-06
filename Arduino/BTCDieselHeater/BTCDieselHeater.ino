@@ -101,6 +101,7 @@
 #include "src/Utility/DebugPort.h"
 #include "src/Utility/UtilClasses.h"
 #include "src/Utility/BTC_JSON.h"
+#include "src/Utility/GPIO.h"
 #include "src/OLED/ScreenManager.h"
 #include "src/OLED/keypad.h"
 #include <DallasTemperature.h>
@@ -156,6 +157,7 @@ CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
 TelnetSpy DebugPort;
+CGPIOin GPIOin;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -408,6 +410,7 @@ void setup() {
   bBTconnected = false;
   Bluetooth.begin();
  
+  GPIOin.begin(GPIOin1_pin, GPIOin2_pin, GPIOinOn1Off2);
 }
 
 
@@ -441,6 +444,8 @@ void loop()
   KeyPad.update();      // scan keypad - key presses handler via callback functions!
 
   Bluetooth.check();    // check for Bluetooth activity
+
+  GPIOin.manageGPIO();
 
   // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {
