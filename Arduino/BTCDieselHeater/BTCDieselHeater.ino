@@ -158,6 +158,7 @@ CKeyPad KeyPad;
 CScreenManager ScreenManager;
 TelnetSpy DebugPort;
 CGPIOin GPIOin;
+CGPIOout GPIOout;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -411,6 +412,7 @@ void setup() {
   Bluetooth.begin();
  
   GPIOin.begin(GPIOin1_pin, GPIOin2_pin, GPIOinOn1Off1);
+  GPIOout.begin(GPIOout1_pin, GPIOout2_pin, GPIOoutStatus);
 }
 
 
@@ -445,7 +447,8 @@ void loop()
 
   Bluetooth.check();    // check for Bluetooth activity
 
-  GPIOin.manageGPIO();
+  GPIOin.manage();
+  GPIOout.manage();
 
   // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {

@@ -39,6 +39,7 @@
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
 #include "../protocol/helpers.h"
+#include "keypad.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,8 +338,10 @@ void
 CScreenManager::keyHandler(uint8_t event)
 {
   if(_DimTime == 0) {
-    _pDisplay->dim(false);
-    _DimTime = (millis() + NVstore.getDimTime()) | 1;
+    if(event & keyReleased) {
+      _pDisplay->dim(false);
+      _DimTime = (millis() + NVstore.getDimTime()) | 1;
+    }
     return;   // initial press when dimmed is thrown away
   }
 

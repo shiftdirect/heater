@@ -28,6 +28,13 @@ enum GPIOinModes {
   GPIOinOn1Off1    // alternate input 1 closures start or stop the heater 
 };
 
+enum GPIOoutModes { 
+  GPIOoutNone, 
+  GPIOoutStatus,
+  GPIOoutUser
+};
+
+
 class CGPIOin {
   GPIOinModes _Mode;
   void _doOn1Off2();
@@ -44,5 +51,24 @@ public:
   CGPIOin();
   void setMode(GPIOinModes mode) { _Mode = mode; };
   void begin(int pin1, int pin2, GPIOinModes mode);
-  void manageGPIO();
+  void manage();
+};
+
+class CGPIOout {
+  GPIOoutModes _Mode;
+  void _doStatus();
+  void _doUser();
+  int _pins[2];
+  int _prevState;
+  int _statusState;
+  int _statusDelay;
+  unsigned long _breatheDelay;
+  void _doStartMode();
+  void _doStopMode();
+  void _doSuspendMode();
+public:
+  CGPIOout();
+  void setMode(GPIOoutModes mode) { _Mode = mode; };
+  void begin(int pin1, int pin2, GPIOoutModes mode);
+  void manage();
 };

@@ -22,6 +22,11 @@
 #include "GPIO.h"
 #include "../Protocol/helpers.h"
 
+const int BREATHINTERVAL = 30;
+const int FADEAMOUNT = 3;
+const int FLASHPERIOD = 2000;
+const int ONFLASHINTERVAL = 50;
+
 CGPIOin::CGPIOin()
 {
   _Mode = GPIOinNone;
@@ -39,13 +44,13 @@ CGPIOin::begin(int pin1, int pin2, GPIOinModes mode)
   _pins[0] = pin1;
   _pins[1] = pin2;
   pinMode(pin1, INPUT_PULLUP);   // GPIO input pin #1
-  pinMode(pin2, INPUT_PULLUP);   // GPIO input pin #1
+  pinMode(pin2, INPUT_PULLUP);   // GPIO input pin #2
 
   setMode(mode);
 }
 
 void 
-CGPIOin::manageGPIO() 
+CGPIOin::manage() 
 {
   switch (_Mode) {
     case GPIOinNone:
@@ -141,4 +146,171 @@ CGPIOin::_scanInputs()
   }
 
   return _debouncedPins;
+}
+
+CGPIOout::CGPIOout()
+{
+  _Mode = GPIOoutNone;
+  _pins[0] = 0;
+  _pins[1] = 0;
+  _breatheDelay = 0;
+  _statusState = 0;
+  _statusDelay = 0;
+}
+
+void 
+CGPIOout::begin(int pin1, int pin2, GPIOoutModes mode)
+{
+  _pins[0] = pin1;
+  _pins[1] = pin2;
+  if(pin1) {
+    pinMode(pin1, OUTPUT);   // GPIO output pin #1
+    digitalWrite(pin1, LOW);
+    ledcSetup(0, 500, 8);   // create PWM channel for GPIO1
+  }
+  if(pin2) {
+    pinMode(pin2, OUTPUT);   // GPIO output pin #2
+    digitalWrite(pin2, LOW);
+    ledcSetup(1, 500, 8);   // create PWM channel for GPIO2 
+    ledcAttachPin(pin2, 1);  // attach PWM to GPIO line
+  }
+
+
+
+  setMode(mode);
+}
+
+void
+CGPIOout::manage()
+{
+  switch (_Mode) {
+    case GPIOoutNone:
+      break;
+    case GPIOoutStatus:
+      _doStatus();
+      break;
+    case GPIOoutUser:
+      _doUser();
+      break;
+  }
+}
+
+void
+CGPIOout::_doStatus()
+{
+  if(_pins[0] == 0) 
+    return;
+
+  int runstate = getHeaterInfo().getRunStateEx();
+  int statusMode = 0;
+  switch(runstate) {
+    case 0: 
+      statusMode = 0; 
+      break;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 9:
+      // starting modes
+      statusMode = 1; 
+      break;
+    case 5:
+      // run mode
+      statusMode = 2; 
+      break;    
+    case 6:
+    case 7:
+    case 8:
+    case 11:
+    case 12:
+      // cooldown modes
+      statusMode = 3; 
+      break;
+    case 10:
+      // suspend mode
+      statusMode = 4;
+      break;
+  }
+  if(_prevState != statusMode) {
+    _prevState = statusMode;
+    _statusState = 0;
+    _statusDelay = millis() + BREATHINTERVAL;
+    switch(statusMode) {
+      case 0:
+        ledcDetachPin(_pins[0]);     // detach PWM from IO line
+        digitalWrite(_pins[0], LOW);
+        break;
+      case 1:
+        ledcAttachPin(_pins[0], 0);  // attach PWM to GPIO line
+        ledcWrite(0, _statusState);
+        _breatheDelay = millis()  + BREATHINTERVAL; 
+        break;
+      case 2:
+        ledcDetachPin(_pins[0]);     // detach PWM from IO line
+        digitalWrite(_pins[0], HIGH);
+        break;
+      case 3:
+        ledcAttachPin(_pins[0], 0);  // attach PWM to GPIO line
+        _statusState = 255;
+        ledcWrite(0, _statusState);
+        _breatheDelay = millis()  + BREATHINTERVAL; 
+        break;
+      case 4:
+        ledcDetachPin(_pins[0]);     // detach PWM from IO line
+        _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
+        digitalWrite(_pins[0], LOW);
+        break;
+    }  
+  }
+  switch(statusMode) {
+    case 1: _doStartMode(); break;
+    case 3: _doStopMode(); break;
+    case 4: _doSuspendMode(); break;
+  }
+}
+
+void
+CGPIOout::_doUser()
+{
+
+}
+
+void 
+CGPIOout::_doStartMode()   // breath up PWM
+{
+  long tDelta = millis() - _breatheDelay;
+  if(tDelta >= 0) {
+    _breatheDelay += BREATHINTERVAL;
+    _statusState += FADEAMOUNT;
+    ledcWrite(0, _statusState & 0xff);
+  }
+}
+
+void 
+CGPIOout::_doStopMode()   // breath down PWM
+{
+  long tDelta = millis() - _breatheDelay;
+  if(tDelta >= 0) {
+    _breatheDelay += BREATHINTERVAL;
+    _statusState -= FADEAMOUNT;
+    ledcWrite(0, _statusState & 0xff);
+  }
+}
+
+void 
+CGPIOout::_doSuspendMode()  // brief flash
+{
+  long tDelta = millis() - _breatheDelay;
+  if(tDelta >= 0) {
+    _statusState++;
+    if(_statusState & 0x01) {
+      _breatheDelay += ONFLASHINTERVAL;  // brief flash on
+      digitalWrite(_pins[0], HIGH);
+    }
+    else {
+      _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
+      digitalWrite(_pins[0], LOW);
+    }
+  }
 }
