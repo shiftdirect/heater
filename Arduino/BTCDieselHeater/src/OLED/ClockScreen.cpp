@@ -37,6 +37,7 @@
 CClockScreen::CClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
   _colon = false;
+  _keyRepeatCount = -1;
 }
 
 void
@@ -77,14 +78,15 @@ bool
 CClockScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
+    _keyRepeatCount = 0;     // unlock tracking of repeat events
     // press LEFT 
-    if(event & key_Left) {
+/*    if(event & key_Left) {
       _ScreenManager.prevMenu(); 
     }
     // press RIGHT 
     if(event & key_Right) {
       _ScreenManager.nextMenu(); 
-    }
+    }*/
     // press UP
     if(event & key_Up) {
       _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::SetClockUI);   // switch to clock set screen
@@ -93,6 +95,37 @@ CClockScreen::keyHandler(uint8_t event)
     if(event & key_Down) {
       _ScreenManager.selectMenu(CScreenManager::TimerMenuLoop);    // switch to timer set screen loop
     }
+  }
+  if(event & keyRepeat) {
+    if(_keyRepeatCount >= 0) {
+      _keyRepeatCount++;
+      // hold LEFT to toggle GPIO output #1
+      if(event & key_Left) {
+        if(_keyRepeatCount > 2) {
+          _keyRepeatCount = -1;     // prevent double handling
+          setGPIO(0, !getGPIO(0));  // toggle GPIO output #1
+        }
+      }
+      // hold RIGHT to toggle GPIO output #2
+      if(event & key_Right) {
+        if(_keyRepeatCount > 2) {
+          _keyRepeatCount = -1;     // prevent double handling
+          setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
+        }
+      }
+    }
+  }
+  // release event
+  if(event & keyReleased) {
+    if(_keyRepeatCount == 0) {  // short Up press - lower target
+      if(event & key_Left) {
+        _ScreenManager.prevMenu();
+      }
+      if(event & key_Right) {
+        _ScreenManager.nextMenu();
+      }
+    }
+    _keyRepeatCount = -1;
   }
   return true;
 }

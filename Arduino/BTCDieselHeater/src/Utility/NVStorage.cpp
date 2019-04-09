@@ -284,6 +284,55 @@ CHeaterStorage::setCyclicMode(unsigned char val)
   save();
 }
 
+GPIOinModes
+CHeaterStorage::getGPIOinMode()
+{
+  GPIOinModes inMode = GPIOinNone;
+  switch(_calValues.Options.GPIOinMode) {
+    case 0: inMode = GPIOinNone; break;
+    case 1: inMode = GPIOinOn1Off2; break;
+    case 2: inMode = GPIOinOnHold1; break;
+    case 3: inMode = GPIOinOn1Off1; break;
+  }
+  return inMode;
+}
+
+void 
+CHeaterStorage::setGPIOinMode(unsigned char val)
+{
+  _calValues.Options.GPIOinMode = val;
+}
+
+GPIOoutModes
+CHeaterStorage::getGPIOoutMode()
+{
+  GPIOoutModes outMode = GPIOoutNone;
+  switch(_calValues.Options.GPIOoutMode) {
+    case 0: outMode = GPIOoutNone; break;
+    case 1: outMode = GPIOoutStatus; break;
+    case 2: outMode = GPIOoutUser; break;
+  }
+  return outMode;
+}
+
+void 
+CHeaterStorage::setGPIOoutMode(unsigned char val)
+{
+  _calValues.Options.GPIOoutMode = val;
+}
+
+unsigned char
+CHeaterStorage::getGPIOalgMode()
+{
+  return _calValues.Options.GPIOalgMode;
+}
+
+void 
+CHeaterStorage::setGPIOalgMode(unsigned char val)
+{
+  _calValues.Options.GPIOalgMode = val;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
 //
@@ -403,6 +452,9 @@ CESP32HeaterStorage::loadUI()
   validatedLoad("enableWifi", _calValues.Options.enableWifi, 1, u8inBounds, 0, 1);
   validatedLoad("enableOTA", _calValues.Options.enableOTA, 1, u8inBounds, 0, 1);
   validatedLoad("cyclicMode", _calValues.Options.cyclicMode, 0, u8inBounds, 0, 10);
+  validatedLoad("GPIOinMode", _calValues.Options.GPIOinMode, 0, u8inBounds, 0, 3);
+  validatedLoad("GPIOoutMode", _calValues.Options.GPIOoutMode, 0, u8inBounds, 0, 2);
+  validatedLoad("GPIOalgMode", _calValues.Options.GPIOalgMode, 0, u8inBounds, 0, 2);
   preferences.end();    
 }
 
@@ -416,6 +468,9 @@ CESP32HeaterStorage::saveUI()
   preferences.putUChar("enableWifi", _calValues.Options.enableWifi);
   preferences.putUChar("enableOTA", _calValues.Options.enableOTA);
   preferences.putUChar("cyclicMode", _calValues.Options.cyclicMode);
+  preferences.putUChar("GPIOinMode", _calValues.Options.GPIOinMode);
+  preferences.putUChar("GPIOoutMode", _calValues.Options.GPIOoutMode);
+  preferences.putUChar("GPIOalgMode", _calValues.Options.GPIOalgMode);
   preferences.end();    
 }
 

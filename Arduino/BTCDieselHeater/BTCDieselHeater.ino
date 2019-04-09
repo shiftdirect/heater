@@ -410,9 +410,8 @@ void setup() {
 
   bBTconnected = false;
   Bluetooth.begin();
- 
-  GPIOin.begin(GPIOin1_pin, GPIOin2_pin, GPIOinOn1Off1);
-  GPIOout.begin(GPIOout1_pin, GPIOout2_pin, GPIOoutStatus);
+
+  setupGPIO(); 
 }
 
 
@@ -1231,3 +1230,21 @@ bool isCyclicActive()
   return bUserON && (NVstore.getCyclicMode() != 0);
 }
 
+void setupGPIO()
+{
+  GPIOin.begin(GPIOin1_pin, GPIOin2_pin, NVstore.getGPIOinMode());
+  GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getGPIOoutMode());
+}
+
+void setGPIO(int channel, bool state)
+{
+  DebugPort.print("setGPIO: Output #"); DebugPort.print(channel+1); DebugPort.print(" = "); DebugPort.println(state);
+  GPIOout.setState(channel, state);
+}
+
+bool getGPIO(int channel)
+{
+  bool retval = GPIOout.getState(channel);
+  DebugPort.print("getGPIO: Output #"); DebugPort.print(channel+1); DebugPort.print(" = "); DebugPort.println(retval);
+  return retval;
+}

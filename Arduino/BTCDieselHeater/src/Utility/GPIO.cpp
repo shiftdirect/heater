@@ -22,7 +22,7 @@
 #include "GPIO.h"
 #include "../Protocol/helpers.h"
 
-const int BREATHINTERVAL = 30;
+const int BREATHINTERVAL = 45;
 const int FADEAMOUNT = 3;
 const int FLASHPERIOD = 2000;
 const int ONFLASHINTERVAL = 50;
@@ -156,6 +156,8 @@ CGPIOout::CGPIOout()
   _breatheDelay = 0;
   _statusState = 0;
   _statusDelay = 0;
+  _userState = 0;
+  _prevState = -1;
 }
 
 void 
@@ -166,32 +168,33 @@ CGPIOout::begin(int pin1, int pin2, GPIOoutModes mode)
   if(pin1) {
     pinMode(pin1, OUTPUT);   // GPIO output pin #1
     digitalWrite(pin1, LOW);
-    ledcSetup(0, 500, 8);   // create PWM channel for GPIO1
+    ledcSetup(0, 500, 8);   // create PWM channel for GPIO1: 500Hz, 8 bits
   }
   if(pin2) {
     pinMode(pin2, OUTPUT);   // GPIO output pin #2
     digitalWrite(pin2, LOW);
-    ledcSetup(1, 500, 8);   // create PWM channel for GPIO2 
-    ledcAttachPin(pin2, 1);  // attach PWM to GPIO line
+    ledcSetup(1, 500, 8);   // create PWM channel for GPIO2: 500Hz, 8 bits 
   }
-
-
 
   setMode(mode);
 }
+
+void 
+CGPIOout::setMode(GPIOoutModes mode) 
+{ 
+  _Mode = mode; 
+  _prevState = -1;
+  ledcDetachPin(_pins[0]);     // ensure PWM detached from IO line
+  ledcDetachPin(_pins[1]);     // ensure PWM detached from IO line
+};
 
 void
 CGPIOout::manage()
 {
   switch (_Mode) {
-    case GPIOoutNone:
-      break;
-    case GPIOoutStatus:
-      _doStatus();
-      break;
-    case GPIOoutUser:
-      _doUser();
-      break;
+    case GPIOoutNone: break;
+    case GPIOoutStatus: _doStatus(); break;
+    case GPIOoutUser: _doUser(); break;
   }
 }
 
@@ -201,12 +204,10 @@ CGPIOout::_doStatus()
   if(_pins[0] == 0) 
     return;
 
+//  DebugPort.println("GPIOout::_doStatus()");
   int runstate = getHeaterInfo().getRunStateEx();
   int statusMode = 0;
   switch(runstate) {
-    case 0: 
-      statusMode = 0; 
-      break;
     case 1:
     case 2:
     case 3:
@@ -232,6 +233,9 @@ CGPIOout::_doStatus()
       statusMode = 4;
       break;
   }
+
+  // change of mode typically requires changing from simple digital out 
+  // to PWM or vice versa
   if(_prevState != statusMode) {
     _prevState = statusMode;
     _statusState = 0;
@@ -244,7 +248,7 @@ CGPIOout::_doStatus()
       case 1:
         ledcAttachPin(_pins[0], 0);  // attach PWM to GPIO line
         ledcWrite(0, _statusState);
-        _breatheDelay = millis()  + BREATHINTERVAL; 
+        _breatheDelay = millis() + BREATHINTERVAL; 
         break;
       case 2:
         ledcDetachPin(_pins[0]);     // detach PWM from IO line
@@ -254,7 +258,7 @@ CGPIOout::_doStatus()
         ledcAttachPin(_pins[0], 0);  // attach PWM to GPIO line
         _statusState = 255;
         ledcWrite(0, _statusState);
-        _breatheDelay = millis()  + BREATHINTERVAL; 
+        _breatheDelay = millis() + BREATHINTERVAL; 
         break;
       case 4:
         ledcDetachPin(_pins[0]);     // detach PWM from IO line
@@ -273,7 +277,13 @@ CGPIOout::_doStatus()
 void
 CGPIOout::_doUser()
 {
-
+//  DebugPort.println("GPIOout::_doUser()");
+  if(_pins[0]) {
+    digitalWrite(_pins[0], (_userState & 0x01) ? HIGH : LOW);
+  }
+  if(_pins[1]) {
+    digitalWrite(_pins[1], (_userState & 0x02) ? HIGH : LOW);
+  }
 }
 
 void 
@@ -282,8 +292,10 @@ CGPIOout::_doStartMode()   // breath up PWM
   long tDelta = millis() - _breatheDelay;
   if(tDelta >= 0) {
     _breatheDelay += BREATHINTERVAL;
-    _statusState += FADEAMOUNT;
-    ledcWrite(0, _statusState & 0xff);
+    int expo = ((_statusState >> 5) + 1);
+    _statusState += expo;
+    _statusState &= 0xff;
+    ledcWrite(0, _statusState);
   }
 }
 
@@ -293,8 +305,11 @@ CGPIOout::_doStopMode()   // breath down PWM
   long tDelta = millis() - _breatheDelay;
   if(tDelta >= 0) {
     _breatheDelay += BREATHINTERVAL;
-    _statusState -= FADEAMOUNT;
-    ledcWrite(0, _statusState & 0xff);
+    int expo = ((_statusState >> 5) + 1);
+    _statusState -= expo;
+    _statusState &= 0xff;
+    ledcWrite(0, _statusState);
+
   }
 }
 
@@ -313,4 +328,21 @@ CGPIOout::_doSuspendMode()  // brief flash
       digitalWrite(_pins[0], LOW);
     }
   }
+}
+
+void 
+CGPIOout::setState(int channel, bool state)
+{
+  int mask = 0x01 << (channel & 0x01);
+  if(state)
+    _userState |= mask;
+  else
+    _userState &= ~mask;
+}
+
+bool
+CGPIOout::getState(int channel)
+{
+  int mask = 0x01 << (channel & 0x01);
+  return (_userState & mask) != 0;
 }

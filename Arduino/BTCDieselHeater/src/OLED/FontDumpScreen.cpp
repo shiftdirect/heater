@@ -97,7 +97,7 @@ CFontDumpScreen::keyHandler(uint8_t event)
     }
     // CENTRE press
     if(event & key_Centre) {
-      _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);  // force return to prior menu
+      _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::ExThermostatUI);  // force return to prior menu
     }
     _ScreenManager.reqUpdate();
   }

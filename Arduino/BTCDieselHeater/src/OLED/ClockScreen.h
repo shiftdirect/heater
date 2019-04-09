@@ -32,6 +32,7 @@ class CClockScreen : public CScreenHeader {
 protected:
   virtual void showTime(int numTimers);  
   bool _colon;
+  int _keyRepeatCount;
 public:
   CClockScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

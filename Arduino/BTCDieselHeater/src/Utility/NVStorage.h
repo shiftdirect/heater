@@ -23,6 +23,7 @@
 #define __BTC_NV_STORAGE_H__
 
 #include "../RTC/Timers.h"   // for sTimer
+#include "GPIO.h"
 
 struct sHeater { 
   uint8_t   Pmin;
@@ -68,6 +69,10 @@ struct sBTCoptions {
   uint8_t enableWifi;
   uint8_t enableOTA;
   uint8_t cyclicMode;
+  uint8_t GPIOinMode;
+  uint8_t GPIOoutMode;
+  uint8_t GPIOalgMode;
+
   bool valid() {
     bool retval = true;
     retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
@@ -76,6 +81,8 @@ struct sBTCoptions {
     retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= (enableOTA == 0) || (enableOTA == 1);
     retval &= cyclicMode < 10;
+    retval &= GPIOinMode < 4;
+    retval &= GPIOoutMode < 3;
     return retval;  
   }
   void init() {
@@ -85,6 +92,9 @@ struct sBTCoptions {
     enableWifi = 1;
     enableOTA = 1;
     cyclicMode = 0;
+    GPIOinMode = 0;
+    GPIOoutMode = 0;
+    GPIOalgMode = 0;
   };
 };
 
@@ -139,6 +149,9 @@ public:
     unsigned char getWifiEnabled();
     unsigned char getOTAEnabled();
     unsigned char getCyclicMode();
+    GPIOinModes getGPIOinMode();
+    GPIOoutModes getGPIOoutMode();
+    unsigned char getGPIOalgMode();
 
     void setPmin(float);
     void setPmax(float);
@@ -156,10 +169,14 @@ public:
     void setWifiEnabled(unsigned char val);
     void setOTAEnabled(unsigned char val);
     void setCyclicMode(unsigned char val);
+    void setGPIOinMode(unsigned char val);
+    void setGPIOoutMode(unsigned char val);
+    void setGPIOalgMode(unsigned char val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);
 };
+
 
 
 #ifdef ESP32

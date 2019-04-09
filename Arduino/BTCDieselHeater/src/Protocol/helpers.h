@@ -56,6 +56,9 @@ extern bool hasOEMLCDcontroller();
 extern int getBlueWireStat();
 extern int getSmartError();
 extern bool isCyclicActive();
+extern void setupGPIO();
+extern void setGPIO(int channel, bool state);
+extern bool getGPIO(int channel);
 
 
 

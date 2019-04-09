@@ -144,7 +144,7 @@ CBasicScreen::keyHandler(uint8_t event)
 
   if(event & keyPressed) {
     repeatCount = 0;     // unlock tracking of repeat events
-    // press LEFT to select previous screen, or Fixed Hz mode when in mode select
+/*    // press LEFT to select previous screen, or Fixed Hz mode when in mode select
     if(event & key_Left) {
       if(!_showMode)
         _ScreenManager.prevMenu();
@@ -159,8 +159,8 @@ CBasicScreen::keyHandler(uint8_t event)
         }
         _ScreenManager.reqUpdate();
       }
-    }
-    // press RIGHT to select next screen, or Thermostat mode when in mode select
+    }**/
+/*    // press RIGHT to select next screen, or Thermostat mode when in mode select
     if(event & key_Right) {
       if(!_showMode)
         _ScreenManager.nextMenu();
@@ -175,7 +175,7 @@ CBasicScreen::keyHandler(uint8_t event)
         }
         _ScreenManager.reqUpdate();
       }
-    }
+    }*/
     // press UP & DOWN to toggle thermostat / fixed Hz mode
     // impossible with 5 way switch!
     uint8_t doubleKey = key_Down | key_Up;
@@ -192,6 +192,20 @@ CBasicScreen::keyHandler(uint8_t event)
   if(event & keyRepeat) {
     if(repeatCount >= 0) {
       repeatCount++;
+      // hold LEFT to toggle GPIO output #1
+      if(event & key_Left) {
+        if(repeatCount > 2) {
+          repeatCount = -1;         // prevent double handling
+          setGPIO(0, !getGPIO(0));  // toggle GPIO output #1
+        }
+      }
+      // hold RIGHT to toggle GPIO output #2
+      if(event & key_Right) {
+        if(repeatCount > 2) {
+          repeatCount = -1;         // prevent double handling
+          setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
+        }
+      }
       // hold DOWN to enter thermostat / fixed mode selection
       if(event & key_Down) {
         if(repeatCount > 2) {
@@ -242,6 +256,41 @@ CBasicScreen::keyHandler(uint8_t event)
           _showSetMode = millis() + 2000;
         else 
           _reqOEMWarning();
+      }
+    }
+    if(event & key_Left) {
+      if(repeatCount >= 0) {
+        if(!_showMode) {
+          _ScreenManager.prevMenu();
+        }
+        else {
+          if(hasOEMcontroller())
+            _reqOEMWarning();
+          else {
+            _showMode = millis() + 5000;
+            _nModeSel = 0;
+            setThermostatMode(1);    // set the new mode
+            NVstore.save();
+          }
+          _ScreenManager.reqUpdate();
+        }
+      }
+    }
+    if(event & key_Right) {
+      if(repeatCount >= 0) {
+        if(!_showMode)
+          _ScreenManager.nextMenu();
+        else {
+          if(hasOEMcontroller())
+            _reqOEMWarning();
+          else {
+            _showMode = millis() + 5000;
+            _nModeSel = 1;
+            setThermostatMode(0);    // set the new mode
+            NVstore.save();
+          }
+          _ScreenManager.reqUpdate();
+        }
       }
     }
     // release CENTRE to accept new mode, and/or show current setting

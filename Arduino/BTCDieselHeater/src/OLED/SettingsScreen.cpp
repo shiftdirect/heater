@@ -167,7 +167,8 @@ CSettingsScreen::keyHandler(uint8_t event)
       }
       // press DOWN
       if(event & key_Down) {
-        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);
+//        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);
+        _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::ExThermostatUI);
       }
     }
   }

@@ -19,6 +19,9 @@
  * 
  */
 
+#ifndef __BTCGPIO_H__
+#define __BTCGPIO_H__
+
 #include <stdint.h>
 
 enum GPIOinModes { 
@@ -63,12 +66,17 @@ class CGPIOout {
   int _statusState;
   int _statusDelay;
   unsigned long _breatheDelay;
+  uint8_t _userState;
   void _doStartMode();
   void _doStopMode();
   void _doSuspendMode();
 public:
   CGPIOout();
-  void setMode(GPIOoutModes mode) { _Mode = mode; };
+  void setMode(GPIOoutModes mode);
   void begin(int pin1, int pin2, GPIOoutModes mode);
   void manage();
+  void setState(int channel, bool state);
+  bool getState(int channel);
 };
+
+#endif // __BTCGPIO_H__

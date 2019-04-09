@@ -31,10 +31,11 @@
 #include "RebootScreen.h"
 #include "HeaterSettingsScreen.h"
 #include "SettingsScreen.h"
-#include "ExperimentalSettingsScreen.h"
+#include "ThermostatModeScreen.h"
 #include "FontDumpScreen.h"
 #include "TimerChartScreen.h"
 #include "InheritSettingsScreen.h"
+#include "GPIOScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -204,11 +205,15 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
   menuloop.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
   _Screens.push_back(menuloop);
+  // create User Settings screens loop 
+  menuloop.clear();
+  menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // experimental settings screen
+  menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
+  _Screens.push_back(menuloop);
   // create branch screens
   menuloop.clear();
   menuloop.push_back(new CSetClockScreen(*_pDisplay, *this));         // clock set branch screen
   menuloop.push_back(new CInheritSettingsScreen(*_pDisplay, *this));  // inherit OEM settings branch screen
-  menuloop.push_back(new CExperimentalSettingsScreen(*_pDisplay, *this)); // experimental settings branch screen
   menuloop.push_back(new CFontDumpScreen(*_pDisplay, *this)); // font dump branch screen
   _Screens.push_back(menuloop);
 
