@@ -28,8 +28,9 @@ class CProtocolPackage;
 
 class CBasicScreen : public CScreenHeader
 {
-  unsigned long _showSetMode;
-  unsigned long _showMode;
+  unsigned long _showSetModeTime;
+  unsigned char _feedbackType;
+  unsigned long _showModeTime;
   unsigned char _nModeSel;
   void showRunState();
 public:

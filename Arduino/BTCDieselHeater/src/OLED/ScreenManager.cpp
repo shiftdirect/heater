@@ -180,7 +180,8 @@ CScreenManager::begin(bool bNoClock)
     menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
   menuloop.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
   menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
-  menuloop.push_back(new CSettingsScreen(*_pDisplay, *this));         // tuning info
+  menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
+  menuloop.push_back(new CSettingsScreen(*_pDisplay, *this));         //  Tuning info
   _Screens.push_back(menuloop);
   // create timer screens loop
   menuloop.clear();

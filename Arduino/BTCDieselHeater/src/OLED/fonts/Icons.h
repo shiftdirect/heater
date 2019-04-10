@@ -95,7 +95,41 @@ extern const unsigned char timerID2Icon [];
 extern const unsigned char timerIcon [];
 extern const unsigned char largeTimerIcon [];
 extern const uint8_t verticalRepeatIcon [];
+extern const uint8_t GPIO1OFFIcon[];
+extern const uint8_t GPIO1ONIcon[];
+extern const uint8_t GPIO2OFFIcon[];
+extern const uint8_t GPIO2ONIcon[];
+extern const uint8_t CrossIcon[];
+extern const uint8_t TickIcon[];
 // Bitmap sizes for verticalRepeat
 const uint8_t verticalRepeatWidthPixels = 6;
 const uint8_t verticalRepeatHeightPixels = 15;
+
+// Bitmap sizes for GPIOIcons
+const uint8_t GPIOIconWidthPixels = 9;
+const uint8_t GPIOIconHeightPixels = 9;
+
+// Bitmap sizes for TickIcons
+const uint8_t TickIconWidth = 5;
+const uint8_t TickIconHeight = 5;
+
+// Bitmap for open
+extern const uint8_t OpenIcon[];
+const uint8_t OpenIconWidth = 13;
+const uint8_t OpenIconHeight = 7;
+
+// Bitmap for close
+extern const uint8_t CloseIcon[];
+const uint8_t CloseIconWidth = 13;
+const uint8_t CloseIconHeight = 7;
+
+// Bitmap for BulbOn
+extern const uint8_t BulbOnIcon[];
+const uint8_t BulbOnIconWidth = 9;
+const uint8_t BulbOnIconHeight = 8;
+
+// Bitmap for BulbOff
+extern const uint8_t BulbOffIcon[];
+const uint8_t BulbOffIconWidth = 9;
+const uint8_t BulbOffIconHeight = 8;
 

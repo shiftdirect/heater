@@ -46,4 +46,15 @@ public:
   void onSelect();
 };
 
+class CGPIOInfoScreen : public CScreenHeader
+{
+  int _keyRepeatCount;     
+  void _initUI();
+public:
+  CGPIOInfoScreen(C128x64_OLED& display, CScreenManager& mgr);
+  bool show();
+  bool keyHandler(uint8_t event);
+  void onSelect();
+};
+
 #endif

@@ -79,14 +79,6 @@ CClockScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
     _keyRepeatCount = 0;     // unlock tracking of repeat events
-    // press LEFT 
-/*    if(event & key_Left) {
-      _ScreenManager.prevMenu(); 
-    }
-    // press RIGHT 
-    if(event & key_Right) {
-      _ScreenManager.nextMenu(); 
-    }*/
     // press UP
     if(event & key_Up) {
       _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::SetClockUI);   // switch to clock set screen

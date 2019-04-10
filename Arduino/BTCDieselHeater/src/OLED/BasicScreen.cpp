@@ -41,8 +41,9 @@
 
 CBasicScreen::CBasicScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
-  _showSetMode = 0;
-  _showMode = 0;
+  _showSetModeTime = 0;
+  _showModeTime = 0;
+  _feedbackType = 0;
   _nModeSel = 0;
 }
 
@@ -79,11 +80,11 @@ CBasicScreen::show()
   //   Current heat demand setting
   //   Run state of heater
   
-  if(_showMode) {
+  if(_showModeTime) {
     const int border = 3;
     const int radius = 4;
     // Show selection between Fixed or Thermostat mode
-    long tDelta = millis() - _showMode;
+    long tDelta = millis() - _showModeTime;
     if(tDelta < 0) {
 
       yPos = _display.height() - _display.textHeight() - border;  // bottom of screen, with room for box
@@ -102,35 +103,46 @@ CBasicScreen::show()
     }
     else {
       // cancel selection mode, apply whatever is boxed
-      _showMode = 0;
-      _showSetMode = millis() + 5000;  // then make the new mode setting be shown
+      _showModeTime = 0;
+      _showSetModeTime = millis() + 5000;  // then make the new mode setting be shown
+      _feedbackType = 0;
+      _ScreenManager.reqUpdate();
     }
   }
-  if((_showMode == 0) && _showSetMode) {
-    long tDelta = millis() - _showSetMode;  
+  if((_showModeTime == 0) && _showSetModeTime) {
+    long tDelta = millis() - _showSetModeTime;  
     if(tDelta < 0) {
-      // Show current heat demand setting
-      if(getThermostatModeActive()) {
-        float fTemp = getTemperatureDesired();
-        if(NVstore.getDegFMode()) {
-          fTemp = fTemp * 9 / 5 + 32;
-          sprintf(msg, "Setpoint = %.0f`F", fTemp);
-        }
-        else {
-          sprintf(msg, "Setpoint = %.0f`C", fTemp);
-        }
-      }
-      else {
-        sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
+      switch(_feedbackType) {
+        case 0:
+          // Show current heat demand setting
+
+          if(getThermostatModeActive()) {
+            float fTemp = getTemperatureDesired();
+            if(NVstore.getDegFMode()) {
+              fTemp = fTemp * 9 / 5 + 32;
+              sprintf(msg, "Setpoint = %.0f`F", fTemp);
+            }
+            else {
+              sprintf(msg, "Setpoint = %.0f`C", fTemp);
+            }
+          }
+          else {
+            sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
+          }
+          break;
+        case 1:
+        case 2:
+          sprintf(msg, "GPIO output #%d %s", _feedbackType, getGPIO(_feedbackType-1) ? "ON" : "OFF");
+          break;
       }
       // centre message at bottom of screen
       _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
     }
     else {
-      _showSetMode = 0;
+      _showSetModeTime = 0;
     }
   }
-  if((_showMode == 0) && (_showSetMode == 0)) {
+  if((_showModeTime == 0) && (_showSetModeTime == 0)) {
     showRunState();
   }
   return true;
@@ -144,51 +156,11 @@ CBasicScreen::keyHandler(uint8_t event)
 
   if(event & keyPressed) {
     repeatCount = 0;     // unlock tracking of repeat events
-/*    // press LEFT to select previous screen, or Fixed Hz mode when in mode select
-    if(event & key_Left) {
-      if(!_showMode)
-        _ScreenManager.prevMenu();
-      else {
-        if(hasOEMcontroller())
-          _reqOEMWarning();
-        else {
-          _showMode = millis() + 5000;
-          _nModeSel = 0;
-          setThermostatMode(1);    // set the new mode
-          NVstore.save();
-        }
-        _ScreenManager.reqUpdate();
-      }
-    }**/
-/*    // press RIGHT to select next screen, or Thermostat mode when in mode select
-    if(event & key_Right) {
-      if(!_showMode)
-        _ScreenManager.nextMenu();
-      else {
-        if(hasOEMcontroller())
-          _reqOEMWarning();
-        else {
-          _showMode = millis() + 5000;
-          _nModeSel = 1;
-          setThermostatMode(0);    // set the new mode
-          NVstore.save();
-        }
-        _ScreenManager.reqUpdate();
-      }
-    }*/
-    // press UP & DOWN to toggle thermostat / fixed Hz mode
-    // impossible with 5 way switch!
-    uint8_t doubleKey = key_Down | key_Up;
-    if((event & doubleKey) == doubleKey) {
-      if(reqThermoToggle()) {
-        _showSetMode = millis() + 2000;
-        NVstore.save();
-      }
-      else 
-        _reqOEMWarning();
-    }
   }
+
+  //
   // use repeat function for key hold detection
+  //
   if(event & keyRepeat) {
     if(repeatCount >= 0) {
       repeatCount++;
@@ -197,6 +169,9 @@ CBasicScreen::keyHandler(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;         // prevent double handling
           setGPIO(0, !getGPIO(0));  // toggle GPIO output #1
+          _showSetModeTime = millis() + 2000;
+          _feedbackType = 1;
+          _ScreenManager.reqUpdate();
         }
       }
       // hold RIGHT to toggle GPIO output #2
@@ -204,13 +179,16 @@ CBasicScreen::keyHandler(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;         // prevent double handling
           setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
+          _showSetModeTime = millis() + 2000;
+          _feedbackType = 2;
+          _ScreenManager.reqUpdate();
         }
       }
       // hold DOWN to enter thermostat / fixed mode selection
       if(event & key_Down) {
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
-          _showMode = millis() + 5000;
+          _showModeTime = millis() + 5000;
           _nModeSel = getThermostatModeActive() ? 0 : 1;
         }
       }
@@ -218,7 +196,7 @@ CBasicScreen::keyHandler(uint8_t event)
       if(event & key_Up) {
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
-          _showMode = millis() + 5000;
+          _showModeTime = millis() + 5000;
           NVstore.setDegFMode(NVstore.getDegFMode() ? 0 : 1);
         }
       }
@@ -241,33 +219,43 @@ CBasicScreen::keyHandler(uint8_t event)
       }
     }
   }
+
+  //
+  // key released handling
+  //
   if(event & keyReleased) {
-    if(!_showMode) {
+    if(!_showModeTime) {
       // release DOWN key to reduce set demand, provided we are not in mode select
       if(event & key_Down) {
-        if(reqTempDelta(-1))
-          _showSetMode = millis() + 2000;
+        if(reqTempDelta(-1)) {
+          _showSetModeTime = millis() + 2000;
+          _feedbackType = 0;
+          _ScreenManager.reqUpdate();
+        }
         else 
           _reqOEMWarning();
       }
       // release UP key to increase set demand, provided we are not in mode select
       if(event & key_Up) {
-        if(reqTempDelta(+1))
-          _showSetMode = millis() + 2000;
+        if(reqTempDelta(+1)) {
+          _showSetModeTime = millis() + 2000;
+          _feedbackType = 0;
+          _ScreenManager.reqUpdate();
+        }
         else 
           _reqOEMWarning();
       }
     }
     if(event & key_Left) {
       if(repeatCount >= 0) {
-        if(!_showMode) {
+        if(!_showModeTime) {
           _ScreenManager.prevMenu();
         }
         else {
           if(hasOEMcontroller())
             _reqOEMWarning();
           else {
-            _showMode = millis() + 5000;
+            _showModeTime = millis() + 5000;
             _nModeSel = 0;
             setThermostatMode(1);    // set the new mode
             NVstore.save();
@@ -278,13 +266,13 @@ CBasicScreen::keyHandler(uint8_t event)
     }
     if(event & key_Right) {
       if(repeatCount >= 0) {
-        if(!_showMode)
+        if(!_showModeTime)
           _ScreenManager.nextMenu();
         else {
           if(hasOEMcontroller())
             _reqOEMWarning();
           else {
-            _showMode = millis() + 5000;
+            _showModeTime = millis() + 5000;
             _nModeSel = 1;
             setThermostatMode(0);    // set the new mode
             NVstore.save();
@@ -296,10 +284,11 @@ CBasicScreen::keyHandler(uint8_t event)
     // release CENTRE to accept new mode, and/or show current setting
     if(event & key_Centre) {
       if(repeatCount != -2) {  // prevent after off commands
-        if(_showMode) {
-          _showMode = millis(); // force immediate cancellation of showmode (via screen update)
+        if(_showModeTime) {
+          _showModeTime = millis(); // force immediate cancellation of showmode (via screen update)
         }
-        _showSetMode = millis() + 2000;
+        _showSetModeTime = millis() + 2000; 
+        _feedbackType = 0;
       }
       _ScreenManager.reqUpdate();
     }

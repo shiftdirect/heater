@@ -44,7 +44,7 @@ class CScreenManager {
   void _changeSubMenu(int dir);
 public:
   enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, TuningMenuLoop, UserSettingsLoop, BranchMenu };
-  enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, CommsUI, SettingsUI };
+  enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, CommsUI, GPIOInfoUI, SettingsUI };
   enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
   enum eUITuningMenus { MixtureUI, HeaterSettingsUI };

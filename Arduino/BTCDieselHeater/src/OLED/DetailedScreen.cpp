@@ -176,12 +176,6 @@ CDetailedScreen::keyHandler(uint8_t event)
   
   if(event & keyPressed) {
     _keyRepeatCount = 0;     // unlock tracking of repeat events
-/*    if(event & key_Left) {
-      _ScreenManager.prevMenu();
-    }
-    if(event & key_Right) {
-      _ScreenManager.nextMenu();
-    }*/
   }
   // require hold to turn ON or OFF
   if(event & keyRepeat) {

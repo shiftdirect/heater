@@ -35,17 +35,28 @@
 
 #define MINIFONT miniFontInfo
 
-#define X_BATT_ICON   103
-#define Y_BATT_ICON     0
-#define X_WIFI_ICON    19
-#define Y_WIFI_ICON     0
 #define X_BT_ICON      10
 #define Y_BT_ICON       0
-#define X_TIMER1_ICON  69
-#define X_TIMER2_ICON  83
-#define Y_TIMER_ICON    0
-#define X_CLOCK        52  
+#define X_WIFI_ICON    19
+#define Y_WIFI_ICON     0
+#define X_CLOCK        50  
 #define Y_CLOCK         0
+#define X_TIMER_ICON   83
+#define Y_TIMER_ICON    0
+#define X_BATT_ICON   103
+#define Y_BATT_ICON     0
+
+/*#define X_BT_ICON      20
+#define Y_BT_ICON       0
+#define X_WIFI_ICON    29
+#define Y_WIFI_ICON     0
+#define X_GPIO_ICON     9
+#define X_CLOCK        56  
+#define Y_CLOCK         0
+#define X_TIMER_ICON   84
+#define Y_TIMER_ICON    0
+#define X_BATT_ICON   103
+#define Y_BATT_ICON     0*/
 
 
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
@@ -72,6 +83,9 @@ CScreenHeader::show()
 
   // timers
   int numTimers = showTimers();
+
+//  // GPIO
+//  showGPIO();
 
   // clock
   showTime(numTimers);
@@ -142,7 +156,7 @@ CScreenHeader::animate()
 void 
 CScreenHeader::showBTicon()
 {
-  if(getBluetoothClient().isConnected()) {
+  if(getBluetoothClient().isConnected() || true) {
     _display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
   }
 }
@@ -207,7 +221,7 @@ CScreenHeader::showTimers()
 {
   int nextTimer = CTimerManager::getNextTimer();
   if(nextTimer) {
-    int xPos = X_TIMER2_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
+    int xPos = X_TIMER_ICON;   
     _display.drawBitmap(xPos, Y_TIMER_ICON, largeTimerIcon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
     if(nextTimer & 0x80) 
       _display.drawBitmap(xPos-3, Y_TIMER_ICON, verticalRepeatIcon, verticalRepeatWidthPixels, verticalRepeatHeightPixels, WHITE);
@@ -248,11 +262,31 @@ CScreenHeader::showTime(int numTimers)
     int xPos = X_WIFI_ICON + W_WIFI_ICON + W_WIFIIN_ICON;  // rhs of wifi conglomeration
     if(isWifiAP())  xPos += 4;                             // add more if an Access Point
     
-    switch(numTimers) {
+/*    switch(numTimers) {
       case 0: xPos = _display.xCentre(); break;
-      case 1: xPos += (X_TIMER2_ICON - xPos) / 2; break;
-      case 2: xPos += (X_TIMER1_ICON - xPos) / 2; break;
+      case 1: xPos += (X_TIMER_ICON - xPos) / 2; break;
     }
-    _printMenuText(xPos, Y_CLOCK, msg, false, eCentreJustify);
+    _printMenuText(xPos, Y_CLOCK, msg, false, eCentreJustify);*/
+    _printMenuText(X_CLOCK, Y_CLOCK, msg);
   }
 }
+
+void 
+CScreenHeader::showGPIO()
+{
+/*  int xPos = X_GPIO_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
+  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+  _display.setCursor(xPos, 0);
+  _display.print("1");
+  _display.drawBitmap(xPos + 4, 0, getGPIO(0) ? TickIcon : CrossIcon, TickIconWidth, TickIconHeight, WHITE);
+  _display.setCursor(xPos, 6);
+  _display.print("2");
+  _display.drawBitmap(xPos + 4, 6, getGPIO(1) ? TickIcon : CrossIcon, TickIconWidth, TickIconHeight, WHITE);*/
+}
+/*void 
+CScreenHeader::showGPIO()
+{
+  int xPos = X_GPIO_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
+  _display.drawBitmap(xPos, 0, getGPIO(0) ? GPIO1ONIcon : GPIO1OFFIcon, GPIOIconWidthPixels, GPIOIconHeightPixels, WHITE);
+  _display.drawBitmap(xPos, 8, getGPIO(1) ? GPIO2ONIcon : GPIO2OFFIcon, GPIOIconWidthPixels, GPIOIconHeightPixels, WHITE);
+}*/

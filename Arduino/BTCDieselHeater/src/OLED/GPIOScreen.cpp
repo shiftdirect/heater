@@ -26,6 +26,7 @@
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/GPIO.h"
+#include "fonts/Icons.h"
 
 extern CGPIOout GPIOout;
 extern CGPIOin GPIOin;
@@ -296,3 +297,100 @@ CGPIOScreen::_adjust(int dir)
       break;
   }
 }
+
+
+
+CGPIOInfoScreen::CGPIOInfoScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+{
+  _keyRepeatCount = -1;
+}
+
+void 
+CGPIOInfoScreen::onSelect()
+{
+  CScreenHeader::onSelect();
+}
+
+void
+CGPIOInfoScreen::_initUI()
+{
+}
+
+bool 
+CGPIOInfoScreen::show()
+{
+  CScreenHeader::show();
+
+  _display.writeFillRect(49, 18, 30, 12, WHITE);
+  _printInverted(64, 20, "GPIO", true, eCentreJustify);
+  _printMenuText(22, 18, "In", false, eCentreJustify);
+  _printMenuText(104, 18, "Out", false, eCentreJustify);
+  _printMenuText(11, 20, "1", false, eCentreJustify);
+  _printMenuText(34, 20, "2", false, eCentreJustify);
+  _printMenuText(91, 20, "1", false, eCentreJustify);
+  _printMenuText(118, 20, "2", false, eCentreJustify);
+
+  _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
+
+  _display.drawBitmap(4, 29, GPIOin.getState(0) ? CloseIcon : OpenIcon, CloseIconWidth, CloseIconHeight, WHITE);
+  _display.drawBitmap(27, 29, GPIOin.getState(1) ? CloseIcon : OpenIcon, CloseIconWidth, CloseIconHeight, WHITE);
+  
+  _display.drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIcon : BulbOffIcon, BulbOnIconWidth, BulbOnIconHeight, WHITE);
+  _display.drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIcon : BulbOffIcon, BulbOnIconWidth, BulbOnIconHeight, WHITE);
+
+  _printMenuText(_display.xCentre(), 53, " \021    \030Edit     \020 ", true, eCentreJustify);
+  return true;
+}
+
+
+bool 
+CGPIOInfoScreen::keyHandler(uint8_t event)
+{
+  if(event & keyPressed) {
+    _keyRepeatCount = 0;     // unlock tracking of repeat events
+    // UP press
+    if(event & key_Up) {
+    }
+    // CENTRE press
+    if(event & key_Centre) {
+    }
+  }
+  if(event & keyRepeat) {
+    if(_keyRepeatCount >= 0) {
+      _keyRepeatCount++;
+      // hold LEFT to toggle GPIO output #1
+      if(event & key_Left) {
+        if(_keyRepeatCount > 2) {
+          _keyRepeatCount = -1;     // prevent double handling
+          setGPIO(0, !getGPIO(0));  // toggle GPIO output #1
+        }
+      }
+      // hold RIGHT to toggle GPIO output #2
+      if(event & key_Right) {
+        if(_keyRepeatCount > 2) {
+          _keyRepeatCount = -1;     // prevent double handling
+          setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
+        }
+      }
+    }
+  }
+
+  // release event
+  if(event & keyReleased) {
+    if(_keyRepeatCount == 0) {  // short Up press - lower target
+      // press LEFT to select previous screen
+      if(event & key_Left) {
+        _ScreenManager.prevMenu();
+      }
+      // press RIGHT to select next screen
+      if(event & key_Right) {
+        _ScreenManager.nextMenu();
+      }
+    }
+    _keyRepeatCount = -1;
+  }
+  _ScreenManager.reqUpdate();
+
+  return true;
+}
+

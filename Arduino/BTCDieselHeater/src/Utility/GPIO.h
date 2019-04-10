@@ -55,6 +55,7 @@ public:
   void setMode(GPIOinModes mode) { _Mode = mode; };
   void begin(int pin1, int pin2, GPIOinModes mode);
   void manage();
+  uint8_t getState(int channel);
 };
 
 class CGPIOout {

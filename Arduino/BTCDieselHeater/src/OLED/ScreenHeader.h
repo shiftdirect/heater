@@ -38,6 +38,7 @@ protected:
   void showBatteryIcon(float voltage);
   int  showTimers();
   virtual void showTime(int numTimers);  // x location depends upon how many timers are active
+  void showGPIO();
 public:
   CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
   bool show();

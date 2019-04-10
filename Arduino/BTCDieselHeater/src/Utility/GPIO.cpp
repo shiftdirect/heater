@@ -49,6 +49,13 @@ CGPIOin::begin(int pin1, int pin2, GPIOinModes mode)
   setMode(mode);
 }
 
+uint8_t 
+CGPIOin::getState(int channel) 
+{ 
+  int mask = 0x01 << (channel & 0x01);
+  return (_debouncedPins & mask) != 0; 
+}
+
 void 
 CGPIOin::manage() 
 {
