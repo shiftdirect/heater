@@ -21,6 +21,8 @@
 
 #include "GPIO.h"
 #include "../Protocol/helpers.h"
+#include <driver/adc.h>
+#include "DebugPort.h"
 
 const int BREATHINTERVAL = 45;
 const int FADEAMOUNT = 3;
@@ -32,6 +34,7 @@ CGPIOin::CGPIOin()
   _Mode = GPIOinNone;
   _pins[0] = 0;
   _pins[1] = 0;
+  _pinActive = LOW;
   _prevPins = 0;
   _lastDebounceTime = 0;
   _lastKey = 0;
@@ -39,10 +42,11 @@ CGPIOin::CGPIOin()
 }
 
 void 
-CGPIOin::begin(int pin1, int pin2, GPIOinModes mode)
+CGPIOin::begin(int pin1, int pin2, GPIOinModes mode, int activeState)
 {
   _pins[0] = pin1;
   _pins[1] = pin2;
+  _pinActive = activeState;
   pinMode(pin1, INPUT_PULLUP);   // GPIO input pin #1
   pinMode(pin2, INPUT_PULLUP);   // GPIO input pin #2
 
@@ -137,8 +141,8 @@ uint8_t
 CGPIOin::_scanInputs()
 {
   uint8_t newPins = 0;
-  if(_pins[0] && digitalRead(_pins[0]) == HIGH) newPins |= 0x01;
-  if(_pins[1] && digitalRead(_pins[1]) == HIGH) newPins |= 0x02;
+  if(_pins[0] && (digitalRead(_pins[0]) == _pinActive)) newPins |= 0x01;
+  if(_pins[1] && (digitalRead(_pins[1]) == _pinActive)) newPins |= 0x02;
 
   if(newPins != _prevPins) {
     _lastDebounceTime = millis();
@@ -154,6 +158,8 @@ CGPIOin::_scanInputs()
 
   return _debouncedPins;
 }
+
+
 
 CGPIOout::CGPIOout()
 {
@@ -352,4 +358,42 @@ CGPIOout::getState(int channel)
 {
   int mask = 0x01 << (channel & 0x01);
   return (_userState & mask) != 0;
+}
+
+
+CGPIOalg::CGPIOalg()
+{
+  _expMean = 0;
+}
+
+void
+CGPIOalg::begin(adc1_channel_t pin, GPIOalgModes mode)
+{
+  _pin = pin;
+  _Mode = mode;
+
+  if(_Mode != GPIOalgNone) {
+    adc_gpio_init(ADC_UNIT_1, ADC_CHANNEL_5);
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_11db);
+  }
+}
+
+void CGPIOalg::manage()
+{
+  if(_Mode != GPIOalgNone) {
+    int read_raw;
+    char msg[32];
+    read_raw = adc1_get_raw( ADC1_CHANNEL_5);
+//    read_raw = analogRead(33);
+    sprintf(msg, "ADC: %d", read_raw );
+    _expMean = read_raw;
+//    DebugPort.println(msg);
+  }
+}
+
+int 
+CGPIOalg::getValue()
+{
+  return _expMean;
 }

@@ -151,7 +151,7 @@ public:
     unsigned char getCyclicMode();
     GPIOinModes getGPIOinMode();
     GPIOoutModes getGPIOoutMode();
-    unsigned char getGPIOalgMode();
+    GPIOalgModes getGPIOalgMode();
 
     void setPmin(float);
     void setPmax(float);

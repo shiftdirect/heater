@@ -102,6 +102,7 @@
 #include "src/Utility/UtilClasses.h"
 #include "src/Utility/BTC_JSON.h"
 #include "src/Utility/GPIO.h"
+#include "src/Utility/BoardDetect.h"
 #include "src/OLED/ScreenManager.h"
 #include "src/OLED/keypad.h"
 #include <DallasTemperature.h>
@@ -144,6 +145,7 @@ long lastTemperatureTime;            // used to moderate DS18B20 access
 float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
 const float fAlpha = 0.95;           // exponential mean alpha
 int DS18B20holdoff = 2;
+int BoardRevision = 0;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
@@ -159,6 +161,7 @@ CScreenManager ScreenManager;
 TelnetSpy DebugPort;
 CGPIOin GPIOin;
 CGPIOout GPIOout;
+CGPIOalg GPIOalg;
 
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
@@ -309,6 +312,9 @@ void setup() {
   sprintf(msg, "  Temperature for device#1 (idx 0) is: %.1f", TempSensor.getTempCByIndex(0));
   DebugPort.println(msg);
 
+  BoardRevision = BoardDetect();
+  DebugPort.print("Board revision: V"); DebugPort.println(float(BoardRevision) * 0.1, 1);
+
 #if USE_SPIFFS == 1  
  // Initialize SPIFFS
   if(!SPIFFS.begin(true)){
@@ -387,7 +393,7 @@ void setup() {
 
 #endif // USE_WIFI
 
-  pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
+//  pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
   pinMode(LED_Pin, OUTPUT);               // On board LED indicator
   digitalWrite(LED_Pin, LOW);
 
@@ -448,6 +454,7 @@ void loop()
 
   GPIOin.manage();
   GPIOout.manage();
+  GPIOalg.manage();
 
   // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {
@@ -670,15 +677,15 @@ void loop()
 
     case CommStates::HeaterReport1:
       if(CommState.delayExpired()) {
-        if(digitalRead(ListenOnlyPin)) {  // pin open, pulled high (STANDARD OPERATION)
+/*        if(digitalRead(ListenOnlyPin)) {  // pin open, pulled high (STANDARD OPERATION)*/
           bool isBTCmaster = false;
           TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
           TxManage.Start(timenow);
           CommState.set(CommStates::BTC_Tx);
-        }
+/*        }
         else {   // pin shorted to ground
           CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send our Tx
-        }
+        }*/
       }
       break;
     
@@ -1232,8 +1239,44 @@ bool isCyclicActive()
 
 void setupGPIO()
 {
-  GPIOin.begin(GPIOin1_pin, GPIOin2_pin, NVstore.getGPIOinMode());
-  GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getGPIOoutMode());
+  if(BoardRevision) {
+    // some special considerations for GPIO inputs, depending upon PCB hardware
+    // V1.0 PCBs only expose bare inputs, which are pulled high. Active state into ESP32 is LOW 
+    // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted)
+    int activePinState = BoardRevision == 10 ? LOW : HIGH;  
+    int Input1 = BoardRevision == 20 ? GPIOin1_pinV20 : GPIOin1_pinV21V10;
+    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getGPIOinMode(), activePinState);
+
+    // GPIO out is always active high from ESP32
+    // V1.0 PCBs only expose the bare pins
+    // V2.0+ PCBs provide an open collector output that conducts when active
+    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getGPIOoutMode());
+
+    // ### MAJOR ISSUE WITH ADC INPUTS ###
+    //
+    // V2.0 PCBs that have not been modified connect the analogue input to GPIO26.
+    // This is ADC2 channel (#9). 
+    // Unfortunately it was subsequently discovered that any ADC2 input cannot be 
+    // used if Wifi is enabled. 
+    // THIS ISSUE IS NOT RESOLBVABLE IN SOFTWARE.
+    // *** It is not possible to use ANY of the 10 ADC2 channels if Wifi is enabled :-( ***
+    //
+    // Fix is to cut traces to GPIO33 & GPIO26 and swap the connections.
+    // This directs GPIO input1 into GPIO26 and the analogue input into GPIO33 (ADC1_CHANNEL_5)
+    // This will be properly fixed in V2.1 PCBs
+    //
+    // As V1.0 PCBS expose the bare pins, the correct GPIO33 input can be readily chosen.
+    GPIOalgModes algMode = NVstore.getGPIOalgMode();
+    if(BoardRevision == 20)  
+      algMode = GPIOalgNone;      // force off analogue support in V2.0 PCBs
+    GPIOalg.begin(GPIOalg_pin, algMode);
+  }
+  else {
+    // unknown board - deny all GPIO operation (unlikely)
+    GPIOin.begin(0, 0, GPIOinNone, LOW);
+    GPIOout.begin(0, 0, GPIOoutNone);
+    GPIOalg.begin(ADC1_CHANNEL_5, GPIOalgNone);
+  }
 }
 
 void setGPIO(int channel, bool state)

@@ -23,6 +23,7 @@
 #define __BTCGPIO_H__
 
 #include <stdint.h>
+#include <driver/adc.h>
 
 enum GPIOinModes { 
   GPIOinNone, 
@@ -37,23 +38,29 @@ enum GPIOoutModes {
   GPIOoutUser
 };
 
+enum GPIOalgModes {
+  GPIOalgNone,   // Unmodified V2.0 PCBs must use this - ADC2 / Wifi unresolvable conflict
+  GPIOalgHeatDemand,
+};
+
 
 class CGPIOin {
   GPIOinModes _Mode;
-  void _doOn1Off2();
-  void _doOnHold1();
-  void _doOn1Off1();
+  int _pinActive;
   int _pins[2];
-  uint8_t _scanInputs();
   uint8_t _prevPins;
   uint8_t _debouncedPins;
   uint8_t _lastKey;
   unsigned long _lastDebounceTime;
   unsigned long _debounceDelay;
+  uint8_t _scanInputs();
+  void _doOn1Off2();
+  void _doOnHold1();
+  void _doOn1Off1();
 public:
   CGPIOin();
   void setMode(GPIOinModes mode) { _Mode = mode; };
-  void begin(int pin1, int pin2, GPIOinModes mode);
+  void begin(int pin1, int pin2, GPIOinModes mode, int activeState);
   void manage();
   uint8_t getState(int channel);
 };
@@ -79,5 +86,17 @@ public:
   void setState(int channel, bool state);
   bool getState(int channel);
 };
+
+class CGPIOalg {
+  GPIOalgModes _Mode;
+  float _expMean;
+  adc1_channel_t _pin;
+public:
+  CGPIOalg();
+  void begin(adc1_channel_t pin, GPIOalgModes mode);
+  void manage();
+  int getValue();
+};
+
 
 #endif // __BTCGPIO_H__

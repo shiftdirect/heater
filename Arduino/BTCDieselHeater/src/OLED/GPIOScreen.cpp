@@ -30,6 +30,7 @@
 
 extern CGPIOout GPIOout;
 extern CGPIOin GPIOin;
+extern CGPIOalg GPIOalg;
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -320,6 +321,7 @@ bool
 CGPIOInfoScreen::show()
 {
   CScreenHeader::show();
+  char msg[16];
 
   _display.writeFillRect(49, 18, 30, 12, WHITE);
   _printInverted(64, 20, "GPIO", true, eCentreJustify);
@@ -337,6 +339,9 @@ CGPIOInfoScreen::show()
   
   _display.drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIcon : BulbOffIcon, BulbOnIconWidth, BulbOnIconHeight, WHITE);
   _display.drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIcon : BulbOffIcon, BulbOnIconWidth, BulbOnIconHeight, WHITE);
+
+  sprintf(msg, "%d", GPIOalg.getValue());
+  _printMenuText(58, Line1, msg);
 
   _printMenuText(_display.xCentre(), 53, " \021    \030Edit     \020 ", true, eCentreJustify);
   return true;

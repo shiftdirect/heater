@@ -22,6 +22,7 @@
 #include <Arduino.h>
 #include "NVStorage.h"
 #include "DebugPort.h"
+#include <driver/adc.h>
 
 bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
 bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim);
@@ -321,10 +322,15 @@ CHeaterStorage::setGPIOoutMode(unsigned char val)
   _calValues.Options.GPIOoutMode = val;
 }
 
-unsigned char
+GPIOalgModes
 CHeaterStorage::getGPIOalgMode()
 {
-  return _calValues.Options.GPIOalgMode;
+  GPIOalgModes algMode = GPIOalgNone;
+  switch (_calValues.Options.GPIOalgMode) {
+    case 0: algMode = GPIOalgNone; break;
+    case 1: algMode = GPIOalgHeatDemand; break;
+  }
+  return algMode;
 }
 
 void 
