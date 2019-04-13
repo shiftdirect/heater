@@ -25,11 +25,6 @@
 
 CKeyPad::CKeyPad()
 {
-  // pin scanning
-  _debouncedPins = 0;
-  _prevPins = 0;
-  _lastDebounceTime = millis();
-  _debounceDelay = 50;
   // handler
   _lastKey = 0;
   _lastHoldTime = 0;
@@ -40,39 +35,11 @@ CKeyPad::CKeyPad()
 void
 CKeyPad::begin(int Lkey, int Rkey, int Ckey, int Ukey, int Dkey)
 {
-  _pins[0] = Lkey;
-  _pins[1] = Rkey;
-  _pins[2] = Ckey;
-  _pins[3] = Ukey;
-  _pins[4] = Dkey;
-  for(int i=0; i<5; i++) 
-    pinMode(_pins[i], INPUT);
-}
-
-uint8_t 
-CKeyPad::scanPins()
-{ 
-  
-  uint8_t newPins = 0;
-  if(digitalRead(_pins[0]) == LOW)  newPins |= key_Left;
-  if(digitalRead(_pins[1]) == LOW)  newPins |= key_Right;
-  if(digitalRead(_pins[2]) == LOW)  newPins |= key_Centre;
-  if(digitalRead(_pins[3]) == LOW)  newPins |= key_Up;
-  if(digitalRead(_pins[4]) == LOW)  newPins |= key_Down;
-
-  if(newPins != _prevPins) {
-    _lastDebounceTime = millis();
-    _prevPins = newPins;
-  }
-
-  long elapsed = millis() - _lastDebounceTime;
-  if (elapsed > _debounceDelay) {
-    // whatever the reading is at, it's been there for longer than the debounce
-    // delay, so take it as the actual current state:
-    _debouncedPins = newPins;
-  }
-
-  return _debouncedPins;
+  _Debounce.addPin(Lkey);
+  _Debounce.addPin(Rkey);
+  _Debounce.addPin(Ckey);
+  _Debounce.addPin(Ukey);
+  _Debounce.addPin(Dkey);
 }
 
 void
@@ -84,7 +51,7 @@ CKeyPad::setCallback(void (*callback)(uint8_t event))
 uint8_t
 CKeyPad::update()
 {
-  uint8_t newKey = scanPins();
+  uint8_t newKey = _Debounce.manage();
 
   // determine edge events
   uint8_t keyChange = newKey ^ _lastKey;

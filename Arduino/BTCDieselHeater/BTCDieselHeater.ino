@@ -1241,9 +1241,9 @@ void setupGPIO()
 {
   if(BoardRevision) {
     // some special considerations for GPIO inputs, depending upon PCB hardware
-    // V1.0 PCBs only expose bare inputs, which are pulled high. Active state into ESP32 is LOW 
-    // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted)
-    int activePinState = BoardRevision == 10 ? LOW : HIGH;  
+    // V1.0 PCBs only expose bare inputs, which are pulled high. Active state into ESP32 is LOW. 
+    // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
+    int activePinState = (BoardRevision == 10) ? LOW : HIGH;  
     int Input1 = BoardRevision == 20 ? GPIOin1_pinV20 : GPIOin1_pinV21V10;
     GPIOin.begin(Input1, GPIOin2_pin, NVstore.getGPIOinMode(), activePinState);
 

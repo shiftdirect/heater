@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <driver/adc.h>
+#include "Debounce.h"
 
 enum GPIOinModes { 
   GPIOinNone, 
@@ -46,14 +47,15 @@ enum GPIOalgModes {
 
 class CGPIOin {
   GPIOinModes _Mode;
-  int _pinActive;
-  int _pins[2];
-  uint8_t _prevPins;
-  uint8_t _debouncedPins;
+  CDebounce _Debounce;
+//  int _pinActive;
+//  int _pins[2];
+//  uint8_t _prevPins;
+//  uint8_t _debouncedPins;
   uint8_t _lastKey;
-  unsigned long _lastDebounceTime;
-  unsigned long _debounceDelay;
-  uint8_t _scanInputs();
+//  unsigned long _lastDebounceTime;
+//  unsigned long _debounceDelay;
+//  uint8_t _scanInputs();
   void _doOn1Off2();
   void _doOnHold1();
   void _doOn1Off1();

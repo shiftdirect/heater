@@ -32,23 +32,15 @@ const int ONFLASHINTERVAL = 50;
 CGPIOin::CGPIOin()
 {
   _Mode = GPIOinNone;
-  _pins[0] = 0;
-  _pins[1] = 0;
-  _pinActive = LOW;
-  _prevPins = 0;
-  _lastDebounceTime = 0;
   _lastKey = 0;
-  _debounceDelay = 50;
 }
 
 void 
 CGPIOin::begin(int pin1, int pin2, GPIOinModes mode, int activeState)
 {
-  _pins[0] = pin1;
-  _pins[1] = pin2;
-  _pinActive = activeState;
-  pinMode(pin1, INPUT_PULLUP);   // GPIO input pin #1
-  pinMode(pin2, INPUT_PULLUP);   // GPIO input pin #2
+  _Debounce.addPin(pin1);
+  _Debounce.addPin(pin2);
+  _Debounce.setActiveState(activeState);
 
   setMode(mode);
 }
@@ -57,7 +49,7 @@ uint8_t
 CGPIOin::getState(int channel) 
 { 
   int mask = 0x01 << (channel & 0x01);
-  return (_debouncedPins & mask) != 0; 
+  return (_Debounce.getState() & mask) != 0; 
 }
 
 void 
@@ -81,7 +73,7 @@ CGPIOin::manage()
 void 
 CGPIOin::_doOn1Off2()
 {
-  uint8_t newKey = _scanInputs();
+  uint8_t newKey = _Debounce.manage();
   // determine edge events
   uint8_t keyChange = newKey ^ _lastKey;
   _lastKey = newKey;
@@ -101,7 +93,7 @@ CGPIOin::_doOn1Off2()
 void 
 CGPIOin::_doOnHold1()
 {
-  uint8_t newKey = _scanInputs();
+  uint8_t newKey = _Debounce.manage();
   // determine edge events
   uint8_t keyChange = newKey ^ _lastKey;
   _lastKey = newKey;
@@ -121,7 +113,7 @@ CGPIOin::_doOnHold1()
 void 
 CGPIOin::_doOn1Off1()
 {
-  uint8_t newKey = _scanInputs();
+  uint8_t newKey = _Debounce.manage();
   // determine edge events
   uint8_t keyChange = newKey ^ _lastKey;
   _lastKey = newKey;
@@ -134,29 +126,6 @@ CGPIOin::_doOn1Off1()
         requestOn();
     }
   }
-}
-
-  
-uint8_t 
-CGPIOin::_scanInputs()
-{
-  uint8_t newPins = 0;
-  if(_pins[0] && (digitalRead(_pins[0]) == _pinActive)) newPins |= 0x01;
-  if(_pins[1] && (digitalRead(_pins[1]) == _pinActive)) newPins |= 0x02;
-
-  if(newPins != _prevPins) {
-    _lastDebounceTime = millis();
-    _prevPins = newPins;
-  }
-
-  long elapsed = millis() - _lastDebounceTime;
-  if (elapsed > _debounceDelay) {
-    // whatever the reading is at, it's been there for longer than the debounce
-    // delay, so take it as the actual current state:
-    _debouncedPins = newPins;
-  }
-
-  return _debouncedPins;
 }
 
 

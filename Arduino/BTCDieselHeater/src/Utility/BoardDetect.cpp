@@ -81,10 +81,11 @@ int BoardDetect()
   uint8_t revision = 0;
   uint8_t val = preferences.getUChar("Board Revision", revision);
   if(val != 0) {
-//    return val;
+    DebugPort.print("Board detect: Using saved revision V"); DebugPort.println(float(val) * 0.1f, 1);
+    return val;
   }
   
-  DebugPort.println("Virgin system - attempting to detect revision");
+  DebugPort.println("Board detect: Virgin system - attempting to detect revision");
   pinMode(33, INPUT_PULLUP);
   pinMode(26, INPUT_PULLUP);
   // there is a 100nF capacitor across the analogue input, allow that to charge before testing
@@ -94,27 +95,28 @@ int BoardDetect()
 
   if(pin33 == HIGH && pin26 == HIGH) {
     revision = 10;
-    DebugPort.println("Board detect: digital input test suggests V1.x PCB");
+    DebugPort.println("Board detect: digital input test reveals V1.x PCB");
   }
   else if(pin33 == LOW && pin26 == HIGH) {
     revision = 20;
-    DebugPort.println("Board detect: digital input test suggests V2.0 PCB");
+    DebugPort.println("Board detect: digital input test reveals V2.0 PCB");
   }
   else if(pin33 == HIGH && pin26 == LOW) {
     revision = 21;
-    DebugPort.println("Board detect: digital input test suggests V2.1 PCB");
+    DebugPort.println("Board detect: digital input test reveals V2.1 PCB");
   }
   else {
-    DebugPort.println("Board detect: digital input test failed to detect a sane combination!!!");
+    DebugPort.println("Board detect: digital input test failed to detect a valid combination!!!");
   }
 
   pinMode(33, INPUT);  // revert to normal inputs (remove pull ups)
   pinMode(26, INPUT);
 
+  //store the detected revision
   if(revision) {
     preferences.putUChar("Board Revision", revision);
   }
 
-  DebugPort.print("Board detect result: V"); DebugPort.println(float(revision)*0.1f, 1);
+  DebugPort.print("Board detect: Result = V"); DebugPort.println(float(revision)*0.1f, 1);
   return revision;
 }
