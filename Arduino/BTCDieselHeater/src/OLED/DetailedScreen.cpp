@@ -93,7 +93,7 @@ CDetailedScreen::show()
   float desiredT = 0;
   if((runstate && (runstate <= 5)) || _showTarget) {
     if(getThermostatModeActive())
-      desiredT = getHeaterInfo().getTemperature_Desired();
+      desiredT = getTemperatureDesired();
     else
       desiredT = -getHeaterInfo().getPump_Fixed();
   }

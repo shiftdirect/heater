@@ -188,9 +188,12 @@ CSetClockScreen::keyHandler(uint8_t event)
     }
     // press UP 
     if(event & key_Up) {
-      if(_rowSel == 0)
+      if(_rowSel == 0) {
         _rowSel = 1;
-      _adjTimeDate(+1);
+      }
+      else {
+        _adjTimeDate(+1);
+      }
     }
     // press DOWN
     if(event & key_Down) {

@@ -219,29 +219,58 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
 
   int retval = 0;
   int dayMinute = (hour * 60) + minute;
-  int lookup = weekTimerIDs[dow][dayMinute];
-  int newID = lookup & 0x0f;
+  int newID = weekTimerIDs[dow][dayMinute];
   if(activeTimer != newID) {
+    
+    DebugPort.print("Timer ID change detected "); 
+    DebugPort.print(activeTimer & 0x0f); 
+    if(activeTimer & 0x80) DebugPort.print("(repeating)");
+    DebugPort.print(" -> "); 
+    DebugPort.print(newID & 0x0f);
+    if(newID & 0x80) DebugPort.print("(repeating)");
+    DebugPort.println("");
+
+    if(activeTimer) {  
+      // deal with expired timer
+      DebugPort.println("Handling expired timer cleanup");
+
+      if(activeTimer & 0x80) {
+        DebugPort.println("Expired timer repeats, leaving definition alone");
+      }
+      else {  // non repeating timer
+        // delete one shot timer - note that this may require ticking off each day as they appear
+        DebugPort.print("Expired timer does not repeat - Cancelling"); DebugPort.println(activeTimer);
+        int ID = activeTimer & 0x0f;
+        if(ID) {
+          ID--;
+          sTimer timer;
+          // get timer settings
+          NVstore.getTimerInfo(ID, timer);
+          if(timer.enabled & 0x80) {
+            DebugPort.println("Cancelling next day"); 
+            timer.enabled = 0;   // ouright cancel anyday timer
+          }
+          else {
+            DebugPort.print("Cancelling specific day idx"); DebugPort.println(activeDow);
+            timer.enabled &= ~(0x01 << activeDow);  // cancel specific day that started the timer
+          }
+          NVstore.setTimerInfo(ID, timer);
+          NVstore.save();
+          createMap();
+        }
+      }
+    }
+
     if(newID) {
+      DebugPort.println("Start of timer interval, starting heater");
       requestOn();
       activeDow = dow;   // dow when timer interval started
+//      activeRepeat = lookup & 0x80;
       retval = 1;
     }
     else {
+      DebugPort.println("End of timer interval, stopping heater");
       requestOff();
-      // delete one shot timer - note that this may require ticking off each day as they appear
-      if((lookup & 0x80) == 0) {  // non repeating timer
-        sTimer timer;
-        // get timer settings
-        NVstore.getTimerInfo(activeTimer-1, timer);
-        if(timer.enabled & 0x80)
-          timer.enabled = 0;   // ouright cancel anyday timer
-        else 
-          timer.enabled &= ~(0x01 << activeDow);  // cancel specific day that started the timer
-        NVstore.setTimerInfo(activeTimer-1, timer);
-        NVstore.save();
-        createMap();
-      }
       retval = 2;
     }
     activeTimer = newID;

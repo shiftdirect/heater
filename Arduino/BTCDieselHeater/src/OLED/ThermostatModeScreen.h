@@ -31,6 +31,7 @@ class CScreenManager;
 class CThermostatModeScreen : public CPasswordScreen
 {
   int _rowSel;
+  int _keyRepeat;
   void _adjust(int dir);
   float _window;
   int _thermoMode;

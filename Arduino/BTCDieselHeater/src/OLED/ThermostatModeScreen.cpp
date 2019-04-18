@@ -63,6 +63,7 @@ CThermostatModeScreen::_initUI()
 {
   _rowSel = 0;
   _animateCount = 0;
+  _keyRepeat = -1;
 }
 
 bool 
@@ -156,6 +157,7 @@ bool
 CThermostatModeScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
+    _keyRepeat = 0;  // unlock hold function
     // press LEFT to select previous screen
     if(event & key_Left) {
       switch(_rowSel) {
@@ -192,7 +194,7 @@ CThermostatModeScreen::keyHandler(uint8_t event)
     }
     if(event & key_Down) {
       if(_rowSel == 0) {
-        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
+//        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
       }
       else {
         _rowSel--;
@@ -234,6 +236,18 @@ CThermostatModeScreen::keyHandler(uint8_t event)
       }
     }
     _ScreenManager.reqUpdate();
+  }
+  if(event & keyRepeat) {
+    _keyRepeat++;
+    if((event & key_Down) && (keyRepeat >= 4)) {
+      _keyRepeat = -1;
+      if(_rowSel == 0) {
+        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
+      }
+    }
+  }
+  if(event & keyReleased) {
+    _keyRepeat = -1;
   }
 
   return true;
