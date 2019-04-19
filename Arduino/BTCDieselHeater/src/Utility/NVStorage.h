@@ -62,6 +62,24 @@ struct sHeater {
   };
 };
 
+struct sHomeMenuActions {
+  uint8_t onTimeout;
+  uint8_t onStart;
+  uint8_t onStop;
+  bool valid() {
+    bool retval = true;
+    retval &= onTimeout < 4;
+    retval &= onStart < 4;
+    retval &= onStop < 4;
+    return retval;  
+  }
+  void init() {
+    onTimeout = 0;
+    onStart = 0;
+    onStop = 0;
+  }
+};
+
 struct sBTCoptions {
   long DimTime;
   uint8_t degF;
@@ -73,7 +91,7 @@ struct sBTCoptions {
   uint8_t GPIOoutMode;
   uint8_t GPIOalgMode;
   uint16_t FrameRate;
-  uint8_t HomeMenu;
+  sHomeMenuActions HomeMenu;
 
   bool valid() {
     bool retval = true;
@@ -86,7 +104,7 @@ struct sBTCoptions {
     retval &= GPIOinMode < 4;
     retval &= GPIOoutMode < 3;
     retval &= (FrameRate >= 300) && (FrameRate <= 1500);
-    retval &= HomeMenu < 4;
+    retval &= HomeMenu.valid();
     return retval;  
   }
   void init() {
@@ -100,7 +118,7 @@ struct sBTCoptions {
     GPIOoutMode = 0;
     GPIOalgMode = 0;
     FrameRate = 1000;
-    HomeMenu = 0;
+    HomeMenu.init();
   };
 };
 
@@ -159,7 +177,7 @@ public:
     GPIOoutModes getGPIOoutMode();
     GPIOalgModes getGPIOalgMode();
     uint16_t     getFrameRate();
-    uint8_t      getHomeMenu();
+    const sHomeMenuActions& getHomeMenu() const;
 
     void setPmin(float);
     void setPmax(float);
@@ -181,7 +199,7 @@ public:
     void setGPIOoutMode(unsigned char val);
     void setGPIOalgMode(unsigned char val);
     void setFrameRate(uint16_t val);
-    void setHomeMenu(uint8_t val);
+    void setHomeMenu(sHomeMenuActions val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);

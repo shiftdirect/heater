@@ -107,6 +107,23 @@ CClockScreen::keyHandler(uint8_t event)
           setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
         }
       }
+      // hold CENTRE to toggle On/Off state
+      if(event & key_Centre) {
+        int runstate = getHeaterInfo().getRunStateEx();
+        if(runstate) {   // running, including cyclic mode idle
+          if(_keyRepeatCount > 5) {
+            _keyRepeatCount = -1;
+            requestOff();         
+          }
+        }
+        else {  // standard idle state
+          // standby, request ON
+          if(_keyRepeatCount > 3) {
+            _keyRepeatCount = -1;
+            requestOn();
+          }
+        }
+      }
     }
   }
   // release event

@@ -19,24 +19,24 @@
  * 
  */
 
-#ifndef __OTHEROPTIONSCREEN_H__
-#define __OTHEROPTIONSCREEN_H__
+#ifndef __HOMEMENUSELSCREEN_H__
+#define __HOMEMENUSELSCREEN_H__
 
 #include <stdint.h>
 #include "PasswordScreen.h"
+#include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
 
-class COtherOptionsScreen : public CPasswordScreen
+class CHomeMenuSelScreen : public CPasswordScreen
 {
   int _rowSel;
-  uint16_t _frameRate;
-//  uint8_t _homeMenu;
+  sHomeMenuActions _action;
   void _initUI();
 public:
-  COtherOptionsScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool keyHandler(uint8_t event);
   void onSelect();

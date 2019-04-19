@@ -37,6 +37,7 @@
 #include "InheritSettingsScreen.h"
 #include "GPIOScreen.h"
 #include "VersionInfoScreen.h"
+#include "HomeMenuSelScreen.h"
 #include "OtherOptionsScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
@@ -216,6 +217,7 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // experimental settings screen
   menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
   menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
+  menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
   menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
   _Screens.push_back(menuloop);
 
@@ -259,9 +261,11 @@ CScreenManager::checkUpdate()
       // return to those upon timeout, otherwise return to Basic Control screen
       if(_rootMenu > 2) {
         _rootMenu = _subMenu = 1;
-        if(NVstore.getHomeMenu()) {  // allow user to override defualt screen
-          DebugPort.print("Falling back to user home screen #"); DebugPort.println(NVstore.getHomeMenu()-1);
-          _rootMenu = _subMenu = NVstore.getHomeMenu()-1;  
+        uint8_t userHomeMenu = NVstore.getHomeMenu().onTimeout;
+        if(userHomeMenu) {  // allow user to override defualt screen
+          userHomeMenu--;
+          DebugPort.print("Falling back to user home screen #"); DebugPort.println(userHomeMenu);
+          _rootMenu = _subMenu = userHomeMenu;  
         }
       }
       _enterScreen();

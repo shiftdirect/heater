@@ -69,8 +69,8 @@ CBasicScreen::show()
 
     {
       CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
-//      _printMenuText(_display.xCentre(), 23, msg, false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 23, msg, false, eCentreJustify);
+//      _printMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
     }
   }
   else {

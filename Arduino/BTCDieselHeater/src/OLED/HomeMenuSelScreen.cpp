@@ -20,7 +20,7 @@
  */
 
 #include "128x64OLED.h"
-#include "OtherOptionsScreen.h"
+#include "HomeMenuSelScreen.h"
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Utility/UtilClasses.h"
@@ -30,26 +30,25 @@
 
 
 
-COtherOptionsScreen::COtherOptionsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CHomeMenuSelScreen::CHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
 }
 
 void 
-COtherOptionsScreen::onSelect()
+CHomeMenuSelScreen::onSelect()
 {
   CScreenHeader::onSelect();
   _rowSel = 0;
-  _frameRate = NVstore.getFrameRate();
-//  _homeMenu = NVstore.getHomeMenu();
+  _action = NVstore.getHomeMenu();
 }
 
 void
-COtherOptionsScreen::_initUI()
+CHomeMenuSelScreen::_initUI()
 {
 }
 
 bool 
-COtherOptionsScreen::show()
+CHomeMenuSelScreen::show()
 {
   char msg[16];
 
@@ -63,20 +62,34 @@ COtherOptionsScreen::show()
       _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
     }
     else {
-      _printInverted(_display.xCentre(), 0, " Other Options ", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 0, " Home Menu Actions ", true, eCentreJustify);
       
-      _printMenuText(66, 14, "Frame Rate:", false, eRightJustify);
-      sprintf(msg, "%dms", _frameRate);
-      _printMenuText(70, 14, msg, _rowSel == 2);
-
-/*      _printMenuText(66, 25, "Home menu:", false, eRightJustify);
-      switch(_homeMenu) {
+      _printMenuText(66, 14, "On timeout:", false, eRightJustify);
+      switch(_action.onTimeout) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
         case 2: strcpy(msg, "Basic"); break;
         case 3: strcpy(msg, "Clock"); break;
       }
-      _printMenuText(70, 25, msg, _rowSel == 1);*/
+      _printMenuText(70, 14, msg, _rowSel == 3);
+
+      _printMenuText(66, 26, "On Start:", false, eRightJustify);
+      switch(_action.onStart) {
+        case 0: strcpy(msg, "Default"); break;
+        case 1: strcpy(msg, "Detailed"); break;
+        case 2: strcpy(msg, "Basic"); break;
+        case 3: strcpy(msg, "Clock"); break;
+      }
+      _printMenuText(70, 26, msg, _rowSel == 2);
+
+      _printMenuText(66, 38, "On Stop:", false, eRightJustify);
+      switch(_action.onStop) {
+        case 0: strcpy(msg, "Default"); break;
+        case 1: strcpy(msg, "Detailed"); break;
+        case 2: strcpy(msg, "Basic"); break;
+        case 3: strcpy(msg, "Clock"); break;
+      }
+      _printMenuText(70, 38, msg, _rowSel == 1);
 
       _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", _rowSel == 0, eCentreJustify);
     }
@@ -86,28 +99,25 @@ COtherOptionsScreen::show()
 
 
 bool 
-COtherOptionsScreen::keyHandler(uint8_t event)
+CHomeMenuSelScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
     // UP press
     if(event & key_Up) {
       if(_rowSel == 4) {
         _showStoringMessage();
-        NVstore.setFrameRate(_frameRate);
-//        NVstore.setHomeMenu(_homeMenu);
+        NVstore.setHomeMenu(_action);
         saveNV();
         _rowSel = 0;
       }
       else {
-//        _rowSel++;
-        _rowSel = 2;
-        UPPERLIMIT(_rowSel, 2);
+        _rowSel++;
+        UPPERLIMIT(_rowSel, 3);
       }
     }
     // UP press
     if(event & key_Down) {
-//      _rowSel--;
-      _rowSel = 0;
+      _rowSel--;
       LOWERLIMIT(_rowSel, 0);
     }
     // CENTRE press
@@ -141,18 +151,23 @@ COtherOptionsScreen::keyHandler(uint8_t event)
 }
 
 void
-COtherOptionsScreen::adjust(int dir)
+CHomeMenuSelScreen::adjust(int dir)
 {
   switch(_rowSel) {
-    case 1: 
-//      _homeMenu += dir;
-//      ROLLLOWERLIMIT(_homeMenu, 0, 3);
-//      ROLLUPPERLIMIT(_homeMenu, 3, 0);
+    case 1:
+      _action.onStop += dir;
+      ROLLLOWERLIMIT(_action.onStop, 0, 3);
+      ROLLUPPERLIMIT(_action.onStop, 3, 0);
       break;
     case 2:
-      _frameRate += dir * 50;
-      LOWERLIMIT(_frameRate, 300);
-      UPPERLIMIT(_frameRate, 1500);
+      _action.onStart += dir;
+      ROLLLOWERLIMIT(_action.onStart, 0, 3);
+      ROLLUPPERLIMIT(_action.onStart, 3, 0);
+      break;
+    case 3: 
+      _action.onTimeout += dir;
+      ROLLLOWERLIMIT(_action.onTimeout, 0, 3);
+      ROLLUPPERLIMIT(_action.onTimeout, 3, 0);
       break;
   }
 }
