@@ -339,6 +339,30 @@ CHeaterStorage::setGPIOalgMode(unsigned char val)
   _calValues.Options.GPIOalgMode = val;
 }
 
+uint16_t
+CHeaterStorage::getFrameRate()
+{
+  return _calValues.Options.FrameRate;
+}
+
+void
+CHeaterStorage::setFrameRate(uint16_t val)
+{
+  _calValues.Options.FrameRate = val;
+}
+
+uint8_t 
+CHeaterStorage::getHomeMenu()
+{
+  return _calValues.Options.HomeMenu;
+}
+
+void
+CHeaterStorage::setHomeMenu(uint8_t val)
+{
+  _calValues.Options.HomeMenu = val;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
 //
@@ -461,6 +485,8 @@ CESP32HeaterStorage::loadUI()
   validatedLoad("GPIOinMode", _calValues.Options.GPIOinMode, 0, u8inBounds, 0, 3);
   validatedLoad("GPIOoutMode", _calValues.Options.GPIOoutMode, 0, u8inBounds, 0, 2);
   validatedLoad("GPIOalgMode", _calValues.Options.GPIOalgMode, 0, u8inBounds, 0, 2);
+  validatedLoad("HomeMenu", _calValues.Options.HomeMenu, 0, u8inBounds, 0, 3);
+  validatedLoad("FrameRate", _calValues.Options.FrameRate, 1000, u16inBounds, 300, 1500);
   preferences.end();    
 }
 
@@ -477,6 +503,8 @@ CESP32HeaterStorage::saveUI()
   preferences.putUChar("GPIOinMode", _calValues.Options.GPIOinMode);
   preferences.putUChar("GPIOoutMode", _calValues.Options.GPIOoutMode);
   preferences.putUChar("GPIOalgMode", _calValues.Options.GPIOalgMode);
+  preferences.putUChar("HomeMenu", _calValues.Options.HomeMenu);
+  preferences.putUShort("FrameRate", _calValues.Options.FrameRate);
   preferences.end();    
 }
 

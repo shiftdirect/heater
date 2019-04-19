@@ -23,6 +23,7 @@
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "fonts/Tahoma16.h"
+#include "fonts/Tahoma24.h"
 #include "../RTC/Clock.h"
 
 ///////////////////////////////////////////////////////////////////////////
@@ -64,7 +65,8 @@ CClockScreen::show()
 
   int yPos = 25;
   {
-    CTransientFont AF(_display, &tahoma_16ptFontInfo);  // temporarily use a large font
+//    CTransientFont AF(_display, &tahoma_16ptFontInfo);  // temporarily use a large font
+    CTransientFont AF(_display, &tahoma_24ptFontInfo);  // temporarily use a large font
     _printMenuText(_display.xCentre(), yPos, str, false, eCentreJustify);
   }
   sprintf(str, "%s %d %s %d", now.dowStr(), now.day(), now.monthStr(), now.year());

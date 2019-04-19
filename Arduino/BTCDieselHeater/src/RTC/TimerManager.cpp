@@ -264,8 +264,7 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
     if(newID) {
       DebugPort.println("Start of timer interval, starting heater");
       requestOn();
-      activeDow = dow;   // dow when timer interval started
-//      activeRepeat = lookup & 0x80;
+      activeDow = dow;   // dow when timer interval start was detected
       retval = 1;
     }
     else {

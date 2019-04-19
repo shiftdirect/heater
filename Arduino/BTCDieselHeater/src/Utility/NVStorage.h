@@ -72,6 +72,8 @@ struct sBTCoptions {
   uint8_t GPIOinMode;
   uint8_t GPIOoutMode;
   uint8_t GPIOalgMode;
+  uint16_t FrameRate;
+  uint8_t HomeMenu;
 
   bool valid() {
     bool retval = true;
@@ -83,6 +85,8 @@ struct sBTCoptions {
     retval &= cyclicMode < 10;
     retval &= GPIOinMode < 4;
     retval &= GPIOoutMode < 3;
+    retval &= (FrameRate >= 300) && (FrameRate <= 1500);
+    retval &= HomeMenu < 4;
     return retval;  
   }
   void init() {
@@ -95,6 +99,8 @@ struct sBTCoptions {
     GPIOinMode = 0;
     GPIOoutMode = 0;
     GPIOalgMode = 0;
+    FrameRate = 1000;
+    HomeMenu = 0;
   };
 };
 
@@ -152,6 +158,8 @@ public:
     GPIOinModes getGPIOinMode();
     GPIOoutModes getGPIOoutMode();
     GPIOalgModes getGPIOalgMode();
+    uint16_t     getFrameRate();
+    uint8_t      getHomeMenu();
 
     void setPmin(float);
     void setPmax(float);
@@ -172,6 +180,8 @@ public:
     void setGPIOinMode(unsigned char val);
     void setGPIOoutMode(unsigned char val);
     void setGPIOalgMode(unsigned char val);
+    void setFrameRate(uint16_t val);
+    void setHomeMenu(uint8_t val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);

@@ -47,18 +47,21 @@ extern void  setGlowDrive(unsigned char val);
 extern void  saveNV();
 extern void  setSystemVoltage(float val);
 extern const CProtocolPackage& getHeaterInfo();
-extern void interpretJsonCommand(char* pLine);
-extern void resetWebModerator();
-extern void resetJSONmoderator();
+extern void  interpretJsonCommand(char* pLine);
+extern void  resetWebModerator();
+extern void  resetJSONmoderator();
 extern const char* getBlueWireStatStr();
-extern bool hasOEMcontroller();
-extern bool hasOEMLCDcontroller();
-extern int getBlueWireStat();
-extern int getSmartError();
-extern bool isCyclicActive();
-extern void setupGPIO();
-extern void setGPIO(int channel, bool state);
-extern bool getGPIO(int channel);
+extern bool  hasOEMcontroller();
+extern bool  hasOEMLCDcontroller();
+extern int   getBlueWireStat();
+extern int   getSmartError();
+extern bool  isCyclicActive();
+extern float getVersion();
+extern const char* getVersionDate();
+extern int   getBoardRevision();
+extern void  setupGPIO();
+extern void  setGPIO(int channel, bool state);
+extern bool  getGPIO(int channel);
 
 
 

@@ -115,6 +115,9 @@
 
 #define RX_DATA_TIMOUT 50
 
+const int FirmwareRevision = 21;
+const char* FirmwareDate = "19 Apr 2019";
+
 
 #ifdef ESP32
 #include "src/Bluetooth/BluetoothESP32.h"
@@ -485,7 +488,7 @@ void loop()
   unsigned long RxTimeElapsed = timenow - lastRxTime;
 
   if (BlueWireSerial.available()) {
-    // Data is avaialable, read and store it now, use it later
+    // Data is available, read and store it now, use it later
     // Note that if not in a recognised data receive frame state, the data 
     // will be deliberately lost!
     BlueWireData.setValue(BlueWireSerial.read());  // read hex byte, store for later use
@@ -548,7 +551,8 @@ void loop()
       // Detect the possible start of a new frame sequence from an OEM controller
       // This will be the first activity for considerable period on the blue wire
       // The heater always responds to a controller frame, but otherwise never by itself
-      if(RxTimeElapsed >= 970) {
+//      if(RxTimeElapsed >= 970) {
+      if(RxTimeElapsed >= NVstore.getFrameRate()) {
         // have not seen any receive data for a second.
         // OEM controller is probably not connected. 
         // Skip state machine immediately to BTC_Tx, sending our own settings.
@@ -1290,4 +1294,19 @@ bool getGPIO(int channel)
   bool retval = GPIOout.getState(channel);
   DebugPort.print("getGPIO: Output #"); DebugPort.print(channel+1); DebugPort.print(" = "); DebugPort.println(retval);
   return retval;
+}
+
+float getVersion()
+{
+  return float(FirmwareRevision) * 0.1f;
+}
+
+const char* getVersionDate()
+{
+  return FirmwareDate;
+}
+
+int getBoardRevision()
+{
+  return BoardRevision;
 }

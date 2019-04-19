@@ -36,6 +36,8 @@
 #include "TimerChartScreen.h"
 #include "InheritSettingsScreen.h"
 #include "GPIOScreen.h"
+#include "VersionInfoScreen.h"
+#include "OtherOptionsScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -183,6 +185,7 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
   menuloop.push_back(new CSettingsScreen(*_pDisplay, *this));         //  Tuning info
   _Screens.push_back(menuloop);
+
   // create timer screens loop
   menuloop.clear();
   menuloop.push_back(new CTimerChartScreen(*_pDisplay, *this, 0)); // timer chart
@@ -201,16 +204,21 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CSetTimerScreen(*_pDisplay, *this, 12)); // set timer 13
   menuloop.push_back(new CSetTimerScreen(*_pDisplay, *this, 13)); // set timer 14
   _Screens.push_back(menuloop);
+
   // create heater tuning screens loop - password protected
   menuloop.clear();
   menuloop.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
   menuloop.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
   _Screens.push_back(menuloop);
+
   // create User Settings screens loop 
   menuloop.clear();
   menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // experimental settings screen
   menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
+  menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
+  menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
   _Screens.push_back(menuloop);
+
   // create branch screens
   menuloop.clear();
   menuloop.push_back(new CSetClockScreen(*_pDisplay, *this));         // clock set branch screen
@@ -250,8 +258,11 @@ CScreenManager::checkUpdate()
       //   Clock
       // return to those upon timeout, otherwise return to Basic Control screen
       if(_rootMenu > 2) {
-        _subMenu = 1;
-        _rootMenu = 1;
+        _rootMenu = _subMenu = 1;
+        if(NVstore.getHomeMenu()) {  // allow user to override defualt screen
+          DebugPort.print("Falling back to user home screen #"); DebugPort.println(NVstore.getHomeMenu()-1);
+          _rootMenu = _subMenu = NVstore.getHomeMenu()-1;  
+        }
       }
       _enterScreen();
     }

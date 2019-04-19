@@ -343,7 +343,7 @@ CGPIOInfoScreen::show()
   sprintf(msg, "%d", GPIOalg.getValue());
   _printMenuText(58, Line1, msg);
 
-  _printMenuText(_display.xCentre(), 53, " \021    \030Edit     \020 ", true, eCentreJustify);
+  _printMenuText(_display.xCentre(), 53, " \021              \020 ", true, eCentreJustify);
   return true;
 }
 
