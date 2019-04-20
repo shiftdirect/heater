@@ -260,17 +260,62 @@ CScreenManager::checkUpdate()
       //   Clock
       // return to those upon timeout, otherwise return to Basic Control screen
       if(_rootMenu > 2) {
-        _rootMenu = _subMenu = 1;
         uint8_t userHomeMenu = NVstore.getHomeMenu().onTimeout;
         if(userHomeMenu) {  // allow user to override defualt screen
           userHomeMenu--;
-          DebugPort.print("Falling back to user home screen #"); DebugPort.println(userHomeMenu);
+          DebugPort.print("Screen Manager: Menu timeout, falling back to user preferred screen: "); 
+          switch(userHomeMenu) {
+            case 0: DebugPort.println("Detailed control menu"); break;
+            case 1: DebugPort.println("Basic control menu"); break;
+            case 2: DebugPort.println("Clock menu"); break;
+          }
           _rootMenu = _subMenu = userHomeMenu;  
+        }
+        else {
+          _rootMenu = _subMenu = 1;
+          DebugPort.print("Screen Manager: Menu timeout, falling back to Basic control screen"); 
         }
       }
       _enterScreen();
     }
+  }  
+  
+  static int prevRunState = -1;
+  int runState = getHeaterInfo().getRunStateEx(); 
+  if(runState != prevRunState) {
+    if(runState > 0 && prevRunState == 0) {
+      // heater has started
+      uint8_t userStartMenu = NVstore.getHomeMenu().onStart;
+      if(userStartMenu && userStartMenu <= 3) {  // allow user to override defualt screen
+        userStartMenu--;
+        DebugPort.print("Screen Manager: Heater start detected, switching to user preferred screen: "); 
+        switch(userStartMenu) {
+          case 0: DebugPort.println("Detailed control menu"); break;
+          case 1: DebugPort.println("Basic control menu"); break;
+          case 2: DebugPort.println("Clock menu"); break;
+        }
+        _rootMenu = _subMenu = userStartMenu;  
+        _enterScreen();
+      }
+    }
+    if(runState == 0 && prevRunState != 0) {
+      // heater has stopped
+      uint8_t userStopMenu = NVstore.getHomeMenu().onStop;
+      if(userStopMenu && userStopMenu <= 3) {  // allow user to override defualt screen
+        userStopMenu--;
+        DebugPort.print("Screen Manager: Heater stop detected, switching to user preferred screen: "); 
+        switch(userStopMenu) {
+          case 0: DebugPort.println("Detailed control menu"); break;
+          case 1: DebugPort.println("Basic control menu"); break;
+          case 2: DebugPort.println("Clock menu"); break;
+        }
+        _rootMenu = _subMenu = userStopMenu;  
+        _enterScreen();
+      }
+    }
+    prevRunState = runState;
   }
+
 
   if(_bReqUpdate) {
     if(_pRebootScreen) {

@@ -795,7 +795,6 @@ void loop()
           DS18B20holdoff = 2;
           fFilteredTemperature = -100;
         }
-        // Added DISABLE INTERRUPTS to test for parasitic fix.
         TempSensor.requestTemperatures();               // prep sensor for future reading
 
         ScreenManager.reqUpdate();
@@ -1310,3 +1309,4 @@ int getBoardRevision()
 {
   return BoardRevision;
 }
+

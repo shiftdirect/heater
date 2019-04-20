@@ -73,7 +73,7 @@ CHomeMenuSelScreen::show()
       }
       _printMenuText(70, 14, msg, _rowSel == 3);
 
-      _printMenuText(66, 26, "On Start:", false, eRightJustify);
+      _printMenuText(66, 26, "On start:", false, eRightJustify);
       switch(_action.onStart) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
@@ -82,7 +82,7 @@ CHomeMenuSelScreen::show()
       }
       _printMenuText(70, 26, msg, _rowSel == 2);
 
-      _printMenuText(66, 38, "On Stop:", false, eRightJustify);
+      _printMenuText(66, 38, "On stop:", false, eRightJustify);
       switch(_action.onStop) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
