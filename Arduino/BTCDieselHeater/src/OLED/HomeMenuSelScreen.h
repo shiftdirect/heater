@@ -33,11 +33,13 @@ class CScreenManager;
 class CHomeMenuSelScreen : public CPasswordScreen
 {
   int _rowSel;
+  int _scrollChar;
   sHomeMenuActions _action;
   void _initUI();
 public:
   CHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
   void onSelect();
   void adjust(int dir);

@@ -133,3 +133,53 @@ extern const uint8_t BulbOffIcon[];
 const uint8_t BulbOffIconWidth = 9;
 const uint8_t BulbOffIconHeight = 8;
 
+// Bitmap for start
+extern const uint8_t startIcon[];
+const uint8_t startWidth = 5;
+const uint8_t startHeight = 9;
+
+// Bitmap sizes for stop
+extern const uint8_t stopIcon[];
+const uint8_t stopWidth = 6;
+const uint8_t stopHeight = 8;
+
+// Bitmap for displayTimeout
+extern const uint8_t displayTimeoutIcon[];
+const uint8_t displayTimeoutWidth = 24;
+const uint8_t displayTimeoutHeight = 10;
+
+// Bitmap for menuTimeout
+extern const uint8_t menuTimeoutIcon[];
+const uint8_t menuTimeoutWidth = 24;
+const uint8_t menuTimeoutHeight = 10;
+
+// Bitmap for timeout
+extern const uint8_t timeoutIcon[];
+const uint8_t timeoutWidth = 9;
+const uint8_t timeoutHeight = 10;
+
+// Bitmap for refresh
+extern const uint8_t refreshIcon[];
+const uint8_t refreshWidth = 13;
+const uint8_t refreshHeight = 11;
+
+// Bitmap for thermostat modes
+extern const uint8_t thermostatIcon[];
+const uint8_t thermostatWidth = 28;
+const uint8_t thermostatHeight = 34;
+
+// Bitmap for gPIO
+extern const uint8_t GPIOIcon[];
+const uint8_t GPIOWidth = 20;
+const uint8_t GPIOHeight = 33;
+
+// Bitmap for firmware
+extern const uint8_t firmwareIcon[];
+const uint8_t firmwareWidth = 26;
+const uint8_t firmwareHeight = 21;
+
+// Bitmap for hardware
+extern const uint8_t hardwareIcon[];
+const uint8_t hardwareWidth = 16;
+const uint8_t hardwareHeight = 15;
+

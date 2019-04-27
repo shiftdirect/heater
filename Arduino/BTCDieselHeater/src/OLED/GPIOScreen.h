@@ -36,7 +36,7 @@ class CGPIOScreen : public CPasswordScreen
   int _GPIOoutMode;
   int _GPIOalgMode;
   int _animateCount;
-  int _startChar;
+  int _scrollChar;
   void _initUI();
 public:
   CGPIOScreen(C128x64_OLED& display, CScreenManager& mgr);

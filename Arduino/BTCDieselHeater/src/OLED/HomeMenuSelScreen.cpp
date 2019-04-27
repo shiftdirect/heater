@@ -64,37 +64,78 @@ CHomeMenuSelScreen::show()
     else {
       _printInverted(_display.xCentre(), 0, " Home Menu Actions ", true, eCentreJustify);
       
-      _printMenuText(66, 14, "On timeout:", false, eRightJustify);
+//      _printMenuText(66, 14, "On timeout:", false, eRightJustify);
+      _display.drawBitmap(30, 14, timeoutIcon, timeoutWidth, timeoutHeight, WHITE);
       switch(_action.onTimeout) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
         case 2: strcpy(msg, "Basic"); break;
         case 3: strcpy(msg, "Clock"); break;
       }
-      _printMenuText(70, 14, msg, _rowSel == 3);
+      _printMenuText(50, 14, msg, _rowSel == 3);
 
-      _printMenuText(66, 26, "On start:", false, eRightJustify);
+//      _printMenuText(66, 26, "On start:", false, eRightJustify);
+      _display.drawBitmap(32, 26, startIcon, startWidth, startHeight, WHITE);
       switch(_action.onStart) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
         case 2: strcpy(msg, "Basic"); break;
         case 3: strcpy(msg, "Clock"); break;
       }
-      _printMenuText(70, 26, msg, _rowSel == 2);
+      _printMenuText(50, 26, msg, _rowSel == 2);
 
-      _printMenuText(66, 38, "On stop:", false, eRightJustify);
+//      _printMenuText(66, 38, "On stop:", false, eRightJustify);
+      _display.drawBitmap(31, 38, stopIcon, stopWidth, stopHeight, WHITE);
       switch(_action.onStop) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
         case 2: strcpy(msg, "Basic"); break;
         case 3: strcpy(msg, "Clock"); break;
       }
-      _printMenuText(70, 38, msg, _rowSel == 1);
+      _printMenuText(50, 38, msg, _rowSel == 1);
 
-      _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", _rowSel == 0, eCentreJustify);
+/*      if(_rowSel == 0)
+        _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      else {
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        _printMenuText(_display.xCentre(), 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
+        _printMenuText(_display.xCentre(), 56, "Save", false, eCentreJustify);
+      }*/
     }
   }
   return true;
+}
+
+bool 
+CHomeMenuSelScreen::animate()
+{
+  if(_rowSel != 4) {
+    int yPos = 53;
+    int xPos = _display.xCentre();
+    const char* pMsg = NULL;
+    switch(_rowSel) {
+      case 0:
+        _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+        break;
+      case 1:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    Menu to switch to when the heater stops.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+      case 2:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    Menu to switch to when the heater starts.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+      case 3:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    Menu to return to after no keypad activity.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+    }
+    return true;
+  }
+  return false;
 }
 
 
@@ -111,12 +152,14 @@ CHomeMenuSelScreen::keyHandler(uint8_t event)
         _rowSel = 0;
       }
       else {
+        _scrollChar = 0;
         _rowSel++;
         UPPERLIMIT(_rowSel, 3);
       }
     }
     // UP press
     if(event & key_Down) {
+      _scrollChar = 0;
       _rowSel--;
       LOWERLIMIT(_rowSel, 0);
     }

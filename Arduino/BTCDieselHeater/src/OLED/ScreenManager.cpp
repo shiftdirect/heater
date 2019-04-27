@@ -131,8 +131,10 @@ CScreenManager::CScreenManager()
   _subMenu = 0;
   _rootMenu = -1;
   _bReqUpdate = false;
-  _DimTime = millis() + 60000;
+  _DimTime_ms = millis() + 60000;
+  _MenuTimeout = millis() + 60000;
   _pRebootScreen = NULL;
+  _bDimmed = false;
 }
 
 CScreenManager::~CScreenManager()
@@ -243,13 +245,30 @@ CScreenManager::begin(bool bNoClock)
 bool 
 CScreenManager::checkUpdate()
 {
-  if(_DimTime) {
-    long tDelta = millis() - _DimTime;
+  long dimTimeout = NVstore.getDimTime();
+
+  // manage dimming or blanking the display, according to user defined inactivity interval
+  if(dimTimeout && _DimTime_ms) {
+    long tDelta = millis() - _DimTime_ms;
     if(tDelta > 0) {
       // time to dim the display
-//      if(NVstore.getDimTime())
-        _pDisplay->dim(true);
-      _DimTime = 0;
+      _dim(true);
+      _DimTime_ms = 0;
+
+      if(dimTimeout < 0) {
+        _pDisplay->clearDisplay();
+        _pDisplay->display();   // blank screen
+      }
+    }
+  }
+
+  if(NVstore.getMenuTimeout() && _MenuTimeout) {
+    long tDelta = millis() - _MenuTimeout;
+    if(tDelta > 0) {
+      _MenuTimeout = 0;
+      // we will be blanking the display, transit through a dim stage first
+      if(dimTimeout < 0)
+        _dim(true);
 
       _leaveScreen();
       // fall back to main menu 
@@ -318,16 +337,21 @@ CScreenManager::checkUpdate()
 
 
   if(_bReqUpdate) {
-    if(_pRebootScreen) {
-      _pRebootScreen->show();
-      _bReqUpdate = false;
-      return true;
+    if((dimTimeout < 0) && (_DimTime_ms == 0)) {
+      // no screen updates, we should be blanked!
     }
     else {
-      if(_menu >= 0) {
-        _Screens[_menu][_subMenu]->show();
+      if(_pRebootScreen) {
+        _pRebootScreen->show();
         _bReqUpdate = false;
         return true;
+      }
+      else {
+        if(_menu >= 0) {
+          _Screens[_menu][_subMenu]->show();
+          _bReqUpdate = false;
+          return true;
+        }
       }
     }
   }
@@ -343,6 +367,10 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
+  if((NVstore.getDimTime() < 0) && (_DimTime_ms == 0)) {
+    // no screen updates, we should be blanked!
+    return false;
+  }
   if(_menu >= 0) 
     return _Screens[_menu][_subMenu]->animate();
 	return false;
@@ -403,15 +431,20 @@ CScreenManager::prevMenu()
 void 
 CScreenManager::keyHandler(uint8_t event)
 {
-  if(_DimTime == 0) {
+  long dimTime = NVstore.getDimTime();
+
+  if(_bDimmed) {
     if(event & keyReleased) {
-      _pDisplay->dim(false);
-      _DimTime = (millis() + NVstore.getDimTime()) | 1;
+      _dim(false);
+      _DimTime_ms = (millis() + abs(dimTime)) | 1;
+      _MenuTimeout = millis() + NVstore.getMenuTimeout();
     }
-    return;   // initial press when dimmed is thrown away
+    return;   // initial press when dimmed is always thrown away
   }
 
-  _DimTime = (millis() + NVstore.getDimTime()) | 1;
+//  _dim(false);
+  _DimTime_ms = (millis() + abs(dimTime)) | 1;
+  _MenuTimeout = millis() + NVstore.getMenuTimeout();
 
   // call key handler for active screen
   if(_menu >= 0) 
@@ -448,6 +481,12 @@ CScreenManager::showRebootMsg(const char* content[2], long delayTime)
 
   _pRebootScreen->setMessage(content, delayTime);
   _bReqUpdate = true;
-  _pDisplay->dim(false);
+  _dim(false);
 }
 
+void
+CScreenManager::_dim(bool state)
+{
+  _bDimmed = state;
+  _pDisplay->dim(state);
+}

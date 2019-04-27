@@ -330,6 +330,11 @@ CGPIOout::getState(int channel)
 }
 
 
+// expected external analogue circuit is a 10k pot.
+//   Top end of pot is connected to GPIO Vcc (red wire) via 5k6 fixed resistor. (GPIO Vcc is 5V via schottky diode)
+//   Bottom end of pot is connected to GND (black wire) via 1k fixed resistor.
+//   Wiper is into Pin 6 of GPIO (white wire) - analogue input
+
 CGPIOalg::CGPIOalg()
 {
   _expMean = 0;
@@ -350,13 +355,14 @@ CGPIOalg::begin(adc1_channel_t pin, GPIOalgModes mode)
 
 void CGPIOalg::manage()
 {
+  const float fAlpha = 0.95;           // exponential mean alpha
+
   if(_Mode != GPIOalgNone) {
     int read_raw;
     char msg[32];
     read_raw = adc1_get_raw( ADC1_CHANNEL_5);
-//    read_raw = analogRead(33);
     sprintf(msg, "ADC: %d", read_raw );
-    _expMean = read_raw;
+    _expMean = _expMean * fAlpha + (1-fAlpha) * float(read_raw);
 //    DebugPort.println(msg);
   }
 }

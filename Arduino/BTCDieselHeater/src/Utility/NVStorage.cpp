@@ -221,16 +221,28 @@ CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
   }
 }
 
-unsigned long 
+long 
 CHeaterStorage::getDimTime()
 {
-  return _calValues.Options.DimTime;
+  return _calValues.Options.dimTime;
 }
 
 void 
-CHeaterStorage::setDimTime(unsigned long val)
+CHeaterStorage::setDimTime(long val)
 {
-  _calValues.Options.DimTime = val;
+  _calValues.Options.dimTime = val;
+}
+
+long 
+CHeaterStorage::getMenuTimeout()
+{
+  return _calValues.Options.menuTimeout;
+}
+
+void 
+CHeaterStorage::setMenuTimeout(long val)
+{
+  _calValues.Options.menuTimeout = val;
 }
 
 unsigned char 
@@ -272,16 +284,16 @@ CHeaterStorage::setOTAEnabled(unsigned char val)
   save();
 }
 
-unsigned char
-CHeaterStorage::getCyclicMode()
+const sCyclicThermostat&
+CHeaterStorage::getCyclicMode() const
 {
-  return _calValues.Options.cyclicMode;
+  return _calValues.Options.cyclic;
 }
 
 void 
-CHeaterStorage::setCyclicMode(unsigned char val)
+CHeaterStorage::setCyclicMode(const sCyclicThermostat& val)
 {
-  _calValues.Options.cyclicMode = val;
+  _calValues.Options.cyclic = val;
   save();
 }
 
@@ -476,12 +488,14 @@ void
 CESP32HeaterStorage::loadUI()
 {
   preferences.begin("user", false);
-  validatedLoad("dimTime", _calValues.Options.DimTime, 60000, s32inBounds, 0, 600000);
+  validatedLoad("dimTime", _calValues.Options.dimTime, 60000, s32inBounds, -600000, 600000);
+  validatedLoad("menuTimeout", _calValues.Options.menuTimeout, 60000, s32inBounds, 0, 300000);
   validatedLoad("degF", _calValues.Options.degF, 0, u8inBounds, 0, 1);
   validatedLoad("thermoMethod", _calValues.Options.ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
   validatedLoad("enableWifi", _calValues.Options.enableWifi, 1, u8inBounds, 0, 1);
   validatedLoad("enableOTA", _calValues.Options.enableOTA, 1, u8inBounds, 0, 1);
-  validatedLoad("cyclicMode", _calValues.Options.cyclicMode, 0, u8inBounds, 0, 10);
+  validatedLoad("cyclicStop", _calValues.Options.cyclic.Stop, 0, s8inBounds, 0, 10);
+  validatedLoad("cyclicStart", _calValues.Options.cyclic.Start, -1, s8inBounds, -10, 0);
   validatedLoad("GPIOinMode", _calValues.Options.GPIOinMode, 0, u8inBounds, 0, 3);
   validatedLoad("GPIOoutMode", _calValues.Options.GPIOoutMode, 0, u8inBounds, 0, 2);
   validatedLoad("GPIOalgMode", _calValues.Options.GPIOalgMode, 0, u8inBounds, 0, 2);
@@ -496,12 +510,14 @@ void
 CESP32HeaterStorage::saveUI()
 {
   preferences.begin("user", false);
-  preferences.putULong("dimTime", _calValues.Options.DimTime);
+  preferences.putLong("dimTime", _calValues.Options.dimTime);
+  preferences.putLong("menuTimeout", _calValues.Options.menuTimeout);
   preferences.putUChar("degF", _calValues.Options.degF);
   preferences.putUChar("thermoMethod", _calValues.Options.ThermostatMethod);
   preferences.putUChar("enableWifi", _calValues.Options.enableWifi);
   preferences.putUChar("enableOTA", _calValues.Options.enableOTA);
-  preferences.putUChar("cyclicMode", _calValues.Options.cyclicMode);
+  preferences.putUChar("cyclicStop", _calValues.Options.cyclic.Stop);
+  preferences.putUChar("cyclicStart", _calValues.Options.cyclic.Start);
   preferences.putUChar("GPIOinMode", _calValues.Options.GPIOinMode);
   preferences.putUChar("GPIOoutMode", _calValues.Options.GPIOoutMode);
   preferences.putUChar("GPIOalgMode", _calValues.Options.GPIOalgMode);

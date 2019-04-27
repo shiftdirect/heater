@@ -24,7 +24,7 @@
 #include "KeyPad.h"
 #include "../Protocol/helpers.h"
 #include "../Utility/UtilClasses.h"
-#include "../Utility/NVStorage.h"
+#include "fonts/Icons.h"
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -38,14 +38,14 @@
 static const int Line3 = 14;
 static const int Line2 = 27;
 static const int Line1 = 40;
-static const int Column = 70;
+static const int Column = 50;
 
 CThermostatModeScreen::CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _initUI();
   _window = 10;
   _thermoMode = 0;
-  _cyclicMode = 0;
+  _cyclicMode.init();
 }
 
 void 
@@ -74,36 +74,41 @@ CThermostatModeScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 4) {
+    if(_rowSel == 10) {
       _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
       _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
       _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
     }
     else {
       _printInverted(_display.xCentre(), 0, " Thermostat Mode ", true, eCentreJustify);
-      _printMenuText(65, Line3, "Suspend:", false, eRightJustify);
-      _printMenuText(65, Line2, "Thermostat:", false, eRightJustify);
-      _printMenuText(65, Line1, "Window:", false, eRightJustify);
+      _display.drawBitmap(10, 14, thermostatIcon, thermostatWidth, thermostatHeight, WHITE);
       sprintf(msg, "%.1f\367C", _window);  // \367 is octal for Adafruit degree symbol
-      _printMenuText(Column, Line1, msg, _rowSel == 1);
+      _printMenuText(Column, Line2, msg, _rowSel == 3);
       switch(_thermoMode) {
         case 1: 
-          _printMenuText(Column, Line2, "Deadband", _rowSel == 2);
+          _printMenuText(Column, Line3, "Deadband", _rowSel == 4);
           break;
         case 2: 
-          _printMenuText(Column, Line2, "Linear Hz", _rowSel == 2);
+          _printMenuText(Column, Line3, "Linear Hz", _rowSel == 4);
           break;
         default: 
-          _printMenuText(Column, Line2, "Standard", _rowSel == 2);
+          _printMenuText(Column, Line3, "Standard", _rowSel == 4);
           break;
       }
-      if(_cyclicMode) {
-        sprintf(msg, "> %d\367C", _cyclicMode+1);  // \367 is octal for Adafruit degree symbol
+      if(_cyclicMode.isEnabled()) {
+        sprintf(msg, "> %d\367C", _cyclicMode.Stop+1);  // \367 is octal for Adafruit degree symbol
       }
       else {
         strcpy(msg, "OFF");
       }
-      _printMenuText(Column, Line3, msg, _rowSel == 3);
+      _printMenuText(Column, Line1, msg, _rowSel == 1);
+      if(_cyclicMode.isEnabled()) {
+        sprintf(msg, "< %d\367C", _cyclicMode.Start);  // \367 is octal for Adafruit degree symbol
+      }
+      else {
+        strcpy(msg, "");
+      }
+      _printMenuText(Column + 37, Line1, msg, _rowSel == 2);
     }
   }
 
@@ -113,7 +118,7 @@ CThermostatModeScreen::show()
 bool 
 CThermostatModeScreen::animate()
 {
-  if(_rowSel != 4) {
+  if(_rowSel != 10) {
     int yPos = 53;
     int xPos = _display.xCentre();
     const char* pMsg = NULL;
@@ -123,29 +128,34 @@ CThermostatModeScreen::animate()
         break;
       case 1:
         _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    User defined window for custom thermostat modes.                    ";
-        _scrollMessage(56, pMsg, _startChar);
+        pMsg = "                    Heater shuts down over set point.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
         break;
       case 2:
         _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    Heater restarts below setpoint.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+      case 3:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    User defined window for custom thermostat modes.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+      case 4:
+        _display.drawFastHLine(0, 52, 128, WHITE);
         switch(_thermoMode) {
           case 1:
-            pMsg = "                   Controller holds measured temperature at the set point whilst within the window.                    ";
+            pMsg = "                   The user defined window sets the thermostat's hysteresis.                    ";
             break;
           case 2:
-            pMsg = "                   Controller uses Fixed Hz mode, adjusting pump rate linearly across the set point window.                    ";
+            pMsg = "                   The pump rate is adjusted linearly across the set point window.                    ";
             break;
           default:
             pMsg = "                   Use heater's standard thermostat control.                    ";
             break;
         }
         if(pMsg)
-          _scrollMessage(56, pMsg, _startChar);
-        break;
-      case 3:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    Controller auto cycles heater if over temperature occurs.                    ";
-        _scrollMessage(56, pMsg, _startChar);
+          _scrollMessage(56, pMsg, _scrollChar);
         break;
     }
     return true;
@@ -164,13 +174,14 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 0:
           _ScreenManager.prevMenu();
           break;
-        case 2:
-          _startChar = 0;
+        case 4:
+          _scrollChar = 0;
         case 1:
+        case 2:
         case 3:
           _adjust(-1);
           break;
-        case 4:
+        case 10:
           _rowSel = 0;   // abort save
           break;
       }
@@ -181,23 +192,24 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 0:
           _ScreenManager.nextMenu();
           break;
-        case 2:
-          _startChar = 0;
+        case 4:
+          _scrollChar = 0;
         case 1:
+        case 2:
         case 3:
           _adjust(+1);
           break;
-        case 4:
+        case 10:
           _rowSel = 0;   // abort save
           break;
       }
     }
     if(event & key_Down) {
-      if(_rowSel == 0) {
-//        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
-      }
-      else {
+      if(_rowSel != 0) {
+        _scrollChar = 0;
         _rowSel--;
+        if(_rowSel == 2 && !_cyclicMode.isEnabled()) 
+          _rowSel--;
         LOWERLIMIT(_rowSel, 0);
       }
     }
@@ -208,11 +220,13 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _startChar = 0;
+          _scrollChar = 0;
           _rowSel++;
-          UPPERLIMIT(_rowSel, 3);
+          if(_rowSel == 2 && !_cyclicMode.isEnabled()) 
+            _rowSel++;
+          UPPERLIMIT(_rowSel, 4);
           break;
-        case 4:    // confirmed save
+        case 10:    // confirmed save
           _showStoringMessage();
           NVstore.setThermostatMethodMode(_thermoMode);
           NVstore.setThermostatMethodWindow(_window);
@@ -231,7 +245,8 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _rowSel = 4;
+        case 4:
+          _rowSel = 10;
           break;
       }
     }
@@ -257,20 +272,25 @@ void
 CThermostatModeScreen::_adjust(int dir)
 {
   switch(_rowSel) {
-    case 1:   // window
+    case 1:
+      _cyclicMode.Stop += dir;
+      LOWERLIMIT(_cyclicMode.Stop, 0);
+      UPPERLIMIT(_cyclicMode.Stop, 10);
+      break;
+    case 2:
+      _cyclicMode.Start += dir;
+      LOWERLIMIT(_cyclicMode.Start, -10);
+      UPPERLIMIT(_cyclicMode.Start, 0);
+      break;
+    case 3:   // window
       _window += (dir * 0.1);
       UPPERLIMIT(_window, 6.3);
       LOWERLIMIT(_window, 0.2);
       break;
-    case 2:   // thermostat mode
+    case 4:   // thermostat mode
       _thermoMode += dir;
       ROLLLOWERLIMIT(_thermoMode, 0, 2);
       ROLLUPPERLIMIT(_thermoMode, 2, 0);
-      break;
-    case 3:
-      _cyclicMode += dir;
-      UPPERLIMIT(_cyclicMode, 10);
-      LOWERLIMIT(_cyclicMode, 0);
       break;
   }
 }

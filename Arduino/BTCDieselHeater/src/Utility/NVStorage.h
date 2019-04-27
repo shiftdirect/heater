@@ -80,44 +80,65 @@ struct sHomeMenuActions {
   }
 };
 
+struct sCyclicThermostat {
+  int8_t Stop;
+  int8_t Start;
+  bool valid() {
+    bool retval = true;
+    retval &= Start >= -10 && Start <= 0;
+    retval &= Stop >= 0 && Stop <= 10;
+    return retval;  
+  }
+  void init() {
+    Start = -1;
+    Stop = 0;
+  }
+  bool isEnabled() const {
+    return Stop != 0;
+  }
+};
+
 struct sBTCoptions {
-  long DimTime;
+  long dimTime;
+  long menuTimeout;
   uint8_t degF;
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   uint8_t enableWifi;
   uint8_t enableOTA;
-  uint8_t cyclicMode;
   uint8_t GPIOinMode;
   uint8_t GPIOoutMode;
   uint8_t GPIOalgMode;
   uint16_t FrameRate;
+  sCyclicThermostat cyclic;
   sHomeMenuActions HomeMenu;
 
   bool valid() {
     bool retval = true;
-    retval &= (DimTime >= 0) && (DimTime < 300000);  // 5 mins
+    retval &= (dimTime >= -600000) && (dimTime < 600000);  // +/- 10 mins
+    retval &= (menuTimeout >= 0) && (menuTimeout < 300000);  // 5 mins
     retval &= (degF == 0) || (degF == 1);
     retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
     retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= (enableOTA == 0) || (enableOTA == 1);
-    retval &= cyclicMode < 10;
     retval &= GPIOinMode < 4;
     retval &= GPIOoutMode < 3;
     retval &= (FrameRate >= 300) && (FrameRate <= 1500);
+    retval &= cyclic.valid();
     retval &= HomeMenu.valid();
     return retval;  
   }
   void init() {
-    DimTime = 60000;
+    dimTime = 60000;
+    menuTimeout = 60000;
     degF = 0;
     ThermostatMethod = 0;
     enableWifi = 1;
     enableOTA = 1;
-    cyclicMode = 0;
     GPIOinMode = 0;
     GPIOoutMode = 0;
     GPIOalgMode = 0;
     FrameRate = 1000;
+    cyclic.init();
     HomeMenu.init();
   };
 };
@@ -168,11 +189,12 @@ public:
     unsigned char getSysVoltage();
     unsigned char getFanSensor();
     unsigned char getGlowDrive();
-    unsigned long getDimTime();
+    long getDimTime();
+    long getMenuTimeout();
     unsigned char getDegFMode();
     unsigned char getWifiEnabled();
     unsigned char getOTAEnabled();
-    unsigned char getCyclicMode();
+    const sCyclicThermostat& getCyclicMode() const;
     GPIOinModes getGPIOinMode();
     GPIOoutModes getGPIOoutMode();
     GPIOalgModes getGPIOalgMode();
@@ -190,11 +212,12 @@ public:
     void setSystemVoltage(float fVal);
     void setFanSensor(unsigned char val);
     void setGlowDrive(unsigned char val);
-    void setDimTime(unsigned long val);
+    void setDimTime(long val);
+    void setMenuTimeout(long val);
     void setDegFMode(unsigned char val);
     void setWifiEnabled(unsigned char val);
     void setOTAEnabled(unsigned char val);
-    void setCyclicMode(unsigned char val);
+    void setCyclicMode(const sCyclicThermostat& val);
     void setGPIOinMode(unsigned char val);
     void setGPIOoutMode(unsigned char val);
     void setGPIOalgMode(unsigned char val);

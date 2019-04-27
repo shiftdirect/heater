@@ -33,11 +33,15 @@ class COtherOptionsScreen : public CPasswordScreen
 {
   int _rowSel;
   uint16_t _frameRate;
-//  uint8_t _homeMenu;
+  long _dispTimeout;
+  long _menuTimeout;
+  int _repeatCount;
+  int _scrollChar;
   void _initUI();
 public:
   COtherOptionsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
   void onSelect();
   void adjust(int dir);

@@ -54,21 +54,21 @@ CVersionInfoScreen::show()
 
   _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
   
-  _printMenuText(0, 14, "Firmware:");
-  sprintf(msg, "V%.1f", getVersion());
-  _printMenuText(55, 14, msg);
-  _printMenuText(55, 25, getVersionDate());
+  _display.drawBitmap(10, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
+  sprintf(msg, "V%.3f", getVersion());
+  _printMenuText(43, 14, msg);
+  _printMenuText(43, 25, getVersionDate());
 
-  _printMenuText(0, 38, "Hardware:");
+  _display.drawBitmap(20, 34, hardwareIcon, hardwareWidth, hardwareHeight, WHITE);
   int PCB = getBoardRevision();
   sprintf(msg, "V%.1f", float(PCB)*0.1f);
-  _printMenuText(55, 38, msg);
+  _printMenuText(43, 38, msg);
   if(PCB == 20) {
     _printMenuText(108, 38, "Analog", false, eCentreJustify);
     _display.drawLine(88, 42, 127, 42, WHITE);
   }
 
-  _printMenuText(_display.xCentre(), 53, " \021              \020 ", true, eCentreJustify);
+  _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
   return true;
 }
 
@@ -90,6 +90,9 @@ CVersionInfoScreen::keyHandler(uint8_t event)
     // RIGHT press
     if(event & key_Right) {
       _ScreenManager.nextMenu();
+    }
+    if(event & key_Centre) {
+      _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
     }
   }
 

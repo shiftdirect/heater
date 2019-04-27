@@ -87,7 +87,14 @@ void interpretJsonCommand(char* pLine)
 			setFanMax(it->value.as<short>());
 		}
 		else if(strcmp("ThermostatOvertemp", it->key) == 0) {
-			NVstore.setCyclicMode(it->value.as<unsigned char>());
+      sCyclicThermostat cyclic = NVstore.getCyclicMode();
+      cyclic.Stop = it->value.as<char>();
+			NVstore.setCyclicMode(cyclic);
+		}
+		else if(strcmp("ThermostatUndertemp", it->key) == 0) {
+      sCyclicThermostat cyclic = NVstore.getCyclicMode();
+      cyclic.Start = it->value.as<char>();
+			NVstore.setCyclicMode(cyclic);
 		}
 		else if(strcmp("ThermostatMethod", it->key) == 0) {
 			NVstore.setThermostatMethodMode(it->value.as<unsigned char>());
@@ -218,7 +225,8 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 
   bSend |= moderator.addJson("ThermostatMethod", NVstore.getThermostatMethodMode(), root); 
   bSend |= moderator.addJson("ThermostatWindow", NVstore.getThermostatMethodWindow(), root); 
-  bSend |= moderator.addJson("ThermostatOvertemp", NVstore.getCyclicMode(), root); 
+  bSend |= moderator.addJson("ThermostatOvertemp", NVstore.getCyclicMode().Stop, root); 
+  bSend |= moderator.addJson("ThermostatUndertemp", NVstore.getCyclicMode().Start, root); 
 
   if(bSend) {
 		root.printTo(opStr, len);

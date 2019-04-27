@@ -43,7 +43,8 @@ extern CGPIOalg GPIOalg;
 static const int Line3 = 14;
 static const int Line2 = 27;
 static const int Line1 = 40;
-static const int Column = 58;
+//static const int Column = 58;
+static const int Column = 38;
 
 CGPIOScreen::CGPIOScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
@@ -84,41 +85,41 @@ CGPIOScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " GPIO Settings ", true, eCentreJustify);
-      _printMenuText(55, Line3, "Inputs:", false, eRightJustify);
-      _printMenuText(55, Line2, "Outputs:", false, eRightJustify);
-      _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
-      switch(_GPIOinMode) {
-        case 0:
-          _printMenuText(Column, Line3, "Disabled", _rowSel == 3);
-          break;
-        case 1: 
-          _printMenuText(Column, Line3, "1-On 2-Off", _rowSel == 3);
-          break;
-        case 2: 
-          _printMenuText(Column, Line3, "1-On 2-\352T", _rowSel == 3);
-          break;
-        case 3: 
-          _printMenuText(Column, Line3, "1-On/Off", _rowSel == 3);
-          break;
+      _display.drawBitmap(10, 14, GPIOIcon, GPIOWidth, GPIOHeight, WHITE);
+//      _printMenuText(55, Line3, "Inputs:", false, eRightJustify);
+//      _printMenuText(55, Line2, "Outputs:", false, eRightJustify);
+//      _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
+      {
+        const char* msgText = NULL;
+        switch(_GPIOinMode) {
+          case 0: msgText = "Disabled"; break;
+          case 1: msgText = "1-On 2-Off"; break;
+          case 2: msgText = "1-On 2-\352T"; break;
+          case 3: msgText = "1-On/Off"; break;
+        }
+        if(msgText)
+          _printMenuText(Column, Line3, msgText, _rowSel == 3);
       }
-      switch(_GPIOoutMode) {
-        case 0:
-          _printMenuText(Column, Line2, "Disabled", _rowSel == 2);
-          break;
-        case 1:
-          _printMenuText(Column, Line2, "1:LED", _rowSel == 2);
-          break;
-        case 2:
-          _printMenuText(Column, Line2, "1&2:User", _rowSel == 2);
-          break;
+
+      {
+        const char* msgText = NULL;
+        switch(_GPIOoutMode) {
+          case 0: msgText = "Disabled"; break;
+          case 1: msgText = "1: Status LED"; break;
+          case 2: msgText = "1&2 User"; break;
+        }
+        if(msgText)
+          _printMenuText(Column, Line2, msgText, _rowSel == 2);
       }
-      switch(_GPIOalgMode) {
-        case 0:
-          _printMenuText(Column, Line1, "Disabled", _rowSel == 1);
-          break;
-        case 1:
-          _printMenuText(Column, Line1, "Ip1 allows", _rowSel == 1);
-          break;
+
+      {
+        const char* msgText = NULL;
+        switch(_GPIOalgMode) {
+          case 0: msgText = "Disabled"; break;
+          case 1: msgText = "Ip1 allows"; break;
+        }
+        if(msgText)
+          _printMenuText(Column, Line1, msgText, _rowSel == 1);
       }
     }
   }
@@ -140,50 +141,34 @@ CGPIOScreen::animate()
       case 1:
         _display.drawFastHLine(0, 52, 128, WHITE);
         switch(_GPIOalgMode) {
-          case 0:
-            pMsg = "                   Analogue input is ignored.                    ";
-            break;
-          case 1:
-            pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    ";
-          break;
+          case 0: pMsg = "                   Analogue input is ignored.                    "; break;
+          case 1: pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    "; break;
         }
         if(pMsg)
-          _scrollMessage(56, pMsg, _startChar);
+          _scrollMessage(56, pMsg, _scrollChar);
         break;
+
       case 2:
         _display.drawFastHLine(0, 52, 128, WHITE);
         switch(_GPIOoutMode) {
-          case 0:
-            pMsg = "                   Digital outputs are disabled.                    ";
-            break;
-          case 1:
-            pMsg = "                   Output1: LED status indicator.                    ";
-            break;
-          case 2:
-            pMsg = "                   Output 1&2: User controlled.                    ";
-            break;
+          case 0: pMsg = "                   Digital outputs are disabled.                    "; break;
+          case 1: pMsg = "                   Output1: LED status indicator.                    "; break;
+          case 2: pMsg = "                   Output 1&2: User controlled.                    "; break;
         }
         if(pMsg)
-          _scrollMessage(56, pMsg, _startChar);
+          _scrollMessage(56, pMsg, _scrollChar);
         break;
+
       case 3:
         _display.drawFastHLine(0, 52, 128, WHITE);
         switch(_GPIOinMode) {
-          case 0:
-            pMsg = "                   Digital inputs are disabled.                    ";
-            break;
-          case 1:
-            pMsg = "                   Input 1: Starts when closed. Input 2: Stops when closed.                    ";
-            break;
-          case 2:
-            pMsg = "                   Input 1: Starts when held closed, stops when opened. Input2: Max fuel when closed, min fuel when open.                    ";
-            break;
-          case 3:
-            pMsg = "                   Input 1: Starts or Stops when closed.                    ";
-            break;
+          case 0: pMsg = "                   Digital inputs are disabled.                    "; break;
+          case 1: pMsg = "                   Input 1: Starts upon closure. Input 2: Stops upon closure.                    "; break;
+          case 2: pMsg = "                   Input 1: Starts when held closed, stops when opened. Input2: Max fuel when closed, min fuel when open.                    "; break;
+          case 3: pMsg = "                   Input 1: Starts or Stops upon closure.                    "; break;
         }
         if(pMsg)
-          _scrollMessage(56, pMsg, _startChar);
+          _scrollMessage(56, pMsg, _scrollChar);
         break;
     }
     return true;
@@ -204,7 +189,7 @@ CGPIOScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _startChar = 0;
+          _scrollChar = 0;
           _adjust(-1);
           break;
         case 4:
@@ -221,7 +206,7 @@ CGPIOScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _startChar = 0;
+          _scrollChar = 0;
           _adjust(+1);
           break;
         case 4:
@@ -230,7 +215,7 @@ CGPIOScreen::keyHandler(uint8_t event)
       }
     }
     if(event & key_Down) {
-      _startChar = 0;
+      _scrollChar = 0;
       _rowSel--;
       LOWERLIMIT(_rowSel, 0);
     }
@@ -241,7 +226,7 @@ CGPIOScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _startChar = 0;
+          _scrollChar = 0;
           _rowSel++;
           UPPERLIMIT(_rowSel, 3);
           break;

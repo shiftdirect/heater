@@ -39,8 +39,10 @@ COtherOptionsScreen::onSelect()
 {
   CScreenHeader::onSelect();
   _rowSel = 0;
+  _repeatCount = -1;
   _frameRate = NVstore.getFrameRate();
-//  _homeMenu = NVstore.getHomeMenu();
+  _dispTimeout = NVstore.getDimTime();
+  _menuTimeout = 60000;
 }
 
 void
@@ -63,51 +65,101 @@ COtherOptionsScreen::show()
       _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
     }
     else {
-      _printInverted(_display.xCentre(), 0, " Other Options ", true, eCentreJustify);
+      _printInverted(_display.xCentre(), 0, " Time Intervals ", true, eCentreJustify);
       
-      _printMenuText(66, 14, "Frame Rate:", false, eRightJustify);
+      // data frame refresh rate
+      _display.drawBitmap(15, 13, refreshIcon, refreshWidth, refreshHeight, WHITE);
       sprintf(msg, "%dms", _frameRate);
-      _printMenuText(70, 14, msg, _rowSel == 2);
+      _printMenuText(40, 14, msg, _rowSel == 3);
 
-/*      _printMenuText(66, 25, "Home menu:", false, eRightJustify);
-      switch(_homeMenu) {
-        case 0: strcpy(msg, "Default"); break;
-        case 1: strcpy(msg, "Detailed"); break;
-        case 2: strcpy(msg, "Basic"); break;
-        case 3: strcpy(msg, "Clock"); break;
+      // display timeout
+      _display.drawBitmap(10, 26, displayTimeoutIcon, displayTimeoutWidth, displayTimeoutHeight, WHITE);
+      if(_dispTimeout) {
+        float mins = float(abs(_dispTimeout)) / 60000.f;
+        sprintf(msg, "%s %0.1f min%s",  (_dispTimeout < 0) ? "Blank" : "Dim", mins, mins < 2 ? "" : "s");
+        _printMenuText(40, 26, msg, _rowSel == 2);
       }
-      _printMenuText(70, 25, msg, _rowSel == 1);*/
+      else 
+        _printMenuText(40, 26, "Always on", _rowSel == 2);
 
-      _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", _rowSel == 0, eCentreJustify);
+      // menu timeout
+      _display.drawBitmap(10, 38, menuTimeoutIcon, menuTimeoutWidth, menuTimeoutHeight, WHITE);
+      if(_menuTimeout) {
+        float mins = float(abs(_menuTimeout)) / 60000.f;
+        sprintf(msg, "Home %0.1f min%s", mins, mins < 2 ? "" : "s");
+        _printMenuText(40, 38, msg, _rowSel == 1);
+      }
+      else 
+        _printMenuText(40, 38, "Disabled", _rowSel == 1);
+
+/*      if(_rowSel == 0)
+        _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", _rowSel == 0, eCentreJustify);
+      else {
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        _printMenuText(_display.xCentre(), 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
+        _printMenuText(_display.xCentre(), 56, "Save", false, eCentreJustify);
+      }*/
     }
   }
   return true;
 }
 
+bool 
+COtherOptionsScreen::animate()
+{
+  if(_rowSel != 4) {
+    int yPos = 53;
+    int xPos = _display.xCentre();
+    const char* pMsg = NULL;
+    switch(_rowSel) {
+      case 0:
+        _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+        break;
+      case 1:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    No keypad activity returns to the home menu.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+      case 2:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+      case 3:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        pMsg = "                    Define the polling rate of the bluewire communications.                    ";
+        _scrollMessage(56, pMsg, _scrollChar);
+        break;
+    }
+    return true;
+  }
+  return false;
+}
 
 bool 
 COtherOptionsScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
+    _repeatCount = 0;
     // UP press
     if(event & key_Up) {
       if(_rowSel == 4) {
         _showStoringMessage();
         NVstore.setFrameRate(_frameRate);
-//        NVstore.setHomeMenu(_homeMenu);
+        NVstore.setDimTime(_dispTimeout);
         saveNV();
         _rowSel = 0;
       }
       else {
-//        _rowSel++;
-        _rowSel = 2;
-        UPPERLIMIT(_rowSel, 2);
+        _scrollChar = 0;
+        _rowSel++;
+        UPPERLIMIT(_rowSel, 3);
       }
     }
     // UP press
     if(event & key_Down) {
-//      _rowSel--;
-      _rowSel = 0;
+      _scrollChar = 0;
+      _rowSel--;
       LOWERLIMIT(_rowSel, 0);
     }
     // CENTRE press
@@ -119,19 +171,39 @@ COtherOptionsScreen::keyHandler(uint8_t event)
         _rowSel = 4;
       }
     }
-    // LEFT press
-    if(event & key_Left) {
-      if(_rowSel == 0)
-        _ScreenManager.prevMenu();
-      else 
-        adjust(-1);
+  }
+
+  if(event & keyRepeat) {
+    if(keyRepeat >= 0) {
+      _repeatCount++;
+      if(_repeatCount > 4) {
+        // LEFT or RIGHT hold
+        if(event & (key_Right | key_Left)) {
+          if(_rowSel == 2) {
+            _repeatCount = -1;
+            _dispTimeout = -_dispTimeout;
+          }
+        }
+      }
     }
-    // RIGHT press
-    if(event & key_Right) {
-      if(_rowSel == 0)
-        _ScreenManager.nextMenu();
-      else 
-        adjust(+1);
+  }
+
+  if(event & keyReleased) {
+    if(_repeatCount == 0) {
+      // LEFT short press
+      if(event & key_Left) {
+        if(_rowSel == 0)
+          _ScreenManager.prevMenu();
+        else 
+          adjust(-1);
+      }
+      // RIGHT short press
+      if(event & key_Right) {
+        if(_rowSel == 0)
+          _ScreenManager.nextMenu();
+        else 
+          adjust(+1);
+      }
     }
   }
 
@@ -145,11 +217,16 @@ COtherOptionsScreen::adjust(int dir)
 {
   switch(_rowSel) {
     case 1: 
-//      _homeMenu += dir;
-//      ROLLLOWERLIMIT(_homeMenu, 0, 3);
-//      ROLLUPPERLIMIT(_homeMenu, 3, 0);
+      _menuTimeout += dir * 30000;
+      LOWERLIMIT(_menuTimeout, 0);
+      UPPERLIMIT(_menuTimeout, 300000);
       break;
-    case 2:
+    case 2: 
+      _dispTimeout += dir * 30000;
+      LOWERLIMIT(_dispTimeout, -600000);
+      UPPERLIMIT(_dispTimeout, 600000);
+      break;
+    case 3:
       _frameRate += dir * 50;
       LOWERLIMIT(_frameRate, 300);
       UPPERLIMIT(_frameRate, 1500);

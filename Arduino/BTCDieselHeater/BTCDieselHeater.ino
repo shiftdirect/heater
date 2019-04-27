@@ -116,7 +116,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 22;
-const char* FirmwareDate = "20 Apr 2019";
+const int FirmwareSubRevision = 1;
+const char* FirmwareDate = "27 Apr 2019";
 
 
 #ifdef ESP32
@@ -821,9 +822,9 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 
 void manageCyclicMode()
 {
-  uint8_t cyclic = NVstore.getCyclicMode();
-  if(cyclic && bUserON) {   // cyclic mode enabled, and user has started heater
-    cyclic += 1;  // bump up by 1 degree - no point invoking at 1 deg over!
+  const sCyclicThermostat& cyclic = NVstore.getCyclicMode();
+  if(cyclic.Stop && bUserON) {   // cyclic mode enabled, and user has started heater
+    int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
     float deltaT = fFilteredTemperature - getSetTemp();
 //    DebugPort.print("Cyclic = "); DebugPort.print(cyclic); DebugPort.print(" bUserON = "); DebugPort.print(bUserON);
 //    DebugPort.print(" deltaT = "); DebugPort.println(deltaT);
@@ -837,17 +838,17 @@ void manageCyclicMode()
     }
     int heaterState = getHeaterInfo().getRunState();
     // check if over temp, turn off heater
-    if(deltaT > cyclic) {
+    if(deltaT > stopDeltaT) {
       if(heaterState > 0 && heaterState <= 5) {  
-        DebugPort.print("CYCLIC MODE: Stopping heater, deltaT > +"); DebugPort.println(cyclic);
+        DebugPort.print("CYCLIC MODE: Stopping heater, deltaT > +"); DebugPort.println(stopDeltaT);
         heaterOff();    // over temp - request heater stop
       }
     }
     // check if under temp, turn on heater
-    if(deltaT < -1) {
-      // 1 degree below set point - restart heater
+    if(deltaT < cyclic.Start) {
+      // typ. 1 degree below set point - restart heater
       if(heaterState == 0) {
-        DebugPort.println("CYCLIC MODE: Restarting heater, deltaT < -1");
+        DebugPort.print("CYCLIC MODE: Restarting heater, deltaT <"); DebugPort.println(cyclic.Start);
         heaterOn();
       }
     }
@@ -1237,7 +1238,7 @@ int getSmartError()
 
 bool isCyclicActive()
 {
-  return bUserON && (NVstore.getCyclicMode() != 0);
+  return bUserON && NVstore.getCyclicMode().isEnabled();
 }
 
 void setupGPIO()
@@ -1297,7 +1298,7 @@ bool getGPIO(int channel)
 
 float getVersion()
 {
-  return float(FirmwareRevision) * 0.1f;
+  return float(FirmwareRevision) * 0.1f + float(FirmwareSubRevision) * .001f;
 }
 
 const char* getVersionDate()

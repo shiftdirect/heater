@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "PasswordScreen.h"
+#include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
@@ -35,9 +36,9 @@ class CThermostatModeScreen : public CPasswordScreen
   void _adjust(int dir);
   float _window;
   int _thermoMode;
-  int _cyclicMode;
+  sCyclicThermostat _cyclicMode;
   int _animateCount;
-  int _startChar;
+  int _scrollChar;
   void _initUI();
 public:
   CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr);

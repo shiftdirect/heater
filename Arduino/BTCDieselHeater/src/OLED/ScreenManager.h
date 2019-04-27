@@ -37,11 +37,14 @@ class CScreenManager {
   int _menu;
   int _subMenu;
   int _rootMenu;
-  unsigned long _DimTime;
+  bool _bDimmed;
+  unsigned long _DimTime_ms;
+  unsigned long _MenuTimeout;
   bool _bReqUpdate;
   void _enterScreen();
   void _leaveScreen();
   void _changeSubMenu(int dir);
+  void _dim(bool state);
 public:
   enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, TuningMenuLoop, UserSettingsLoop, BranchMenu };
   enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, CommsUI, GPIOInfoUI, SettingsUI };
