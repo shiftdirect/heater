@@ -110,8 +110,8 @@
 #include <SPIFFS.h>
 #endif
 
-#define FAILEDSSID "BTCESP32"
-#define FAILEDPASSWORD "thereisnospoon"
+#define AP_SSID "Afterburner"
+#define AP_PASSWORD "thereisnospoon"
 
 #define RX_DATA_TIMOUT 50
 
@@ -384,7 +384,7 @@ void setup() {
 #if USE_WIFI == 1
 
   if(NVstore.getWifiEnabled()) {
-    initWifi(WiFi_TriggerPin, FAILEDSSID, FAILEDPASSWORD);
+    initWifi(WiFi_TriggerPin, AP_SSID, AP_PASSWORD);
 #if USE_OTA == 1
     if(NVstore.getOTAEnabled()) {
       initOTA();
