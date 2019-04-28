@@ -57,6 +57,7 @@ extern int   getBlueWireStat();
 extern int   getSmartError();
 extern bool  isCyclicActive();
 extern float getVersion();
+const char* getVersionStr();
 extern const char* getVersionDate();
 extern int   getBoardRevision();
 extern void  setupGPIO();

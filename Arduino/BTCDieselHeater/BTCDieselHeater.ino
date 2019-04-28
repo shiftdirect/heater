@@ -422,6 +422,8 @@ void setup() {
   Bluetooth.begin();
 
   setupGPIO(); 
+
+  delay(1000); // just to hold the splash screeen for while
 }
 
 
@@ -1299,6 +1301,12 @@ bool getGPIO(int channel)
 float getVersion()
 {
   return float(FirmwareRevision) * 0.1f + float(FirmwareSubRevision) * .001f;
+}
+
+const char* getVersionStr() {
+  static char vStr[32];
+  sprintf(vStr, "V%.1f.%d", float(FirmwareRevision) * 0.1f, FirmwareSubRevision);
+  return vStr;
 }
 
 const char* getVersionDate()
