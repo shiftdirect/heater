@@ -415,6 +415,7 @@ CESP32HeaterStorage::save()
   saveUI();
 }
 
+// **** MAX LENGTH is 15 for name and values ****
 void 
 CESP32HeaterStorage::loadHeater()
 {
@@ -432,6 +433,7 @@ CESP32HeaterStorage::loadHeater()
   preferences.end();    
 }
 
+// **** MAX LENGTH is 15 for name and values ****
 void 
 CESP32HeaterStorage::saveHeater()
 {
@@ -449,6 +451,7 @@ CESP32HeaterStorage::saveHeater()
   preferences.end();    
 }
 
+// **** MAX LENGTH is 15 for name and values ****
 void 
 CESP32HeaterStorage::loadTimer(int idx) 
 {
@@ -467,6 +470,7 @@ CESP32HeaterStorage::loadTimer(int idx)
   preferences.end();    
 }
 
+// **** MAX LENGTH is 15 for name and values ****
 void 
 CESP32HeaterStorage::saveTimer(int idx) 
 {
@@ -484,6 +488,7 @@ CESP32HeaterStorage::saveTimer(int idx)
   preferences.end();    
 }
 
+// **** MAX LENGTH is 15 for name and values ****
 void 
 CESP32HeaterStorage::loadUI()
 {
@@ -499,9 +504,9 @@ CESP32HeaterStorage::loadUI()
   validatedLoad("GPIOinMode", _calValues.Options.GPIOinMode, 0, u8inBounds, 0, 3);
   validatedLoad("GPIOoutMode", _calValues.Options.GPIOoutMode, 0, u8inBounds, 0, 2);
   validatedLoad("GPIOalgMode", _calValues.Options.GPIOalgMode, 0, u8inBounds, 0, 2);
-  validatedLoad("HomeMenuonTimeout", _calValues.Options.HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
-  validatedLoad("HomeMenuonStart", _calValues.Options.HomeMenu.onStart, 0, u8inBounds, 0, 3);
-  validatedLoad("HomeMenuonStop", _calValues.Options.HomeMenu.onStop, 0, u8inBounds, 0, 3);
+  validatedLoad("MenuonTimeout", _calValues.Options.HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
+  validatedLoad("MenuonStart", _calValues.Options.HomeMenu.onStart, 0, u8inBounds, 0, 3);
+  validatedLoad("MenuonStop", _calValues.Options.HomeMenu.onStop, 0, u8inBounds, 0, 3);
   validatedLoad("FrameRate", _calValues.Options.FrameRate, 1000, u16inBounds, 300, 1500);
   preferences.end();    
 }
@@ -521,9 +526,9 @@ CESP32HeaterStorage::saveUI()
   preferences.putUChar("GPIOinMode", _calValues.Options.GPIOinMode);
   preferences.putUChar("GPIOoutMode", _calValues.Options.GPIOoutMode);
   preferences.putUChar("GPIOalgMode", _calValues.Options.GPIOalgMode);
-  preferences.putUChar("HomeMenuonTimeout", _calValues.Options.HomeMenu.onTimeout);
-  preferences.putUChar("HomeMenuonStart", _calValues.Options.HomeMenu.onStart);
-  preferences.putUChar("HomeMenuonStop", _calValues.Options.HomeMenu.onStop);
+  preferences.putUChar("MenuOnTimeout", _calValues.Options.HomeMenu.onTimeout);
+  preferences.putUChar("MenuonStart", _calValues.Options.HomeMenu.onStart);
+  preferences.putUChar("MenuonStop", _calValues.Options.HomeMenu.onStop);
   preferences.putUShort("FrameRate", _calValues.Options.FrameRate);
   preferences.end();    
 }

@@ -156,7 +156,7 @@ CScreenHeader::animate()
 void 
 CScreenHeader::showBTicon()
 {
-  if(getBluetoothClient().isConnected() || true) {
+  if(getBluetoothClient().isConnected()) {
     _display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
   }
 }
