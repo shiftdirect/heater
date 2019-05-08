@@ -192,9 +192,14 @@ bool isWebServerClientChange()
 
 bool sendWebServerString(const char* Str)
 {
+  unsigned long tStart = millis();
 	if(webSocket.connectedClients()) {
+    unsigned long tCon = millis() - tStart;
+    tStart = millis();
     bTxWebData = true;              // OLED tx data animation flag
     webSocket.broadcastTXT(Str);
+    unsigned long tWeb = millis() - tStart;
+//    DebugPort.print("Websend times : "); DebugPort.print(tCon); DebugPort.print(","); DebugPort.println(tWeb); 
 		return true;
 	}
   return false;

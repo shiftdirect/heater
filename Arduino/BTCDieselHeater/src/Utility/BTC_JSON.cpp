@@ -269,8 +269,8 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
       }
-      getBluetoothClient().send( jsonStr );
       sendWebServerString( jsonStr );
+      getBluetoothClient().send( jsonStr );
     }
   }
   // update extended params
@@ -279,21 +279,28 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
       }
-      getBluetoothClient().send( jsonStr );
       sendWebServerString( jsonStr );
+      getBluetoothClient().send( jsonStr );
     }
   }
   // update timer parameters
   bool bNewTimerInfo = false;
   for(int tmr=0; tmr<14; tmr++) 
   {
+    unsigned long tStart = millis();
     if(makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr))) {
+      unsigned long tJSON = millis() - tStart;
       if (report) { 
         DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
       }
-      getBluetoothClient().send( jsonStr );
+      tStart = millis();
       sendWebServerString( jsonStr );
+      unsigned long tWF = millis() - tStart;
+      tStart = millis();
+      getBluetoothClient().send( jsonStr );
+      unsigned long tBT = millis() - tStart;
       bNewTimerInfo = true;
+      DebugPort.print("JSON times : "); DebugPort.print(tJSON); DebugPort.print(",");DebugPort.print(tBT); DebugPort.print(",");DebugPort.println(tWF); 
     }
   }
   // request timer refesh upon clients
@@ -309,8 +316,8 @@ void updateJSONclients(bool report)
     root.printTo(jsonStr, 800);
 
     DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
-    getBluetoothClient().send( jsonStr );
     sendWebServerString( jsonStr );
+    getBluetoothClient().send( jsonStr );
   }
 }
 

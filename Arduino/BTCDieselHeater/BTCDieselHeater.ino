@@ -116,8 +116,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 22;
-const int FirmwareSubRevision = 1;
-const char* FirmwareDate = "27 Apr 2019";
+const int FirmwareSubRevision = 2;
+const char* FirmwareDate = "9 May 2019";
 
 
 #ifdef ESP32
@@ -145,6 +145,7 @@ void manageCyclicMode();
 // DS18B20 temperature sensor support
 OneWire  ds(15);  // on pin 5 (a 4.7K resistor is necessary)
 DallasTemperature TempSensor(&ds);
+DeviceAddress tempSensorAddress;
 long lastTemperatureTime;            // used to moderate DS18B20 access
 float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
 const float fAlpha = 0.95;           // exponential mean alpha
@@ -360,6 +361,11 @@ void setup() {
       DebugPort.println(msg);
     }
   }
+  memset(tempSensorAddress, 0, 8);
+  if(numberOfDevices)
+    TempSensor.getAddress(tempSensorAddress, 0);
+
+  
   TempSensor.setWaitForConversion(false);
   TempSensor.requestTemperatures();
   lastTemperatureTime = millis();
@@ -778,7 +784,7 @@ void loop()
       tDelta = timenow - lastTemperatureTime;
       if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
         lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature        
-        fTemperature = TempSensor.getTempCByIndex(0);    // read sensor
+        fTemperature = TempSensor.getTempC(tempSensorAddress);    // read sensor
         // DebugPort.print("DS18B20 = "); DebugPort.println(fTemperature);
         // initialise filtered temperature upon very first pass
         if(fTemperature > -80) {                       // avoid disconnected sensor readings being integrated
