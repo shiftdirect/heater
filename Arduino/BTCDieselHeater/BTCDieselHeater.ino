@@ -116,8 +116,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 22;
-const int FirmwareSubRevision = 2;
-const char* FirmwareDate = "9 May 2019";
+const int FirmwareSubRevision = 3;
+const char* FirmwareDate = "11 May 2019";
 
 
 #ifdef ESP32
@@ -560,8 +560,8 @@ void loop()
       // Detect the possible start of a new frame sequence from an OEM controller
       // This will be the first activity for considerable period on the blue wire
       // The heater always responds to a controller frame, but otherwise never by itself
-//      if(RxTimeElapsed >= 970) {
-      if(RxTimeElapsed >= NVstore.getFrameRate()) {
+      
+      if(RxTimeElapsed >= (NVstore.getFrameRate() - 60)) {  // compensate for the time spent just doing things in this state machine
         // have not seen any receive data for a second.
         // OEM controller is probably not connected. 
         // Skip state machine immediately to BTC_Tx, sending our own settings.
@@ -1325,3 +1325,7 @@ int getBoardRevision()
   return BoardRevision;
 }
 
+void ShowOTAScreen(int percent)
+{
+  ScreenManager.showOTAMessage(percent);
+}

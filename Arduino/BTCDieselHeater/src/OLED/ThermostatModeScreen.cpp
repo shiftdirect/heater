@@ -25,6 +25,7 @@
 #include "../Protocol/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "fonts/Icons.h"
+#include "../Utility/NVStorage.h"
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -38,7 +39,7 @@
 static const int Line3 = 14;
 static const int Line2 = 27;
 static const int Line1 = 40;
-static const int Column = 50;
+static const int Column = 40;
 
 CThermostatModeScreen::CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
@@ -81,8 +82,15 @@ CThermostatModeScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " Thermostat Mode ", true, eCentreJustify);
-      _display.drawBitmap(10, 14, thermostatIcon, thermostatWidth, thermostatHeight, WHITE);
-      sprintf(msg, "%.1f\367C", _window);  // \367 is octal for Adafruit degree symbol
+      _display.drawBitmap(3, 14, thermostatIcon, thermostatWidth, thermostatHeight, WHITE);
+      float fTemp = _window;
+      if(NVstore.getDegFMode()) {
+        fTemp = fTemp * 9 / 5;
+        sprintf(msg, "%.1f\367F", fTemp);
+      }
+      else {
+        sprintf(msg, "%.1f\367C", fTemp);
+      }
       _printMenuText(Column, Line2, msg, _rowSel == 3);
       switch(_thermoMode) {
         case 1: 
@@ -96,19 +104,33 @@ CThermostatModeScreen::show()
           break;
       }
       if(_cyclicMode.isEnabled()) {
-        sprintf(msg, "> %d\367C", _cyclicMode.Stop+1);  // \367 is octal for Adafruit degree symbol
+        float fTemp = _cyclicMode.Stop+1;
+        if(NVstore.getDegFMode()) {
+          fTemp = fTemp * 9 / 5;
+          sprintf(msg, "\352>%.0f\367F", fTemp);
+        }
+        else {
+          sprintf(msg, "\352>%.0f\367C", fTemp);
+        }
       }
       else {
         strcpy(msg, "OFF");
       }
       _printMenuText(Column, Line1, msg, _rowSel == 1);
       if(_cyclicMode.isEnabled()) {
-        sprintf(msg, "< %d\367C", _cyclicMode.Start);  // \367 is octal for Adafruit degree symbol
+        float fTemp = _cyclicMode.Start;
+        if(NVstore.getDegFMode()) {
+          fTemp = fTemp * 9 / 5;
+          sprintf(msg, "\352<%.0f\367F", fTemp);
+        }
+        else {
+          sprintf(msg, "\352<%.0f\367C", fTemp);
+        }
       }
       else {
         strcpy(msg, "");
       }
-      _printMenuText(Column + 37, Line1, msg, _rowSel == 2);
+      _printMenuText(Column + 42, Line1, msg, _rowSel == 2);
     }
   }
 

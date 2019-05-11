@@ -65,7 +65,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   DebugPort.print("   AP MAC address: "); DebugPort.println(MACstr[1]);
 
   char APname[32];
-  sprintf(APname, "%s-%02X%02X", failedssid, MAC[4], MAC[5]);
+  sprintf(APname, "%s", failedssid);
 
   //reset settings - wipe credentials for testing
 //  wm.resetSettings();
@@ -106,6 +106,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   if(!res) {
     // failed STA mode
     DebugPort.println("WiFimanager failed STA connection. Setting up AP...");
+    WiFi.disconnect();  // apparently needed for AP only OTA to reboot properly!!!
   }    
   else {
     // runs through here if STA connected OK

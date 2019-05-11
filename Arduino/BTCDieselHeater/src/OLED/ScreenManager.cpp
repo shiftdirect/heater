@@ -490,6 +490,25 @@ CScreenManager::showRebootMsg(const char* content[2], long delayTime)
   _dim(false);
 }
 
+void 
+CScreenManager::showOTAMessage(int percent)
+{
+  static int prevPercent = -1;
+  if(percent != prevPercent) {
+    _pDisplay->clearDisplay();
+    _pDisplay->setCursor(64,22);
+    _pDisplay->printCentreJustified("OTA update active");
+    if(percent) {
+      char msg[16];
+      sprintf(msg, "%d%%", percent);
+      _pDisplay->setCursor(64,32);
+      _pDisplay->printCentreJustified(msg);
+    }
+    prevPercent = percent;
+    _pDisplay->display();
+  }
+}
+
 void
 CScreenManager::_dim(bool state)
 {

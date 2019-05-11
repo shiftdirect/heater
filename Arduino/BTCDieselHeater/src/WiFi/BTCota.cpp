@@ -24,6 +24,17 @@
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif
+extern void ShowOTAScreen(int percent=0);
+
+
+#include <esp_int_wdt.h>
+#include <esp_task_wdt.h>
+
+void hard_restart() {
+  esp_task_wdt_init(1,true);
+  esp_task_wdt_add(NULL);
+  while(true);
+}
 
 void initOTA(){
 	// ArduinoOTA.setHostname("myesp32");
@@ -41,16 +52,21 @@ void initOTA(){
 	    SPIFFS.end();
 		DebugPort.println("Start updating " + type);
     DebugPort.handle();    // keep telnet spy alive
+    ShowOTAScreen();
+
 	})
 		.onEnd([]() {
 		DebugPort.println("\nEnd");
     DebugPort.handle();    // keep telnet spy alive
-    DebugPort.end();       // force graceful close of telnetspy - ensures a client will reconnect cleanly
-    ESP.restart();
+    delay(100);
+//    DebugPort.end();       // force graceful close of telnetspy - ensures a client will reconnect cleanly
 	})
 		.onProgress([](unsigned int progress, unsigned int total) {
-		DebugPort.printf("Progress: %u%%\r", (progress / (total / 100)));
+    int percent = (progress / (total / 100));
+		DebugPort.printf("Progress: %u%%\r", percent);
     DebugPort.handle();    // keep telnet spy alive
+    ShowOTAScreen(percent);
+
 	})
 		.onError([](ota_error_t error) {
 		DebugPort.printf("Error[%u]: ", error);
@@ -59,6 +75,7 @@ void initOTA(){
 		else if (error == OTA_CONNECT_ERROR) DebugPort.println("Connect Failed");
 		else if (error == OTA_RECEIVE_ERROR) DebugPort.println("Receive Failed");
 		else if (error == OTA_END_ERROR) DebugPort.println("End Failed");
+    DebugPort.handle();    // keep telnet spy alive
 	});
 
 	ArduinoOTA.begin();

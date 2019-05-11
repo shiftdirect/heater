@@ -107,8 +107,8 @@ CBluetoothHC05::begin()
 
     DebugPort.println("HC-05 found");
 
-    DebugPort.print("  Setting Name to \"Diesel Heater\"... ");
-    if(!ATCommand("AT+NAME=\"Diesel Heater\"\r\n")) {
+    DebugPort.print("  Setting Name to \"Afterburner\"... ");
+    if(!ATCommand("AT+NAME=\"Afterburner\"\r\n")) {
       DebugPort.println("FAILED");
     }
     else {
@@ -145,6 +145,8 @@ CBluetoothHC05::begin()
     else {
       DebugPort.println("OK");
     }*/
+    flush();
+    delay(100);  
     openSerial(9600); 
 
     // leave HC-05 command mode, return to data mode
@@ -231,6 +233,7 @@ CBluetoothHC05::openSerial(int baudrate)
 bool 
 CBluetoothHC05::ATCommand(const char* cmd)
 {
+  flush();   // ensure response is for *this* command!
   HC05_SerialPort.print(cmd);
   char RxBuffer[16];
   memset(RxBuffer, 0, 16);

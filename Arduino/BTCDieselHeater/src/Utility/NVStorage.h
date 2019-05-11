@@ -96,6 +96,11 @@ struct sCyclicThermostat {
   bool isEnabled() const {
     return Stop != 0;
   }
+  sCyclicThermostat& operator=(const sCyclicThermostat& rhs) {
+    Stop = rhs.Stop;
+    Start = rhs.Start;
+    return *this;
+  }
 };
 
 struct sBTCoptions {

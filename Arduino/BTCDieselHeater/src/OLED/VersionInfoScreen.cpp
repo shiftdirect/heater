@@ -55,8 +55,7 @@ CVersionInfoScreen::show()
   _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
   
   _display.drawBitmap(10, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
-  sprintf(msg, "V%.3f", getVersion());
-  _printMenuText(43, 14, msg);
+  _printMenuText(43, 14, getVersionStr());
   _printMenuText(43, 25, getVersionDate());
 
   _display.drawBitmap(20, 34, hardwareIcon, hardwareWidth, hardwareHeight, WHITE);

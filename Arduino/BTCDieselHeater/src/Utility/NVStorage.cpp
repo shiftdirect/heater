@@ -378,7 +378,7 @@ CHeaterStorage::setHomeMenu(sHomeMenuActions val)
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
 //
-#ifdef ESP32
+//#ifdef ESP32
 
 CESP32HeaterStorage::CESP32HeaterStorage()
 {
@@ -521,8 +521,8 @@ CESP32HeaterStorage::saveUI()
   preferences.putUChar("thermoMethod", _calValues.Options.ThermostatMethod);
   preferences.putUChar("enableWifi", _calValues.Options.enableWifi);
   preferences.putUChar("enableOTA", _calValues.Options.enableOTA);
-  preferences.putUChar("cyclicStop", _calValues.Options.cyclic.Stop);
-  preferences.putUChar("cyclicStart", _calValues.Options.cyclic.Start);
+  preferences.putChar("cyclicStop", _calValues.Options.cyclic.Stop);
+  preferences.putChar("cyclicStart", _calValues.Options.cyclic.Start);  
   preferences.putUChar("GPIOinMode", _calValues.Options.GPIOinMode);
   preferences.putUChar("GPIOoutMode", _calValues.Options.GPIOoutMode);
   preferences.putUChar("GPIOalgMode", _calValues.Options.GPIOalgMode);
@@ -631,4 +631,4 @@ bool s32inBounds(long test, long minLim, long maxLim)
 }
 
 
-#endif  // ESP32
+//#endif  // ESP32
