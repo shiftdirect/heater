@@ -500,7 +500,7 @@ CESP32HeaterStorage::loadUI()
   validatedLoad("enableWifi", _calValues.Options.enableWifi, 1, u8inBounds, 0, 1);
   validatedLoad("enableOTA", _calValues.Options.enableOTA, 1, u8inBounds, 0, 1);
   validatedLoad("cyclicStop", _calValues.Options.cyclic.Stop, 0, s8inBounds, 0, 10);
-  validatedLoad("cyclicStart", _calValues.Options.cyclic.Start, -1, s8inBounds, -10, 0);
+  validatedLoad("cyclicStart", _calValues.Options.cyclic.Start, -1, s8inBounds, -20, 0);
   validatedLoad("GPIOinMode", _calValues.Options.GPIOinMode, 0, u8inBounds, 0, 3);
   validatedLoad("GPIOoutMode", _calValues.Options.GPIOoutMode, 0, u8inBounds, 0, 2);
   validatedLoad("GPIOalgMode", _calValues.Options.GPIOalgMode, 0, u8inBounds, 0, 2);

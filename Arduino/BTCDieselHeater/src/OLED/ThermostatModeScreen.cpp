@@ -301,7 +301,7 @@ CThermostatModeScreen::_adjust(int dir)
       break;
     case 2:
       _cyclicMode.Start += dir;
-      LOWERLIMIT(_cyclicMode.Start, -10);
+      LOWERLIMIT(_cyclicMode.Start, -20);
       UPPERLIMIT(_cyclicMode.Start, 0);
       break;
     case 3:   // window
