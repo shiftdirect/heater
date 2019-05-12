@@ -115,9 +115,9 @@
 
 #define RX_DATA_TIMOUT 50
 
-const int FirmwareRevision = 22;
-const int FirmwareSubRevision = 3;
-const char* FirmwareDate = "11 May 2019";
+const int FirmwareRevision = 23;
+const int FirmwareSubRevision = 0;
+const char* FirmwareDate = "12 May 2019";
 
 
 #ifdef ESP32
@@ -267,7 +267,7 @@ const char* print18B20Address(DeviceAddress deviceAddress)
 #if USE_SPIFFS == 1  
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels) 
 {
-  DebugPort.print("Listing directory: "); DebugPort.println(dirname);
+  DebugPort.printf("Listing directory: %s\r\n", dirname);
 
   File root = fs.open(dirname);
   if (!root) {
@@ -282,16 +282,12 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels)
   File file = root.openNextFile();
   while (file) {
     if (file.isDirectory()) {
-      DebugPort.print("  DIR : ");
-      DebugPort.println(file.name());
+      DebugPort.printf("  DIR : %s\r\n", file.name());
       if (levels) {
         listDir(fs, file.name(), levels - 1);
       }
     } else {
-      DebugPort.print("  FILE: ");
-      DebugPort.print(file.name());
-      DebugPort.print("  SIZE: ");
-      DebugPort.println(file.size());
+      DebugPort.printf("  FILE: %s SIZE: %ld\r\n", file.name(), file.size());
     }
     file = root.openNextFile();
   }
@@ -314,11 +310,10 @@ void setup() {
   DebugPort.println("_______________________________________________________________");
   
   DebugPort.println("DS18B20 status dump");
-  sprintf(msg, "  Temperature for device#1 (idx 0) is: %.1f", TempSensor.getTempCByIndex(0));
-  DebugPort.println(msg);
+  DebugPort.printf("  Temperature for device#1 (idx 0) is: %.1f\r\n", TempSensor.getTempCByIndex(0));
 
   BoardRevision = BoardDetect();
-  DebugPort.print("Board revision: V"); DebugPort.println(float(BoardRevision) * 0.1, 1);
+  DebugPort.printf("Board revision: V%.1f\r\n", float(BoardRevision) * 0.1);
 
 #if USE_SPIFFS == 1  
  // Initialize SPIFFS
@@ -338,12 +333,10 @@ void setup() {
     // Grab a count of devices on the wire
   int numberOfDevices = TempSensor.getDeviceCount();
   
-  sprintf(msg, "  Found %d devices", numberOfDevices);
-  DebugPort.println(msg);
+  DebugPort.printf("  Found %d devices\r\n", numberOfDevices);
 
   // report parasite power requirements
-  sprintf(msg, "  Parasite power is: %s", TempSensor.isParasitePowerMode() ? "ON" : "OFF");
-  DebugPort.println(msg);
+  DebugPort.printf("  Parasite power is: %s\r\n", TempSensor.isParasitePowerMode() ? "ON" : "OFF");
   
   // Loop through each device, print out address
   for(int i=0;i<numberOfDevices; i++)
@@ -351,14 +344,11 @@ void setup() {
     // Search the wire for address
     DeviceAddress tempDeviceAddress;
     if(TempSensor.getAddress(tempDeviceAddress, i)) {
-      sprintf(msg, "  Found DS18B20 device#%d with address: %s", i+1, print18B20Address(tempDeviceAddress));
-      DebugPort.println(msg);
+      DebugPort.printf("  Found DS18B20 device#%d with address: %s\r\n", i+1, print18B20Address(tempDeviceAddress));
       
-      sprintf(msg, "  Resolution: %d bits", TempSensor.getResolution(tempDeviceAddress)); 
-      DebugPort.println(msg);
+      DebugPort.printf("  Resolution: %d bits\r\n", TempSensor.getResolution(tempDeviceAddress)); 
     } else {
-      sprintf(msg, "  Found ghost @ device#%d, but could not detect address. Check power and cabling", i+1);
-      DebugPort.println(msg);
+      DebugPort.printf("  Found ghost @ device#%d, but could not detect address. Check power and cabling\r\n", i+1);
     }
   }
   memset(tempSensorAddress, 0, 8);
@@ -373,6 +363,7 @@ void setup() {
   
   NVstore.init();
   NVstore.load();
+  initMQTTJSONmoderator();   // prevent JSON for MQTT unless requested
 
   KeyPad.begin(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
   KeyPad.setCallback(parentKeyHandler);
@@ -516,8 +507,7 @@ void loop()
       if(RxTimeElapsed >= moderator) {
         moderator += 10;
         if(bReportRecyleEvents) {
-          DebugPort.print(RxTimeElapsed);
-          DebugPort.print("ms - ");
+          DebugPort.printf("%ldms - ", RxTimeElapsed);
         }
         if(CommState.is(CommStates::OEMCtrlRx)) {
           bHasOEMController = false;
@@ -579,9 +569,7 @@ void loop()
       if(BlueWireData.available() && (RxTimeElapsed > RX_DATA_TIMOUT+10)) {  
 
         if(bReportOEMresync) {
-          DebugPort.print("Re-sync'd with OEM Controller. ");
-          DebugPort.print(RxTimeElapsed);
-          DebugPort.println("ms Idle time.");
+          DebugPort.printf("Re-sync'd with OEM Controller. %ldms Idle time.\r\n", RxTimeElapsed);
         }
 
         bHasHtrData = false;
@@ -785,7 +773,7 @@ void loop()
       if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
         lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature        
         fTemperature = TempSensor.getTempC(tempSensorAddress);    // read sensor
-        // DebugPort.print("DS18B20 = "); DebugPort.println(fTemperature);
+        // DebugPort.printf("DS18B20 = %f\r\n", fTemperature);
         // initialise filtered temperature upon very first pass
         if(fTemperature > -80) {                       // avoid disconnected sensor readings being integrated
           if(DS18B20holdoff)
@@ -834,8 +822,7 @@ void manageCyclicMode()
   if(cyclic.Stop && bUserON) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
     float deltaT = fFilteredTemperature - getSetTemp();
-//    DebugPort.print("Cyclic = "); DebugPort.print(cyclic); DebugPort.print(" bUserON = "); DebugPort.print(bUserON);
-//    DebugPort.print(" deltaT = "); DebugPort.println(deltaT);
+//    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
 
     // ensure we cancel user ON mode if heater throws an error
     int errState = getHeaterInfo().getErrState();
@@ -848,7 +835,7 @@ void manageCyclicMode()
     // check if over temp, turn off heater
     if(deltaT > stopDeltaT) {
       if(heaterState > 0 && heaterState <= 5) {  
-        DebugPort.print("CYCLIC MODE: Stopping heater, deltaT > +"); DebugPort.println(stopDeltaT);
+        DebugPort.printf("CYCLIC MODE: Stopping heater, deltaT > +%d\r\n", stopDeltaT);
         heaterOff();    // over temp - request heater stop
       }
     }
@@ -856,7 +843,7 @@ void manageCyclicMode()
     if(deltaT < cyclic.Start) {
       // typ. 1 degree below set point - restart heater
       if(heaterState == 0) {
-        DebugPort.print("CYCLIC MODE: Restarting heater, deltaT <"); DebugPort.println(cyclic.Start);
+        DebugPort.printf("CYCLIC MODE: Restarting heater, deltaT <%d\r\n", cyclic.Start);
         heaterOn();
       }
     }
@@ -883,9 +870,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
 {
   if(!frame.verifyCRC()) {
     // Bad CRC - restart blue wire Serial port
-    DebugPort.print("\007Bad CRC detected for ");
-    DebugPort.print(name);
-    DebugPort.println(" frame - restarting blue wire's serial port");
+    DebugPort.printf("\007Bad CRC detected for %s frame - restarting blue wire's serial port\r\n", name);
     DebugReportFrame("BAD CRC:", frame, "\r\n");
     initBlueWireSerial();
     CommState.set(CommStates::TemperatureRead);
@@ -1101,11 +1086,11 @@ void checkDebugCommands()
         DebugPort.print("\014");
         DebugPort.println("MENU options");
         DebugPort.println("");
-        DebugPort.print("  <B> - toggle raw blue wire data reporting, currently "); DebugPort.println(bReportBlueWireData ? "ON" : "OFF");
-        DebugPort.print("  <J> - toggle output JSON reporting, currently "); DebugPort.println(bReportJSONData ? "ON" : "OFF");
-        DebugPort.print("  <W> - toggle reporting of blue wire timeout/recycling event, currently "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
-        DebugPort.print("  <O> - toggle reporting of OEM resync event, currently "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");        
-        DebugPort.print("  <S> - toggle reporting of state machine transits "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");        
+        DebugPort.printf("  <B> - toggle raw blue wire data reporting, currently %s\r\n", bReportBlueWireData ? "ON" : "OFF");
+        DebugPort.printf("  <J> - toggle output JSON reporting, currently %s\r\n", bReportJSONData ? "ON" : "OFF");
+        DebugPort.printf("  <W> - toggle reporting of blue wire timeout/recycling event, currently %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
+        DebugPort.printf("  <O> - toggle reporting of OEM resync event, currently %s\r\n", bReportOEMresync ? "ON" : "OFF");        
+        DebugPort.printf("  <S> - toggle reporting of state machine transits %s\r\n", CommState.isReporting() ? "ON" : "OFF");        
         DebugPort.println("  <+> - request heater turns ON");
         DebugPort.println("  <-> - request heater turns OFF");
         DebugPort.println("  <R> - restart the ESP");
@@ -1154,19 +1139,19 @@ void checkDebugCommands()
 #endif
       else if(rxVal == 'b') { 
         bReportBlueWireData = !bReportBlueWireData;
-        DebugPort.print("Toggled raw blue wire data reporting "); DebugPort.println(bReportBlueWireData ? "ON" : "OFF");
+        DebugPort.printf("Toggled raw blue wire data reporting %s\r\n", bReportBlueWireData ? "ON" : "OFF");
       }
       else if(rxVal == 'j')  {
         bReportJSONData = !bReportJSONData;
-        DebugPort.print("Toggled JSON data reporting "); DebugPort.println(bReportJSONData ? "ON" : "OFF");
+        DebugPort.printf("Toggled JSON data reporting %s\r\n", bReportJSONData ? "ON" : "OFF");
       }
       else if(rxVal == 'w')  {
         bReportRecyleEvents = !bReportRecyleEvents;
-        DebugPort.print("Toggled blue wire recycling event reporting "); DebugPort.println(bReportRecyleEvents ? "ON" : "OFF");
+        DebugPort.printf("Toggled blue wire recycling event reporting %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
       }
       else if(rxVal == 'o')  {
         bReportOEMresync = !bReportOEMresync;
-        DebugPort.print("Toggled OEM resync event reporting "); DebugPort.println(bReportOEMresync ? "ON" : "OFF");
+        DebugPort.printf("Toggled OEM resync event reporting %s\r\n", bReportOEMresync ? "ON" : "OFF");
       }
       else if(rxVal == 's') {
         CommState.toggleReporting();
@@ -1197,7 +1182,7 @@ void checkDebugCommands()
           DefaultBTCParams.Controller.Unknown2_LSB = (val >> 0) & 0xff;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
           break;
         case 4:
-          DebugPort.print("Forced controller command = "); DebugPort.println(val&0xff);
+          DebugPort.printf("Forced controller command = %d\r\n", val&0xff);
           DefaultBTCParams.Controller.Command = val & 0xff;
           break;
       }
@@ -1224,7 +1209,7 @@ int getBlueWireStat()
 
 const char* getBlueWireStatStr()
 {
-  const char* BlueWireStates[] = { "BTC,Htr", "BTC", "OEM,Htr", "OEM" };
+  static const char* BlueWireStates[] = { "BTC,Htr", "BTC", "OEM,Htr", "OEM" };
 
   return BlueWireStates[getBlueWireStat()];
 }
@@ -1293,14 +1278,14 @@ void setupGPIO()
 
 void setGPIO(int channel, bool state)
 {
-  DebugPort.print("setGPIO: Output #"); DebugPort.print(channel+1); DebugPort.print(" = "); DebugPort.println(state);
+  DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
   GPIOout.setState(channel, state);
 }
 
 bool getGPIO(int channel)
 {
   bool retval = GPIOout.getState(channel);
-  DebugPort.print("getGPIO: Output #"); DebugPort.print(channel+1); DebugPort.print(" = "); DebugPort.println(retval);
+  DebugPort.printf("getGPIO: Output #%d = %d\r\n", channel+1, retval);
   return retval;
 }
 

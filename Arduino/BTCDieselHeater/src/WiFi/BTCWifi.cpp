@@ -59,10 +59,10 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   uint8_t MAC[6];
   esp_read_mac(MAC, ESP_MAC_WIFI_STA);
   sprintf(MACstr[0], "%02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
-  DebugPort.print("  STA MAC address: "); DebugPort.println(MACstr[0]);
+  DebugPort.printf("  STA MAC address: %s\r\n", MACstr[0]);
   esp_read_mac(MAC, ESP_MAC_WIFI_SOFTAP);
   sprintf(MACstr[1], "%02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
-  DebugPort.print("   AP MAC address: "); DebugPort.println(MACstr[1]);
+  DebugPort.printf("   AP MAC address: %s\r\n", MACstr[1]);
 
   char APname[32];
   sprintf(APname, "%s", failedssid);
@@ -99,7 +99,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
  
 //  bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
   bool res = wm.autoConnect(APname, failedpassword); // auto generated AP name from chipid
-  DebugPort.print("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
+  DebugPort.printf("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
 
   int chnl = 1;
   bool retval = false;
@@ -113,10 +113,10 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     // if you get here you have connected to the WiFi    
     isSTA = true;
     DebugPort.println("WiFiManager connected in STA mode OK");
-    DebugPort.print("  STA IP address: "); DebugPort.println(WiFi.localIP());
+    DebugPort.printf("  STA IP address: %s\r\n", WiFi.localIP());
     // must use same radio channel as STA to go to STA+AP, otherwise we drop the STA!
     chnl = WiFi.channel();  
-    DebugPort.print("Now promoting to STA+AP mode"); 
+    DebugPort.println("Now promoting to STA+AP mode..."); 
     retval = true;
   }
 #ifdef USE_AP  
@@ -127,9 +127,9 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 //  WiFi.softAP(failedssid, failedpassword, chnl);
   WiFi.softAP(APname, failedpassword, chnl);
   WiFi.enableAP(true);
-  DebugPort.print("  AP SSID: "); DebugPort.println(WiFi.softAPgetHostname());
-  DebugPort.print("  AP IP address: "); DebugPort.println(WiFi.softAPIP());
-  DebugPort.print("WifiMode after initWifi = "); DebugPort.println(WiFi.getMode());
+  DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
+  DebugPort.printf("  AP IP address: %s\r\n", WiFi.softAPIP());
+  DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
   #endif
 
   // even though we may have started in STA mode - start the config portal if demanded via the NV flag
@@ -177,7 +177,7 @@ void doWiFiManager()
     if(pinDown) {
       pinDown = false;
       tDelta = millis() - pinTime;
-      DebugPort.print("Wifi config button tDelta = "); DebugPort.println(tDelta);
+      DebugPort.printf("Wifi config button tDelta = %ld\r\n", tDelta);
       // > 5 second press?
       if(tDelta > 5000) {    
         wifiEnterConfigPortal(true, true);  // very long press - clear credentials, reboot into portal
@@ -311,7 +311,7 @@ void prepBootIntoConfigPortal(bool state)
   NV.begin("user");
   NV.putBool("bootPortal", state);
   NV.end();
-  DebugPort.print("Setting boot config portal if WiFiManager fails = "); DebugPort.println(state);
+  DebugPort.printf("Setting boot config portal if WiFiManager fails = %d\r\n", state);
 }
 
 // test the NV flag whether the config portal should run after reboot
@@ -321,7 +321,7 @@ bool shouldBootIntoConfigPortal()
   NV.begin("user");
   bool retval = NV.getBool("bootPortal", false);
   NV.end();
-  DebugPort.print("Boot config portal if WiFiManager fails = "); DebugPort.println(retval);
+  DebugPort.printf("Boot config portal if WiFiManager fails = %d\r\n", retval);
   return retval;
 }
 

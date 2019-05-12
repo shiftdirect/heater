@@ -63,9 +63,7 @@ CBluetoothHC05::begin()
   int BTidx = 0;
   int maxTries =  sizeof(BTRates)/sizeof(int);
   for(BTidx = 0; BTidx < maxTries; BTidx++) {
-    DebugPort.print("  @ ");
-    DebugPort.print(BTRates[BTidx]);
-    DebugPort.print(" baud... ");
+    DebugPort.printf("  @ %d baud... ", BTRates[BTidx]);
     openSerial(BTRates[BTidx]);      // open serial port at a std. baud rate
     delay(10);
     flush();

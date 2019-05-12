@@ -109,7 +109,7 @@ CClock::set(const DateTime& newTimeDate)
 
 void setDateTime(const char* newTime)
 {
-  DebugPort.print("setting time to: ");  DebugPort.println(newTime);
+  DebugPort.printf("setting time to: %s\r\n", newTime);
   int month,day,year,hour,minute,second;
   if(6 == sscanf(newTime, "%d/%d/%d %d:%d:%d", &day, &month, &year, &hour, &minute, &second)) {
     DateTime newDateTime(year, month, day, hour, minute, second);
@@ -119,7 +119,7 @@ void setDateTime(const char* newTime)
 
 void setDate(const char* newDate)
 {
-  DebugPort.print("setting date to: ");  DebugPort.println(newDate);
+  DebugPort.printf("setting date to: %s\r\n", newDate);
   int month,day,year;
   if(3 == sscanf(newDate, "%d/%d/%d", &day, &month, &year)) {
     DateTime currentDateTime = Clock.get();
@@ -130,7 +130,7 @@ void setDate(const char* newDate)
 
 void setTime(const char* newTime)
 {
-  DebugPort.print("setting time to: ");  DebugPort.println(newTime);
+  DebugPort.printf("setting time to: %s\r\n", newTime);
   int hour,minute,second;
   if(3 == sscanf(newTime, "%d:%d:%d", &hour, &minute, &second)) {
     DateTime currentDateTime = Clock.get();

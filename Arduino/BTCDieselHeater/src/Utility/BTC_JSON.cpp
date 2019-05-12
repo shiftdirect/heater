@@ -35,6 +35,7 @@ char defaultJSONstr[64];
 CModerator JSONmoderator;
 CTimerModerator TimerModerator;
 int timerConflict = 0;
+CModerator MQTTmoderator;
 
 void validateTimer(int ID);
 
@@ -43,12 +44,7 @@ void interpretJsonCommand(char* pLine)
   if(strlen(pLine) == 0)
     return;
 
-  DebugPort.print("JSON parse... "); DebugPort.print(pLine);
-/*  for(int i=0; i<strlen(pLine); i++) {
-    char msg[8];
-    sprintf(msg, "%02X ", pLine[i]);
-    DebugPort.print(msg);
-  }*/
+  DebugPort.printf("JSON parse %s...", pLine);
 
   StaticJsonBuffer<512> jsonBuffer;   // create a JSON buffer on the heap
 	JsonObject& obj = jsonBuffer.parseObject(pLine);
@@ -157,6 +153,38 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("FanSensor", it->key) == 0) {
       setFanSensor(it->value.as<unsigned char>());
 		}
+    // MQTT parameters
+		else if(strcmp("MQuery", it->key) == 0) {
+      MQTTmoderator.reset();   // force MQTT params to be sent
+    }
+		else if(strcmp("MEn", it->key) == 0) {
+      sMQTTparams info = NVstore.getMQTTinfo();
+      info.enabled = it->value.as<unsigned char>();
+			NVstore.setMQTTinfo(info);
+    }
+		else if(strcmp("MPort", it->key) == 0) {
+      sMQTTparams info = NVstore.getMQTTinfo();
+      info.port = it->value.as<unsigned short>();
+			NVstore.setMQTTinfo(info);
+    }
+		else if(strcmp("MHost", it->key) == 0) {
+      sMQTTparams info = NVstore.getMQTTinfo();
+      strncpy(info.host, it->value.as<const char*>(), 127);
+      info.host[127] = 0;
+			NVstore.setMQTTinfo(info);
+    }
+		else if(strcmp("MUser", it->key) == 0) {
+      sMQTTparams info = NVstore.getMQTTinfo();
+      strncpy(info.username, it->value.as<const char*>(), 31);
+      info.username[31] = 0;
+			NVstore.setMQTTinfo(info);
+    }
+		else if(strcmp("MPasswd", it->key) == 0) {
+      sMQTTparams info = NVstore.getMQTTinfo();
+      strncpy(info.password, it->value.as<const char*>(), 31);
+      info.password[31] = 0;
+			NVstore.setMQTTinfo(info);
+    }
 	}
 }
 
@@ -259,6 +287,27 @@ bool makeJSONTimerString(int channel, char* opStr, int len)
 }
 
 
+bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
+{
+  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+	bool bSend = false;  // reset should send flag
+  const sMQTTparams& info = NVstore.getMQTTinfo();
+
+  bSend |= moderator.addJson("MEn", info.enabled, root); 
+  bSend |= moderator.addJson("MPort", info.port, root); 
+  bSend |= moderator.addJson("MHost", info.host, root); 
+  bSend |= moderator.addJson("MUser", info.username, root); 
+  bSend |= moderator.addJson("MPasswd", info.password, root); 
+
+  if(bSend) {
+		root.printTo(opStr, len);
+  }
+
+  return bSend;
+}
+
 
 void updateJSONclients(bool report)
 {
@@ -267,7 +316,7 @@ void updateJSONclients(bool report)
   {
     if(makeJSONString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
-        DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
+        DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebServerString( jsonStr );
       getBluetoothClient().send( jsonStr );
@@ -277,7 +326,7 @@ void updateJSONclients(bool report)
   {
     if(makeJSONStringEx(JSONmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
-        DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
+        DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebServerString( jsonStr );
       getBluetoothClient().send( jsonStr );
@@ -291,7 +340,7 @@ void updateJSONclients(bool report)
     if(makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr))) {
       unsigned long tJSON = millis() - tStart;
       if (report) { 
-        DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
+        DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       tStart = millis();
       sendWebServerString( jsonStr );
@@ -300,7 +349,7 @@ void updateJSONclients(bool report)
       getBluetoothClient().send( jsonStr );
       unsigned long tBT = millis() - tStart;
       bNewTimerInfo = true;
-      DebugPort.print("JSON times : "); DebugPort.print(tJSON); DebugPort.print(",");DebugPort.print(tBT); DebugPort.print(",");DebugPort.println(tWF); 
+      DebugPort.printf("JSON times : %ld,%ld,%ld\r\n", tJSON, tBT, tWF); 
     }
   }
   // request timer refesh upon clients
@@ -315,9 +364,20 @@ void updateJSONclients(bool report)
     root.set("TimerRefresh", 1);
     root.printTo(jsonStr, 800);
 
-    DebugPort.print("JSON send: "); DebugPort.println(jsonStr);
+    DebugPort.printf("JSON send: %s\r\n", jsonStr);
     sendWebServerString( jsonStr );
     getBluetoothClient().send( jsonStr );
+  }
+
+  // report MQTT params
+  {
+    if(makeJSONStringMQTT(MQTTmoderator, jsonStr, sizeof(jsonStr))) {
+      if (report) {
+        DebugPort.printf("JSON send: %s\r\n", jsonStr);
+      }
+      sendWebServerString( jsonStr );
+      getBluetoothClient().send( jsonStr );
+    }
   }
 }
 
@@ -328,5 +388,10 @@ void resetJSONmoderator()
   TimerModerator.reset();
 }
 
+void initMQTTJSONmoderator()
+{
+  char jsonStr[800];
+  makeJSONStringMQTT(MQTTmoderator, jsonStr, sizeof(jsonStr));
+}
 
 

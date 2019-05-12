@@ -31,6 +31,8 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len);
 bool makeJSONStringEx(CModerator& moderator, char* opStr, int len);
 bool makeJSONTimerString(int channel, char* opStr, int len);
 void updateJSONclients(bool report);
+bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len);
+void initMQTTJSONmoderator();
 
 template<class T>
 const char* createJSON(const char* name, T value)

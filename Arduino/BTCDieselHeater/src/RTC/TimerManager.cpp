@@ -222,11 +222,9 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
   int newID = weekTimerIDs[dow][dayMinute];
   if(activeTimer != newID) {
     
-    DebugPort.print("Timer ID change detected "); 
-    DebugPort.print(activeTimer & 0x0f); 
+    DebugPort.printf("Timer ID change detected: %d", activeTimer & 0x0f); 
     if(activeTimer & 0x80) DebugPort.print("(repeating)");
-    DebugPort.print(" -> "); 
-    DebugPort.print(newID & 0x0f);
+    DebugPort.printf(" -> %d", newID & 0x0f);
     if(newID & 0x80) DebugPort.print("(repeating)");
     DebugPort.println("");
 
@@ -239,7 +237,7 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
       }
       else {  // non repeating timer
         // delete one shot timer - note that this may require ticking off each day as they appear
-        DebugPort.print("Expired timer does not repeat - Cancelling"); DebugPort.println(activeTimer);
+        DebugPort.printf("Expired timer does not repeat - Cancelling %d\r\n", activeTimer);
         int ID = activeTimer & 0x0f;
         if(ID) {
           ID--;
@@ -251,7 +249,7 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
             timer.enabled = 0;   // ouright cancel anyday timer
           }
           else {
-            DebugPort.print("Cancelling specific day idx"); DebugPort.println(activeDow);
+            DebugPort.printf("Cancelling specific day idx %d\r\n", activeDow);
             timer.enabled &= ~(0x01 << activeDow);  // cancel specific day that started the timer
           }
           NVstore.setTimerInfo(ID, timer);

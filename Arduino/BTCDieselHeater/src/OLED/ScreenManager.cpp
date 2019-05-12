@@ -298,7 +298,7 @@ CScreenManager::checkUpdate()
         }
         else {
           _rootMenu = _subMenu = 1;
-          DebugPort.print("Screen Manager: Menu timeout, falling back to Basic control screen"); 
+          DebugPort.println("Screen Manager: Menu timeout, falling back to Basic control screen"); 
         }
       }
       _enterScreen();

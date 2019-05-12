@@ -103,6 +103,31 @@ struct sCyclicThermostat {
   }
 };
 
+struct sMQTTparams {
+  uint8_t enabled;
+  uint16_t  port;
+  char host[128];
+  char username[32];
+  char password[32];
+  void init() {
+    enabled = false;
+    port = 1234;
+    memset(host, 0, 128);
+    memset(username, 0, 32);
+    memset(password, 0, 32);
+  }
+  sMQTTparams& operator=(const sMQTTparams& rhs) {
+    enabled = rhs.enabled;
+    port = rhs.port;
+    memcpy(host, rhs.host, 128);
+    memcpy(username, rhs.username, 32);
+    memcpy(password, rhs.password, 32);
+    host[127] = 0;
+    username[31] = 0;
+    password[31] = 0;
+  }
+};
+
 struct sBTCoptions {
   long dimTime;
   long menuTimeout;
@@ -154,6 +179,7 @@ struct sNVStore {
   sHeater Heater;
   sBTCoptions Options;
   sTimer timer[14];
+  sMQTTparams MQTT;
   bool valid();
   void init();
 };
@@ -200,6 +226,7 @@ public:
     unsigned char getWifiEnabled();
     unsigned char getOTAEnabled();
     const sCyclicThermostat& getCyclicMode() const;
+    const sMQTTparams& getMQTTinfo() const;
     GPIOinModes getGPIOinMode();
     GPIOoutModes getGPIOoutMode();
     GPIOalgModes getGPIOalgMode();
@@ -231,11 +258,12 @@ public:
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);
+    void setMQTTinfo(const sMQTTparams& info);
 };
 
 
 
-#ifdef ESP32
+//#ifdef ESP32
 
 #include <Preferences.h>
 #include <functional>
@@ -254,13 +282,15 @@ public:
   void saveTimer(int idx);
   void loadUI();
   void saveUI();
+  void loadMQTT();
+  void saveMQTT();
   bool validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max);
   bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask=0xff);
   bool validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max);
   bool validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max);
 };
 
-#endif
+//#endif
 
 extern CHeaterStorage& NVstore;
 

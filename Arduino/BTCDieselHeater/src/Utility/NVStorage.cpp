@@ -375,6 +375,20 @@ CHeaterStorage::setHomeMenu(sHomeMenuActions val)
   _calValues.Options.HomeMenu = val;
 }
 
+// MQTT parameter read/save
+const sMQTTparams& 
+CHeaterStorage::getMQTTinfo() const
+{
+  return _calValues.MQTT;
+}
+
+void
+CHeaterStorage::setMQTTinfo(const sMQTTparams& info)
+{
+  _calValues.MQTT = info;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
 //
@@ -402,6 +416,7 @@ CESP32HeaterStorage::load()
     loadTimer(i);
   }
   loadUI();
+  loadMQTT();
 }
 
 void 
@@ -413,6 +428,7 @@ CESP32HeaterStorage::save()
     saveTimer(i);
   }
   saveUI();
+  saveMQTT();
 }
 
 // **** MAX LENGTH is 15 for name and values ****
@@ -533,16 +549,38 @@ CESP32HeaterStorage::saveUI()
   preferences.end();    
 }
 
+void 
+CESP32HeaterStorage::loadMQTT()
+{
+  preferences.begin("mqtt", false);
+  validatedLoad("enabled", _calValues.MQTT.enabled, 0, u8inBounds, 0, 1);
+  validatedLoad("port", _calValues.MQTT.port, 0, u16inBounds, 0, 0xffff);
+  preferences.getString("host", _calValues.MQTT.host, 127);
+  preferences.getString("username", _calValues.MQTT.username, 31);
+  preferences.getString("password", _calValues.MQTT.password, 31);
+  preferences.end();    
+}
+
+void 
+CESP32HeaterStorage::saveMQTT()
+{
+  preferences.begin("mqtt", false);
+  preferences.putUChar("enabled", _calValues.MQTT.enabled);
+  preferences.putUShort("port", _calValues.MQTT.port);
+  preferences.putString("host", _calValues.MQTT.host);
+  preferences.putString("username", _calValues.MQTT.username);
+  preferences.putString("password", _calValues.MQTT.password);
+  preferences.end();    
+}
+
 bool
 CESP32HeaterStorage::validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask)
 {
   val = preferences.getUChar(key, defVal);
   if(!validator(val & mask, min, max)) {
 
-    DebugPort.print("CESP32HeaterStorage::validatedLoad<uint8_t> invalid read ");
-    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
-    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
-    DebugPort.println(defVal);
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<uint8_t> invalid read %s=%d", key, val);
+    DebugPort.printf(" validator(%d,%d) reset to %d\r\n", min, max, defVal);
 
     val = defVal;
     preferences.putUChar(key, val);
@@ -557,10 +595,8 @@ CESP32HeaterStorage::validatedLoad(const char* key, int8_t& val, int defVal, std
   val = preferences.getChar(key, defVal);
   if(!validator(val, min, max)) {
 
-    DebugPort.print("CESP32HeaterStorage::validatedLoad<uint8_t> invalid read ");
-    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
-    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
-    DebugPort.println(defVal);
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<int8_t> invalid read %s=%d", key, val);
+    DebugPort.printf(" validator(%d,%d) reset to %d\r\n", min, max, defVal);
 
     val = defVal;
     preferences.putChar(key, val);
@@ -575,10 +611,8 @@ CESP32HeaterStorage::validatedLoad(const char* key, uint16_t& val, int defVal, s
   val = preferences.getUShort(key, defVal);
   if(!validator(val, min, max)) {
 
-    DebugPort.print("CESP32HeaterStorage::validatedLoad<uint16_t> invalid read ");
-    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
-    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
-    DebugPort.println(defVal);
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<uint16_t> invalid read %s=%d", key, val);
+    DebugPort.printf(" validator(%d,%d) reset to %d\r\n", min, max, defVal);
 
     val = defVal;
     preferences.putUShort(key, val);
@@ -593,10 +627,8 @@ CESP32HeaterStorage::validatedLoad(const char* key, long& val, long defVal, std:
   val = preferences.getLong(key, defVal);
   if(!validator(val, min, max)) {
 
-    DebugPort.print("CESP32HeaterStorage::validatedLoad<long> invalid read ");
-    DebugPort.print(key); DebugPort.print("="); DebugPort.print(val);
-    DebugPort.print(" validator("); DebugPort.print(min); DebugPort.print(","); DebugPort.print(max); DebugPort.print(") reset to ");
-    DebugPort.println(defVal);
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<long> invalid read %s=%ld", key, val);
+    DebugPort.printf(" validator(%ld,%ld) reset to %ld\r\n", min, max, defVal);
 
     val = defVal;
     preferences.putLong(key, val);

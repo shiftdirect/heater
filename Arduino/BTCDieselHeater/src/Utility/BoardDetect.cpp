@@ -81,7 +81,7 @@ int BoardDetect()
   uint8_t revision = 0;
   uint8_t val = preferences.getUChar("Board Revision", revision);
   if(val != 0) {
-    DebugPort.print("Board detect: Using saved revision V"); DebugPort.println(float(val) * 0.1f, 1);
+    DebugPort.printf("Board detect: Using saved revision V%.1f\r\n", float(val) * 0.1f);
     return val;
   }
   
@@ -117,6 +117,6 @@ int BoardDetect()
     preferences.putUChar("Board Revision", revision);
   }
 
-  DebugPort.print("Board detect: Result = V"); DebugPort.println(float(revision)*0.1f, 1);
+  DebugPort.printf("Board detect: Result = V%.1f\r\n", float(revision)*0.1f);
   return revision;
 }

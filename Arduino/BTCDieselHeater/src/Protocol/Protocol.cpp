@@ -76,10 +76,7 @@ CProtocol::verifyCRC(bool bSilent) const
   unsigned short FrameCRC = getCRC();
   bool bOK = (FrameCRC == CRC);
   if(!bOK && !bSilent) {
-    DebugPort.print("verifyCRC FAILED: calc:");
-    DebugPort.print(CRC, HEX);
-    DebugPort.print(" data:");
-    DebugPort.println(FrameCRC, HEX);
+    DebugPort.printf("verifyCRC FAILED: calc: %04X data: %04X\r\n", CRC, FrameCRC);
   }
   return bOK;        // does it match the stored values?
 }

@@ -137,7 +137,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
       float tDelta = tCurrent - tDesired;
       float fTemp;
 #ifdef DEBUG_THERMOSTAT
-      DebugPort.print("Window = "); DebugPort.print(Window); DebugPort.print(" tCurrent = "); DebugPort.print(tCurrent); DebugPort.print(" tDesired = "); DebugPort.print(tDesired); DebugPort.print(" tDelta = "); DebugPort.println(tDelta); 
+      DebugPort.printf("Window=%.1f tCurrent=%.1f tDesired=%.1f tDelta=%.1f\r\n", Window, tCurrent, tDesired, tDelta); 
 #endif
       Window /= 2;
       switch(ThermoMode) {
@@ -148,7 +148,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           u8Temp = (uint8_t)(tActual + 0.5);
           m_TxFrame.setTemperature_Actual(u8Temp);
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.print("Conventional thermostat mode: tActual = "); DebugPort.println(u8Temp); 
+          DebugPort.printf("Conventional thermostat mode: tActual = %d\r\n", u8Temp); 
 #endif
           break;
 
@@ -165,7 +165,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           }
           m_TxFrame.setTemperature_Actual(u8Temp);  
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.print("Heater controlled windowed thermostat mode: tActual = "); DebugPort.println(u8Temp); 
+          DebugPort.printf("Heater controlled windowed thermostat mode: tActual=%d\r\n", u8Temp); 
 #endif
           break;
 
@@ -175,7 +175,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           // so create a desired "temp" according the the current hystersis
           tDelta /= Window;  // convert tDelta to fraction of window (CAUTION - may be > +-1 !)
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.print("Linear window thermostat mode: Fraction = "); DebugPort.print(tDelta);
+          DebugPort.printf("Linear window thermostat mode: Fraction=%f", tDelta);
 #endif
           fTemp = (m_TxFrame.getTemperature_Max() + m_TxFrame.getTemperature_Min()) * 0.5;  // midpoint - tDelta = 0 hinges here
           tDelta *= (m_TxFrame.getTemperature_Max() - fTemp);  // linear offset from setpoint
@@ -189,7 +189,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
           m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.print(" tDesired (pseudo Hz demand) = "); DebugPort.println(u8Temp); 
+          DebugPort.printf(" tDesired (pseudo Hz demand) = %d\r\n", u8Temp); 
 #endif
           break;
       }

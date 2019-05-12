@@ -98,3 +98,45 @@ CTimerModerator::reset(int timer)
   } 
 }
 
+bool 
+CStringModerator::shouldSend(const char* name, const char* value) 
+{
+  bool retval = true;
+  std::string sValue = value;
+  auto it = Memory.find(name);
+  if(it != Memory.end()) {
+    retval = it->second != sValue;
+    it->second = sValue;
+  }
+  else {
+    Memory[name] = sValue;
+  }
+  return retval;
+}
+
+bool 
+CStringModerator::addJson(const char* name, const char* value, JsonObject& root) 
+{
+  bool retval;
+  if( retval = shouldSend(name, value) ) {
+	  root.set(name, value);
+  }
+  return retval;
+}
+
+void 
+CStringModerator::reset() 
+{
+ 	for(auto it = Memory.begin(); it != Memory.end(); ++it) {
+    Memory.erase(it);
+  } 
+}
+
+void 
+CStringModerator::reset(const char* name)
+{
+  auto it = Memory.find(name);
+  if(it != Memory.end()) {
+    Memory.erase(it);
+  }
+}

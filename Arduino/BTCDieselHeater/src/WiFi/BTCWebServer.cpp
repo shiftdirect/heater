@@ -90,7 +90,6 @@ void handleBTCRoot() {
 }
 #endif
 
-
 void handleWMConfig() {
 	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
 	DebugPort.println("Starting web portal for wifi config");
@@ -138,6 +137,8 @@ void handleBTCNotFound() {
 	digitalWrite(led, 0);
 }
 
+const char* serverIndex = "<form method='POST' action='/updatenow' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>";
+
 void initWebServer(void) {
 
   
@@ -150,6 +151,44 @@ void initWebServer(void) {
 	server.on("/wmconfig", handleWMConfig);
 	server.on("/resetwifi", handleReset);
 	server.on("/formatspiffs", handleFormat);
+
+  // magical code shaemlessly lifted from Arduino WebUpdate example, slightly modified in paths
+  // this allows pushing new firmware to the ESP via OTA from a WEB BROWSER!
+  //
+  // Initial launch page
+  server.on("/update", HTTP_GET, []() {
+    server.sendHeader("Connection", "close");
+    server.send(200, "text/html", serverIndex);
+  });
+  // actual guts that manages the new firmware upload
+  server.on("/updatenow", HTTP_POST, []() {
+    server.sendHeader("Connection", "close");
+    server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
+    ESP.restart();
+  }, []() {
+    HTTPUpload& upload = server.upload();
+    if (upload.status == UPLOAD_FILE_START) {
+      DebugPort.setDebugOutput(true);
+      DebugPort.printf("Update: %s\n", upload.filename.c_str());
+      if (!Update.begin()) { //start with max available size
+        Update.printError(DebugPort);
+      }
+    } else if (upload.status == UPLOAD_FILE_WRITE) {
+      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+        Update.printError(DebugPort);
+      }
+    } else if (upload.status == UPLOAD_FILE_END) {
+      if (Update.end(true)) { //true to set the size to the current progress
+        DebugPort.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+      } else {
+        Update.printError(DebugPort);
+      }
+      DebugPort.setDebugOutput(false);
+    } else {
+      DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\n", upload.status);
+    }
+  });
+
 #if USE_SPIFFS == 1  
   // NOTE: this serves the default home page, and favicon.ico
   server.onNotFound([]() 
@@ -199,7 +238,7 @@ bool sendWebServerString(const char* Str)
     bTxWebData = true;              // OLED tx data animation flag
     webSocket.broadcastTXT(Str);
     unsigned long tWeb = millis() - tStart;
-//    DebugPort.print("Websend times : "); DebugPort.print(tCon); DebugPort.print(","); DebugPort.println(tWeb); 
+//    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
 		return true;
 	}
   return false;

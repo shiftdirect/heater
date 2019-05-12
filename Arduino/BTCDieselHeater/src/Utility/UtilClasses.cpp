@@ -38,7 +38,7 @@ CommStates::set(eCS eState)
      "BTC_Tx", "HeaterRx2", "HeaterValidate2", "HeaterReport2", "TemperatureRead" 
     };
     if(_State == Idle) DebugPort.println("");  // clear screen
-    DebugPort.print("State:");DebugPort.println(stateNames[_State]);
+    DebugPort.printf("State: %s\r\n", stateNames[_State]);
   }
 }
 

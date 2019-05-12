@@ -62,7 +62,7 @@ public:
   void setDelay(int ms);
   bool delayExpired();
   bool toggleReporting() { _report = !_report; };
-
+  bool isReporting() {return _report != 0;};
 };
 
 
@@ -124,22 +124,18 @@ public:
     refTime = millis(); 
   };
   void report(bool isDelta) {
-    char msg[32];
     if(isDelta) {
       long delta = millis() - prevTime;
-      sprintf(msg, "%+8ldms ", delta);
+      DebugPort.printf("%+8ldms ", delta);
     }
     else {
       prevTime = millis();
-      sprintf(msg, "%8dms ", prevTime - refTime);
+      DebugPort.printf("%8ldms ", prevTime - refTime);
     }
-    DebugPort.print(msg);
   };
   void report() {
-    char msg[32];
     prevTime = millis();
-    sprintf(msg, "%8dms ", prevTime - refTime);
-    DebugPort.print(msg);
+    DebugPort.printf("%8dlms ", prevTime - refTime);
   };
 };
 

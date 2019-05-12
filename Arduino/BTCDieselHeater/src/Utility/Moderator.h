@@ -39,6 +39,15 @@ public:
 	void reset(int channel);
 };
 
+class CStringModerator {
+  std::map<const char*, std::string> Memory;
+public:
+  bool shouldSend(const char* name, const char* value);
+  bool addJson(const char* name, const char* value, JsonObject& root);
+	void reset();
+	void reset(const char* name);
+};
+
 
 template <class T>
 class TModerator {
@@ -79,12 +88,7 @@ template<class T>
 void TModerator<T>::reset() 
 {
  	for(auto it = Memory.begin(); it != Memory.end(); ++it) {
-    if(std::is_pointer<T>::value) {
-      it->second = NULL;
-    }
-    else {
-      it->second = it->second+100;
-    }
+    it->second = it->second+100;
   } 
 }
 
@@ -93,13 +97,8 @@ void TModerator<T>::reset(const char* name)
 {
   auto it = Memory.find(name);
   if(it != Memory.end()) {
-    DebugPort.print("Resetting moderator: \""); DebugPort.print(name); DebugPort.println("\"");
-    if(std::is_pointer<T>::value) {
-      it->second = NULL;
-    }
-    else {
-      it->second = it->second+100;
-    }
+    DebugPort.printf("Resetting moderator: \"%s\"", name);
+    it->second = it->second+100;
   }
 }
 
@@ -107,7 +106,7 @@ class CModerator {
   TModerator<int> iModerator;
   TModerator<float> fModerator;
   TModerator<unsigned char> ucModerator;
-  TModerator<const char*> szModerator;
+  CStringModerator szModerator;
 public:
   // integer values
   bool shouldSend(const char* name, int value) {
