@@ -35,7 +35,22 @@ function init() {
                 case "RunString":
                 document.getElementById(key).innerHTML = heater[key];
                     break;
-                case "PumpFixed":
+				case "MEn":
+					document.getElementById(key).value = heater.[key];
+					break;
+				case "MPort":
+					document.getElementById(key).value = heater.[key];
+					break;
+				case "MHost":
+					document.getElementById(key).value = heater.[key];
+					break;
+				case "MUser":
+					document.getElementById(key).value = heater.[key];
+				case "MPasswd":
+					document.getElementById(key).value = heater.[key];
+					break;
+				
+				case "PumpFixed":
                 case "TempCurrent":
                     document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);
                     break;
@@ -525,6 +540,18 @@ Current Date:<br>
 <br>
 Current Time (24 Hour Format):<br>
 <input type="time" id="curtime"> <input type="button" Value="Set Time" onclick="setcurrenttime()">
+
+<br><br>
+<hr></hr>
+
+<H2>MQTT Settings</H2>
+<DIV><b>Enabled:  </b><input type="checkbox" border-radius="4px" name="MEn" id="MEn"></div>
+<div><b>Host/Server: </b><input type="text" name="MHost" id="MHost" value=""></div>
+<div><b>Port:        </b><input type="text" name="MPort" id="MPort" defaultvalue="1883" value="1883"></div>
+<div><b>Username:    </b><input type="text" name="MUser" id="MUser" value=""></div>
+<div><b>Password:    </b><input type="text" name="MPasswd" id="MPasswd" value=""></div>
+
+<br><br>
 
 <hr></hr>
 <br><br>
