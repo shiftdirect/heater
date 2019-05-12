@@ -32,6 +32,7 @@
   const char* getWifiSTAAddrStr(); 
   const char* getWifiAPMACStr();
   const char* getWifiSTAMACStr();
+
   bool isWifiConnected();
   bool isWifiAP();
   bool isWifiSTA();

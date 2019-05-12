@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -36,20 +36,20 @@ function init() {
                 document.getElementById(key).innerHTML = heater[key];
                     break;
 				case "MEn":
-					document.getElementById(key).value = heater.[key];
+					document.getElementById(key).value = heater[key];
 					break;
 				case "MPort":
-					document.getElementById(key).value = heater.[key];
+					document.getElementById(key).value = heater[key];
 					break;
 				case "MHost":
-					document.getElementById(key).value = heater.[key];
+					document.getElementById(key).value = heater[key];
 					break;
 				case "MUser":
-					document.getElementById(key).value = heater.[key];
-				case "MPasswd":
-					document.getElementById(key).value = heater.[key];
+					document.getElementById(key).value = heater[key];
 					break;
-				
+				case "MPasswd":
+					document.getElementById(key).value = heater[key];
+					break;
 				case "PumpFixed":
                 case "TempCurrent":
                     document.getElementById(key).innerHTML = parseFloat(heater[key]).toFixed(1);
@@ -149,6 +149,18 @@ function setcurrenttime(){
     
 }
 
+function setMQTTDetails(){
+	var cmd = {};
+	cmd.MEn = document.getElementById("MEn").value;
+	sendJSONobject(cmd);
+	cmd.MHost = document.getElementById("MHost").value;
+	sendJSONobject(cmd);
+	cmd.MPasswd = document.getElementById("MPasswd").value;
+	sendJSONobject(cmd);
+	cmd.MUser = document.getElementById("MUser").value;
+	sendJSONobject(cmd);
+}
+
 function setcurrentdate(){
     var cmd = {};
     cmd.Date =  document.getElementById("curdate").value;
@@ -197,6 +209,8 @@ function funcdispSettings() {
     
     
 }
+
+
 
 function funcdispHome(){
     document.getElementById("Settings").style.display = "none";
@@ -253,6 +267,25 @@ function onSlideDone(newVal, JSONKey) {
     sendJSONobject(cmd);
 }
 
+
+function UpdateMQTTSettings() {
+    var cmd = {};
+    cmd.Time = document.getElementById("MPort").value;
+    sendJSONobject(cmd);
+    var cmd = {};
+    cmd.Time = document.getElementById("MEn").value;
+    sendJSONobject(cmd);
+    var cmd = {};
+    cmd.Time = document.getElementById("MHost").value;
+    sendJSONobject(cmd);
+    var cmd = {};
+    cmd.Time = document.getElementById("MUsername").value;
+    sendJSONobject(cmd);
+    var cmd = {};
+    cmd.Time = document.getElementById("MPasswd").value;
+    sendJSONobject(cmd);
+}
+
 function onSlideUpdate(newVal, JSONKey) {
     //elementid must equal the JSON name for each setting
     
@@ -265,6 +298,17 @@ function SetPumpMin(){
 	cmd.NVsave = 8861;
 	sendJSONobject(cmd);
 }
+
+function funcShowMQTT() {
+    var checkbox = document.getElementById("MEn");
+    if (checkbox.checked == false) {
+        document.getElementById("DIVMPort").style.display = "none";
+    }
+    else {
+        document.getElementById("DIVMPort").style.display = "block";
+    }
+}
+
 
 </script>
 
@@ -455,6 +499,8 @@ display: none
 display: none
 }
 
+#DIVMPort {
+display: none
 }
 
 </style>
@@ -533,7 +579,7 @@ display: none
 </div>
 
 
-<Div id="Settings">
+ <div id="Settings">
 Current Date:<br>
 <input type="date" id="curdate"><input type="button" Value="Set Date" onclick="setcurrentdate()">
 
@@ -545,19 +591,23 @@ Current Time (24 Hour Format):<br>
 <hr></hr>
 
 <H2>MQTT Settings</H2>
-<DIV><b>Enabled:  </b><input type="checkbox" border-radius="4px" name="MEn" id="MEn"></div>
-<div><b>Host/Server: </b><input type="text" name="MHost" id="MHost" value=""></div>
-<div><b>Port:        </b><input type="text" name="MPort" id="MPort" defaultvalue="1883" value="1883"></div>
-<div><b>Username:    </b><input type="text" name="MUser" id="MUser" value=""></div>
-<div><b>Password:    </b><input type="text" name="MPasswd" id="MPasswd" value=""></div>
-
+<b>Enabled:  </b><input type="checkbox" border-radius="4px" name="MEn" id="MEn" onclick="funcShowMQTT()">
+<div id="DIVMPort">
+<b>Host/Server: </b><input type="text" name="MHost" id="MHost" value=""></br>
+<b>Port:        </b><input type="text" name="MPort" id="MPort" defaultvalue="1883" value="1883"></br>
+<b>Username:    </b><input type="text" name="MUser" id="MUser" value=""></br>
+<b>Password:    </b><input type="text" name="MPasswd" id="MPasswd" value=""></br></br>
+<input type="button" name="mqttsubmit" value="Save/Update Settings" onclick="UpdateMQTTSettings()">
+</div>
 <br><br>
 
 <hr></hr>
 <br><br>
+    <div id="Timer"
 Timer1: <input type="checkbox" border-radius="4px" name="Timer" id="Timer1onoff"> <input type="text" class="schedule" id="Timer1Start">  <input type="text" id="Timer1End"> <br>
 Timer2: <input type="checkbox" border-radius="4px" name="Tue">  <input type="text" class="schedule" id="Timer2Start">    <input type="text" id="Timer2End"><br>
 <input type="button" Value="Save Schedule" onclick="setSchedule()">
 </Div>
+</div>
 </body>
 </html> 

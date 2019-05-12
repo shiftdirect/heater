@@ -85,6 +85,7 @@
   This example code is in the public domain.
 */
 
+#include "src/WiFi/ABMqtt.h"
 #include <OneWire.h>
 #include <Wire.h>
 #include "src/cfg/BTCConfig.h"
