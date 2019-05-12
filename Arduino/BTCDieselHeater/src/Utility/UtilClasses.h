@@ -91,7 +91,7 @@ public:
 
 // a class to collect rx bytes into a string, typ. until a line terminator (handled elsewhere)
 struct sRxLine {
-  char Line[64];
+  char Line[1024];
   int  Len;
   sRxLine() {
     clear();

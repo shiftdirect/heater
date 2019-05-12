@@ -149,12 +149,11 @@ function setcurrenttime(){
     
 }
 
+/*
 function setMQTTDetails(){
-  console.log("setMQTTDetails");
 	var cmd = {};
-	cmd.MEn = document.getElementById("MEn").value;
+	cmd.MEn = document.getElementById("MEn").checked ? 1 : 0;
 	sendJSONobject(cmd);
-  console.log(cmd);
 	cmd.MHost = document.getElementById("MHost").value;
 	sendJSONobject(cmd);
 	cmd.MPasswd = document.getElementById("MPasswd").value;
@@ -162,12 +161,12 @@ function setMQTTDetails(){
 	cmd.MUser = document.getElementById("MUser").value;
 	sendJSONobject(cmd);
 }
+*/
 
 function setcurrentdate(){
     var cmd = {};
     cmd.Date =  document.getElementById("curdate").value;
     sendJSONobject(cmd);
-    
 }
 
 function funcNavLinks() {
@@ -273,17 +272,9 @@ function onSlideDone(newVal, JSONKey) {
 function UpdateMQTTSettings() {
     var cmd = {};
     cmd.MPort = document.getElementById("MPort").value;
-    sendJSONobject(cmd);
-    var cmd = {};
     cmd.MEn = document.getElementById("MEn").checked ? 1 : 0;
-    sendJSONobject(cmd);
-    var cmd = {};
     cmd.MHost = document.getElementById("MHost").value;
-    sendJSONobject(cmd);
-    var cmd = {};
     cmd.MUser = document.getElementById("MUser").value;
-    sendJSONobject(cmd);
-    var cmd = {};
     cmd.MPasswd = document.getElementById("MPasswd").value;
     sendJSONobject(cmd);
     var cmd = {};
