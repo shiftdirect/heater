@@ -98,30 +98,32 @@ CTimerModerator::reset(int timer)
   } 
 }
 
-bool 
+
+const char* 
 CStringModerator::shouldSend(const char* name, const char* value) 
 {
-  bool retval = true;
   std::string sValue = value;
   auto it = Memory.find(name);
   if(it != Memory.end()) {
-    retval = it->second != sValue;
+    if(it->second == sValue)
+      return NULL;    // unchanged
     it->second = sValue;
+    return it->second.c_str();
   }
   else {
-    Memory[name] = sValue;
+    return (Memory[name] = sValue).c_str();
   }
-  return retval;
 }
 
 bool 
 CStringModerator::addJson(const char* name, const char* value, JsonObject& root) 
 {
-  bool retval;
-  if( retval = shouldSend(name, value) ) {
-	  root.set(name, value);
+  const char* toSend = shouldSend(name, value);  // returns pointer to mapped value - persistent!!!!
+  if(toSend) {
+    root.set(name, toSend);  // use std::string held in this class's Memory - can trust this is persistent!
+    return true;
   }
-  return retval;
+  return false;
 }
 
 void 

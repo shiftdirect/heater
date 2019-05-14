@@ -34,6 +34,8 @@
 #include <SPIFFS.h>
 #endif
 
+extern void ShowOTAScreen(int percent=0);
+
 extern WiFiManager wm;
 
 WebServer server(80);
@@ -41,6 +43,7 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
+bool bUpdateAccessed = false;  // flag used to ensure web update always starts via /update. direct accesses to /updatenow will FAIL
 
 const int led = 13;
 
@@ -138,9 +141,29 @@ void handleBTCNotFound() {
 }
 
 const char* serverIndex = "<form method='POST' action='/updatenow' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>";
+const char* rootIndex = R"=====(
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>HTML Meta Tag</title>
+      <meta http-equiv = "refresh" content = "0; url = /" />
+   </head>
+   <body>
+      <p>Redirecting to root URL</p>
+   </body>
+</html>
+)=====";
 
 void initWebServer(void) {
 
+  Update
+  .onProgress([](unsigned int progress, unsigned int total) {
+    int percent = (progress / (total / 100));
+		DebugPort.printf("Progress: %u%%\r", percent);
+    DebugPort.handle();    // keep telnet spy alive
+    ShowOTAScreen(percent);
+
+	});
   
 	if (MDNS.begin("BTCHeater")) {
 		DebugPort.println("MDNS responder started");
@@ -152,40 +175,66 @@ void initWebServer(void) {
 	server.on("/resetwifi", handleReset);
 	server.on("/formatspiffs", handleFormat);
 
+  server.on("/tst", HTTP_GET, []() {
+    server.sendHeader("Connection", "close");
+    server.send(200, "text/html", rootIndex);
+  });
   // magical code shaemlessly lifted from Arduino WebUpdate example, slightly modified in paths
   // this allows pushing new firmware to the ESP via OTA from a WEB BROWSER!
+  // added authentication and a sequencing flag to ensure this is not bypassed
   //
   // Initial launch page
   server.on("/update", HTTP_GET, []() {
+    if (!server.authenticate("ray", "PW")) {
+      return server.requestAuthentication();
+    }
+    bUpdateAccessed = true;
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", serverIndex);
+  });
+  server.on("/updatenow", HTTP_GET, []() {  // handle attempts to just browse the /updatenow path - force redirect to root
+    server.sendHeader("Connection", "close");
+    server.send(200, "text/html", rootIndex);
   });
   // actual guts that manages the new firmware upload
   server.on("/updatenow", HTTP_POST, []() {
     server.sendHeader("Connection", "close");
-    server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-    ESP.restart();
+    server.send(200, "text/plain", (Update.hasError()) ? "FAIL - Afterburner will reboot shortly" : "OK - Afterburner will reboot shortly");
+    delay(1000);
+    server.sendHeader("Connection", "close");
+    server.send(200, "text/html", rootIndex);  // req browser to redirect to root
+    delay(100);
+    ESP.restart();                             // reboot
   }, []() {
-    HTTPUpload& upload = server.upload();
-    if (upload.status == UPLOAD_FILE_START) {
-      DebugPort.setDebugOutput(true);
-      DebugPort.printf("Update: %s\n", upload.filename.c_str());
-      if (!Update.begin()) { //start with max available size
-        Update.printError(DebugPort);
-      }
-    } else if (upload.status == UPLOAD_FILE_WRITE) {
-      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-        Update.printError(DebugPort);
-      }
-    } else if (upload.status == UPLOAD_FILE_END) {
-      if (Update.end(true)) { //true to set the size to the current progress
-        DebugPort.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+    if(bUpdateAccessed) {  // only allow progression via /update, directly accessing /updatenow will fail
+      HTTPUpload& upload = server.upload();
+      if (upload.status == UPLOAD_FILE_START) {
+        DebugPort.setDebugOutput(true);
+        DebugPort.printf("Update: %s\n", upload.filename.c_str());
+        if (!Update.begin()) { //start with max available size
+          Update.printError(DebugPort);
+        }
+      } else if (upload.status == UPLOAD_FILE_WRITE) {
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+          Update.printError(DebugPort);
+        }
+      } else if (upload.status == UPLOAD_FILE_END) {
+        if (Update.end(true)) { //true to set the size to the current progress
+          DebugPort.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+        } else {
+          Update.printError(DebugPort);
+        }
+        DebugPort.setDebugOutput(false);
+        bUpdateAccessed = false;
       } else {
-        Update.printError(DebugPort);
+        DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\n", upload.status);
+        bUpdateAccessed = false;
       }
-      DebugPort.setDebugOutput(false);
-    } else {
-      DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\n", upload.status);
+    }
+    else {
+      server.sendHeader("Connection", "close");  // attempt to POST without using /update - force redirect to root
+      server.send(200, "text/html", rootIndex);
+      bUpdateAccessed = false;
     }
   });
 

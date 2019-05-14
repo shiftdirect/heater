@@ -293,7 +293,7 @@ bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
 	bool bSend = false;  // reset should send flag
-  const sMQTTparams& info = NVstore.getMQTTinfo();
+  sMQTTparams info = NVstore.getMQTTinfo();
 
   bSend |= moderator.addJson("MEn", info.enabled, root); 
   bSend |= moderator.addJson("MPort", info.port, root); 

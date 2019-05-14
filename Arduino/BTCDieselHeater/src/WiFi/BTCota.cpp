@@ -38,7 +38,8 @@ void hard_restart() {
 
 void initOTA(){
 	// ArduinoOTA.setHostname("myesp32");
-	ArduinoOTA.setHostname("BTCOTA");
+	ArduinoOTA.setHostname("AfterburnerOTA");
+//  ArduinoOTA.setPassword("TESTO123");
 
 	ArduinoOTA
 		.onStart([]() {

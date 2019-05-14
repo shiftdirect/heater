@@ -39,10 +39,11 @@ public:
 	void reset(int channel);
 };
 
+
 class CStringModerator {
   std::map<const char*, std::string> Memory;
 public:
-  bool shouldSend(const char* name, const char* value);
+  const char* shouldSend(const char* name, const char* value);
   bool addJson(const char* name, const char* value, JsonObject& root);
 	void reset();
 	void reset(const char* name);
@@ -109,30 +110,18 @@ class CModerator {
   CStringModerator szModerator;
 public:
   // integer values
-  bool shouldSend(const char* name, int value) {
-    return iModerator.shouldSend(name, value);
-  };
   bool addJson(const char* name, int value, JsonObject& root) { 
     return iModerator.addJson(name, value, root); 
   };
   // float values
-  bool shouldSend(const char* name, float value) {
-    return fModerator.shouldSend(name, value);
-  };
   bool addJson(const char* name, float value, JsonObject& root) { 
     return fModerator.addJson(name, value, root); 
   };
   // unsigned char values
-  bool shouldSend(const char* name, unsigned char value) {
-    return ucModerator.shouldSend(name, value);
-  };
   bool addJson(const char* name, unsigned char value, JsonObject& root) { 
     return ucModerator.addJson(name, value, root); 
   };
   // const char* values
-  bool shouldSend(const char* name, const char* value) {
-    return szModerator.shouldSend(name, value);
-  };
   bool addJson(const char* name, const char* value, JsonObject& root) { 
     return szModerator.addJson(name, value, root); 
   };
