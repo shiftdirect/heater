@@ -491,13 +491,16 @@ CScreenManager::showRebootMsg(const char* content[2], long delayTime)
 }
 
 void 
-CScreenManager::showOTAMessage(int percent)
+CScreenManager::showOTAMessage(int percent, bool webupdate)
 {
   static int prevPercent = -1;
   if(percent != prevPercent) {
     _pDisplay->clearDisplay();
     _pDisplay->setCursor(64,22);
-    _pDisplay->printCentreJustified("OTA update active");
+    if(webupdate)
+      _pDisplay->printCentreJustified("Web update active");
+    else
+      _pDisplay->printCentreJustified("OTA update active");
     if(percent) {
       char msg[16];
       sprintf(msg, "%d%%", percent);

@@ -20,7 +20,7 @@ function init() {
                         document.getElementById("myonoffswitch").checked = false;
                         document.getElementById("myonoffswitch").style = "block";
                         document.getElementById("onoffswitch").style.visibility = "visible";
-                    } else if(heater[key] >= 7) {
+                    } else if(heater[key] >= 7 && heater[key] <= 8) {  // new runstates 9+ for heat plug & suspend mode
                         document.getElementById("myonoffswitch").checked = false;
                         document.getElementById("myonoffswitch").style = "none";
                         document.getElementById("onoffswitch").style.visibility = "hidden";

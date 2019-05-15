@@ -66,7 +66,7 @@ public:
   void reqUpdate();
   void selectMenu(eUIMenuSets menuset, int specific = -1);   // use to select loop menus, including the root or branches
   void showRebootMsg(const char* content[2], long delayTime);
-  void showOTAMessage(int percent);
+  void showOTAMessage(int percent, bool webupdate);
 };
 
 #endif // __SCREEN_MANAGER_H__

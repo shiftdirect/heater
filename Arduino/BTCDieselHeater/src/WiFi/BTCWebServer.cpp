@@ -34,7 +34,7 @@
 #include <SPIFFS.h>
 #endif
 
-extern void ShowOTAScreen(int percent=0);
+extern void ShowOTAScreen(int percent=0, bool webpdate=false);
 
 extern WiFiManager wm;
 
@@ -140,7 +140,13 @@ void handleBTCNotFound() {
 	digitalWrite(led, 0);
 }
 
-const char* serverIndex = "<form method='POST' action='/updatenow' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>";
+const char* serverIndex = R"=====(
+  <style>body {font-family: Arial, Helvetica, sans-serif;}</style>
+  <title>Afterburner firmware update</title>
+  <h1>Afterburner firmware update</h1>
+  <form method='POST' action='/updatenow' enctype='multipart/form-data'><input type='file' name='update'><BR><BR><input type='submit' value='Update'> <input type='button' onclick=window.location.assign('/') value='Cancel'></form>
+)=====";
+
 const char* rootIndex = R"=====(
 <!DOCTYPE html>
 <html>
@@ -161,11 +167,11 @@ void initWebServer(void) {
     int percent = (progress / (total / 100));
 		DebugPort.printf("Progress: %u%%\r", percent);
     DebugPort.handle();    // keep telnet spy alive
-    ShowOTAScreen(percent);
+    ShowOTAScreen(percent, true);
 
 	});
   
-	if (MDNS.begin("BTCHeater")) {
+	if (MDNS.begin("Afterburner")) {
 		DebugPort.println("MDNS responder started");
 	}
 	
@@ -179,8 +185,8 @@ void initWebServer(void) {
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", rootIndex);
   });
-  // magical code shaemlessly lifted from Arduino WebUpdate example, slightly modified in paths
-  // this allows pushing new firmware to the ESP via OTA from a WEB BROWSER!
+  // magical code shamelessly lifted from Arduino WebUpdate example, modified
+  // this allows pushing new firmware to the ESP from a WEB BROWSER!
   // added authentication and a sequencing flag to ensure this is not bypassed
   //
   // Initial launch page
@@ -198,36 +204,44 @@ void initWebServer(void) {
   });
   // actual guts that manages the new firmware upload
   server.on("/updatenow", HTTP_POST, []() {
+    // completion functionality
     server.sendHeader("Connection", "close");
     server.send(200, "text/plain", (Update.hasError()) ? "FAIL - Afterburner will reboot shortly" : "OK - Afterburner will reboot shortly");
     delay(1000);
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", rootIndex);  // req browser to redirect to root
-    delay(100);
+    delay(1000);
     ESP.restart();                             // reboot
   }, []() {
     if(bUpdateAccessed) {  // only allow progression via /update, directly accessing /updatenow will fail
       HTTPUpload& upload = server.upload();
       if (upload.status == UPLOAD_FILE_START) {
         DebugPort.setDebugOutput(true);
-        DebugPort.printf("Update: %s\n", upload.filename.c_str());
+        DebugPort.printf("Update: %s\r\n", upload.filename.c_str());
         if (!Update.begin()) { //start with max available size
           Update.printError(DebugPort);
         }
       } else if (upload.status == UPLOAD_FILE_WRITE) {
+        DebugPort.print(".");
+//        server.sendHeader("Connection", "close");
+//        char web[128];
+//        int progress = upload.currentSize / upload.totalSize;
+//        sprintf(web, "<progress id=\"file\" max=\"100\" value=\"%d\" </progress>", progress);
+//        server.send(200, "text/html", web);
+//        server.send(200, "text/plain", ".");
         if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
           Update.printError(DebugPort);
         }
       } else if (upload.status == UPLOAD_FILE_END) {
         if (Update.end(true)) { //true to set the size to the current progress
-          DebugPort.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+          DebugPort.printf("Update Success: %u\r\nRebooting...\r\n", upload.totalSize);
         } else {
           Update.printError(DebugPort);
         }
         DebugPort.setDebugOutput(false);
         bUpdateAccessed = false;
       } else {
-        DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\n", upload.status);
+        DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\r\n", upload.status);
         bUpdateAccessed = false;
       }
     }

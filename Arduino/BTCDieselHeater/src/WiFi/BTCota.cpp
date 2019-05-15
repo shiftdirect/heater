@@ -24,7 +24,7 @@
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif
-extern void ShowOTAScreen(int percent=0);
+extern void ShowOTAScreen(int percent=0, bool webpdate=false);
 
 
 #include <esp_int_wdt.h>
