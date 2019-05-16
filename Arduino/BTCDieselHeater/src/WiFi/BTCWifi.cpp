@@ -245,6 +245,13 @@ void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay)
   ScreenManager.showRebootMsg(content, rebootDelay);
 }
 
+void wifiFactoryDefault()
+{
+  wm.resetSettings();
+  prepBootIntoConfigPortal(false);
+  NVstore.setWifiEnabled(1); 
+}
+
 // callback is invoked by WiFiManager after new credentials are saved and verified
 void saveParamsCallback() 
 {

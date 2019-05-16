@@ -24,38 +24,36 @@
 #include "DebugPort.h"
 #include <driver/adc.h>
 
-bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
-bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim);
-bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2);
-bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
-bool s32inBounds(long test, long minLim, long maxLim);
-bool thermoMethodinBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
 
 bool 
 sNVStore::valid()
 {
   bool retval = true;
+  retval &= Heater.valid();
   retval &= Options.valid();
   for(int i=0; i<2; i++) {
     retval &= timer[i].valid();
   }
-  retval &= Heater.valid();
+  retval &= MQTT.valid();
+  retval &= Credentials.valid();
   return retval;  
 }
 
 void 
 sNVStore::init()
 {
+  Heater.init();
+  Options.init();
   for(int i=0; i<2; i++) {
     timer[i].init();
   }
-  Options.init();
-  Heater.init();
+  MQTT.init();
+  Credentials.init();
 }
 
 CHeaterStorage::CHeaterStorage()
 {
-  _calValues.Heater.init();
+  _calValues.init();
 }
 
 float
@@ -388,6 +386,19 @@ CHeaterStorage::setMQTTinfo(const sMQTTparams& info)
   _calValues.MQTT = info;
 }
 
+// credentials read/save
+const sCredentials& 
+CHeaterStorage::getCredentials() const
+{
+  return _calValues.Credentials;
+}
+
+void
+CHeaterStorage::setCredentials(const sCredentials& info)
+{
+  _calValues.Credentials = info;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
@@ -396,6 +407,7 @@ CHeaterStorage::setMQTTinfo(const sMQTTparams& info)
 
 CESP32HeaterStorage::CESP32HeaterStorage()
 {
+  init();
 }
 
 CESP32HeaterStorage::~CESP32HeaterStorage()
@@ -405,262 +417,212 @@ CESP32HeaterStorage::~CESP32HeaterStorage()
 void
 CESP32HeaterStorage::init()
 {
+  for(int i=0; i<14; i++) {
+    _calValues.timer[i].timerID = i;   // each instance needs a unique ID
+  }
 }
 
 void 
 CESP32HeaterStorage::load()
 {
   DebugPort.println("Reading from NV storage");
-  loadHeater();
+  _calValues.Heater.load();
   for(int i=0; i<14; i++) {
-    loadTimer(i);
+    _calValues.timer[i].load();
   }
-  loadUI();
-  loadMQTT();
+  _calValues.Options.load();
+  _calValues.MQTT.load();
+  _calValues.Credentials.load();
 }
 
 void 
 CESP32HeaterStorage::save()
 {
   DebugPort.println("Saving to NV storage");
-  saveHeater();
+  _calValues.Heater.save();
   for(int i=0; i<14; i++) {
-    saveTimer(i);
+    _calValues.timer[i].save();
   }
-  saveUI();
-  saveMQTT();
+  _calValues.Options.save();
+  _calValues.MQTT.save();
+  _calValues.Credentials.save();
 }
 
-// **** MAX LENGTH is 15 for name and values ****
 void 
-CESP32HeaterStorage::loadHeater()
+sHeater::load()
 {
   // section for heater calibration params
+  // **** MAX LENGTH is 15 for names ****
   preferences.begin("Calibration", false);
-  validatedLoad("minPump", _calValues.Heater.Pmin, 14, u8inBounds, 4, 100);
-  validatedLoad("maxPump", _calValues.Heater.Pmax, 45, u8inBounds, 4, 150);
-  validatedLoad("minFan", _calValues.Heater.Fmin, 1500, u16inBounds, 100, 5000);
-  validatedLoad("maxFan", _calValues.Heater.Fmax, 4500, u16inBounds, 100, 6000);
-  validatedLoad("thermostat", _calValues.Heater.ThermostatMode, 1, u8inBounds, 0, 1);
-  validatedLoad("setTemperature", _calValues.Heater.setTemperature, 22, u8inBounds, 0, 40);
-  validatedLoad("systemVoltage", _calValues.Heater.sysVoltage, 120, u8Match2, 120, 240);
-  validatedLoad("fanSensor", _calValues.Heater.fanSensor, 1, u8inBounds, 1, 2);
-  validatedLoad("glowDrive", _calValues.Heater.glowDrive, 5, u8inBounds, 1, 6);
+  validatedLoad("minPump", Pmin, 14, u8inBounds, 4, 100);
+  validatedLoad("maxPump", Pmax, 45, u8inBounds, 4, 150);
+  validatedLoad("minFan", Fmin, 1500, u16inBounds, 100, 5000);
+  validatedLoad("maxFan", Fmax, 4500, u16inBounds, 100, 6000);
+  validatedLoad("thermostat", ThermostatMode, 1, u8inBounds, 0, 1);
+  validatedLoad("setTemperature", setTemperature, 22, u8inBounds, 0, 40);
+  validatedLoad("systemVoltage", sysVoltage, 120, u8Match2, 120, 240);
+  validatedLoad("fanSensor", fanSensor, 1, u8inBounds, 1, 2);
+  validatedLoad("glowDrive", glowDrive, 5, u8inBounds, 1, 6);
   preferences.end();    
 }
 
-// **** MAX LENGTH is 15 for name and values ****
 void 
-CESP32HeaterStorage::saveHeater()
+sHeater::save()
 {
   // section for heater calibration params
+  // **** MAX LENGTH is 15 for names ****
   preferences.begin("Calibration", false);
-  preferences.putUChar("minPump", _calValues.Heater.Pmin);
-  preferences.putUChar("maxPump", _calValues.Heater.Pmax);
-  preferences.putUShort("minFan", _calValues.Heater.Fmin);
-  preferences.putUShort("maxFan", _calValues.Heater.Fmax);
-  preferences.putUChar("thermostat", _calValues.Heater.ThermostatMode);
-  preferences.putUChar("setTemperature", _calValues.Heater.setTemperature);
-  preferences.putUChar("systemVoltage", _calValues.Heater.sysVoltage);
-  preferences.putUChar("fanSensor", _calValues.Heater.fanSensor);
-  preferences.putUChar("glowDrive", _calValues.Heater.glowDrive);
+  preferences.putUChar("minPump", Pmin);
+  preferences.putUChar("maxPump", Pmax);
+  preferences.putUShort("minFan", Fmin);
+  preferences.putUShort("maxFan", Fmax);
+  preferences.putUChar("thermostat", ThermostatMode);
+  preferences.putUChar("setTemperature", setTemperature);
+  preferences.putUChar("systemVoltage", sysVoltage);
+  preferences.putUChar("fanSensor", fanSensor);
+  preferences.putUChar("glowDrive", glowDrive);
   preferences.end();    
 }
 
-// **** MAX LENGTH is 15 for name and values ****
 void 
-CESP32HeaterStorage::loadTimer(int idx) 
+sTimer::load() 
 {
-  sTimer& timer = _calValues.timer[idx];
-  timer.timerID = idx;
+  // **** MAX LENGTH is 15 for names ****
   char SectionName[16];
-  sprintf(SectionName, "timer%d", idx+1);
+  sprintf(SectionName, "timer%d", timerID+1);
   preferences.begin(SectionName, false);
-  validatedLoad("startHour", timer.start.hour, 0, s8inBounds, 0, 23);
-  validatedLoad("startMin", timer.start.min, 0, s8inBounds, 0, 59);
-  validatedLoad("stopHour", timer.stop.hour, 0, s8inBounds, 0, 23);
-  validatedLoad("stopMin", timer.stop.min, 0, s8inBounds, 0, 59);
-  validatedLoad("enabled", timer.enabled, 0, u8inBounds, 0, 255);  // all 8 bits used!
-  validatedLoad("repeat", timer.repeat, 0, u8inBounds, 0, 1);
-  validatedLoad("temperature", timer.temperature, 22, u8inBounds, 8, 35);
+  validatedLoad("startHour", start.hour, 0, s8inBounds, 0, 23);
+  validatedLoad("startMin", start.min, 0, s8inBounds, 0, 59);
+  validatedLoad("stopHour", stop.hour, 0, s8inBounds, 0, 23);
+  validatedLoad("stopMin", stop.min, 0, s8inBounds, 0, 59);
+  validatedLoad("enabled", enabled, 0, u8inBounds, 0, 255);  // all 8 bits used!
+  validatedLoad("repeat", repeat, 0, u8inBounds, 0, 1);
+  validatedLoad("temperature", temperature, 22, u8inBounds, 8, 35);
   preferences.end();    
 }
 
-// **** MAX LENGTH is 15 for name and values ****
 void 
-CESP32HeaterStorage::saveTimer(int idx) 
+sTimer::save() 
 {
-  sTimer& timer = _calValues.timer[idx];
+  // **** MAX LENGTH is 15 for names ****
   char SectionName[16];
-  sprintf(SectionName, "timer%d", idx+1);
+  sprintf(SectionName, "timer%d", timerID+1);
   preferences.begin(SectionName, false);
-  preferences.putChar("startHour", timer.start.hour);
-  preferences.putChar("startMin", timer.start.min);
-  preferences.putChar("stopHour", timer.stop.hour);
-  preferences.putChar("stopMin", timer.stop.min);
-  preferences.putUChar("enabled", timer.enabled);
-  preferences.putUChar("repeat", timer.repeat);
-  preferences.putUChar("temperature", timer.temperature);
+  preferences.putChar("startHour", start.hour);
+  preferences.putChar("startMin", start.min);
+  preferences.putChar("stopHour", stop.hour);
+  preferences.putChar("stopMin", stop.min);
+  preferences.putUChar("enabled", enabled);
+  preferences.putUChar("repeat", repeat);
+  preferences.putUChar("temperature", temperature);
   preferences.end();    
 }
 
-// **** MAX LENGTH is 15 for name and values ****
 void 
-CESP32HeaterStorage::loadUI()
+sBTCoptions::load()
 {
+  // **** MAX LENGTH is 15 for names ****
   preferences.begin("user", false);
-  validatedLoad("dimTime", _calValues.Options.dimTime, 60000, s32inBounds, -600000, 600000);
-  validatedLoad("menuTimeout", _calValues.Options.menuTimeout, 60000, s32inBounds, 0, 300000);
-  validatedLoad("degF", _calValues.Options.degF, 0, u8inBounds, 0, 1);
-  validatedLoad("thermoMethod", _calValues.Options.ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
-  validatedLoad("enableWifi", _calValues.Options.enableWifi, 1, u8inBounds, 0, 1);
-  validatedLoad("enableOTA", _calValues.Options.enableOTA, 1, u8inBounds, 0, 1);
-  validatedLoad("cyclicStop", _calValues.Options.cyclic.Stop, 0, s8inBounds, 0, 10);
-  validatedLoad("cyclicStart", _calValues.Options.cyclic.Start, -1, s8inBounds, -20, 0);
-  validatedLoad("GPIOinMode", _calValues.Options.GPIOinMode, 0, u8inBounds, 0, 3);
-  validatedLoad("GPIOoutMode", _calValues.Options.GPIOoutMode, 0, u8inBounds, 0, 2);
-  validatedLoad("GPIOalgMode", _calValues.Options.GPIOalgMode, 0, u8inBounds, 0, 2);
-  validatedLoad("MenuonTimeout", _calValues.Options.HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
-  validatedLoad("MenuonStart", _calValues.Options.HomeMenu.onStart, 0, u8inBounds, 0, 3);
-  validatedLoad("MenuonStop", _calValues.Options.HomeMenu.onStop, 0, u8inBounds, 0, 3);
-  validatedLoad("FrameRate", _calValues.Options.FrameRate, 1000, u16inBounds, 300, 1500);
+  validatedLoad("dimTime", dimTime, 60000, s32inBounds, -600000, 600000);
+  validatedLoad("menuTimeout", menuTimeout, 60000, s32inBounds, 0, 300000);
+  validatedLoad("degF", degF, 0, u8inBounds, 0, 1);
+  validatedLoad("thermoMethod", ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
+  validatedLoad("enableWifi", enableWifi, 1, u8inBounds, 0, 1);
+  validatedLoad("enableOTA", enableOTA, 1, u8inBounds, 0, 1);
+  validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
+  validatedLoad("cyclicStart", cyclic.Start, -1, s8inBounds, -20, 0);
+  validatedLoad("GPIOinMode", GPIOinMode, 0, u8inBounds, 0, 3);
+  validatedLoad("GPIOoutMode", GPIOoutMode, 0, u8inBounds, 0, 2);
+  validatedLoad("GPIOalgMode", GPIOalgMode, 0, u8inBounds, 0, 2);
+  validatedLoad("MenuonTimeout", HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
+  validatedLoad("MenuonStart", HomeMenu.onStart, 0, u8inBounds, 0, 3);
+  validatedLoad("MenuonStop", HomeMenu.onStop, 0, u8inBounds, 0, 3);
+  validatedLoad("FrameRate", FrameRate, 1000, u16inBounds, 300, 1500);
   preferences.end();    
 }
 
 void 
-CESP32HeaterStorage::saveUI()
+sBTCoptions::save()
 {
+  // **** MAX LENGTH is 15 for names ****
   preferences.begin("user", false);
-  preferences.putLong("dimTime", _calValues.Options.dimTime);
-  preferences.putLong("menuTimeout", _calValues.Options.menuTimeout);
-  preferences.putUChar("degF", _calValues.Options.degF);
-  preferences.putUChar("thermoMethod", _calValues.Options.ThermostatMethod);
-  preferences.putUChar("enableWifi", _calValues.Options.enableWifi);
-  preferences.putUChar("enableOTA", _calValues.Options.enableOTA);
-  preferences.putChar("cyclicStop", _calValues.Options.cyclic.Stop);
-  preferences.putChar("cyclicStart", _calValues.Options.cyclic.Start);  
-  preferences.putUChar("GPIOinMode", _calValues.Options.GPIOinMode);
-  preferences.putUChar("GPIOoutMode", _calValues.Options.GPIOoutMode);
-  preferences.putUChar("GPIOalgMode", _calValues.Options.GPIOalgMode);
-  preferences.putUChar("MenuOnTimeout", _calValues.Options.HomeMenu.onTimeout);
-  preferences.putUChar("MenuonStart", _calValues.Options.HomeMenu.onStart);
-  preferences.putUChar("MenuonStop", _calValues.Options.HomeMenu.onStop);
-  preferences.putUShort("FrameRate", _calValues.Options.FrameRate);
+  preferences.putLong("dimTime", dimTime);
+  preferences.putLong("menuTimeout", menuTimeout);
+  preferences.putUChar("degF", degF);
+  preferences.putUChar("thermoMethod", ThermostatMethod);
+  preferences.putUChar("enableWifi", enableWifi);
+  preferences.putUChar("enableOTA", enableOTA);
+  preferences.putChar("cyclicStop", cyclic.Stop);
+  preferences.putChar("cyclicStart",cyclic.Start);  
+  preferences.putUChar("GPIOinMode", GPIOinMode);
+  preferences.putUChar("GPIOoutMode", GPIOoutMode);
+  preferences.putUChar("GPIOalgMode", GPIOalgMode);
+  preferences.putUChar("MenuOnTimeout", HomeMenu.onTimeout);
+  preferences.putUChar("MenuonStart", HomeMenu.onStart);
+  preferences.putUChar("MenuonStop", HomeMenu.onStop);
+  preferences.putUShort("FrameRate", FrameRate);
   preferences.end();    
 }
 
 void 
-CESP32HeaterStorage::loadMQTT()
+sMQTTparams::load()
 {
+  // **** MAX LENGTH is 15 for names ****
   preferences.begin("mqtt", false);
-  validatedLoad("enabled", _calValues.MQTT.enabled, 0, u8inBounds, 0, 1);
-  validatedLoad("port", _calValues.MQTT.port, 0, u16inBounds, 0, 0xffff);
-  preferences.getString("host", _calValues.MQTT.host, 127);
-  preferences.getString("username", _calValues.MQTT.username, 31);
-  preferences.getString("password", _calValues.MQTT.password, 31);
+  validatedLoad("enabled", enabled, 0, u8inBounds, 0, 1);
+  validatedLoad("port", port, 0, u16inBounds, 0, 0xffff);
+  validatedLoad("host", host, 127, "hostIP");
+  validatedLoad("username", username, 31, "username");
+  validatedLoad("password", password, 31, "password");
   preferences.end();    
 }
 
 void 
-CESP32HeaterStorage::saveMQTT()
+sMQTTparams::save()
 {
+  // **** MAX LENGTH is 15 for names ****
   preferences.begin("mqtt", false);
-  preferences.putUChar("enabled", _calValues.MQTT.enabled);
-  preferences.putUShort("port", _calValues.MQTT.port);
-  preferences.putString("host", _calValues.MQTT.host);
-  preferences.putString("username", _calValues.MQTT.username);
-  preferences.putString("password", _calValues.MQTT.password);
+  preferences.putUChar("enabled", enabled);
+  preferences.putUShort("port", port);
+  preferences.putString("host", host);
+  preferences.putString("username", username);
+  preferences.putString("password", password);
   preferences.end();    
 }
 
-bool
-CESP32HeaterStorage::validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask)
+bool 
+sMQTTparams::valid()
 {
-  val = preferences.getUChar(key, defVal);
-  if(!validator(val & mask, min, max)) {
-
-    DebugPort.printf("CESP32HeaterStorage::validatedLoad<uint8_t> invalid read %s=%d", key, val);
-    DebugPort.printf(" validator(%d,%d) reset to %d\r\n", min, max, defVal);
-
-    val = defVal;
-    preferences.putUChar(key, val);
-    return false;
-  }
   return true;
 }
 
-bool
-CESP32HeaterStorage::validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max)
+void 
+sCredentials::load()
 {
-  val = preferences.getChar(key, defVal);
-  if(!validator(val, min, max)) {
+  // **** MAX LENGTH is 15 for names ****
+  preferences.begin("credentials", false);
+  validatedLoad("SSID", SSID, 31, "Afterburner");
+  validatedLoad("APpassword", APpassword, 31, "thereisnospoon");
+  validatedLoad("webUpdateUser", webUpdateUsername, 31, "Afterburner");
+  validatedLoad("webUpdatePass", webUpdatePassword, 31, "BurnBabyBurn");
+  preferences.end();    
+}
 
-    DebugPort.printf("CESP32HeaterStorage::validatedLoad<int8_t> invalid read %s=%d", key, val);
-    DebugPort.printf(" validator(%d,%d) reset to %d\r\n", min, max, defVal);
+void 
+sCredentials::save()
+{
+  // **** MAX LENGTH is 15 for names ****
+  preferences.begin("credentials", false);
+  preferences.putString("SSID", SSID);
+  preferences.putString("APpassword", APpassword);
+  preferences.putString("webUpdateUser", webUpdateUsername);
+  preferences.putString("webUpdatePass", webUpdatePassword);
+  preferences.end();    
+}
 
-    val = defVal;
-    preferences.putChar(key, val);
-    return false;
-  }
+bool 
+sCredentials::valid()
+{
   return true;
 }
 
-bool
-CESP32HeaterStorage::validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max)
-{
-  val = preferences.getUShort(key, defVal);
-  if(!validator(val, min, max)) {
-
-    DebugPort.printf("CESP32HeaterStorage::validatedLoad<uint16_t> invalid read %s=%d", key, val);
-    DebugPort.printf(" validator(%d,%d) reset to %d\r\n", min, max, defVal);
-
-    val = defVal;
-    preferences.putUShort(key, val);
-    return false;
-  }
-  return true;
-}
-
-bool
-CESP32HeaterStorage::validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max)
-{
-  val = preferences.getLong(key, defVal);
-  if(!validator(val, min, max)) {
-
-    DebugPort.printf("CESP32HeaterStorage::validatedLoad<long> invalid read %s=%ld", key, val);
-    DebugPort.printf(" validator(%ld,%ld) reset to %ld\r\n", min, max, defVal);
-
-    val = defVal;
-    preferences.putLong(key, val);
-    return false;
-  }
-  return true;
-}
-
-bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
-{
-  return (test >= minLim) && (test <= maxLim);
-}
-
-bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim)
-{
-  return (test >= minLim) && (test <= maxLim);
-}
-
-bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2)
-{
-  return (test == test1) || (test == test2);
-}
-
-bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim)
-{
-  return (test >= minLim) && (test <= maxLim);
-}
-
-bool s32inBounds(long test, long minLim, long maxLim)
-{
-  return (test >= minLim) && (test <= maxLim);
-}
-
-
-//#endif  // ESP32

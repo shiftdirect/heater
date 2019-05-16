@@ -22,10 +22,13 @@
 #ifndef __BTC_NV_STORAGE_H__
 #define __BTC_NV_STORAGE_H__
 
-#include "../RTC/Timers.h"   // for sTimer
 #include "GPIO.h"
+#include "NVCore.h"
 
-struct sHeater { 
+#include "../RTC/Timers.h"   // for sTimer
+
+
+struct sHeater : public CESP32_NVStorage {
   uint8_t   Pmin;
   uint8_t   Pmax;
   uint16_t  Fmin;
@@ -60,6 +63,8 @@ struct sHeater {
     fanSensor = 1;
     glowDrive = 5;
   };
+  void load();
+  void save();
 };
 
 struct sHomeMenuActions {
@@ -103,7 +108,23 @@ struct sCyclicThermostat {
   }
 };
 
-struct sMQTTparams {
+struct sCredentials : public CESP32_NVStorage {
+  char SSID[32];
+  char APpassword[32];
+  char webUpdateUsername[32];
+  char webUpdatePassword[32];
+  void init() {
+    strcpy(SSID, "Afterburner");
+    strcpy(APpassword, "thereisnospoon");
+    strcpy(webUpdateUsername, "Afterburner");
+    strcpy(webUpdatePassword, "BurnBabyBurn");
+  };
+  void load();
+  void save();
+  bool valid();
+};
+
+struct sMQTTparams : public CESP32_NVStorage {
   uint8_t enabled;
   uint16_t  port;
   char host[128];
@@ -126,9 +147,12 @@ struct sMQTTparams {
     username[31] = 0;
     password[31] = 0;
   }
+  void load();
+  void save();
+  bool valid();
 };
 
-struct sBTCoptions {
+struct sBTCoptions : public CESP32_NVStorage {
   long dimTime;
   long menuTimeout;
   uint8_t degF;
@@ -171,6 +195,8 @@ struct sBTCoptions {
     cyclic.init();
     HomeMenu.init();
   };
+  void load();
+  void save();
 };
 
 
@@ -180,21 +206,13 @@ struct sNVStore {
   sBTCoptions Options;
   sTimer timer[14];
   sMQTTparams MQTT;
+  sCredentials Credentials;
   bool valid();
   void init();
 };
 
-class CNVStorage {
-  public:
-    CNVStorage() {};
-    virtual ~CNVStorage() {};
-    virtual void init() = 0;
-    virtual void load() = 0;
-    virtual void save() = 0;
-};
 
-
-class CHeaterStorage : public CNVStorage {
+class CHeaterStorage /*: public CESP32_NVStorage*/ {
 protected:
   sNVStore _calValues;
 public:
@@ -232,6 +250,7 @@ public:
     GPIOalgModes getGPIOalgMode();
     uint16_t     getFrameRate();
     const sHomeMenuActions& getHomeMenu() const;
+    const sCredentials& getCredentials() const;
 
     void setPmin(float);
     void setPmax(float);
@@ -259,38 +278,19 @@ public:
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);
     void setMQTTinfo(const sMQTTparams& info);
+    void setCredentials(const sCredentials& info);
 };
 
 
 
-//#ifdef ESP32
-
-#include <Preferences.h>
-#include <functional>
-
 class CESP32HeaterStorage : public CHeaterStorage {
-  Preferences preferences;
 public:
   CESP32HeaterStorage();
   virtual ~CESP32HeaterStorage();
   void init();
   void load();
   void save();
-  void loadHeater();
-  void saveHeater();
-  void loadTimer(int idx);
-  void saveTimer(int idx);
-  void loadUI();
-  void saveUI();
-  void loadMQTT();
-  void saveMQTT();
-  bool validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max);
-  bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask=0xff);
-  bool validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max);
-  bool validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max);
 };
-
-//#endif
 
 extern CHeaterStorage& NVstore;
 

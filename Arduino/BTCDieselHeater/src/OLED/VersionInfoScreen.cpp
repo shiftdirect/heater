@@ -26,11 +26,13 @@
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/GPIO.h"
+#include "../WiFi/BTCWifi.h"
+#include "../Utility/BoardDetect.h"
 #include "fonts/Icons.h"
 
 
 
-CVersionInfoScreen::CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CVersionInfoScreen::CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
 }
 
@@ -38,6 +40,7 @@ void
 CVersionInfoScreen::onSelect()
 {
   CScreenHeader::onSelect();
+  _factoryDefaultEn = 0;
 }
 
 void
@@ -52,22 +55,53 @@ CVersionInfoScreen::show()
 
   _display.clearDisplay();
 
-  _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
-  
-  _display.drawBitmap(10, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
-  _printMenuText(43, 14, getVersionStr());
-  _printMenuText(43, 25, getVersionDate());
+  if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-  _display.drawBitmap(20, 34, hardwareIcon, hardwareWidth, hardwareHeight, WHITE);
-  int PCB = getBoardRevision();
-  sprintf(msg, "V%.1f", float(PCB)*0.1f);
-  _printMenuText(43, 38, msg);
-  if(PCB == 20) {
-    _printMenuText(108, 38, "Analog", false, eCentreJustify);
-    _display.drawLine(88, 42, 127, 42, WHITE);
+    if(_factoryDefaultEn < 2) {
+      _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
+      
+      _display.drawBitmap(10, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
+      _printMenuText(43, 14, getVersionStr());
+      _printMenuText(43, 25, getVersionDate());
+
+      _display.drawBitmap(20, 34, hardwareIcon, hardwareWidth, hardwareHeight, WHITE);
+      int PCB = getBoardRevision();
+      sprintf(msg, "V%.1f", float(PCB)*0.1f);
+      _printMenuText(43, 38, msg);
+      if(PCB == 20) {
+        _printMenuText(108, 38, "Analog", false, eCentreJustify);
+        _display.drawLine(88, 42, 127, 42, WHITE);
+      }
+      _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
+    }
+    else {
+      if(_factoryDefaultEn == 11) {  // after the saving popup has expired
+        const char* content[2];
+        content[0] = "Factory reset";
+        content[1] = "completed";
+        _ScreenManager.showRebootMsg(content, 5000);
+      }
+      else {
+        _printInverted(_display.xCentre(), 0, " Factory Default ", true, eCentreJustify);
+        if(_factoryDefaultEn == 10) {
+          _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+          _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+        }
+        else {
+        
+          _display.drawBitmap(10, 15, cautionIcon, cautionWidth, cautionHeight, WHITE);
+
+          _printMenuText(50, 30, "Abort", _factoryDefaultEn == 2);
+          _printMenuText(50, 16, "Apply", _factoryDefaultEn == 3);
+          if(_factoryDefaultEn == 3) 
+            _printMenuText(_display.xCentre(), 53, " \021    Apply     \020 ", true, eCentreJustify);
+          else
+            _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
+        }
+      }
+    }
   }
 
-  _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
   return true;
 }
 
@@ -78,9 +112,23 @@ CVersionInfoScreen::keyHandler(uint8_t event)
   if(event & keyPressed) {
     // UP press
     if(event & key_Up) {
+      if(_factoryDefaultEn == 10) {
+        wifiFactoryDefault();
+        BoardRevisionReset();
+        NVstore.init();
+        NVstore.save();
+        _showStoringMessage();
+        _factoryDefaultEn = 11;
+      }
+      else {
+        _factoryDefaultEn++;
+        UPPERLIMIT(_factoryDefaultEn, 3);
+      }
     }
-    // CENTRE press
-    if(event & key_Centre) {
+    // DOWN press
+    if(event & key_Down) {
+      _factoryDefaultEn--;
+      LOWERLIMIT(_factoryDefaultEn, 0);
     }
     // LEFT press
     if(event & key_Left) {
@@ -90,8 +138,14 @@ CVersionInfoScreen::keyHandler(uint8_t event)
     if(event & key_Right) {
       _ScreenManager.nextMenu();
     }
+    // CENTRE press
     if(event & key_Centre) {
-      _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+      if(_factoryDefaultEn == 3) {
+        _factoryDefaultEn = 10;
+      }
+      else {
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+      }
     }
   }
 

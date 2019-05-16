@@ -29,8 +29,9 @@ class C128x64_OLED;
 class CScreenManager;
 
 
-class CVersionInfoScreen : public CScreenHeader
+class CVersionInfoScreen : public CPasswordScreen
 {
+  int _factoryDefaultEn;
   void _initUI();
 public:
   CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mgr);

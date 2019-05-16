@@ -2,6 +2,7 @@
 // 
 // 
 
+#ifdef USEMQTT
 #include "ABMqtt.h"
 
 
@@ -25,3 +26,4 @@ void MqttSetup() {
 		return client.connected();
 	}
 }
+#endif

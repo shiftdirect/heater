@@ -111,8 +111,8 @@
 #include <SPIFFS.h>
 #endif
 
-#define AP_SSID "Afterburner"
-#define AP_PASSWORD "thereisnospoon"
+//#define AP_SSID "Afterburner"
+//#define AP_PASSWORD "thereisnospoon"
 
 #define RX_DATA_TIMOUT 50
 
@@ -381,8 +381,11 @@ void setup() {
 
 #if USE_WIFI == 1
 
+  sCredentials creds = NVstore.getCredentials();
+
   if(NVstore.getWifiEnabled()) {
-    initWifi(WiFi_TriggerPin, AP_SSID, AP_PASSWORD);
+//    initWifi(WiFi_TriggerPin, AP_SSID, AP_PASSWORD);
+    initWifi(WiFi_TriggerPin, creds.SSID, creds.APpassword);
 #if USE_OTA == 1
     if(NVstore.getOTAEnabled()) {
       initOTA();

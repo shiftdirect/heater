@@ -33,6 +33,7 @@
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif
+#include "../Utility/NVStorage.h"
 
 extern void ShowOTAScreen(int percent=0, bool webpdate=false);
 
@@ -160,6 +161,13 @@ const char* rootIndex = R"=====(
 </html>
 )=====";
 
+void rootRedirect()
+{
+  server.sendHeader("Connection", "close");
+  server.send(200, "text/html", rootIndex);
+}
+
+
 void initWebServer(void) {
 
   Update
@@ -182,8 +190,9 @@ void initWebServer(void) {
 	server.on("/formatspiffs", handleFormat);
 
   server.on("/tst", HTTP_GET, []() {
-    server.sendHeader("Connection", "close");
-    server.send(200, "text/html", rootIndex);
+    rootRedirect();
+    // server.sendHeader("Connection", "close");
+    // server.send(200, "text/html", rootIndex);
   });
   // magical code shamelessly lifted from Arduino WebUpdate example, modified
   // this allows pushing new firmware to the ESP from a WEB BROWSER!
@@ -191,7 +200,8 @@ void initWebServer(void) {
   //
   // Initial launch page
   server.on("/update", HTTP_GET, []() {
-    if (!server.authenticate("ray", "PW")) {
+    sCredentials creds = NVstore.getCredentials();
+    if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
       return server.requestAuthentication();
     }
     bUpdateAccessed = true;
@@ -199,8 +209,9 @@ void initWebServer(void) {
     server.send(200, "text/html", serverIndex);
   });
   server.on("/updatenow", HTTP_GET, []() {  // handle attempts to just browse the /updatenow path - force redirect to root
-    server.sendHeader("Connection", "close");
-    server.send(200, "text/html", rootIndex);
+    rootRedirect();
+    // server.sendHeader("Connection", "close");
+    // server.send(200, "text/html", rootIndex);
   });
   // actual guts that manages the new firmware upload
   server.on("/updatenow", HTTP_POST, []() {
@@ -208,12 +219,13 @@ void initWebServer(void) {
     server.sendHeader("Connection", "close");
     server.send(200, "text/plain", (Update.hasError()) ? "FAIL - Afterburner will reboot shortly" : "OK - Afterburner will reboot shortly");
     delay(1000);
-    server.sendHeader("Connection", "close");
-    server.send(200, "text/html", rootIndex);  // req browser to redirect to root
+    rootRedirect();
+    // server.sendHeader("Connection", "close");
+    // server.send(200, "text/html", rootIndex);  // req browser to redirect to root
     delay(1000);
     ESP.restart();                             // reboot
   }, []() {
-    if(bUpdateAccessed) {  // only allow progression via /update, directly accessing /updatenow will fail
+    if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
       HTTPUpload& upload = server.upload();
       if (upload.status == UPLOAD_FILE_START) {
         DebugPort.setDebugOutput(true);
@@ -246,9 +258,10 @@ void initWebServer(void) {
       }
     }
     else {
-      server.sendHeader("Connection", "close");  // attempt to POST without using /update - force redirect to root
-      server.send(200, "text/html", rootIndex);
-      bUpdateAccessed = false;
+      // attempt to POST without using /update - force redirect to root
+      rootRedirect();
+    // server.sendHeader("Connection", "close");
+    // server.send(200, "text/html", rootIndex);  // req browser to redirect to root
     }
   });
 

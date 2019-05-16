@@ -22,6 +22,9 @@
 #ifndef __BTC_TIMERS_H__
 #define __BTC_TIMERS_H__
 
+#include "../Utility/NVCore.h"
+
+
 struct sHourMin {
   int8_t hour;
   int8_t min;
@@ -38,7 +41,7 @@ struct sHourMin {
   }
 };
 
-struct sTimer {
+struct sTimer : public CESP32_NVStorage {
   sHourMin start;      // start time
   sHourMin stop;       // stop time
   uint8_t enabled;     // timer enabled - each bit is a day of week flag
@@ -78,6 +81,8 @@ struct sTimer {
     retval &= (temperature >= 8 && temperature <= 35);
     return retval;
   }
+  void load();
+  void save();
 };
 
 const char* getTimerJSONStr(int timer, int param);

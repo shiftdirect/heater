@@ -72,6 +72,14 @@
 #include <driver/adc.h>
 #include "DebugPort.h"
 
+void BoardRevisionReset()
+{
+  Preferences preferences;
+
+  preferences.begin("System Info", false);
+  preferences.clear();
+}
+
 int BoardDetect()
 {
   Preferences preferences;

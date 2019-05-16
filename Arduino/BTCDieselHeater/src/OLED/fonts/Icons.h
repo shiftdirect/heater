@@ -183,3 +183,7 @@ extern const uint8_t hardwareIcon[];
 const uint8_t hardwareWidth = 16;
 const uint8_t hardwareHeight = 15;
 
+// Bitmap for caution
+extern const uint8_t cautionIcon[];
+const uint8_t cautionWidth = 30;
+const uint8_t cautionHeight = 29;

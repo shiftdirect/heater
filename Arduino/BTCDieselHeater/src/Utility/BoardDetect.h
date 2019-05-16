@@ -22,3 +22,4 @@
 #include <stdint.h>
 
 int BoardDetect();
+void BoardRevisionReset();
