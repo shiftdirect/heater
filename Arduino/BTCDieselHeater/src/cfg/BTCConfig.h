@@ -107,3 +107,9 @@
 // Protocol exploration
 //
 //#define PROTOCOL_INVESTIGATION
+
+///////////////////////////////////////////////////////////////////////////////
+// Software base watchdog
+//
+#define USE_SW_WATCHDOG 1
+

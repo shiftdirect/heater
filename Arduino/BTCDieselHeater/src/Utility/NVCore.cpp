@@ -22,6 +22,7 @@
 #include <Arduino.h>
 #include "NVCore.h"
 #include "DebugPort.h"
+#include <functional>
 
 
 bool 

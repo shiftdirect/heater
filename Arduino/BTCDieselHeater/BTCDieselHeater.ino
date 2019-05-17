@@ -110,6 +110,7 @@
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif
+//#include "esp_system.h"
 
 //#define AP_SSID "Afterburner"
 //#define AP_PASSWORD "thereisnospoon"
@@ -188,6 +189,8 @@ unsigned long moderator;
 bool bUpdateDisplay = false;
 bool bHaveWebClient = false;
 bool bBTconnected = false;
+
+hw_timer_t *watchdogTimer = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
@@ -294,6 +297,12 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels)
   }
 }    
 #endif
+
+void interruptReboot()
+{     
+  ets_printf("Software watchdog reboot......\r\n");
+  esp_restart();
+}
 
 void setup() {
   char msg[128];
@@ -424,6 +433,14 @@ void setup() {
 
   setupGPIO(); 
 
+#if USE_SW_WATCHDOG == 1
+  // create a watchdog timer
+  watchdogTimer = timerBegin(0, 80, true); //timer 0, divisor 80     
+  timerAlarmWrite(watchdogTimer, 4000000, false); //set time in uS must be fed within this time or reboot     
+  timerAttachInterrupt(watchdogTimer, &interruptReboot, true);     
+  timerAlarmEnable(watchdogTimer); //enable interrupt
+#endif
+
   delay(1000); // just to hold the splash screeen for while
 }
 
@@ -546,6 +563,10 @@ void loop()
 
     case CommStates::Idle:
 
+#if USE_SW_WATCHDOG == 1
+      timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
+#endif
+      
       moderator = 50;
 
 #if RX_LED == 1
