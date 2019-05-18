@@ -564,7 +564,7 @@ void loop()
     case CommStates::Idle:
 
 #if USE_SW_WATCHDOG == 1
-      timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
+      feedWatchdog(); //reset timer (feed watchdog)  
 #endif
       
       moderator = 50;
@@ -1338,4 +1338,9 @@ int getBoardRevision()
 void ShowOTAScreen(int percent, bool webupdate)
 {
   ScreenManager.showOTAMessage(percent, webupdate);
+}
+
+void feedWatchdog()
+{
+  timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
 }

@@ -63,6 +63,7 @@ extern int   getBoardRevision();
 extern void  setupGPIO();
 extern void  setGPIO(int channel, bool state);
 extern bool  getGPIO(int channel);
+extern void  feedWatchdog();
 
 
 

@@ -113,7 +113,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     // if you get here you have connected to the WiFi    
     isSTA = true;
     DebugPort.println("WiFiManager connected in STA mode OK");
-    DebugPort.printf("  STA IP address: %s\r\n", WiFi.localIP().toString().c_str());
+    DebugPort.printf("  STA IP address: %s\r\n", getWifiSTAAddrStr());
     // must use same radio channel as STA to go to STA+AP, otherwise we drop the STA!
     chnl = WiFi.channel();  
     DebugPort.println("Now promoting to STA+AP mode..."); 
@@ -128,7 +128,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   WiFi.softAP(APname, failedpassword, chnl);
   WiFi.enableAP(true);
   DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
-  DebugPort.printf("  AP IP address: %s\r\n", WiFi.softAPIP().toString().c_str());
+  DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
   DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
   #endif
 
@@ -267,7 +267,7 @@ void APstartedCallback(WiFiManager*)
 const char* getWifiAPAddrStr()
 { 
   noInterrupts();
-  IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
+  static IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
   interrupts();
   return IPaddr.toString().c_str(); 
 }
@@ -275,7 +275,7 @@ const char* getWifiAPAddrStr()
 const char* getWifiSTAAddrStr()
 { 
   noInterrupts();
-  IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
+  static IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
   interrupts();
   return IPaddr.toString().c_str(); 
 }

@@ -26,6 +26,7 @@
 #include "../Protocol/TxManage.h"
 #include "../Protocol/helpers.h"
 #include "../cfg/pins.h"
+#include "../cfg/BTCConfig.h"
 #include "Index.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
@@ -106,10 +107,6 @@ void handleReset() {
 	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
 	DebugPort.println("diconnecting client and wifi, then rebooting");
   delay(500);
-	//client.disconnect();
-//	wifi_station_disconnect();
-//	wm.disconnect();
-//	wm.resetSettings();
   wifiEnterConfigPortal(true, true, 3000);
 }
 
@@ -118,10 +115,6 @@ void handleFormat() {
 	DebugPort.println("Formatting SPIFFS partition");
   delay(500);
   SPIFFS.format();
-	//client.disconnect();
-//	wifi_station_disconnect();
-//	wm.disconnect();
-//	wm.resetSettings();
 }
 
 void handleBTCNotFound() {
@@ -142,10 +135,58 @@ void handleBTCNotFound() {
 }
 
 const char* serverIndex = R"=====(
+<!DOCTYPE html>
   <style>body {font-family: Arial, Helvetica, sans-serif;}</style>
+<html>
+  <head>
+  <script>
+  function _(el) {
+    return document.getElementById(el);
+  }
+  function uploadFile() {
+    var file = _("update").files[0];
+    var formdata = new FormData();
+    formdata.append("update", file);
+    var ajax = new XMLHttpRequest();
+    ajax.upload.addEventListener("progress", progressHandler, false);
+    ajax.addEventListener("load", completeHandler, false);
+    ajax.addEventListener("error", errorHandler, false);
+    ajax.addEventListener("abort", abortHandler, false);
+    ajax.open("POST", "/updatenow")
+    ajax.send(formdata);
+  }
+  function progressHandler(event) {
+    _("loaded_n_total").innerHTML = "Uploaded "+event.loaded+" bytes of "event.total;
+    var percent = (event.load / event.total) * 100;
+    _("progressBar").value = Math.round(percent);
+    _("status").innerHTML = Math.round(percent)+"% uploaded.. please wait";
+  }
+  function completeHandler(event) {
+    _("status").innerHTML = event.target.responseText;
+    _("progressBar").value = 0;
+  }
+  function errorHandler(event) {
+    _("status").innerHTML = "Upload Failed";
+  }
+  function abortHandler(event) {
+    _("status").innerHTML = "Upload Aborted";
+  }
+  </script>
+  </head>
+  <body>
   <title>Afterburner firmware update</title>
   <h1>Afterburner firmware update</h1>
-  <form method='POST' action='/updatenow' enctype='multipart/form-data'><input type='file' name='update'><BR><BR><input type='submit' value='Update'> <input type='button' onclick=window.location.assign('/') value='Cancel'></form>
+  <form method='POST' action='/updatenow' enctype='multipart/form-data'>
+  <input type='file' name='update'>
+  <BR>
+  <BR>
+  <input type='button' value='Update' onclick="uploadFile()"> <input type='button' onclick=window.location.assign('/') value='Cancel'>
+  <progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
+  <h3 id="status"></h3>
+  <p id="loaded_n_total"</p>
+  </form>
+  </body>
+  </html>
 )=====";
 
 const char* rootIndex = R"=====(
@@ -191,8 +232,6 @@ void initWebServer(void) {
 
   server.on("/tst", HTTP_GET, []() {
     rootRedirect();
-    // server.sendHeader("Connection", "close");
-    // server.send(200, "text/html", rootIndex);
   });
   // magical code shamelessly lifted from Arduino WebUpdate example, modified
   // this allows pushing new firmware to the ESP from a WEB BROWSER!
@@ -206,22 +245,18 @@ void initWebServer(void) {
     }
     bUpdateAccessed = true;
     server.sendHeader("Connection", "close");
-    server.send(200, "text/html", serverIndex);
+//    server.send(200, "text/html", serverIndex);  // transition to file upload page
+    server.sendHeader("Cache-Control", "no-cache");
+    handleFileRead("/uploadfirmware.html");
+
   });
   server.on("/updatenow", HTTP_GET, []() {  // handle attempts to just browse the /updatenow path - force redirect to root
     rootRedirect();
-    // server.sendHeader("Connection", "close");
-    // server.send(200, "text/html", rootIndex);
   });
   // actual guts that manages the new firmware upload
   server.on("/updatenow", HTTP_POST, []() {
     // completion functionality
-    server.sendHeader("Connection", "close");
     server.send(200, "text/plain", (Update.hasError()) ? "FAIL - Afterburner will reboot shortly" : "OK - Afterburner will reboot shortly");
-    delay(1000);
-    rootRedirect();
-    // server.sendHeader("Connection", "close");
-    // server.send(200, "text/html", rootIndex);  // req browser to redirect to root
     delay(1000);
     ESP.restart();                             // reboot
   }, []() {
@@ -234,13 +269,16 @@ void initWebServer(void) {
           Update.printError(DebugPort);
         }
       } else if (upload.status == UPLOAD_FILE_WRITE) {
+#if USE_SW_WATCHDOG == 1
+        feedWatchdog();
+#endif
+        if(upload.totalSize) {
+          char JSON[64];
+          sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
+          sendWebServerString(JSON);
+//          DebugPort.print(JSON);
+        }
         DebugPort.print(".");
-//        server.sendHeader("Connection", "close");
-//        char web[128];
-//        int progress = upload.currentSize / upload.totalSize;
-//        sprintf(web, "<progress id=\"file\" max=\"100\" value=\"%d\" </progress>", progress);
-//        server.send(200, "text/html", web);
-//        server.send(200, "text/plain", ".");
         if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
           Update.printError(DebugPort);
         }
@@ -260,8 +298,6 @@ void initWebServer(void) {
     else {
       // attempt to POST without using /update - force redirect to root
       rootRedirect();
-    // server.sendHeader("Connection", "close");
-    // server.send(200, "text/html", rootIndex);  // req browser to redirect to root
     }
   });
 
