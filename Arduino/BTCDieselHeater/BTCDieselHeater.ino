@@ -393,7 +393,6 @@ void setup() {
   sCredentials creds = NVstore.getCredentials();
 
   if(NVstore.getWifiEnabled()) {
-//    initWifi(WiFi_TriggerPin, AP_SSID, AP_PASSWORD);
     initWifi(WiFi_TriggerPin, creds.SSID, creds.APpassword);
 #if USE_OTA == 1
     if(NVstore.getOTAEnabled()) {
@@ -797,7 +796,7 @@ void loop()
       tDelta = timenow - lastTemperatureTime;
       if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
         lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature        
-        fTemperature = TempSensor.getTempC(tempSensorAddress);    // read sensor
+        fTemperature = TempSensor.getTempCByIndex(0);   // read sensor
         // DebugPort.printf("DS18B20 = %f\r\n", fTemperature);
         // initialise filtered temperature upon very first pass
         if(fTemperature > -80) {                       // avoid disconnected sensor readings being integrated
@@ -1338,6 +1337,7 @@ int getBoardRevision()
 void ShowOTAScreen(int percent, bool webupdate)
 {
   ScreenManager.showOTAMessage(percent, webupdate);
+  feedWatchdog();
 }
 
 void feedWatchdog()

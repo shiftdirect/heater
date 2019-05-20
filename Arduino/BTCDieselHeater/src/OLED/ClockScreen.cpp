@@ -41,12 +41,6 @@ CClockScreen::CClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen
   _keyRepeatCount = -1;
 }
 
-void
-CClockScreen::showTime(int)
-{
-  // override and DO NOTHING!
-}
-
 
 bool 
 CClockScreen::show()

@@ -187,7 +187,7 @@ CWiFiScreen::animate()
     if(pMsg)
       _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
   }
-  CScreen::animate();
+  CScreenHeader::animate();
   return true;
 }
 

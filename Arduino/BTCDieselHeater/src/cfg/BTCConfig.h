@@ -44,6 +44,7 @@
 #define USE_WEBSERVER 1
 #define USE_SPIFFS    1  
 
+#define USE_PORTAL_TRIGGER_PIN 0
 
 
 
@@ -109,7 +110,7 @@
 //#define PROTOCOL_INVESTIGATION
 
 ///////////////////////////////////////////////////////////////////////////////
-// Software base watchdog
+// Software based watchdog
 //
 #define USE_SW_WATCHDOG 1
 

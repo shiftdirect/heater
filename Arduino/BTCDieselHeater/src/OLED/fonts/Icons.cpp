@@ -57,12 +57,22 @@ const unsigned char wifiIcon [] PROGMEM = {
 
 // 'wifiInIcon, 5x5px
 const unsigned char wifiInIcon [] PROGMEM = {
-	0x70, 0x70, 0xf8, 0x70, 0x20
+  0x70,   //  ###
+  0x70,   //  ###
+  0xf8,   // #####
+  0x70,   //  ###
+  0x20    //   #
 };
 
 // 'wifiOutIcon, 5x5px
 const unsigned char wifiOutIcon [] PROGMEM = {
-	0x20, 0x70, 0xf8, 0x70, 0x70
+  0x20,   //   #
+  0x70,   //  ###
+  0xf8,   // #####
+  0x70,   //  ###
+  0x70,   //  ###
+  0x70,   //  ###
+  0x70    //  ###
 };
 
 // 'BatteryIcon', 15x10px
@@ -572,7 +582,22 @@ const uint8_t PROGMEM cautionIcon[]  =
 };
 
 
+// 
+//  Image data for update
+// 
 
-
+const uint8_t PROGMEM updateIcon[]  =
+{
+	0xFF, 0x80, // #########
+	0x80, 0x80, // #       #
+	0xFF, 0x80, // #########
+	0xF7, 0x80, // #### ####
+	0xE3, 0x80, // ###   ###
+	0xD5, 0x80, // ## # # ##
+	0xF7, 0x80, // #### ####
+	0xF7, 0x80, // #### ####
+	0xFF, 0x80, // #########
+	0xFF, 0x80, // #########
+};
 
 

@@ -111,8 +111,6 @@ CHeaterSettingsScreen::animate()
 { 
   char msg[16];
 
-  CPasswordScreen::animate();
-
   if(isPasswordBusy() || (_rowSel == 4)) {  // Password screen activity
     _printMenuText(Column, Line2, "    ");
     _printMenuText(Column, Line1, "    ");

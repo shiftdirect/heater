@@ -40,7 +40,9 @@ void
 CVersionInfoScreen::onSelect()
 {
   CScreenHeader::onSelect();
-  _factoryDefaultEn = 0;
+  _rowSel = 0;
+  _animateCount = 0;
+  checkFOTA();
 }
 
 void
@@ -57,7 +59,12 @@ CVersionInfoScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_factoryDefaultEn < 2) {
+    if(_rowSel == 20) {
+      _printInverted(_display.xCentre(), 0, " Firmware update ", true, eCentreJustify);
+      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 43, "confirm download", false, eCentreJustify);
+    }
+    else if(_rowSel < 2) {
       _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
       
       _display.drawBitmap(10, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
@@ -72,10 +79,16 @@ CVersionInfoScreen::show()
         _printMenuText(108, 38, "Analog", false, eCentreJustify);
         _display.drawLine(88, 42, 127, 42, WHITE);
       }
-      _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
+
+      if(_rowSel == 1 && isUpdateAvailable()) {
+        _printMenuText(_display.xCentre(), 53, " \021  Get Update  \020 ", true, eCentreJustify);
+      }
+      else {
+        _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
+      }
     }
     else {
-      if(_factoryDefaultEn == 11) {  // after the saving popup has expired
+      if(_rowSel == 11) {  // after the saving popup has expired
         const char* content[2];
         content[0] = "Factory reset";
         content[1] = "completed";
@@ -83,7 +96,7 @@ CVersionInfoScreen::show()
       }
       else {
         _printInverted(_display.xCentre(), 0, " Factory Default ", true, eCentreJustify);
-        if(_factoryDefaultEn == 10) {
+        if(_rowSel == 10) {
           _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
           _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
         }
@@ -91,9 +104,9 @@ CVersionInfoScreen::show()
         
           _display.drawBitmap(10, 15, cautionIcon, cautionWidth, cautionHeight, WHITE);
 
-          _printMenuText(50, 30, "Abort", _factoryDefaultEn == 2);
-          _printMenuText(50, 16, "Apply", _factoryDefaultEn == 3);
-          if(_factoryDefaultEn == 3) 
+          _printMenuText(50, 30, "Abort", _rowSel == 2);
+          _printMenuText(50, 16, "Apply", _rowSel == 3);
+          if(_rowSel == 3) 
             _printMenuText(_display.xCentre(), 53, " \021    Apply     \020 ", true, eCentreJustify);
           else
             _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
@@ -105,6 +118,19 @@ CVersionInfoScreen::show()
   return true;
 }
 
+bool
+CVersionInfoScreen::animate()
+{
+  if(_rowSel <= 1 && isUpdateAvailable()) {
+    _animateCount++;
+    ROLLUPPERLIMIT(_animateCount, 10, 0);
+    int ypos = 11 + 20 - 7 - _animateCount;
+    _display.fillRect(0, 11, 7, 21, BLACK);
+    _display.drawBitmap(1, ypos, wifiOutIcon, 5, 7, WHITE);
+    _display.fillRect(0, 11, 7, 2, WHITE);
+  }
+  return true;
+}
 
 bool 
 CVersionInfoScreen::keyHandler(uint8_t event)
@@ -112,23 +138,30 @@ CVersionInfoScreen::keyHandler(uint8_t event)
   if(event & keyPressed) {
     // UP press
     if(event & key_Up) {
-      if(_factoryDefaultEn == 10) {
+      if(_rowSel == 20) {
+        isUpdateAvailable(false);   // make firmware update happen
+        _rowSel = 0;
+      }
+      else if(_rowSel == 10) {
         wifiFactoryDefault();
         BoardRevisionReset();
         NVstore.init();
         NVstore.save();
         _showStoringMessage();
-        _factoryDefaultEn = 11;
+        _rowSel = 11;
       }
       else {
-        _factoryDefaultEn++;
-        UPPERLIMIT(_factoryDefaultEn, 3);
+        _rowSel++;
+        UPPERLIMIT(_rowSel, 3);
       }
     }
     // DOWN press
     if(event & key_Down) {
-      _factoryDefaultEn--;
-      LOWERLIMIT(_factoryDefaultEn, 0);
+      if(_rowSel == 20) {      // firmware update cancel
+        _rowSel = 0;
+      }
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
     }
     // LEFT press
     if(event & key_Left) {
@@ -140,8 +173,14 @@ CVersionInfoScreen::keyHandler(uint8_t event)
     }
     // CENTRE press
     if(event & key_Centre) {
-      if(_factoryDefaultEn == 3) {
-        _factoryDefaultEn = 10;
+      if(_rowSel == 20) {      // firmware update cancel
+        _rowSel = 0;
+      }
+      else if(_rowSel == 3) {  // factory enable selection
+        _rowSel = 10;
+      }
+      else if(_rowSel == 1) {  // firmware update selection
+        _rowSel = 20;
       }
       else {
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu

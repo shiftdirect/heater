@@ -32,6 +32,7 @@
     }
   }
   function uploadFile() {
+    _("cancel").hidden = true;
     var file = _("file1").files[0];
     sendSize = file.size;
     var formdata = new FormData();
@@ -77,7 +78,7 @@
     <h3 id="status"></h3>
     <p id="loaded_n_total"></p>
     <BR>
-    <input type='button' onclick=window.location.assign("/") value='Cancel'>
+    <input type='button' onclick=window.location.assign("/") value='Cancel' id="cancel">
   </form>
 </body>
 </html>

@@ -50,8 +50,10 @@ int wifiButtonState = 0;
 
 extern CScreenManager ScreenManager;
 
+
 bool initWifi(int initpin,const char *failedssid, const char *failedpassword) 
 {
+  
   TRIG_PIN = initpin;
   pinMode(TRIG_PIN, INPUT_PULLUP);
 
@@ -63,9 +65,6 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   esp_read_mac(MAC, ESP_MAC_WIFI_SOFTAP);
   sprintf(MACstr[1], "%02X:%02X:%02X:%02X:%02X:%02X", MAC[0], MAC[1], MAC[2], MAC[3], MAC[4], MAC[5]);
   DebugPort.printf("   AP MAC address: %s\r\n", MACstr[1]);
-
-  char APname[32];
-  sprintf(APname, "%s", failedssid);
 
   //reset settings - wipe credentials for testing
 //  wm.resetSettings();
@@ -87,8 +86,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
  
   DebugPort.println("Attempting to start STA mode (or config portal) via WifiManager...");
 
-//  wm.setHostname(failedssid);
-  wm.setHostname(APname);
+  wm.setHostname(failedssid);
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);  // ensure our webserver gets awoken when IP config changes to STA
@@ -97,8 +95,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 //REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
 // REMOVED    wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0)); 
  
-//  bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
-  bool res = wm.autoConnect(APname, failedpassword); // auto generated AP name from chipid
+  bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
   DebugPort.printf("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
 
   int chnl = 1;
@@ -124,8 +121,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   DebugPort.println("Starting AP mode");
 //REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
 // REMOVED    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));  
-//  WiFi.softAP(failedssid, failedpassword, chnl);
-  WiFi.softAP(APname, failedpassword, chnl);
+  WiFi.softAP(failedssid, failedpassword, chnl);
   WiFi.enableAP(true);
   DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
   DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
@@ -138,7 +134,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     wm.startWebPortal();
     isPortalAP = true;                   // we started portal, we have to flag it!
   }
-  
+
   return retval;
 }
 
@@ -147,7 +143,7 @@ void doWiFiManager()
 {
   wm.process();
 
-
+#if USE_PORTAL_TRIGGER_PIN == 1
   // manage handling of pin to enter WiFManager config portal
   // we typically use the BOOT pin for this (pins.h)
   //
@@ -193,6 +189,7 @@ void doWiFiManager()
       // consider as contact bounce if < 50ms!
     }
   }
+#endif
 }
 
 void wifiDisable(long rebootDelay) 

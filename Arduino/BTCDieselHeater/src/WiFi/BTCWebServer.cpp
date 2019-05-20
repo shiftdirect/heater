@@ -79,14 +79,6 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
 
 void handleBTCRoot() {
   handleFileRead("/index.html");
-/*  if(SPIFFS.exists("/index.html")) {
-    File html = SPIFFS.open("/index.html");
-    server.streamFile(html, "text/html");
-    html.close();
-  }
-  else {
-    DebugPort.println("\"/index.html\" does not exist!!!");
-  }*/
 }
 #else
 void handleBTCRoot() {
@@ -135,76 +127,28 @@ void handleBTCNotFound() {
 }
 
 const char* serverIndex = R"=====(
-<!DOCTYPE html>
-  <style>body {font-family: Arial, Helvetica, sans-serif;}</style>
-<html>
-  <head>
-  <script>
-  function _(el) {
-    return document.getElementById(el);
-  }
-  function uploadFile() {
-    var file = _("update").files[0];
-    var formdata = new FormData();
-    formdata.append("update", file);
-    var ajax = new XMLHttpRequest();
-    ajax.upload.addEventListener("progress", progressHandler, false);
-    ajax.addEventListener("load", completeHandler, false);
-    ajax.addEventListener("error", errorHandler, false);
-    ajax.addEventListener("abort", abortHandler, false);
-    ajax.open("POST", "/updatenow")
-    ajax.send(formdata);
-  }
-  function progressHandler(event) {
-    _("loaded_n_total").innerHTML = "Uploaded "+event.loaded+" bytes of "event.total;
-    var percent = (event.load / event.total) * 100;
-    _("progressBar").value = Math.round(percent);
-    _("status").innerHTML = Math.round(percent)+"% uploaded.. please wait";
-  }
-  function completeHandler(event) {
-    _("status").innerHTML = event.target.responseText;
-    _("progressBar").value = 0;
-  }
-  function errorHandler(event) {
-    _("status").innerHTML = "Upload Failed";
-  }
-  function abortHandler(event) {
-    _("status").innerHTML = "Upload Aborted";
-  }
-  </script>
-  </head>
-  <body>
-  <title>Afterburner firmware update</title>
-  <h1>Afterburner firmware update</h1>
-  <form method='POST' action='/updatenow' enctype='multipart/form-data'>
-  <input type='file' name='update'>
-  <BR>
-  <BR>
-  <input type='button' value='Update' onclick="uploadFile()"> <input type='button' onclick=window.location.assign('/') value='Cancel'>
-  <progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
-  <h3 id="status"></h3>
-  <p id="loaded_n_total"</p>
-  </form>
-  </body>
-  </html>
 )=====";
 
 const char* rootIndex = R"=====(
 <!DOCTYPE html>
+<script>
+function init() {
+  window.location.assign("/"); 
+}
+</script
 <html>
-   <head>
-      <title>HTML Meta Tag</title>
-      <meta http-equiv = "refresh" content = "0; url = /" />
-   </head>
-   <body>
-      <p>Redirecting to root URL</p>
-   </body>
+  <head>
+    <title>HTML Meta Tag</title>
+  </head>
+  <body onload="javascript:init()">
+    <p>Root redirect</p>
+  </body>
 </html>
 )=====";
 
 void rootRedirect()
 {
-  server.sendHeader("Connection", "close");
+// server.sendHeader("Connection", "close");
   server.send(200, "text/html", rootIndex);
 }
 
@@ -217,7 +161,7 @@ void initWebServer(void) {
 		DebugPort.printf("Progress: %u%%\r", percent);
     DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen(percent, true);
-
+    DebugPort.print("^");
 	});
   
 	if (MDNS.begin("Afterburner")) {
@@ -233,9 +177,10 @@ void initWebServer(void) {
   server.on("/tst", HTTP_GET, []() {
     rootRedirect();
   });
-  // magical code shamelessly lifted from Arduino WebUpdate example, modified
-  // this allows pushing new firmware to the ESP from a WEB BROWSER!
-  // added authentication and a sequencing flag to ensure this is not bypassed
+
+  // Magical code originally shamelessly lifted from Arduino WebUpdate example, then modified
+  // This allows pushing new firmware to the ESP from a WEB BROWSER!
+  // Added authentication and a sequencing flag to ensure this is not bypassed
   //
   // Initial launch page
   server.on("/update", HTTP_GET, []() {
@@ -245,10 +190,8 @@ void initWebServer(void) {
     }
     bUpdateAccessed = true;
     server.sendHeader("Connection", "close");
-//    server.send(200, "text/html", serverIndex);  // transition to file upload page
     server.sendHeader("Cache-Control", "no-cache");
     handleFileRead("/uploadfirmware.html");
-
   });
   server.on("/updatenow", HTTP_GET, []() {  // handle attempts to just browse the /updatenow path - force redirect to root
     rootRedirect();
@@ -256,7 +199,10 @@ void initWebServer(void) {
   // actual guts that manages the new firmware upload
   server.on("/updatenow", HTTP_POST, []() {
     // completion functionality
-    server.send(200, "text/plain", (Update.hasError()) ? "FAIL - Afterburner will reboot shortly" : "OK - Afterburner will reboot shortly");
+    if(Update.hasError())
+      server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
+    else 
+      server.send(200, "OK - Afterburner will reboot shortly");
     delay(1000);
     ESP.restart();                             // reboot
   }, []() {
@@ -270,12 +216,12 @@ void initWebServer(void) {
         }
       } else if (upload.status == UPLOAD_FILE_WRITE) {
 #if USE_SW_WATCHDOG == 1
-        feedWatchdog();
+        feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
         if(upload.totalSize) {
           char JSON[64];
           sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-          sendWebServerString(JSON);
+          sendWebServerString(JSON);  // feedback proper byte count of update
 //          DebugPort.print(JSON);
         }
         DebugPort.print(".");
@@ -296,7 +242,7 @@ void initWebServer(void) {
       }
     }
     else {
-      // attempt to POST without using /update - force redirect to root
+      // attempt to POST without using /update - forced redirect to root
       rootRedirect();
     }
   });

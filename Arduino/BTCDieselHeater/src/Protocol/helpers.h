@@ -20,6 +20,9 @@
  * 
  */
 
+#ifndef __BTC_HELPERS_H__
+#define __BTC_HELPERS_H__
+
 #include "Protocol.h"
 
 
@@ -64,6 +67,9 @@ extern void  setupGPIO();
 extern void  setGPIO(int channel, bool state);
 extern bool  getGPIO(int channel);
 extern void  feedWatchdog();
+extern bool  isUpdateAvailable(bool test=true);
+extern void  checkFOTA();
+
 
 
 
@@ -71,3 +77,5 @@ extern void  feedWatchdog();
 #define UPPERLIMIT(A, B) if((A) > (B)) (A) = (B)
 #define ROLLUPPERLIMIT(A, B, C) if((A) > (B)) (A) = (C)        
 #define ROLLLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        
+
+#endif

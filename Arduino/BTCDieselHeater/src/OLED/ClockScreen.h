@@ -30,7 +30,7 @@ class CScreenManager;
 
 class CClockScreen : public CScreenHeader {
 protected:
-  virtual void showTime(int numTimers);  
+  virtual void showTime() {};    // override so time does not show in header
   bool _colon;
   int _keyRepeatCount;
 public:

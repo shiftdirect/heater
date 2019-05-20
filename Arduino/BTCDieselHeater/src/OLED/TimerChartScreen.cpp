@@ -39,7 +39,7 @@
 
 static uint8_t condensed[7][120];
 
-CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
+CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreen(display, mgr) 
 {
   _rowSel = 0;
   _colSel = 0;

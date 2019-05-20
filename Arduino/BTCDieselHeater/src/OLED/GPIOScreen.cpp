@@ -130,6 +130,8 @@ CGPIOScreen::show()
 bool 
 CGPIOScreen::animate()
 {
+  CPasswordScreen::animate();
+  
   if(_rowSel != 4) {
     int yPos = 53;
     int xPos = _display.xCentre();

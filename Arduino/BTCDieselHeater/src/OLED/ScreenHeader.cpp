@@ -81,14 +81,8 @@ CScreenHeader::show()
   // battery
   showBatteryIcon(getHeaterInfo().getBattVoltage());
 
-  // timers
-  int numTimers = showTimers();
-
-//  // GPIO
-//  showGPIO();
-
   // clock
-  showTime(numTimers);
+  showTime();
 
   return true;
 }
@@ -110,7 +104,27 @@ CScreenHeader::show()
 bool 
 CScreenHeader::animate()
 {
-  bool retval = false;
+  bool retval = true;
+
+  _animateCount++;
+  ROLLUPPERLIMIT(_animateCount, 10, 0);
+  if(isUpdateAvailable(true)) {
+    int xPos = X_TIMER_ICON - 3;   
+    int yPos = Y_TIMER_ICON;
+    switch(_animateCount) {
+      case 0:
+      case 2:
+        _display.fillRect(xPos, yPos, W_TIMER_ICON+3, H_TIMER_ICON, BLACK);
+        break;        
+      case 1:
+        _display.drawBitmap(xPos+6, yPos, updateIcon, updateWidth, updateHeight, WHITE);
+        break;
+      default:
+        showTimers();
+        break;
+    }
+  }
+
   if((isWifiConnected() || isWifiAP()) && isWebClientConnected()) {
 
     int xPos = X_WIFI_ICON + W_WIFI_ICON;
@@ -129,6 +143,7 @@ CScreenHeader::animate()
     }
     else if(hasWebServerSpoken(true)) {
       // we have emitted data to the web client, show an UP arrow
+      _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
       _display.drawBitmap(xPos, yPos, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
       _clearUpAnimation = true;  // clear arrow upon next iteration
       retval = true;
@@ -145,6 +160,7 @@ CScreenHeader::animate()
     }
     else if(hasWebClientSpoken(true)) {
       // we have receievd data from the web client, show an DOWN arrow
+      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
       _display.drawBitmap(xPos, yPos, wifiInIcon, W_WIFIOUT_ICON, H_WIFIOUT_ICON, WHITE);
       _clearDnAnimation = true;  // clear arrow upon next iteration
       retval = true;
@@ -240,7 +256,7 @@ CScreenHeader::showTimers()
 
 
 void 
-CScreenHeader::showTime(int numTimers)
+CScreenHeader::showTime()
 {
   const BTCDateTime& now = Clock.get();
 
@@ -262,11 +278,6 @@ CScreenHeader::showTime(int numTimers)
     int xPos = X_WIFI_ICON + W_WIFI_ICON + W_WIFIIN_ICON;  // rhs of wifi conglomeration
     if(isWifiAP())  xPos += 4;                             // add more if an Access Point
     
-/*    switch(numTimers) {
-      case 0: xPos = _display.xCentre(); break;
-      case 1: xPos += (X_TIMER_ICON - xPos) / 2; break;
-    }
-    _printMenuText(xPos, Y_CLOCK, msg, false, eCentreJustify);*/
     _printMenuText(X_CLOCK, Y_CLOCK, msg);
   }
 }

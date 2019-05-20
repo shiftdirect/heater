@@ -24,8 +24,14 @@
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif
+#include <esp32fota.h>
+#include "../Protocol/helpers.h"
+
 extern void ShowOTAScreen(int percent=0, bool webpdate=false);
 
+esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));
+unsigned long FOTAtime = millis() + 60000;  // initially check in a minutes time 
+int FOTAauth = 0;
 
 #include <esp_int_wdt.h>
 #include <esp_task_wdt.h>
@@ -37,6 +43,7 @@ void hard_restart() {
 }
 
 void initOTA(){
+  FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
 	// ArduinoOTA.setHostname("myesp32");
 	ArduinoOTA.setHostname("AfterburnerOTA");
 //  ArduinoOTA.setPassword("TESTO123");
@@ -54,7 +61,9 @@ void initOTA(){
 		DebugPort.println("Start updating " + type);
     DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen();
-
+#if USE_SW_WATCHDOG == 1
+    feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
+#endif
 	})
 		.onEnd([]() {
 		DebugPort.println("\nEnd");
@@ -67,7 +76,7 @@ void initOTA(){
 		DebugPort.printf("Progress: %u%%\r", percent);
     DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen(percent);
-
+    DebugPort.print("%%");
 	})
 		.onError([](ota_error_t error) {
 		DebugPort.printf("Error[%u]: ", error);
@@ -84,4 +93,41 @@ void initOTA(){
 
 void DoOTA(){
   ArduinoOTA.handle();
+
+  // manage Firmware OTA
+  // this is where the controlelr contacts a web server to discover if new firmware is available
+  // if so, it can dowload and implant using OTA and become effective next reboot!
+  long tDelta = millis() - FOTAtime;
+  if(tDelta > 0) {  
+    FOTAtime = millis() + 600000;  // 10 minutes
+    DebugPort.println("Checking for new firmware...");
+    if(FOTA.execHTTPcheck()) {
+      DebugPort.println("New firmware available on web server!");
+      if(FOTAauth == 2) {
+        FOTA.execOTA();
+        FOTAauth = 0;
+      }
+      else 
+        FOTAauth = 1;   // flag that new firmware is available
+    }
+  }
 };
+
+bool isUpdateAvailable(bool test)
+{
+  if(test) {
+    return FOTAauth == 1;
+  }
+  else
+  {
+    FOTAauth = 2;
+    FOTAtime = millis();  // force immediate update test
+    return true;
+  }
+  
+}
+
+void checkFOTA()
+{
+  FOTAtime = millis();
+}

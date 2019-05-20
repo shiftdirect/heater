@@ -31,13 +31,15 @@ class CScreenManager;
 
 class CVersionInfoScreen : public CPasswordScreen
 {
-  int _factoryDefaultEn;
+  int _rowSel;
   void _initUI();
+  int _animateCount;
 public:
   CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool keyHandler(uint8_t event);
   void onSelect();
+  bool animate();
 };
 
 #endif

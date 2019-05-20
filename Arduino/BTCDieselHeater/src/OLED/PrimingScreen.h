@@ -41,7 +41,6 @@ public:
   void onExit();
   bool show();
   bool keyHandler(uint8_t event);
-  bool animate() { return CScreen::animate(); };
 };
 
 #endif

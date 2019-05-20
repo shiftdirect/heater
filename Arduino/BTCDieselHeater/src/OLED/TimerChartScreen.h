@@ -30,7 +30,8 @@ class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CTimerChartScreen : public CScreenHeader {
+//class CTimerChartScreen : public CScreenHeader {
+class CTimerChartScreen : public CScreen {
   int  _rowSel;
   int  _colSel;
   int  _instance;
