@@ -32,6 +32,7 @@
 #include "../Utility/Moderator.h"
 #include <WiFiManager.h>
 #if USE_SPIFFS == 1  
+#include <FS.H>
 #include <SPIFFS.h>
 #endif
 #include "../Utility/NVStorage.h"
@@ -39,6 +40,9 @@
 extern void ShowOTAScreen(int percent=0, bool webpdate=false);
 
 extern WiFiManager wm;
+
+File fsUploadFile;              // a File object to temporarily store the received file
+int SPIFFSupload = 0;
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -56,6 +60,7 @@ String getContentType(String filename) { // convert the file extension to the MI
   else if (filename.endsWith(".css")) return "text/css";
   else if (filename.endsWith(".js")) return "application/javascript";
   else if (filename.endsWith(".ico")) return "image/x-icon";
+  else if (filename.endsWith(".bin")) return "application/octet-stream";
   return "text/plain";
 }
 
@@ -127,6 +132,90 @@ void handleBTCNotFound() {
 }
 
 const char* serverIndex = R"=====(
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8"/>
+<script>
+  // global variables
+  var sendSize;
+  var Socket;
+
+  function _(el) {
+    return document.getElementById(el);
+  }
+  function init() {
+    Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+    
+    Socket.onmessage = function(event){
+      var response = JSON.parse(event.data);
+      var key;
+      for(key in response) {
+        console.log("JSON decode:", key, response[key]);
+        switch(key) {
+          case "progress":
+            // actual data bytes received as fed back via web socket
+            var bytes = response[key];
+            _("loaded_n_total").innerHTML = "Uploaded " + bytes + " bytes of " + sendSize;
+            var percent = Math.round( 100 * (bytes / sendSize));
+            _("progressBar").value = percent;
+            _("status").innerHTML = percent+"% uploaded.. please wait";
+            break;
+        }
+      }
+    }
+  }
+  function uploadFile() {
+    _("cancel").hidden = true;
+    var file = _("file1").files[0];
+    sendSize = file.size;
+    var formdata = new FormData();
+    formdata.append("update", file);
+    var ajax = new XMLHttpRequest();
+    // progress is handled via websocket JSON sent from controller
+    // using server side progress only shows the buffer filling, not actual delivery.
+    ajax.addEventListener("load", completeHandler, false);
+    ajax.addEventListener("error", errorHandler, false);
+    ajax.addEventListener("abort", abortHandler, false);
+    ajax.open("POST", "/updatenow");
+    ajax.send(formdata);
+  }
+  function completeHandler(event) {
+    console.log(event);
+   _("status").innerHTML = event.target.responseText;
+   _("progressBar").value = 0;
+   _("loaded_n_total").innerHTML = "Uploaded " + sendSize + " bytes of " + sendSize;
+    setTimeout(function () { 
+      window.location.assign("/"); 
+      }, 5000);    
+  }
+  function errorHandler(event) {
+    console.log(event);
+    _("status").innerHTML = "Upload Failed";
+  }
+  function abortHandler(event) {
+    console.log(event);
+    _("status").innerHTML = "Upload Aborted";
+  }
+</script>
+<style>
+  body {font-family: Arial, Helvetica, sans-serif;}
+</style>
+  <title>Afterburner firmware update</title>
+</head>
+<body onload="javascript:init()">
+  <h1>Afterburner firmware update</h1>
+  <form id='upload_form' method='POST' enctype='multipart/form-data'>
+    <input type='file' name='file1' id='file1'> <BR>
+    <input type='button' value='Update' onclick="uploadFile()"> 
+    <progress id="progressBar" value="0" max="100" style="width:300px;"></progress><BR>
+    <h3 id="status"></h3>
+    <p id="loaded_n_total"></p>
+    <BR>
+    <input type='button' onclick=window.location.assign("/") value='Cancel' id="cancel">
+  </form>
+</body>
+</html>
 )=====";
 
 const char* rootIndex = R"=====(
@@ -175,7 +264,9 @@ void initWebServer(void) {
 	server.on("/formatspiffs", handleFormat);
 
   server.on("/tst", HTTP_GET, []() {
-    rootRedirect();
+    server.sendHeader("Location","/");      // reselect the update page
+    server.send(303);
+//    rootRedirect();
   });
 
   // Magical code originally shamelessly lifted from Arduino WebUpdate example, then modified
@@ -191,7 +282,8 @@ void initWebServer(void) {
     bUpdateAccessed = true;
     server.sendHeader("Connection", "close");
     server.sendHeader("Cache-Control", "no-cache");
-    handleFileRead("/uploadfirmware.html");
+    server.send(200, "text/html", serverIndex);
+ //    handleFileRead("/uploadfirmware.html");
   });
   server.on("/updatenow", HTTP_GET, []() {  // handle attempts to just browse the /updatenow path - force redirect to root
     rootRedirect();
@@ -199,22 +291,46 @@ void initWebServer(void) {
   // actual guts that manages the new firmware upload
   server.on("/updatenow", HTTP_POST, []() {
     // completion functionality
-    if(Update.hasError())
-      server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
-    else 
-      server.send(200, "OK - Afterburner will reboot shortly");
-    delay(1000);
-    ESP.restart();                             // reboot
+    if(SPIFFSupload) {
+      if(SPIFFSupload == 1) {
+        server.send(200, "OK");
+        server.sendHeader("Location","/update");      // reselect the update page
+        server.send(303);
+      }
+      else {
+        server.send(500, "text/plain", "500: couldn't create file");
+      }
+      SPIFFSupload = 0;
+    }
+    else {
+      if(Update.hasError())
+        server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
+      else 
+        server.send(200, "OK - Afterburner will reboot shortly");
+      delay(1000);
+      ESP.restart();                             // reboot
+    }
   }, []() {
     if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
       HTTPUpload& upload = server.upload();
       if (upload.status == UPLOAD_FILE_START) {
+        String filename = upload.filename;
         DebugPort.setDebugOutput(true);
-        DebugPort.printf("Update: %s\r\n", upload.filename.c_str());
-        if (!Update.begin()) { //start with max available size
-          Update.printError(DebugPort);
+        if(filename.endsWith(".bin")) {
+          DebugPort.printf("Update: %s\r\n", filename.c_str());
+          if (!Update.begin()) { //start with max available size
+            Update.printError(DebugPort);
+          }
+        }
+        else {
+          if(!filename.startsWith("/")) filename = "/"+filename;
+          DebugPort.printf("handleFileUpload Name: %s\r\n", filename.c_str());
+          fsUploadFile = SPIFFS.open(filename, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
+          SPIFFSupload = fsUploadFile ? 1 : 2;
+          //filename = String();
         }
       } else if (upload.status == UPLOAD_FILE_WRITE) {
+        // handle upload segments
 #if USE_SW_WATCHDOG == 1
         feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
@@ -222,17 +338,30 @@ void initWebServer(void) {
           char JSON[64];
           sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
           sendWebServerString(JSON);  // feedback proper byte count of update
-//          DebugPort.print(JSON);
         }
         DebugPort.print(".");
-        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-          Update.printError(DebugPort);
+        if(fsUploadFile) {
+          fsUploadFile.write(upload.buf, upload.currentSize); // Write the received bytes to the file
+        }
+        else {
+          if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+            Update.printError(DebugPort);
+          }
         }
       } else if (upload.status == UPLOAD_FILE_END) {
-        if (Update.end(true)) { //true to set the size to the current progress
-          DebugPort.printf("Update Success: %u\r\nRebooting...\r\n", upload.totalSize);
-        } else {
-          Update.printError(DebugPort);
+        // handle end of upload
+        if(SPIFFSupload) {
+          if(fsUploadFile) {
+            fsUploadFile.close();                               // Close the file again
+            DebugPort.printf("handleFileUpload Size: %d\r\n", upload.totalSize);
+          }
+        }
+        else {
+          if (Update.end(true)) { //true to set the size to the current progress
+            DebugPort.printf("Update Success: %u\r\nRebooting...\r\n", upload.totalSize);
+          } else {
+            Update.printError(DebugPort);
+          }
         }
         DebugPort.setDebugOutput(false);
         bUpdateAccessed = false;

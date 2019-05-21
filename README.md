@@ -46,6 +46,11 @@ Working so far:
     Request a linear change in Hz according to the deviation from the setpoint
 * 2 external digital inputs, 2 digital outputs, analogue input 
 * New Mk2 "Red PCB" that properly fits into an off the shelf case (requires machining)
+* Software updates over WiFi: 
+    Native OTA via espota.exe or espota.py (AP or STA mode)
+    Web browser upload new binary to controller (AP or STA mode)
+    Direct discovery and download of updates from internet server (STA mode)
+* Factory default menu option
  
 
 To be implemented 
@@ -55,8 +60,6 @@ To be implemented
 * Temperature probe offset or mapping to correct adverse readings.
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
-* Expand hardware compatability with different MCU setups.  IE Arduino Due/Mega/Pro ESP8266 & ESP32
-* Documentation
 * Regular Hot Burn cycle (DPF mode!)
 * list under construction.....
 

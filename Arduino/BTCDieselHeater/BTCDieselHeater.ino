@@ -110,8 +110,8 @@
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif
-//#include "esp_system.h"
 
+// SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
 //#define AP_PASSWORD "thereisnospoon"
 
@@ -119,7 +119,7 @@
 
 const int FirmwareRevision = 23;
 const int FirmwareSubRevision = 0;
-const char* FirmwareDate = "12 May 2019";
+const char* FirmwareDate = "21 May 2019";
 
 
 #ifdef ESP32
