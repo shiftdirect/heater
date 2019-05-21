@@ -30,6 +30,25 @@
 #include "../Utility/BoardDetect.h"
 #include "fonts/Icons.h"
 
+// nominally show the current version of firmware & hardware
+// from here we can also update the firmware using web server update (requires internet STA connection)
+// or factory default the stored non volatile memory contents
+//
+// progression is basically via the UP key:
+
+//  _rowSel=0 - standard view, may animate upload arrow if update is available, help prompt shows 'Exit': 
+//       CENTRE > exit menu
+//
+//  UP > _rowSel=1 - if update is available, help prompt shows 'Get Update', otherwise a silent step:
+//       CENTRE > _rowSel=20 - present firmware update confirmation (UP to perform)
+//           UP > update initated, reboot upon conclusion, % progress shown on display
+//
+//  UP > _rowSel=2 - Factory default cancel selection, help prompt shows 'Exit':
+//       CENTRE > exit menu
+//
+//  UP > _rowSel=3 - Factory default perform selection, help prompt shows 'Apply':
+//       CENTRE > _rowSel=10 - request factory default confirm 
+//           UP > _rowSel=11 - defaults installed, present DONE screen, REBOOT after 5 seconds 
 
 
 CVersionInfoScreen::CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
@@ -59,12 +78,9 @@ CVersionInfoScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 20) {
-      _printInverted(_display.xCentre(), 0, " Firmware update ", true, eCentreJustify);
-      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 43, "confirm download", false, eCentreJustify);
-    }
-    else if(_rowSel < 2) {
+    if(_rowSel < 2) {
+      // standard version information screens,
+      // animation of update available via animate() if firmware update is available on web server
       _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
       
       _display.drawBitmap(10, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
@@ -81,6 +97,7 @@ CVersionInfoScreen::show()
       }
 
       if(_rowSel == 1 && isUpdateAvailable()) {
+        // prompt 'Get Update' for new firmware available and first UP press from home
         _printMenuText(_display.xCentre(), 53, " \021  Get Update  \020 ", true, eCentreJustify);
       }
       else {
@@ -89,19 +106,27 @@ CVersionInfoScreen::show()
     }
     else {
       if(_rowSel == 11) {  // after the saving popup has expired
+        // factory default completed screen, progress to REBOOT
         const char* content[2];
         content[0] = "Factory reset";
         content[1] = "completed";
         _ScreenManager.showRebootMsg(content, 5000);
       }
+      else if(_rowSel == 20) {
+        // firmware update confirmation screen
+        _printInverted(_display.xCentre(), 0, " Firmware update ", true, eCentreJustify);
+        _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+        _printMenuText(_display.xCentre(), 43, "confirm download", false, eCentreJustify);
+      }
       else {
         _printInverted(_display.xCentre(), 0, " Factory Default ", true, eCentreJustify);
         if(_rowSel == 10) {
+          // factory default confirmation screen
           _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
           _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
         }
         else {
-        
+          // factory default apply/abort screens
           _display.drawBitmap(10, 15, cautionIcon, cautionWidth, cautionHeight, WHITE);
 
           _printMenuText(50, 30, "Abort", _rowSel == 2);
@@ -122,6 +147,7 @@ bool
 CVersionInfoScreen::animate()
 {
   if(_rowSel <= 1 && isUpdateAvailable()) {
+    // show ascending up arrow if firmware update is available on web server
     _animateCount++;
     ROLLUPPERLIMIT(_animateCount, 10, 0);
     int ypos = 11 + 20 - 7 - _animateCount;
