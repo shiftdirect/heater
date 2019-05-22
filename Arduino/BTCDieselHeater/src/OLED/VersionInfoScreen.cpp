@@ -83,14 +83,14 @@ CVersionInfoScreen::show()
       // animation of update available via animate() if firmware update is available on web server
       _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
       
-      _display.drawBitmap(10, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
-      _printMenuText(43, 14, getVersionStr());
-      _printMenuText(43, 25, getVersionDate());
+      _display.drawBitmap(13, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
+      _printMenuText(46, 14, getVersionStr());
+      _printMenuText(46, 25, getVersionDate());
 
-      _display.drawBitmap(20, 34, hardwareIcon, hardwareWidth, hardwareHeight, WHITE);
+      _display.drawBitmap(23, 34, hardwareIcon, hardwareWidth, hardwareHeight, WHITE);
       int PCB = getBoardRevision();
       sprintf(msg, "V%.1f", float(PCB)*0.1f);
-      _printMenuText(43, 38, msg);
+      _printMenuText(46, 38, msg);
       if(PCB == 20) {
         _printMenuText(108, 38, "Analog", false, eCentreJustify);
         _display.drawLine(88, 42, 127, 42, WHITE);
@@ -149,11 +149,12 @@ CVersionInfoScreen::animate()
   if(_rowSel <= 1 && isUpdateAvailable()) {
     // show ascending up arrow if firmware update is available on web server
     _animateCount++;
-    ROLLUPPERLIMIT(_animateCount, 10, 0);
-    int ypos = 11 + 20 - 7 - _animateCount;
-    _display.fillRect(0, 11, 7, 21, BLACK);
-    _display.drawBitmap(1, ypos, wifiOutIcon, 5, 7, WHITE);
-    _display.fillRect(0, 11, 7, 2, WHITE);
+    ROLLUPPERLIMIT(_animateCount, 5, 0);
+    int ypos = 11 + 15 - 7 - _animateCount;
+    _display.fillRect(0, 11, 10, 21, BLACK);
+    _display.drawBitmap(2, ypos, wifiOutIcon, 5, 7, WHITE);    // upload arrow - from web to afterburner
+    _display.fillRect(1, 11, 7, 2, WHITE);   // top bar
+    _display.drawBitmap(0, 11+16, wwwIcon, wwwWidth, wwwHeight, WHITE);   // www icon
   }
   return true;
 }

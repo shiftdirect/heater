@@ -2,6 +2,9 @@
 <html lang="en">
   <head>
   <meta charset="utf-8"/>
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="-1">
+  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
 <script>
   // global variables
   var sendSize;
@@ -12,12 +15,11 @@
   }
   function init() {
     Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
-    
+
     Socket.onmessage = function(event){
       var response = JSON.parse(event.data);
       var key;
       for(key in response) {
-        console.log("JSON decode:", key, response[key]);
         switch(key) {
           case "progress":
             // actual data bytes received as fed back via web socket
@@ -47,20 +49,25 @@
     ajax.send(formdata);
   }
   function completeHandler(event) {
-    console.log(event);
    _("status").innerHTML = event.target.responseText;
    _("progressBar").value = 0;
    _("loaded_n_total").innerHTML = "Uploaded " + sendSize + " bytes of " + sendSize;
-    setTimeout(function () { 
-      window.location.assign("/"); 
+    var file = _("file1").files[0];
+    if(file.name.endsWith(".bin")) {
+      setTimeout(function () { 
+        window.location.assign("/"); 
       }, 5000);    
+    }
+    else {
+      setTimeout(function () { 
+        window.location.reload(); 
+      }, 1000);    
+    }
   }
   function errorHandler(event) {
-    console.log(event);
     _("status").innerHTML = "Upload Failed";
   }
   function abortHandler(event) {
-    console.log(event);
     _("status").innerHTML = "Upload Aborted";
   }
 </script>
@@ -71,14 +78,14 @@
 </head>
 <body onload="javascript:init()">
   <h1>Afterburner firmware update</h1>
-  <form id='upload_form' method='POST' enctype='multipart/form-data'>
-    <input type='file' name='file1' id='file1'> <BR>
-    <input type='button' value='Update' onclick="uploadFile()"> 
+  <form id="upload_form" method="POST" enctype="multipart/form-data" autocomplete="off">
+    <input type="file" name="file1" id="file1"> <BR>
+    <input type="button" value="Update" onclick="uploadFile()"> 
     <progress id="progressBar" value="0" max="100" style="width:300px;"></progress><BR>
     <h3 id="status"></h3>
     <p id="loaded_n_total"></p>
     <BR>
-    <input type='button' onclick=window.location.assign("/") value='Cancel' id="cancel">
+    <input type="button" onclick=window.location.assign("/") value="Cancel" id="cancel">
   </form>
 </body>
 </html>

@@ -192,3 +192,8 @@ const uint8_t cautionHeight = 29;
 extern const uint8_t updateIcon[];
 const uint8_t updateWidth = 9;
 const uint8_t updateHeight = 10;
+
+// Bitmap sizes for www
+extern const uint8_t wwwIcon[];
+const uint8_t wwwWidth = 10;
+const uint8_t wwwHeight = 9;

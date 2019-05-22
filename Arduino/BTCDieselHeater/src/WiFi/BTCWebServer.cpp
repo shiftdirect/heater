@@ -20,6 +20,7 @@
  * 
  */
 
+#define USE_EMBEDDED_WEBUPDATECODE    
 
 #include "BTCWebServer.h"
 #include "../Utility/DebugPort.h"
@@ -78,10 +79,6 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   return false;                                         // If the file doesn't exist, return false
 }
 
-/*void handleFavIcon() {
-  handleFileRead("/favicon.ico");
-}*/
-
 void handleBTCRoot() {
   handleFileRead("/index.html");
 }
@@ -93,6 +90,7 @@ void handleBTCRoot() {
 #endif
 
 void handleWMConfig() {
+  DebugPort.println("WEB: GET /wmconfig");
 	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
 	DebugPort.println("Starting web portal for wifi config");
   delay(500);
@@ -101,6 +99,7 @@ void handleWMConfig() {
 }
 
 void handleReset() {
+  DebugPort.println("WEB: GET /resetwifi");
 	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
 	DebugPort.println("diconnecting client and wifi, then rebooting");
   delay(500);
@@ -108,6 +107,7 @@ void handleReset() {
 }
 
 void handleFormat() {
+  DebugPort.println("WEB: GET /formatspiffs");
 	server.send(200, "text/plain", "Formatting SPIFFS partition!");
 	DebugPort.println("Formatting SPIFFS partition");
   delay(500);
@@ -131,11 +131,14 @@ void handleBTCNotFound() {
 	digitalWrite(led, 0);
 }
 
-const char* serverIndex = R"=====(
+const char* updateIndex = R"=====(
 <!DOCTYPE html>
 <html lang="en">
   <head>
   <meta charset="utf-8"/>
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="-1">
+  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
 <script>
   // global variables
   var sendSize;
@@ -146,12 +149,11 @@ const char* serverIndex = R"=====(
   }
   function init() {
     Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
-    
+   
     Socket.onmessage = function(event){
       var response = JSON.parse(event.data);
       var key;
       for(key in response) {
-        console.log("JSON decode:", key, response[key]);
         switch(key) {
           case "progress":
             // actual data bytes received as fed back via web socket
@@ -181,20 +183,25 @@ const char* serverIndex = R"=====(
     ajax.send(formdata);
   }
   function completeHandler(event) {
-    console.log(event);
    _("status").innerHTML = event.target.responseText;
    _("progressBar").value = 0;
    _("loaded_n_total").innerHTML = "Uploaded " + sendSize + " bytes of " + sendSize;
-    setTimeout(function () { 
-      window.location.assign("/"); 
+    var file = _("file1").files[0];
+    if(file.name.endsWith(".bin")) {
+      setTimeout(function () { 
+        window.location.assign("/"); 
       }, 5000);    
+    }
+    else {
+      setTimeout(function () { 
+        window.location.reload(); 
+      }, 1000);    
+    }
   }
   function errorHandler(event) {
-    console.log(event);
     _("status").innerHTML = "Upload Failed";
   }
   function abortHandler(event) {
-    console.log(event);
     _("status").innerHTML = "Upload Aborted";
   }
 </script>
@@ -205,14 +212,14 @@ const char* serverIndex = R"=====(
 </head>
 <body onload="javascript:init()">
   <h1>Afterburner firmware update</h1>
-  <form id='upload_form' method='POST' enctype='multipart/form-data'>
-    <input type='file' name='file1' id='file1'> <BR>
-    <input type='button' value='Update' onclick="uploadFile()"> 
+  <form id="upload_form" method="POST" enctype="multipart/form-data" autocomplete="off">
+    <input type="file" name="file1" id="file1"> <BR>
+    <input type="button" value="Update" onclick="uploadFile()"> 
     <progress id="progressBar" value="0" max="100" style="width:300px;"></progress><BR>
     <h3 id="status"></h3>
     <p id="loaded_n_total"></p>
     <BR>
-    <input type='button' onclick=window.location.assign("/") value='Cancel' id="cancel">
+    <input type="button" onclick=window.location.assign("/") value="Cancel" id="cancel">
   </form>
 </body>
 </html>
@@ -237,8 +244,8 @@ function init() {
 
 void rootRedirect()
 {
-// server.sendHeader("Connection", "close");
-  server.send(200, "text/html", rootIndex);
+  server.sendHeader("Location","/");      // reselect the update page
+  server.send(303);
 }
 
 
@@ -264,6 +271,7 @@ void initWebServer(void) {
 	server.on("/formatspiffs", handleFormat);
 
   server.on("/tst", HTTP_GET, []() {
+    DebugPort.println("WEB: GET /tst");
     server.sendHeader("Location","/");      // reselect the update page
     server.send(303);
 //    rootRedirect();
@@ -275,42 +283,56 @@ void initWebServer(void) {
   //
   // Initial launch page
   server.on("/update", HTTP_GET, []() {
+    DebugPort.println("WEB: GET /update");
     sCredentials creds = NVstore.getCredentials();
     if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
       return server.requestAuthentication();
     }
     bUpdateAccessed = true;
-    server.sendHeader("Connection", "close");
-    server.sendHeader("Cache-Control", "no-cache");
-    server.send(200, "text/html", serverIndex);
- //    handleFileRead("/uploadfirmware.html");
+#ifdef USE_EMBEDDED_WEBUPDATECODE    
+    server.send(200, "text/html", updateIndex);
+#else
+     handleFileRead("/uploadfirmware.html");
+#endif
   });
-  server.on("/updatenow", HTTP_GET, []() {  // handle attempts to just browse the /updatenow path - force redirect to root
+
+  // handle attempts to just browse the /updatenow path - force redirect to root
+  server.on("/updatenow", HTTP_GET, []() {  
+    DebugPort.println("WEB: GET /updatenow - ILLEGAL - root redirect");
     rootRedirect();
   });
+
   // actual guts that manages the new firmware upload
   server.on("/updatenow", HTTP_POST, []() {
+    DebugPort.println("WEB: POST /updatenow completion");
     // completion functionality
     if(SPIFFSupload) {
       if(SPIFFSupload == 1) {
-        server.send(200, "OK");
-        server.sendHeader("Location","/update");      // reselect the update page
-        server.send(303);
+        server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
+        DebugPort.println("WEB: SPIFFS OK");
+        // javascript reselects the /update page!
       }
       else {
+        DebugPort.println("WEB: SPIFFS FAIL");
         server.send(500, "text/plain", "500: couldn't create file");
       }
       SPIFFSupload = 0;
     }
     else {
-      if(Update.hasError())
+      if(Update.hasError()) {
+        DebugPort.println("WEB: UDPATE FAIL");
         server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
-      else 
-        server.send(200, "OK - Afterburner will reboot shortly");
+      }
+      else {
+        DebugPort.println("WEB: UDPATE OK");
+        server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
+      }
       delay(1000);
+      // javascript redirects to root page so we go there after reboot!
       ESP.restart();                             // reboot
     }
   }, []() {
+    DebugPort.println("WEB: POST /updatenow handler");
     if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
       HTTPUpload& upload = server.upload();
       if (upload.status == UPLOAD_FILE_START) {
@@ -372,6 +394,7 @@ void initWebServer(void) {
     }
     else {
       // attempt to POST without using /update - forced redirect to root
+      DebugPort.println("WEB: POST /updatenow forbidden entry");
       rootRedirect();
     }
   });
@@ -379,11 +402,12 @@ void initWebServer(void) {
 #if USE_SPIFFS == 1  
   // NOTE: this serves the default home page, and favicon.ico
   server.onNotFound([]() 
-    {                                                      // If the client requests any URI
-      if (!handleFileRead(server.uri()))                   // send it if it exists
-         server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
+  {                                                      // If the client requests any URI
+    if (!handleFileRead(server.uri())) {                  // send it if it exists
+      DebugPort.printf("WEB: NOT FOUND : %s\r\n", server.uri());
+      server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
     }
-  );
+  });
 #else
 	server.onNotFound(handleBTCNotFound);
 #endif
