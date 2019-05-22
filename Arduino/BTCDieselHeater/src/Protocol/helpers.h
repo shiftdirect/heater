@@ -69,6 +69,7 @@ extern bool  getGPIO(int channel);
 extern void  feedWatchdog();
 extern bool  isUpdateAvailable(bool test=true);
 extern void  checkFOTA();
+extern void setUploadSize(long val);
 
 
 

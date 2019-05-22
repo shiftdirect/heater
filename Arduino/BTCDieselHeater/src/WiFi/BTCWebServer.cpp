@@ -20,7 +20,7 @@
  * 
  */
 
-#define USE_EMBEDDED_WEBUPDATECODE    
+//#define USE_EMBEDDED_WEBUPDATECODE    
 
 #include "BTCWebServer.h"
 #include "../Utility/DebugPort.h"
@@ -51,6 +51,7 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 bool bUpdateAccessed = false;  // flag used to ensure web update always starts via /update. direct accesses to /updatenow will FAIL
+long _SuppliedFileSize = 0;
 
 const int led = 13;
 
@@ -142,15 +143,15 @@ const char* updateIndex = R"=====(
 <script>
   // global variables
   var sendSize;
-  var Socket;
+  var ws;
 
   function _(el) {
     return document.getElementById(el);
   }
   function init() {
-    Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+    ws = new WebSocket('ws://' + window.location.hostname + ':81/');
    
-    Socket.onmessage = function(event){
+    ws.onmessage = function(event){
       var response = JSON.parse(event.data);
       var key;
       for(key in response) {
@@ -171,6 +172,13 @@ const char* updateIndex = R"=====(
     _("cancel").hidden = true;
     var file = _("file1").files[0];
     sendSize = file.size;
+
+    var JSONmsg = {};
+    JSONmsg['UploadSize'] = sendSize;
+    var str = JSON.stringify(obj);
+    console.log("JSON Tx:", str);
+    ws.send(str);
+
     var formdata = new FormData();
     formdata.append("update", file);
     var ajax = new XMLHttpRequest();
@@ -332,14 +340,14 @@ void initWebServer(void) {
       ESP.restart();                             // reboot
     }
   }, []() {
-    DebugPort.println("WEB: POST /updatenow handler");
+//    DebugPort.println("WEB: POST /updatenow handler");
     if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
       HTTPUpload& upload = server.upload();
       if (upload.status == UPLOAD_FILE_START) {
         String filename = upload.filename;
         DebugPort.setDebugOutput(true);
         if(filename.endsWith(".bin")) {
-          DebugPort.printf("Update: %s\r\n", filename.c_str());
+          DebugPort.printf("Update: %s %d\r\n", filename.c_str(), upload.totalSize);
           if (!Update.begin()) { //start with max available size
             Update.printError(DebugPort);
           }
@@ -361,6 +369,11 @@ void initWebServer(void) {
           sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
           sendWebServerString(JSON);  // feedback proper byte count of update
         }
+        int percent = 0;
+        if(_SuppliedFileSize) 
+          percent = 100 * upload.totalSize / _SuppliedFileSize;
+        ShowOTAScreen(percent);
+
         DebugPort.print(".");
         if(fsUploadFile) {
           fsUploadFile.write(upload.buf, upload.currentSize); // Write the received bytes to the file
@@ -484,3 +497,7 @@ bool hasWebServerSpoken(bool reset)
 	return retval;
 }
 
+void setUploadSize(long val)
+{
+  _SuppliedFileSize = val;
+};

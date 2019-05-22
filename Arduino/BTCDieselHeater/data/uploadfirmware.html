@@ -8,15 +8,15 @@
 <script>
   // global variables
   var sendSize;
-  var Socket;
+  var ws;
 
   function _(el) {
     return document.getElementById(el);
   }
   function init() {
-    Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+    ws = new WebSocket('ws://' + window.location.hostname + ':81/');
 
-    Socket.onmessage = function(event){
+    ws.onmessage = function(event){
       var response = JSON.parse(event.data);
       var key;
       for(key in response) {
@@ -37,6 +37,13 @@
     _("cancel").hidden = true;
     var file = _("file1").files[0];
     sendSize = file.size;
+
+    var JSONmsg = {};
+    JSONmsg['UploadSize'] = sendSize;
+    var str = JSON.stringify(JSONmsg);
+    console.log("JSON Tx:", str);
+    ws.send(str);
+
     var formdata = new FormData();
     formdata.append("update", file);
     var ajax = new XMLHttpRequest();

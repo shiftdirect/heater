@@ -137,13 +137,21 @@ CScreenHeader::animate()
     int yPos = 0;
     if(_clearUpAnimation) { 
       // arrow was drawn in the prior iteration, now erase it 
-      _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
+      if(NVstore.getOTAEnabled()) 
+        _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
+      else
+        _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
+      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
       retval = true;
       _clearUpAnimation = false;
     }
     else if(hasWebServerSpoken(true)) {
       // we have emitted data to the web client, show an UP arrow
-      _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
+      if(NVstore.getOTAEnabled()) 
+        _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
+      else
+        _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
+      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
       _display.drawBitmap(xPos, yPos, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
       _clearUpAnimation = true;  // clear arrow upon next iteration
       retval = true;
@@ -154,13 +162,17 @@ CScreenHeader::animate()
     yPos = H_WIFI_ICON - H_WIFIIN_ICON + 1;
     if(_clearDnAnimation) { 
       // arrow was drawn in the prior iteration, now erase it 
-      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
+      _display.fillRect(X_WIFI_ICON + 12, Y_WIFI_ICON + 6, 12, 5, BLACK);
+//      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
+      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
       retval = true;
       _clearDnAnimation = false;
     }
     else if(hasWebClientSpoken(true)) {
       // we have receievd data from the web client, show an DOWN arrow
-      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
+      _display.fillRect(X_WIFI_ICON + 12, Y_WIFI_ICON + 6, 12, 5, BLACK);
+//      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
+      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
       _display.drawBitmap(xPos, yPos, wifiInIcon, W_WIFIOUT_ICON, H_WIFIOUT_ICON, WHITE);
       _clearDnAnimation = true;  // clear arrow upon next iteration
       retval = true;

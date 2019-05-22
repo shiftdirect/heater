@@ -185,6 +185,9 @@ void interpretJsonCommand(char* pLine)
       info.password[31] = 0;
 			NVstore.setMQTTinfo(info);
     }
+		else if(strcmp("UploadSize", it->key) == 0) {
+      setUploadSize(it->value.as<long>());
+		}
 	}
 }
 
