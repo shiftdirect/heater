@@ -262,7 +262,7 @@ CThermostatModeScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop, CScreenManager::SettingsUI);  // force return to main menu
           break;
         case 1:
         case 2:

@@ -217,9 +217,9 @@ CGPIOScreen::keyHandler(uint8_t event)
       }
     }
     if(event & key_Down) {
-      _scrollChar = 0;
-      _rowSel--;
-      LOWERLIMIT(_rowSel, 0);
+        _scrollChar = 0;
+        _rowSel--;
+        LOWERLIMIT(_rowSel, 0);
     }
     // UP press
     if(event & key_Up) {
@@ -249,7 +249,7 @@ CGPIOScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop, CScreenManager::GPIOInfoUI);  // force return to main menu GPIO view
           break;
         case 1:
         case 2:
@@ -345,6 +345,9 @@ CGPIOInfoScreen::keyHandler(uint8_t event)
     }
     // CENTRE press
     if(event & key_Centre) {
+    }
+    if(event & key_Down) {
+      _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::GPIOUI);
     }
   }
   if(event & keyRepeat) {

@@ -216,14 +216,19 @@ CPrimingScreen::keyHandler(uint8_t event)
     }
     // press DOWN
     if(event & key_Down) {
-      _rowSel--;
-      LOWERLIMIT(_rowSel, 0);
-      _colSel = 0;
-      if(_rowSel == 1)
-        // _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
-        _colSel = getThermostatModeActive() ? 0 : 1;              
-      if(_rowSel == 2)
-        _colSel = NVstore.getDegFMode();
+      if(_rowSel == 0) {
+        _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::VersionUI);  // force return to main menu
+      }
+      else {
+        _rowSel--;
+        LOWERLIMIT(_rowSel, 0);
+        _colSel = 0;
+        if(_rowSel == 1)
+          // _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
+          _colSel = getThermostatModeActive() ? 0 : 1;              
+        if(_rowSel == 2)
+          _colSel = NVstore.getDegFMode();
+      }
     }
 
     // check if fuel priming was selected

@@ -44,9 +44,7 @@ void hard_restart() {
 
 void initOTA(){
   FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
-	// ArduinoOTA.setHostname("myesp32");
 	ArduinoOTA.setHostname("AfterburnerOTA");
-//  ArduinoOTA.setPassword("TESTO123");
 
 	ArduinoOTA
 		.onStart([]() {
@@ -95,20 +93,22 @@ void DoOTA(){
   ArduinoOTA.handle();
 
   // manage Firmware OTA
-  // this is where the controlelr contacts a web server to discover if new firmware is available
+  // this is where the controller contacts a web server to discover if new firmware is available
   // if so, it can dowload and implant using OTA and become effective next reboot!
   long tDelta = millis() - FOTAtime;
   if(tDelta > 0) {  
     FOTAtime = millis() + 600000;  // 10 minutes
-    DebugPort.println("Checking for new firmware...");
-    if(FOTA.execHTTPcheck()) {
-      DebugPort.println("New firmware available on web server!");
-      if(FOTAauth == 2) {
-        FOTA.execOTA();
-        FOTAauth = 0;
+    if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
+      DebugPort.println("Checking for new firmware...");
+      if(FOTA.execHTTPcheck()) {
+        DebugPort.println("New firmware available on web server!");
+        if(FOTAauth == 2) {  // user has authorised update (was == 1 before auth.)
+          FOTA.execOTA();    // go ahead and do the update, reading new file from web server
+          FOTAauth = 0;      // and we're done.
+        }
+        else 
+          FOTAauth = 1;   // flag that new firmware is available
       }
-      else 
-        FOTAauth = 1;   // flag that new firmware is available
     }
   }
 };

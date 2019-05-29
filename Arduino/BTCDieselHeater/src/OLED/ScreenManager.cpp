@@ -222,8 +222,8 @@ CScreenManager::begin(bool bNoClock)
 
   // create User Settings screens loop 
   menuloop.clear();
-  menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // experimental settings screen
   menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
+  menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // experimental settings screen
   menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
   menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
   menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
