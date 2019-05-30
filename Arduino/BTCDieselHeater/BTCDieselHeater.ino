@@ -374,6 +374,8 @@ void setup() {
   NVstore.init();
   NVstore.load();
   initMQTTJSONmoderator();   // prevent JSON for MQTT unless requested
+  initTimerJSONmoderator();  // prevent JSON for timers unless requested
+
 
   KeyPad.begin(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
   KeyPad.setCallback(parentKeyHandler);

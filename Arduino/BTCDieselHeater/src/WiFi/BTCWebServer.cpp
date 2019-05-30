@@ -20,7 +20,7 @@
  * 
  */
 
-//#define USE_EMBEDDED_WEBUPDATECODE    
+#define USE_EMBEDDED_WEBUPDATECODE    
 
 #include "BTCWebServer.h"
 #include "../Utility/DebugPort.h"
@@ -150,7 +150,7 @@ const char* updateIndex = R"=====(
   }
   function init() {
     ws = new WebSocket('ws://' + window.location.hostname + ':81/');
-   
+
     ws.onmessage = function(event){
       var response = JSON.parse(event.data);
       var key;
@@ -175,7 +175,7 @@ const char* updateIndex = R"=====(
 
     var JSONmsg = {};
     JSONmsg['UploadSize'] = sendSize;
-    var str = JSON.stringify(obj);
+    var str = JSON.stringify(JSONmsg);
     console.log("JSON Tx:", str);
     ws.send(str);
 

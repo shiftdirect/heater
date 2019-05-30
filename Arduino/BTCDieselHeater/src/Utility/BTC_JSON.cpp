@@ -150,6 +150,13 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("TimerRefresh", it->key) == 0) {
       TimerModerator.reset();
 		}
+		else if(strcmp("TQuery", it->key) == 0) {
+      int timerID = it->value.as<int>();
+      if(timerID)
+        TimerModerator.reset(timerID-1);
+      else 
+        TimerModerator.reset();
+		}
 		else if(strcmp("FanSensor", it->key) == 0) {
       setFanSensor(it->value.as<unsigned char>());
 		}
@@ -388,7 +395,8 @@ void updateJSONclients(bool report)
 void resetJSONmoderator()
 {
   JSONmoderator.reset();
-  TimerModerator.reset();
+  initTimerJSONmoderator();
+  initMQTTJSONmoderator();
 }
 
 void initMQTTJSONmoderator()
@@ -397,4 +405,10 @@ void initMQTTJSONmoderator()
   makeJSONStringMQTT(MQTTmoderator, jsonStr, sizeof(jsonStr));
 }
 
+void initTimerJSONmoderator()
+{
+  char jsonStr[800];
+  for(int tmr=0; tmr<14; tmr++) 
+    makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr));
+}
 
