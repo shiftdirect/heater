@@ -114,10 +114,10 @@ CScreenHeader::animate()
     switch(_animateCount) {
       case 0:
       case 2:
-        _display.fillRect(xPos, yPos, W_TIMER_ICON+3, H_TIMER_ICON, BLACK);
+        _display.fillRect(xPos, yPos, TimerIconInfo.width+3, TimerIconInfo.height, BLACK);
         break;        
       case 1:
-        _display.drawBitmap(xPos+6, yPos, updateIcon, updateWidth, updateHeight, WHITE);
+        _drawBitmap(xPos+6, yPos, UpdateIconInfo);
         break;
       default:
         showTimers();
@@ -127,11 +127,8 @@ CScreenHeader::animate()
 
   if((isWifiConnected() || isWifiAP()) && isWebClientConnected()) {
 
-    int xPos = X_WIFI_ICON + W_WIFI_ICON;
-    if(isWifiAP()) {
-      xPos += 4;
-    }
-    
+    int xPos = X_WIFI_ICON + WifiIconInfo.width;
+
     // UP arrow animation
     //
     int yPos = 0;
@@ -140,8 +137,8 @@ CScreenHeader::animate()
       if(NVstore.getOTAEnabled()) 
         _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
       else
-        _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
-      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
+        _display.fillRect(xPos, yPos, WifiInIconInfo.width, WifiInIconInfo.height, BLACK);
+      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
       retval = true;
       _clearUpAnimation = false;
     }
@@ -150,21 +147,21 @@ CScreenHeader::animate()
       if(NVstore.getOTAEnabled()) 
         _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
       else
-        _display.fillRect(xPos, yPos, W_WIFIIN_ICON, H_WIFIIN_ICON, BLACK);
-      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
-      _display.drawBitmap(xPos, yPos, wifiOutIcon, W_WIFIIN_ICON, H_WIFIIN_ICON, WHITE);
+        _display.fillRect(xPos, yPos, WifiInIconInfo.width, WifiInIconInfo.height, BLACK);
+      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
+      _drawBitmap(xPos, yPos, WifiOutIconInfo);
       _clearUpAnimation = true;  // clear arrow upon next iteration
       retval = true;
     }
     
     // DOWN arrow animation
     //
-    yPos = H_WIFI_ICON - H_WIFIIN_ICON + 1;
+    yPos = WifiIconInfo.height - WifiInIconInfo.height + 1;
     if(_clearDnAnimation) { 
       // arrow was drawn in the prior iteration, now erase it 
       _display.fillRect(X_WIFI_ICON + 12, Y_WIFI_ICON + 6, 12, 5, BLACK);
 //      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
-      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
+      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
       retval = true;
       _clearDnAnimation = false;
     }
@@ -172,8 +169,8 @@ CScreenHeader::animate()
       // we have receievd data from the web client, show an DOWN arrow
       _display.fillRect(X_WIFI_ICON + 12, Y_WIFI_ICON + 6, 12, 5, BLACK);
 //      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
-      _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
-      _display.drawBitmap(xPos, yPos, wifiInIcon, W_WIFIOUT_ICON, H_WIFIOUT_ICON, WHITE);
+      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
+      _drawBitmap(xPos, yPos, WifiInIconInfo, WHITE);
       _clearDnAnimation = true;  // clear arrow upon next iteration
       retval = true;
     }
@@ -185,7 +182,7 @@ void
 CScreenHeader::showBTicon()
 {
   if(getBluetoothClient().isConnected()) {
-    _display.drawBitmap(X_BT_ICON, Y_BT_ICON, BTicon, W_BT_ICON, H_BT_ICON, WHITE);
+    _drawBitmap(X_BT_ICON, Y_BT_ICON, BluetoothIconInfo, WHITE);
   }
 }
 
@@ -193,7 +190,7 @@ void
 CScreenHeader::showWifiIcon()
 {
   if(isWifiConnected() || isWifiAP()) {
-    _display.drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, wifiIcon, W_WIFI_ICON, H_WIFI_ICON, WHITE);
+    _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
     if(isWifiButton()) {
       _display.fillRect(X_WIFI_ICON + 11, Y_WIFI_ICON + 5, 15, 7, BLACK);
       CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
@@ -229,19 +226,19 @@ CScreenHeader::showWifiIcon()
 void
 CScreenHeader::showBatteryIcon(float voltage)
 {
-  _display.drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIcon, W_BATT_ICON, H_BATT_ICON, WHITE);
+  _drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIconInfo);
   char msg[16];
   sprintf(msg, "%.1fV", voltage);
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-  _display.setCursor(X_BATT_ICON + W_BATT_ICON/2, 
-                     Y_BATT_ICON + H_BATT_ICON + 2);
+  _display.setCursor(X_BATT_ICON + BatteryIconInfo.width/2, 
+                     Y_BATT_ICON + BatteryIconInfo.height + 2);
   _display.printCentreJustified(msg);
 
   // nominal 10.5 -> 13.5V bargraph
   int Capacity = (voltage - 10.7) * 4;
   if(Capacity < 0)   Capacity = 0;
   if(Capacity > 11)  Capacity = 11;
-  _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, W_BATT_ICON-4-Capacity, 6, BLACK);
+  _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, BatteryIconInfo.width-4-Capacity, 6, BLACK);
 }
 
 int
@@ -250,9 +247,9 @@ CScreenHeader::showTimers()
   int nextTimer = CTimerManager::getNextTimer();
   if(nextTimer) {
     int xPos = X_TIMER_ICON;   
-    _display.drawBitmap(xPos, Y_TIMER_ICON, largeTimerIcon, W_TIMER_ICON, H_TIMER_ICON, WHITE);
+    _drawBitmap(xPos, Y_TIMER_ICON, LargeTimerIconInfo);
     if(nextTimer & 0x80) 
-      _display.drawBitmap(xPos-3, Y_TIMER_ICON, verticalRepeatIcon, verticalRepeatWidthPixels, verticalRepeatHeightPixels, WHITE);
+      _drawBitmap(xPos-3, Y_TIMER_ICON, VerticalRepeatIconInfo);
 
     CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
     if((nextTimer & 0x0f) >= 10) 
@@ -287,7 +284,7 @@ CScreenHeader::showTime()
   {
     CTransientFont AF(_display, &arial_8ptFontInfo);
     // determine centre position of remaining real estate
-    int xPos = X_WIFI_ICON + W_WIFI_ICON + W_WIFIIN_ICON;  // rhs of wifi conglomeration
+    int xPos = X_WIFI_ICON + WifiIconInfo.width + WifiInIconInfo.width;  // rhs of wifi conglomeration
     if(isWifiAP())  xPos += 4;                             // add more if an Access Point
     
     _printMenuText(X_CLOCK, Y_CLOCK, msg);

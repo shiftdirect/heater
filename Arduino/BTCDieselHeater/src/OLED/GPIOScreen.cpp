@@ -85,10 +85,7 @@ CGPIOScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " GPIO Settings ", true, eCentreJustify);
-      _display.drawBitmap(10, 14, GPIOIcon, GPIOWidth, GPIOHeight, WHITE);
-//      _printMenuText(55, Line3, "Inputs:", false, eRightJustify);
-//      _printMenuText(55, Line2, "Outputs:", false, eRightJustify);
-//      _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
+      _drawBitmap(10, 14, GPIOIconInfo);
       {
         const char* msgText = NULL;
         switch(_GPIOinMode) {
@@ -321,11 +318,11 @@ CGPIOInfoScreen::show()
 
   _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
 
-  _display.drawBitmap(4, 29, GPIOin.getState(0) ? CloseIcon : OpenIcon, CloseIconWidth, CloseIconHeight, WHITE);
-  _display.drawBitmap(27, 29, GPIOin.getState(1) ? CloseIcon : OpenIcon, CloseIconWidth, CloseIconHeight, WHITE);
+  _drawBitmap(4, 29, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
+  _drawBitmap(27, 29, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
   
-  _display.drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIcon : BulbOffIcon, BulbOnIconWidth, BulbOnIconHeight, WHITE);
-  _display.drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIcon : BulbOffIcon, BulbOnIconWidth, BulbOnIconHeight, WHITE);
+  _drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIconInfo : BulbOffIconInfo);
+  _drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIconInfo : BulbOffIconInfo);
 
   sprintf(msg, "%d", GPIOalg.getValue());
   _printMenuText(58, Line1, msg);

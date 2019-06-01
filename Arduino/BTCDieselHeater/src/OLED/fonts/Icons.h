@@ -19,181 +19,107 @@
  * 
  */
 
+struct BITMAP_INFO;
+
 // 'Thermometer', 8x50px
-#define W_BULB_ICON 8
-#define H_BULB_ICON 50
-extern const unsigned char ambientThermometerIcon [];
-extern const unsigned char bodyThermometerIcon [];
+extern const BITMAP_INFO BodyThermometerIconInfo;
+extern const BITMAP_INFO AmbientThermometerIconInfo;
 
 // 'ThermoPtr', 3x5px
-#define W_PTR_ICON 3
-#define H_PTR_ICON 5
-extern const unsigned char thermoPtr [];
+extern const BITMAP_INFO ThermoPtrIconInfo;
 
 // 'Bluetooth icon', 6x11px
-#define W_BT_ICON  6
-#define H_BT_ICON 11
-extern const unsigned char BTicon [];
+extern const BITMAP_INFO BluetoothIconInfo;
 
 // 'wifiIcon', 13x10px
-#define W_WIFI_ICON 13
-#define H_WIFI_ICON 10
-extern const unsigned char wifiIcon [];
+extern const BITMAP_INFO WifiIconInfo;
 
 // 'wifiInIcon', 5x5px
-#define W_WIFIIN_ICON 5
-#define H_WIFIIN_ICON 5
-extern const unsigned char wifiInIcon [];
+extern const BITMAP_INFO WifiInIconInfo;
 
 // 'wifiOutIcon', 5x5px
-#define W_WIFIOUT_ICON 5
-#define H_WIFIOUT_ICON 5
-extern const unsigned char wifiOutIcon [];
+extern const BITMAP_INFO WifiOutIconInfo;
 
 // 'BatteryIcon', 15x10px
-#define W_BATT_ICON 15
-#define H_BATT_ICON 10
-extern const unsigned char BatteryIcon [];
+extern const BITMAP_INFO BatteryIconInfo;
 
 // 'GlowPlugIcon', 16x9px
-#define W_GLOW_ICON 16
-#define H_GLOW_ICON 9
-extern const unsigned char GlowPlugIcon [];
+extern const BITMAP_INFO GlowPlugIconInfo;
 
 // 'HeatRise', 17x2px
-#define W_HEAT_ICON 17
-#define H_HEAT_ICON 2
-extern const unsigned char GlowHeatIcon [];
+extern const BITMAP_INFO GlowHeatIconInfo;
 
-#define W_FAN_ICON 16
-#define H_FAN_ICON 16
 // 'Fan3_1a', 16x16px
-extern const unsigned char FanIcon1 [];
 // 'Fan3_2a', 16x16px
-extern const unsigned char FanIcon2 [];
 // 'Fan3_3a', 16x16px
-extern const unsigned char FanIcon3 [];
 // 'Fan3_4a', 16x16px
-extern const unsigned char FanIcon4 [];
+extern const BITMAP_INFO FanIcon1Info;
+extern const BITMAP_INFO FanIcon2Info;
+extern const BITMAP_INFO FanIcon3Info;
+extern const BITMAP_INFO FanIcon4Info;
 
 
 // 'FuelIcon', 7x12px
-#define W_FUEL_ICON 7
-#define H_FUEL_ICON 12
-extern const unsigned char FuelIcon [];
+extern const BITMAP_INFO FuelIconInfo;
 
 // 'Target', 13x13px
-#define W_TARGET_ICON 13
-#define H_TARGET_ICON 13
-extern const unsigned char TargetIcon [];
+extern const BITMAP_INFO TargetIconInfo;
 
-#define W_TIMER_ICON 15
-#define H_TIMER_ICON 15
-extern const unsigned char repeatIcon [];
-extern const unsigned char timerID1Icon [];
-extern const unsigned char timerID2Icon [];
-extern const unsigned char timerIcon [];
-extern const unsigned char largeTimerIcon [];
-extern const uint8_t verticalRepeatIcon [];
-extern const uint8_t GPIO1OFFIcon[];
-extern const uint8_t GPIO1ONIcon[];
-extern const uint8_t GPIO2OFFIcon[];
-extern const uint8_t GPIO2ONIcon[];
-extern const uint8_t CrossIcon[];
-extern const uint8_t TickIcon[];
-// Bitmap sizes for verticalRepeat
-const uint8_t verticalRepeatWidthPixels = 6;
-const uint8_t verticalRepeatHeightPixels = 15;
+extern const BITMAP_INFO RepeatIconInfo;
+extern const BITMAP_INFO TimerId1IconInfo;
+extern const BITMAP_INFO TimerId2IconInfo;
+extern const BITMAP_INFO TimerIconInfo;
+extern const BITMAP_INFO LargeTimerIconInfo;
+extern const BITMAP_INFO VerticalRepeatIconInfo;
 
-// Bitmap sizes for GPIOIcons
-const uint8_t GPIOIconWidthPixels = 9;
-const uint8_t GPIOIconHeightPixels = 9;
-
-// Bitmap sizes for TickIcons
-const uint8_t TickIconWidth = 5;
-const uint8_t TickIconHeight = 5;
 
 // Bitmap for open
-extern const uint8_t OpenIcon[];
-const uint8_t OpenIconWidth = 13;
-const uint8_t OpenIconHeight = 7;
+extern const BITMAP_INFO OpenIconInfo;
 
 // Bitmap for close
-extern const uint8_t CloseIcon[];
-const uint8_t CloseIconWidth = 13;
-const uint8_t CloseIconHeight = 7;
+extern const BITMAP_INFO CloseIconInfo;
 
 // Bitmap for BulbOn
-extern const uint8_t BulbOnIcon[];
-const uint8_t BulbOnIconWidth = 9;
-const uint8_t BulbOnIconHeight = 8;
+extern const BITMAP_INFO BulbOnIconInfo;
 
 // Bitmap for BulbOff
-extern const uint8_t BulbOffIcon[];
-const uint8_t BulbOffIconWidth = 9;
-const uint8_t BulbOffIconHeight = 8;
+extern const BITMAP_INFO BulbOffIconInfo;
 
 // Bitmap for start
-extern const uint8_t startIcon[];
-const uint8_t startWidth = 5;
-const uint8_t startHeight = 9;
+extern const BITMAP_INFO StartIconInfo;
 
 // Bitmap sizes for stop
-extern const uint8_t stopIcon[];
-const uint8_t stopWidth = 6;
-const uint8_t stopHeight = 8;
+extern const BITMAP_INFO StopIconInfo;
 
 // Bitmap for displayTimeout
-extern const uint8_t displayTimeoutIcon[];
-const uint8_t displayTimeoutWidth = 24;
-const uint8_t displayTimeoutHeight = 10;
+extern const BITMAP_INFO DisplayTimeoutIconInfo;
 
 // Bitmap for menuTimeout
-extern const uint8_t menuTimeoutIcon[];
-const uint8_t menuTimeoutWidth = 24;
-const uint8_t menuTimeoutHeight = 10;
+extern const BITMAP_INFO MenuTimeoutIconInfo;
 
 // Bitmap for timeout
-extern const uint8_t timeoutIcon[];
-const uint8_t timeoutWidth = 9;
-const uint8_t timeoutHeight = 10;
+extern const BITMAP_INFO TimeoutIconInfo;
 
 // Bitmap for refresh
-extern const uint8_t refreshIcon[];
-const uint8_t refreshWidth = 13;
-const uint8_t refreshHeight = 11;
+extern const BITMAP_INFO RefreshIconInfo;
 
 // Bitmap for thermostat modes
-extern const uint8_t thermostatIcon[];
-const uint8_t thermostatWidth = 28;
-const uint8_t thermostatHeight = 34;
+extern const BITMAP_INFO ThermostatIconInfo;
 
 // Bitmap for gPIO
-extern const uint8_t GPIOIcon[];
-const uint8_t GPIOWidth = 20;
-const uint8_t GPIOHeight = 33;
+extern const BITMAP_INFO GPIOIconInfo;
 
 // Bitmap for firmware
-extern const uint8_t firmwareIcon[];
-const uint8_t firmwareWidth = 26;
-const uint8_t firmwareHeight = 21;
+extern const BITMAP_INFO FirmwareIconInfo;
 
 // Bitmap for hardware
-extern const uint8_t hardwareIcon[];
-const uint8_t hardwareWidth = 16;
-const uint8_t hardwareHeight = 15;
+extern const BITMAP_INFO HardwareIconInfo;
 
 // Bitmap for caution
-extern const uint8_t cautionIcon[];
-const uint8_t cautionWidth = 30;
-const uint8_t cautionHeight = 29;
+extern const BITMAP_INFO CautionIconInfo;
 
 // Bitmap sizes for update
-extern const uint8_t updateIcon[];
-const uint8_t updateWidth = 9;
-const uint8_t updateHeight = 10;
+extern const BITMAP_INFO UpdateIconInfo;
 
 // Bitmap sizes for www
-extern const uint8_t wwwIcon[];
-const uint8_t wwwWidth = 10;
-const uint8_t wwwHeight = 9;
+extern const BITMAP_INFO WWWIconInfo;

@@ -65,7 +65,7 @@ CHomeMenuSelScreen::show()
       _printInverted(_display.xCentre(), 0, " Home Menu Actions ", true, eCentreJustify);
       
 //      _printMenuText(66, 14, "On timeout:", false, eRightJustify);
-      _display.drawBitmap(30, 14, timeoutIcon, timeoutWidth, timeoutHeight, WHITE);
+      _drawBitmap(30, 14, TimeoutIconInfo);
       switch(_action.onTimeout) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
@@ -75,7 +75,7 @@ CHomeMenuSelScreen::show()
       _printMenuText(50, 14, msg, _rowSel == 3);
 
 //      _printMenuText(66, 26, "On start:", false, eRightJustify);
-      _display.drawBitmap(32, 26, startIcon, startWidth, startHeight, WHITE);
+      _drawBitmap(32, 26, StartIconInfo);
       switch(_action.onStart) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;
@@ -85,7 +85,7 @@ CHomeMenuSelScreen::show()
       _printMenuText(50, 26, msg, _rowSel == 2);
 
 //      _printMenuText(66, 38, "On stop:", false, eRightJustify);
-      _display.drawBitmap(31, 38, stopIcon, stopWidth, stopHeight, WHITE);
+      _drawBitmap(31, 38, StopIconInfo);
       switch(_action.onStop) {
         case 0: strcpy(msg, "Default"); break;
         case 1: strcpy(msg, "Detailed"); break;

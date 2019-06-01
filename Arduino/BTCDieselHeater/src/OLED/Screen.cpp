@@ -151,6 +151,13 @@ CScreen::_reqOEMWarning()
   _showOEMerror = 10;
 }
 
+void 
+CScreen::_drawBitmap(int x, int y, const BITMAP_INFO& info, uint16_t colour)
+{
+  _display.drawBitmap(x, y, info.pBitmap, info.width, info.height, colour);
+}
+
+
 // a class used for temporary alternate fonts usage
 // Reverts to standard inbuilt font when the instance falls out of scope
 CTransientFont::CTransientFont(C128x64_OLED& disp, const FONT_INFO* pFont) :

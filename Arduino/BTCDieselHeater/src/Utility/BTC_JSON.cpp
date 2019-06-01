@@ -147,10 +147,8 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("TimerConflict", it->key) == 0) {
       validateTimer(it->value.as<int>());
 		}
-		else if(strcmp("TimerRefresh", it->key) == 0) {
-      TimerModerator.reset();
-		}
-		else if(strcmp("TQuery", it->key) == 0) {
+    // request specific timer refresh
+		else if((strcmp("TQuery", it->key) == 0) || (strcmp("TimerRefresh", it->key) == 0) ) {
       int timerID = it->value.as<int>();
       if(timerID)
         TimerModerator.reset(timerID-1);

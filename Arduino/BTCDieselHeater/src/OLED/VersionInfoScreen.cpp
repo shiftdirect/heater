@@ -83,11 +83,11 @@ CVersionInfoScreen::show()
       // animation of update available via animate() if firmware update is available on web server
       _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
       
-      _display.drawBitmap(13, 11, firmwareIcon, firmwareWidth, firmwareHeight, WHITE);
+      _drawBitmap(13, 11, FirmwareIconInfo);
       _printMenuText(46, 14, getVersionStr());
       _printMenuText(46, 25, getVersionDate());
 
-      _display.drawBitmap(23, 34, hardwareIcon, hardwareWidth, hardwareHeight, WHITE);
+      _drawBitmap(23, 34, HardwareIconInfo);
       int PCB = getBoardRevision();
       sprintf(msg, "V%.1f", float(PCB)*0.1f);
       _printMenuText(46, 38, msg);
@@ -127,7 +127,7 @@ CVersionInfoScreen::show()
         }
         else {
           // factory default apply/abort screens
-          _display.drawBitmap(10, 15, cautionIcon, cautionWidth, cautionHeight, WHITE);
+          _drawBitmap(10, 15, CautionIconInfo);
 
           _printMenuText(50, 30, "Abort", _rowSel == 2);
           _printMenuText(50, 16, "Apply", _rowSel == 3);
@@ -152,9 +152,9 @@ CVersionInfoScreen::animate()
     ROLLUPPERLIMIT(_animateCount, 5, 0);
     int ypos = 11 + 15 - 7 - _animateCount;
     _display.fillRect(0, 11, 10, 21, BLACK);
-    _display.drawBitmap(2, ypos, wifiOutIcon, 5, 7, WHITE);    // upload arrow - from web to afterburner
+    _display.drawBitmap(2, ypos, WifiOutIconInfo.pBitmap, WifiOutIconInfo.width, 7, WHITE);    // upload arrow - from web to afterburner
     _display.fillRect(1, 11, 7, 2, WHITE);   // top bar
-    _display.drawBitmap(0, 11+16, wwwIcon, wwwWidth, wwwHeight, WHITE);   // www icon
+    _drawBitmap(0, 11+16, WWWIconInfo);   // www icon
   }
   return true;
 }

@@ -82,7 +82,7 @@ CThermostatModeScreen::show()
     }
     else {
       _printInverted(_display.xCentre(), 0, " Thermostat Mode ", true, eCentreJustify);
-      _display.drawBitmap(3, 14, thermostatIcon, thermostatWidth, thermostatHeight, WHITE);
+      _drawBitmap(3, 14, ThermostatIconInfo);
       float fTemp = _window;
       if(NVstore.getDegFMode()) {
         fTemp = fTemp * 9 / 5;

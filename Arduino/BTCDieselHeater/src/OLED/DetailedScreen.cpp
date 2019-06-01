@@ -136,20 +136,20 @@ CDetailedScreen::animate()
 
     if(_animatePump) {
       // erase region of fuel icon
-      _display.fillRect(X_FUEL_ICON, Y_FUEL_ICON, W_FUEL_ICON, H_FUEL_ICON + 4, BLACK);
-      _display.drawBitmap(X_FUEL_ICON, Y_FUEL_ICON+(_dripAnimationState/2), FuelIcon, W_FUEL_ICON, H_FUEL_ICON, WHITE);
+      _display.fillRect(X_FUEL_ICON, Y_FUEL_ICON, FuelIconInfo.width, FuelIconInfo.height + 4, BLACK);
+      _drawBitmap(X_FUEL_ICON, Y_FUEL_ICON+(_dripAnimationState/2), FuelIconInfo);
       _dripAnimationState++;
       _dripAnimationState &= 0x07;
     }
 
     if(_animateRPM) {
       // erase region of fuel icon
-      _display.fillRect(X_FAN_ICON, Y_FAN_ICON, W_FAN_ICON, H_FAN_ICON, BLACK);
+      _display.fillRect(X_FAN_ICON, Y_FAN_ICON, FanIcon1Info.width, FanIcon1Info.height, BLACK);
       switch(_fanAnimationState) {
-        case 0: _display.drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon1, W_FAN_ICON, H_FAN_ICON, WHITE); break;
-        case 1: _display.drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon2, W_FAN_ICON, H_FAN_ICON, WHITE); break;
-        case 2: _display.drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon3, W_FAN_ICON, H_FAN_ICON, WHITE); break;
-        case 3: _display.drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon4, W_FAN_ICON, H_FAN_ICON, WHITE); break;
+        case 0: _drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon1Info); break;
+        case 1: _drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon2Info); break;
+        case 2: _drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon3Info); break;
+        case 3: _drawBitmap(X_FAN_ICON, Y_FAN_ICON, FanIcon4Info); break;
       }
       _fanAnimationState++;
       _fanAnimationState &= 0x03;
@@ -157,8 +157,8 @@ CDetailedScreen::animate()
     
     if(_animateGlow) {
       _display.fillRect(X_GLOW_ICON, Y_GLOW_ICON, 17, 10, BLACK);
-      _display.drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIcon, 16, 9, WHITE);
-      _display.drawBitmap(X_GLOW_ICON, Y_GLOW_ICON + 2 + _heatAnimationState, GlowHeatIcon, 17, 2, WHITE);
+      _drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIconInfo);
+      _drawBitmap(X_GLOW_ICON, Y_GLOW_ICON + 2 + _heatAnimationState, GlowHeatIconInfo);
       _heatAnimationState -= 2;
       _heatAnimationState &= 0x07;
     }
@@ -264,7 +264,7 @@ CDetailedScreen::showThermometer(float desired, float actual)
 {
   char msg[16];
   // draw bulb design
-  _display.drawBitmap(X_BULB, Y_BULB, ambientThermometerIcon, W_BULB_ICON, H_BULB_ICON, WHITE);
+  _drawBitmap(X_BULB, Y_BULB, AmbientThermometerIconInfo, WHITE);
 
   if(actual > 0) { 
     // draw mercury
@@ -294,11 +294,11 @@ CDetailedScreen::showThermometer(float desired, float actual)
 
   // draw target setting
   if(desired) {
-    _display.drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIcon, W_TARGET_ICON, H_TARGET_ICON, WHITE);   // set indicator against bulb
+    _drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIconInfo);   // set indicator against bulb
     char msg[16];
     if(desired > 0) {
       int yPos = Y_BULB + TEMP_YPOS(desired) - 2;
-      _display.drawBitmap(X_BULB-1, yPos, thermoPtr, 3, 5, WHITE);   // set indicator against bulb
+      _drawBitmap(X_BULB-1, yPos, ThermoPtrIconInfo);   // set indicator against bulb
       if(NVstore.getDegFMode()) {
         desired = desired * 9 / 5 + 32;
         sprintf(msg, "%.0f`F", desired);
@@ -313,7 +313,7 @@ CDetailedScreen::showThermometer(float desired, float actual)
 #ifdef MINI_TARGETLABEL
     CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-    _printMenuText(X_TARGET_ICON + (W_TARGET_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
+    _printMenuText(X_TARGET_ICON + (TargetIconInfo.width/2), Y_BASELINE, msg, false, eCentreJustify);
   }
 }
 
@@ -322,7 +322,7 @@ void
 CDetailedScreen::showBodyThermometer(int actual) 
 {
   // draw bulb design
-  _display.drawBitmap(X_BODY_BULB, Y_BULB, bodyThermometerIcon, 8, 50, WHITE);
+  _drawBitmap(X_BODY_BULB, Y_BULB, BodyThermometerIconInfo);
   // draw mercury
   int yPos = Y_BULB + BODY_YPOS(actual);
   _display.drawLine(X_BODY_BULB + 3, yPos, X_BODY_BULB + 3, Y_BULB + 42, WHITE);
@@ -350,15 +350,15 @@ CDetailedScreen::showBodyThermometer(int actual)
 void 
 CDetailedScreen::showGlowPlug(float power)
 {
-  _display.drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIcon, W_GLOW_ICON, H_GLOW_ICON, WHITE);
+  _drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIconInfo);
 //  _animateGlow = true;
   char msg[16];
   sprintf(msg, "%.0fW", power);
 #ifdef MINI_GLOWLABEL  
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _printMenuText(X_GLOW_ICON + (W_GLOW_ICON/2), 
-                Y_GLOW_ICON + H_GLOW_ICON + 3,
+  _printMenuText(X_GLOW_ICON + (GlowPlugIconInfo.width/2), 
+                Y_GLOW_ICON + GlowPlugIconInfo.height + 3,
                 msg, false, eCentreJustify);
 }
 
@@ -374,7 +374,7 @@ CDetailedScreen::showFan(int RPM)
 #ifdef MINI_FANLABEL  
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _printMenuText(X_FAN_ICON + (W_FAN_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
+  _printMenuText(X_FAN_ICON + (FanIcon1Info.width/2), Y_BASELINE, msg, false, eCentreJustify);
 }
 
 void 
@@ -389,7 +389,7 @@ CDetailedScreen::showFanV(float volts)
 #ifdef MINI_FANLABEL  
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _printMenuText(X_FAN_ICON + (W_FAN_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
+  _printMenuText(X_FAN_ICON + (FanIcon1Info.width/2), Y_BASELINE, msg, false, eCentreJustify);
 }
 
 void 
@@ -403,7 +403,7 @@ CDetailedScreen::showFuel(float rate)
 #ifdef MINI_FUELLABEL
     CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-    _printMenuText(X_FUEL_ICON + (W_FUEL_ICON/2), Y_BASELINE, msg, false, eCentreJustify);
+    _printMenuText(X_FUEL_ICON + (FuelIconInfo.width/2), Y_BASELINE, msg, false, eCentreJustify);
   }
 }
 

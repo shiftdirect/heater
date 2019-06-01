@@ -68,12 +68,12 @@ COtherOptionsScreen::show()
       _printInverted(_display.xCentre(), 0, " Time Intervals ", true, eCentreJustify);
       
       // data frame refresh rate
-      _display.drawBitmap(15, 13, refreshIcon, refreshWidth, refreshHeight, WHITE);
+      _drawBitmap(15, 13, RefreshIconInfo);
       sprintf(msg, "%dms", _frameRate);
       _printMenuText(40, 14, msg, _rowSel == 3);
 
       // display timeout
-      _display.drawBitmap(10, 26, displayTimeoutIcon, displayTimeoutWidth, displayTimeoutHeight, WHITE);
+      _drawBitmap(10, 26, DisplayTimeoutIconInfo);
       if(_dispTimeout) {
         float mins = float(abs(_dispTimeout)) / 60000.f;
         sprintf(msg, "%s %0.1f min%s",  (_dispTimeout < 0) ? "Blank" : "Dim", mins, mins < 2 ? "" : "s");
@@ -83,7 +83,7 @@ COtherOptionsScreen::show()
         _printMenuText(40, 26, "Always on", _rowSel == 2);
 
       // menu timeout
-      _display.drawBitmap(10, 38, menuTimeoutIcon, menuTimeoutWidth, menuTimeoutHeight, WHITE);
+      _drawBitmap(10, 38, MenuTimeoutIconInfo);
       if(_menuTimeout) {
         float mins = float(abs(_menuTimeout)) / 60000.f;
         sprintf(msg, "Home %0.1f min%s", mins, mins < 2 ? "" : "s");

@@ -28,6 +28,17 @@
 #include "fonts/FontTypes.h"
 #include "../Utility/UtilClasses.h"
 
+struct BITMAP_INFO {
+  uint8_t width;
+  uint8_t height;
+  const uint8_t* pBitmap;
+  BITMAP_INFO(uint8_t w, uint8_t h, const uint8_t* pBmp) {
+    width = w;
+    height = h;
+    pBitmap = pBmp;
+  };
+};
+
 enum eJUSTIFY { 
    eLeftJustify, eCentreJustify, eRightJustify 
 };
@@ -46,6 +57,7 @@ protected:
   void _drawMenuSelection(CRect extents, const char* str, int border = 3, int radius = 4);
   void _scrollMessage(int y, const char* str, int& charOffset);
   void _reqOEMWarning();
+  void _drawBitmap(int x, int y, const BITMAP_INFO& info, uint16_t color = WHITE);
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 
