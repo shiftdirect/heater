@@ -222,9 +222,9 @@ public:
   // TODO: These are only here to allow building without fully 
   // fleshing out NV storage for Due, Mega etc
   // these should be removed once complete (pure virtual)
-  void init() {};
-  void load() {};
-  void save() {};
+    virtual void init() {};
+    virtual void load() {};
+    virtual void save() {};
 
 
     float getPmin();

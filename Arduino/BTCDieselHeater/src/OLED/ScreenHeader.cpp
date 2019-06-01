@@ -132,7 +132,9 @@ CScreenHeader::animate()
     // UP arrow animation
     //
     int yPos = 0;
-    if(_clearUpAnimation) { 
+    bool uploadActive = hasWebServerSpoken(true);
+
+    if(_clearUpAnimation && !uploadActive) { 
       // arrow was drawn in the prior iteration, now erase it 
       if(NVstore.getOTAEnabled()) 
         _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
@@ -142,7 +144,7 @@ CScreenHeader::animate()
       retval = true;
       _clearUpAnimation = false;
     }
-    else if(hasWebServerSpoken(true)) {
+    else if(uploadActive) {
       // we have emitted data to the web client, show an UP arrow
       if(NVstore.getOTAEnabled()) 
         _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
