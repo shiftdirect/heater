@@ -38,8 +38,6 @@
 #endif
 #include "../Utility/NVStorage.h"
 
-extern void ShowOTAScreen(int percent=0, bool webpdate=false);
-
 extern WiFiManager wm;
 
 File fsUploadFile;              // a File object to temporarily store the received file
@@ -95,7 +93,6 @@ void handleWMConfig() {
 	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
 	DebugPort.println("Starting web portal for wifi config");
   delay(500);
-//	wm.startWebPortal();
   wifiEnterConfigPortal(true, false, 3000);
 }
 
@@ -249,7 +246,7 @@ void initWebServer(void) {
     int percent = (progress / (total / 100));
 		DebugPort.printf("Progress: %u%%\r", percent);
     DebugPort.handle();    // keep telnet spy alive
-    ShowOTAScreen(percent, true);
+    ShowOTAScreen(percent, eOTAWWW);  // WWW update in place
     DebugPort.print("^");
 	});
   
@@ -267,7 +264,6 @@ void initWebServer(void) {
     DebugPort.println("WEB: GET /tst");
     server.sendHeader("Location","/");      // reselect the update page
     server.send(303);
-//    rootRedirect();
   });
 
   // Magical code originally shamelessly lifted from Arduino WebUpdate example, then modified
@@ -301,8 +297,8 @@ void initWebServer(void) {
     // completion functionality
     if(SPIFFSupload) {
       if(SPIFFSupload == 1) {
-        server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
         DebugPort.println("WEB: SPIFFS OK");
+        server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
         // javascript reselects the /update page!
       }
       else {
@@ -325,7 +321,6 @@ void initWebServer(void) {
       ESP.restart();                             // reboot
     }
   }, []() {
-//    DebugPort.println("WEB: POST /updatenow handler");
     if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
       HTTPUpload& upload = server.upload();
       if (upload.status == UPLOAD_FILE_START) {
@@ -344,20 +339,22 @@ void initWebServer(void) {
           SPIFFSupload = fsUploadFile ? 1 : 2;
           //filename = String();
         }
-      } else if (upload.status == UPLOAD_FILE_WRITE) {
-        // handle upload segments
+      } 
+
+      // handle file segments
+      else if (upload.status == UPLOAD_FILE_WRITE) {
 #if USE_SW_WATCHDOG == 1
         feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
         if(upload.totalSize) {
           char JSON[64];
           sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-          sendWebServerString(JSON);  // feedback proper byte count of update
+          sendWebServerString(JSON);  // feedback proper byte count of update to browser via websocket
         }
         int percent = 0;
         if(_SuppliedFileSize) 
           percent = 100 * upload.totalSize / _SuppliedFileSize;
-        ShowOTAScreen(percent);
+        ShowOTAScreen(percent, eOTAbrowser);  // browser update 
 
         DebugPort.print(".");
         if(fsUploadFile) {
@@ -368,8 +365,10 @@ void initWebServer(void) {
             Update.printError(DebugPort);
           }
         }
-      } else if (upload.status == UPLOAD_FILE_END) {
-        // handle end of upload
+      } 
+      
+      // handle end of upload
+      else if (upload.status == UPLOAD_FILE_END) {
         if(SPIFFSupload) {
           if(fsUploadFile) {
             fsUploadFile.close();                               // Close the file again
@@ -413,14 +412,15 @@ void initWebServer(void) {
 	server.begin();
 	webSocket.begin();
 	webSocket.onEvent(webSocketEvent);
+
 	DebugPort.println("HTTP server started");
 
 }
 
-unsigned char cVal;
 
-// called my main sketch loop()
-bool doWebServer(void) {
+// called by main sketch loop()
+bool doWebServer(void) 
+{
 	webSocket.loop();
 	server.handleClient();
 }
@@ -440,21 +440,21 @@ bool isWebServerClientChange()
 
 bool sendWebServerString(const char* Str)
 {
-  unsigned long tStart = millis();
+  CProfile profile;
 	if(webSocket.connectedClients()) {
-    unsigned long tCon = millis() - tStart;
-    tStart = millis();
+    unsigned long tCon = profile.elapsed(true);
     bTxWebData = true;              // OLED tx data animation flag
     webSocket.broadcastTXT(Str);
-    unsigned long tWeb = millis() - tStart;
-//    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
+    unsigned long tWeb = profile.elapsed(true);
+    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
 		return true;
 	}
   return false;
 }
 
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
+{
 	if (type == WStype_TEXT) {
 		bRxWebData = true;
 		char cmd[256];

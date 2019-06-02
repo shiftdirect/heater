@@ -80,3 +80,19 @@ CommStates::delayExpired()
   long test = millis() - _delay;
   return(test >= 0);
 }
+
+CProfile::CProfile()
+{
+  tStart = millis();
+}
+
+unsigned long 
+CProfile::elapsed(bool reset/* = false*/)
+{
+  unsigned long now = millis();
+  unsigned long retval = now - tStart;
+  if(reset)
+    tStart = now;
+
+  return retval;
+}

@@ -155,4 +155,16 @@ struct CRect {
   }
 };
 
+class CProfile {
+  unsigned long tStart;
+public:
+  CProfile();
+  unsigned long elapsed(bool reset = false);
+};
+
+enum eOTAmodes { 
+  eOTAnormal, eOTAbrowser, eOTAWWW
+};
+
+
 #endif // __UTIL_CLASSES_H__

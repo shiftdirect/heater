@@ -1313,9 +1313,9 @@ int getBoardRevision()
   return BoardRevision;
 }
 
-void ShowOTAScreen(int percent, bool webupdate)
+void ShowOTAScreen(int percent, eOTAmodes updateType)
 {
-  ScreenManager.showOTAMessage(percent, webupdate);
+  ScreenManager.showOTAMessage(percent, updateType);
   feedWatchdog();
 }
 

@@ -24,8 +24,9 @@
 
 #include <Arduino.h>
 #include <vector>
+#include "../Utility/UtilClasses.h"
 
-class CProtocol;
+//class CProtocol;
 class C128x64_OLED;
 class CScreen;
 class CRebootScreen;
@@ -66,7 +67,7 @@ public:
   void reqUpdate();
   void selectMenu(eUIMenuSets menuset, int specific = -1);   // use to select loop menus, including the root or branches
   void showRebootMsg(const char* content[2], long delayTime);
-  void showOTAMessage(int percent, bool webupdate);
+  void showOTAMessage(int percent, eOTAmodes updateType);
 };
 
 #endif // __SCREEN_MANAGER_H__

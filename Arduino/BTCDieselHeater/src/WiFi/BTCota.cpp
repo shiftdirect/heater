@@ -24,10 +24,9 @@
 #if USE_SPIFFS == 1  
 #include <SPIFFS.h>
 #endif
-#include <esp32fota.h>
+#include "../Libraries/esp32FOTA/src/esp32fota.h" // local copy used due to a couple of issues
 #include "../Protocol/helpers.h"
 
-extern void ShowOTAScreen(int percent=0, bool webpdate=false);
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));
 unsigned long FOTAtime = millis() + 60000;  // initially check in a minutes time 
@@ -74,7 +73,6 @@ void initOTA(){
 		DebugPort.printf("Progress: %u%%\r", percent);
     DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen(percent);
-    DebugPort.print("%%");
 	})
 		.onError([](ota_error_t error) {
 		DebugPort.printf("Error[%u]: ", error);
@@ -94,10 +92,11 @@ void DoOTA(){
 
   // manage Firmware OTA
   // this is where the controller contacts a web server to discover if new firmware is available
-  // if so, it can dowload and implant using OTA and become effective next reboot!
+  // if so, it can download and implant using OTA and become effective next reboot!
   long tDelta = millis() - FOTAtime;
   if(tDelta > 0) {  
-    FOTAtime = millis() + 600000;  // 10 minutes
+//    FOTAtime = millis() + 600000;  // 10 minutes
+    FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
       DebugPort.println("Checking for new firmware...");
       if(FOTA.execHTTPcheck()) {

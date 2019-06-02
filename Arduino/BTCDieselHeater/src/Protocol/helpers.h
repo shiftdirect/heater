@@ -24,6 +24,7 @@
 #define __BTC_HELPERS_H__
 
 #include "Protocol.h"
+#include "../Utility/UtilClasses.h"
 
 
 extern void  ToggleOnOff();
@@ -71,6 +72,9 @@ extern void  feedWatchdog();
 extern bool  isUpdateAvailable(bool test=true);
 extern void  checkFOTA();
 extern void  setUploadSize(long val);
+
+
+extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 
 
 

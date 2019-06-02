@@ -490,16 +490,17 @@ CScreenManager::showRebootMsg(const char* content[2], long delayTime)
 }
 
 void 
-CScreenManager::showOTAMessage(int percent, bool webupdate)
+CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
 {
   static int prevPercent = -1;
   if(percent != prevPercent) {
     _pDisplay->clearDisplay();
     _pDisplay->setCursor(64,22);
-    if(webupdate)
-      _pDisplay->printCentreJustified("Web update active");
-    else
-      _pDisplay->printCentreJustified("OTA update active");
+    switch(updateType) {
+      case eOTAnormal:  _pDisplay->printCentreJustified("OTA update active");     break;
+      case eOTAbrowser: _pDisplay->printCentreJustified("Browser update active"); break;
+      case eOTAWWW:     _pDisplay->printCentreJustified("WWW update active");     break;
+    }
     if(percent) {
       char msg[16];
       sprintf(msg, "%d%%", percent);
