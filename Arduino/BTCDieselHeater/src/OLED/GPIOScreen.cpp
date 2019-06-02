@@ -49,9 +49,9 @@ static const int Column = 38;
 CGPIOScreen::CGPIOScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _initUI();
-  _GPIOinMode = 0;
-  _GPIOoutMode = 0;
-  _GPIOalgMode = 0;
+  _GPIOparams.inMode = GPIOinNone;
+  _GPIOparams.outMode = GPIOoutNone;
+  _GPIOparams.algMode = GPIOalgNone;
 }
 
 void 
@@ -59,9 +59,7 @@ CGPIOScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _initUI();
-  _GPIOinMode = NVstore.getGPIOinMode();
-  _GPIOoutMode = NVstore.getGPIOoutMode();
-  _GPIOalgMode = NVstore.getGPIOalgMode();
+  _GPIOparams = NVstore.getGPIOparams();
 }
 
 void
@@ -88,11 +86,11 @@ CGPIOScreen::show()
       _drawBitmap(10, 14, GPIOIconInfo);
       {
         const char* msgText = NULL;
-        switch(_GPIOinMode) {
-          case 0: msgText = "Disabled"; break;
-          case 1: msgText = "1-On 2-Off"; break;
-          case 2: msgText = "1-On 2-\352T"; break;
-          case 3: msgText = "1-On/Off"; break;
+        switch(_GPIOparams.inMode) {
+          case GPIOinNone: msgText = "Disabled"; break;
+          case GPIOinOn1Off2: msgText = "1-On 2-Off"; break;
+          case GPIOinOnHold1: msgText = "1-On 2-\352T"; break;
+          case GPIOinOn1Off1: msgText = "1-On/Off"; break;
         }
         if(msgText)
           _printMenuText(Column, Line3, msgText, _rowSel == 3);
@@ -100,10 +98,10 @@ CGPIOScreen::show()
 
       {
         const char* msgText = NULL;
-        switch(_GPIOoutMode) {
-          case 0: msgText = "Disabled"; break;
-          case 1: msgText = "1: Status LED"; break;
-          case 2: msgText = "1&2 User"; break;
+        switch(_GPIOparams.outMode) {
+          case GPIOoutNone: msgText = "Disabled"; break;
+          case GPIOoutStatus: msgText = "1: Status LED"; break;
+          case GPIOoutUser: msgText = "1&2 User"; break;
         }
         if(msgText)
           _printMenuText(Column, Line2, msgText, _rowSel == 2);
@@ -111,9 +109,9 @@ CGPIOScreen::show()
 
       {
         const char* msgText = NULL;
-        switch(_GPIOalgMode) {
-          case 0: msgText = "Disabled"; break;
-          case 1: msgText = "Ip1 allows"; break;
+        switch(_GPIOparams.algMode) {
+          case GPIOalgNone: msgText = "Disabled"; break;
+          case GPIOalgHeatDemand: msgText = "Ip1 allows"; break;
         }
         if(msgText)
           _printMenuText(Column, Line1, msgText, _rowSel == 1);
@@ -139,9 +137,9 @@ CGPIOScreen::animate()
         break;
       case 1:
         _display.drawFastHLine(0, 52, 128, WHITE);
-        switch(_GPIOalgMode) {
-          case 0: pMsg = "                   Analogue input is ignored.                    "; break;
-          case 1: pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    "; break;
+        switch(_GPIOparams.algMode) {
+          case GPIOalgNone:       pMsg = "                   Analogue input is ignored.                    "; break;
+          case GPIOalgHeatDemand: pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    "; break;
         }
         if(pMsg)
           _scrollMessage(56, pMsg, _scrollChar);
@@ -149,10 +147,10 @@ CGPIOScreen::animate()
 
       case 2:
         _display.drawFastHLine(0, 52, 128, WHITE);
-        switch(_GPIOoutMode) {
-          case 0: pMsg = "                   Digital outputs are disabled.                    "; break;
-          case 1: pMsg = "                   Output1: LED status indicator.                    "; break;
-          case 2: pMsg = "                   Output 1&2: User controlled.                    "; break;
+        switch(_GPIOparams.outMode) {
+          case GPIOoutNone:   pMsg = "                   Digital outputs are disabled.                    "; break;
+          case GPIOoutStatus: pMsg = "                   Output1: LED status indicator.                    "; break;
+          case GPIOoutUser:   pMsg = "                   Output 1&2: User controlled.                    "; break;
         }
         if(pMsg)
           _scrollMessage(56, pMsg, _scrollChar);
@@ -160,11 +158,11 @@ CGPIOScreen::animate()
 
       case 3:
         _display.drawFastHLine(0, 52, 128, WHITE);
-        switch(_GPIOinMode) {
-          case 0: pMsg = "                   Digital inputs are disabled.                    "; break;
-          case 1: pMsg = "                   Input 1: Starts upon closure. Input 2: Stops upon closure.                    "; break;
-          case 2: pMsg = "                   Input 1: Starts when held closed, stops when opened. Input2: Max fuel when closed, min fuel when open.                    "; break;
-          case 3: pMsg = "                   Input 1: Starts or Stops upon closure.                    "; break;
+        switch(_GPIOparams.inMode) {
+          case GPIOinNone:    pMsg = "                   Digital inputs are disabled.                    "; break;
+          case GPIOinOn1Off2: pMsg = "                   Input 1: Starts upon closure. Input 2: Stops upon closure.                    "; break;
+          case GPIOinOnHold1: pMsg = "                   Input 1: Starts when held closed, stops when opened. Input2: Max fuel when closed, min fuel when open.                    "; break;
+          case GPIOinOn1Off1: pMsg = "                   Input 1: Starts or Stops upon closure.                    "; break;
         }
         if(pMsg)
           _scrollMessage(56, pMsg, _scrollChar);
@@ -231,9 +229,7 @@ CGPIOScreen::keyHandler(uint8_t event)
           break;
         case 4:    // confirmed save
           _showStoringMessage();
-          NVstore.setGPIOinMode(_GPIOinMode);
-          NVstore.setGPIOoutMode(_GPIOoutMode);
-          NVstore.setGPIOalgMode(_GPIOalgMode);
+          NVstore.setGPIOparams(_GPIOparams);
           saveNV();
 
           setupGPIO();
@@ -264,21 +260,25 @@ CGPIOScreen::keyHandler(uint8_t event)
 void 
 CGPIOScreen::_adjust(int dir)
 {
+  int tVal;
   switch(_rowSel) {
     case 1:   // analogue mode
-      _GPIOalgMode += dir;
-      UPPERLIMIT(_GPIOalgMode, 1);
-      LOWERLIMIT(_GPIOalgMode, 0);
+      tVal = _GPIOparams.algMode;
+      tVal += dir;
+      WRAPLIMITS(tVal, 0, 1);
+      _GPIOparams.algMode = (GPIOalgModes)tVal;
       break;
     case 2:   // outputs mode
-      _GPIOoutMode += dir;
-      ROLLLOWERLIMIT(_GPIOoutMode, 0, 2);
-      ROLLUPPERLIMIT(_GPIOoutMode, 2, 0);
+      tVal = _GPIOparams.outMode;
+      tVal += dir;
+      WRAPLIMITS(tVal, 0, 2);
+      _GPIOparams.outMode = (GPIOoutModes)tVal;
       break;
     case 3:
-      _GPIOinMode += dir;
-      ROLLUPPERLIMIT(_GPIOinMode, 3, 0);
-      ROLLLOWERLIMIT(_GPIOinMode, 0, 3);
+      tVal = _GPIOparams.inMode;
+      tVal += dir;
+      WRAPLIMITS(tVal, 0, 3);
+      _GPIOparams.inMode = (GPIOinModes)tVal;
       break;
   }
 }
@@ -318,14 +318,38 @@ CGPIOInfoScreen::show()
 
   _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
 
-  _drawBitmap(4, 29, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
-  _drawBitmap(27, 29, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
-  
-  _drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIconInfo : BulbOffIconInfo);
-  _drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIconInfo : BulbOffIconInfo);
+  if(NVstore.getGPIOparams().inMode == GPIOinNone) {
+    _drawBitmap(7, 28, CrossLgIconInfo);
+    _drawBitmap(30, 28, CrossLgIconInfo);
+  }
+  else {
+    _drawBitmap(4, 29, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
+    if(NVstore.getGPIOparams().inMode == GPIOinOn1Off1) 
+      _drawBitmap(30, 28, CrossLgIconInfo);
+    else 
+      _drawBitmap(27, 29, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
+  }
 
-  sprintf(msg, "%d", GPIOalg.getValue());
-  _printMenuText(58, Line1, msg);
+  
+  if(NVstore.getGPIOparams().outMode == GPIOoutNone) {
+    _drawBitmap(87, 28, CrossLgIconInfo);
+    _drawBitmap(114, 28, CrossLgIconInfo);
+  }
+  else {
+    _drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIconInfo : BulbOffIconInfo);
+    if(NVstore.getGPIOparams().outMode == GPIOoutStatus) 
+      _drawBitmap(114, 28, CrossLgIconInfo);
+    else 
+      _drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIconInfo : BulbOffIconInfo);
+  }
+
+  if(NVstore.getGPIOparams().algMode == GPIOalgNone) {
+    _drawBitmap(58, Line1, CrossLgIconInfo);
+  }
+  else {
+    sprintf(msg, "%d%%", GPIOalg.getValue() * 100 / 4096);
+    _printMenuText(58, Line1, msg);
+  }
 
   _printMenuText(_display.xCentre(), 53, " \021              \020 ", true, eCentreJustify);
   return true;
@@ -354,14 +378,14 @@ CGPIOInfoScreen::keyHandler(uint8_t event)
       if(event & key_Left) {
         if(_keyRepeatCount > 2) {
           _keyRepeatCount = -1;     // prevent double handling
-          setGPIO(0, !getGPIO(0));  // toggle GPIO output #1
+          toggleGPIOout(0);     // toggle GPIO output #1
         }
       }
       // hold RIGHT to toggle GPIO output #2
       if(event & key_Right) {
         if(_keyRepeatCount > 2) {
           _keyRepeatCount = -1;     // prevent double handling
-          setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
+          toggleGPIOout(1);     // toggle GPIO output #2
         }
       }
     }

@@ -159,12 +159,10 @@ struct sBTCoptions : public CESP32_NVStorage {
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   uint8_t enableWifi;
   uint8_t enableOTA;
-  uint8_t GPIOinMode;
-  uint8_t GPIOoutMode;
-  uint8_t GPIOalgMode;
   uint16_t FrameRate;
   sCyclicThermostat cyclic;
   sHomeMenuActions HomeMenu;
+  sGPIOparams GPIO;
 
   bool valid() {
     bool retval = true;
@@ -174,8 +172,8 @@ struct sBTCoptions : public CESP32_NVStorage {
     retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
     retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= (enableOTA == 0) || (enableOTA == 1);
-    retval &= GPIOinMode < 4;
-    retval &= GPIOoutMode < 3;
+    retval &= GPIO.inMode < 4;
+    retval &= GPIO.outMode < 3;
     retval &= (FrameRate >= 300) && (FrameRate <= 1500);
     retval &= cyclic.valid();
     retval &= HomeMenu.valid();
@@ -188,9 +186,9 @@ struct sBTCoptions : public CESP32_NVStorage {
     ThermostatMethod = 0;
     enableWifi = 1;
     enableOTA = 1;
-    GPIOinMode = 0;
-    GPIOoutMode = 0;
-    GPIOalgMode = 0;
+    GPIO.inMode = GPIOinNone;
+    GPIO.outMode = GPIOoutNone;
+    GPIO.algMode = GPIOalgNone;
     FrameRate = 1000;
     cyclic.init();
     HomeMenu.init();
@@ -245,9 +243,7 @@ public:
     unsigned char getOTAEnabled();
     const sCyclicThermostat& getCyclicMode() const;
     const sMQTTparams& getMQTTinfo() const;
-    GPIOinModes getGPIOinMode();
-    GPIOoutModes getGPIOoutMode();
-    GPIOalgModes getGPIOalgMode();
+    const sGPIOparams& getGPIOparams() const;
     uint16_t     getFrameRate();
     const sHomeMenuActions& getHomeMenu() const;
     const sCredentials& getCredentials() const;
@@ -269,9 +265,7 @@ public:
     void setWifiEnabled(unsigned char val);
     void setOTAEnabled(unsigned char val);
     void setCyclicMode(const sCyclicThermostat& val);
-    void setGPIOinMode(unsigned char val);
-    void setGPIOoutMode(unsigned char val);
-    void setGPIOalgMode(unsigned char val);
+    void setGPIOparams(const sGPIOparams& params);
     void setFrameRate(uint16_t val);
     void setHomeMenu(sHomeMenuActions val);
 

@@ -311,8 +311,7 @@ CThermostatModeScreen::_adjust(int dir)
       break;
     case 4:   // thermostat mode
       _thermoMode += dir;
-      ROLLLOWERLIMIT(_thermoMode, 0, 2);
-      ROLLUPPERLIMIT(_thermoMode, 2, 0);
+      WRAPLIMITS(_thermoMode, 0, 2);
       break;
   }
 }

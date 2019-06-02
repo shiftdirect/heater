@@ -119,7 +119,7 @@ CHeaterSettingsScreen::animate()
   }
   else {
     _animateCount++;
-    ROLLUPPERLIMIT(_animateCount, 9, 0);
+    WRAPUPPERLIMIT(_animateCount, 9, 0);
 
     if(_rowSel == 1) {
       _display.drawRect(Column-border, Line1-border, 34, 8+2*border, BLACK);

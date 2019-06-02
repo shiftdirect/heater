@@ -64,19 +64,21 @@ const char* getVersionStr();
 extern const char* getVersionDate();
 extern int   getBoardRevision();
 extern void  setupGPIO();
-extern void  setGPIO(int channel, bool state);
-extern bool  getGPIO(int channel);
+extern void  setGPIOout(int channel, bool state);
+extern bool  getGPIOout(int channel);
+extern bool  toggleGPIOout(int channel);
 extern void  feedWatchdog();
 extern bool  isUpdateAvailable(bool test=true);
 extern void  checkFOTA();
-extern void setUploadSize(long val);
+extern void  setUploadSize(long val);
 
 
 
 
 #define LOWERLIMIT(A, B) if((A) < (B)) (A) = (B)
 #define UPPERLIMIT(A, B) if((A) > (B)) (A) = (B)
-#define ROLLUPPERLIMIT(A, B, C) if((A) > (B)) (A) = (C)        
-#define ROLLLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        
+#define WRAPUPPERLIMIT(A, B, C) if((A) > (B)) (A) = (C)        
+#define WRAPLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        
+#define WRAPLIMITS(A, B, C) if((A) < (B)) (A) = (C) ; if((A) > (C)) (A) = (B)               
 
 #endif

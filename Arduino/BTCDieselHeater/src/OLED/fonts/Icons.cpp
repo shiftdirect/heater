@@ -574,6 +574,19 @@ const uint8_t PROGMEM OpenIcon[]  =
 };
 const BITMAP_INFO OpenIconInfo(13, 7, OpenIcon);
 
+const uint8_t PROGMEM CrossLgIcon[]  =
+{
+	0x82, //  #     #
+	0x44, //   #   #
+	0x28, //    # # 
+	0x10, //     #      
+	0x28, //    # #    
+	0x44, //   #   #  
+	0x82, //  #     #
+};
+const BITMAP_INFO CrossLgIconInfo(7, 7, CrossLgIcon);
+
+
 const uint8_t PROGMEM CloseIcon[]  =
 {
 	0x00, 0x00, //              

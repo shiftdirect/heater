@@ -149,7 +149,7 @@ CVersionInfoScreen::animate()
   if(_rowSel <= 1 && isUpdateAvailable()) {
     // show ascending up arrow if firmware update is available on web server
     _animateCount++;
-    ROLLUPPERLIMIT(_animateCount, 5, 0);
+    WRAPUPPERLIMIT(_animateCount, 5, 0);
     int ypos = 11 + 15 - 7 - _animateCount;
     _display.fillRect(0, 11, 10, 21, BLACK);
     _display.drawBitmap(2, ypos, WifiOutIconInfo.pBitmap, WifiOutIconInfo.width, 7, WHITE);    // upload arrow - from web to afterburner

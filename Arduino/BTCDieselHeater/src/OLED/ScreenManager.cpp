@@ -411,8 +411,7 @@ CScreenManager::_changeSubMenu(int dir)
   _leaveScreen();
   _subMenu += dir;
   int bounds = _Screens[_menu].size() - 1;
-  ROLLUPPERLIMIT(_subMenu, bounds, 0);
-  ROLLLOWERLIMIT(_subMenu, 0, bounds);
+  WRAPLIMITS(_subMenu, 0, bounds);
   if(_menu == 0)
     _rootMenu = _subMenu;  // track the root menu for when we branch then return
   _enterScreen();

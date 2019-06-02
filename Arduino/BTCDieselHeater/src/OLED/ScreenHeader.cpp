@@ -104,7 +104,7 @@ CScreenHeader::animate()
   // animate timer icon, 
   // inserting an update icon if new firmware available from internet web server
   _animateCount++;
-  ROLLUPPERLIMIT(_animateCount, 10, 0);
+  WRAPUPPERLIMIT(_animateCount, 10, 0);
   if(isUpdateAvailable(true)) {
     int xPos = X_TIMER_ICON - 3;   
     int yPos = Y_TIMER_ICON;

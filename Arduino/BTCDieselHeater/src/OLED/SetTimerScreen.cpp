@@ -206,12 +206,12 @@ CSetTimerScreen::keyHandler(uint8_t event)
         case 1:
           // select previous field
           _colSel--;
-          ROLLLOWERLIMIT(_colSel, 0, 5);
+          WRAPLOWERLIMIT(_colSel, 0, 5);
           break;
         case 2:
           // select previous day
           _colSel--;
-          ROLLLOWERLIMIT(_colSel, 0, 6);
+          WRAPLOWERLIMIT(_colSel, 0, 6);
           break;
       }
     }
@@ -224,12 +224,12 @@ CSetTimerScreen::keyHandler(uint8_t event)
         case 1:
           // select next field
           _colSel++;
-          ROLLUPPERLIMIT(_colSel, 5, 0);
+          WRAPUPPERLIMIT(_colSel, 5, 0);
           break;
         case 2:
           // select next day
           _colSel++;
-          ROLLUPPERLIMIT(_colSel, 6, 0);
+          WRAPUPPERLIMIT(_colSel, 6, 0);
           break;
       }
     }
@@ -322,23 +322,19 @@ CSetTimerScreen::_adjust(int dir)
   switch(_colSel) {
     case 0:
       _timerInfo.start.hour += dir;
-      ROLLUPPERLIMIT(_timerInfo.start.hour, 23, 0);
-      ROLLLOWERLIMIT(_timerInfo.start.hour, 0, 23);
+      WRAPLIMITS(_timerInfo.start.hour, 0, 23);
       break;
     case 1:
       _timerInfo.start.min += dir;
-      ROLLUPPERLIMIT(_timerInfo.start.min, 59, 0);
-      ROLLLOWERLIMIT(_timerInfo.start.min, 0, 59);
+      WRAPLIMITS(_timerInfo.start.min, 0, 59);
       break;
     case 2:
       _timerInfo.stop.hour += dir;
-      ROLLUPPERLIMIT(_timerInfo.stop.hour, 23, 0);
-      ROLLLOWERLIMIT(_timerInfo.stop.hour, 0, 23);
+      WRAPLIMITS(_timerInfo.stop.hour, 0, 23);
       break;
     case 3:
       _timerInfo.stop.min += dir;
-      ROLLUPPERLIMIT(_timerInfo.stop.min, 59, 0);
-      ROLLLOWERLIMIT(_timerInfo.stop.min, 0, 59);
+      WRAPLIMITS(_timerInfo.stop.min, 0, 59);
       break;
     case 4:
       if(_rowSel == 1) {

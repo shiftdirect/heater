@@ -1236,12 +1236,12 @@ void setupGPIO()
     // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
     int activePinState = (BoardRevision == 10) ? LOW : HIGH;  
     int Input1 = BoardRevision == 20 ? GPIOin1_pinV20 : GPIOin1_pinV21V10;
-    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getGPIOinMode(), activePinState);
+    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getGPIOparams().inMode, activePinState);
 
     // GPIO out is always active high from ESP32
     // V1.0 PCBs only expose the bare pins
     // V2.0+ PCBs provide an open collector output that conducts when active
-    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getGPIOoutMode());
+    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getGPIOparams().outMode);
 
     // ### MAJOR ISSUE WITH ADC INPUTS ###
     //
@@ -1257,7 +1257,7 @@ void setupGPIO()
     // This will be properly fixed in V2.1 PCBs
     //
     // As V1.0 PCBS expose the bare pins, the correct GPIO33 input can be readily chosen.
-    GPIOalgModes algMode = NVstore.getGPIOalgMode();
+    GPIOalgModes algMode = NVstore.getGPIOparams().algMode;
     if(BoardRevision == 20)  
       algMode = GPIOalgNone;      // force off analogue support in V2.0 PCBs
     GPIOalg.begin(GPIOalg_pin, algMode);
@@ -1270,13 +1270,22 @@ void setupGPIO()
   }
 }
 
-void setGPIO(int channel, bool state)
+bool toggleGPIOout(int channel) 
+{
+  if(NVstore.getGPIOparams().outMode == GPIOoutUser) {
+    setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
+    return true;
+  }
+  return false;
+}
+
+void setGPIOout(int channel, bool state)
 {
   DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
   GPIOout.setState(channel, state);
 }
 
-bool getGPIO(int channel)
+bool getGPIOout(int channel)
 {
   bool retval = GPIOout.getState(channel);
   DebugPort.printf("getGPIO: Output #%d = %d\r\n", channel+1, retval);

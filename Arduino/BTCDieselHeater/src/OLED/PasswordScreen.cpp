@@ -129,13 +129,13 @@ CPasswordScreen::keyHandler(uint8_t event)
       // press UP 
       if(event & key_Up) {
         _PWdig[_PWcol]++; 
-        ROLLUPPERLIMIT(_PWdig[_PWcol], 9, 0);
+        WRAPUPPERLIMIT(_PWdig[_PWcol], 9, 0);
       }
 
       // press DOWN
       if(event & key_Down) {
         _PWdig[_PWcol]--; 
-        ROLLLOWERLIMIT(_PWdig[_PWcol], 0, 9);
+        WRAPLOWERLIMIT(_PWdig[_PWcol], 0, 9);
       }
       _ScreenManager.reqUpdate();
     }

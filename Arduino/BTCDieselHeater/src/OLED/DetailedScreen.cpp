@@ -185,14 +185,14 @@ CDetailedScreen::keyHandler(uint8_t event)
       if(event & key_Left) {
         if(_keyRepeatCount > 2) {
           _keyRepeatCount = -1;     // prevent double handling
-          setGPIO(0, !getGPIO(0));  // toggle GPIO output #1
+          toggleGPIOout(0);     // toggle GPIO output #1
         }
       }
       // hold RIGHT to toggle GPIO output #2
       if(event & key_Right) {
         if(_keyRepeatCount > 2) {
           _keyRepeatCount = -1;     // prevent double handling
-          setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
+          toggleGPIOout(1);     // toggle GPIO output #2
         }
       }
 

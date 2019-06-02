@@ -173,7 +173,7 @@ CSetClockScreen::keyHandler(uint8_t event)
       }
       else {
         _rowSel--;
-        ROLLLOWERLIMIT(_rowSel, 1, 7);
+        WRAPLOWERLIMIT(_rowSel, 1, 7);
       }
     }
     // press RIGHT 
@@ -183,7 +183,7 @@ CSetClockScreen::keyHandler(uint8_t event)
       }
       else {
         _rowSel++;
-        ROLLUPPERLIMIT(_rowSel, 7, 1);
+        WRAPUPPERLIMIT(_rowSel, 7, 1);
       }
     }
     // press UP 

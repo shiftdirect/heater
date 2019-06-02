@@ -295,59 +295,18 @@ CHeaterStorage::setCyclicMode(const sCyclicThermostat& val)
   save();
 }
 
-GPIOinModes
-CHeaterStorage::getGPIOinMode()
+const sGPIOparams&
+CHeaterStorage::getGPIOparams() const
 {
-  GPIOinModes inMode = GPIOinNone;
-  switch(_calValues.Options.GPIOinMode) {
-    case 0: inMode = GPIOinNone; break;
-    case 1: inMode = GPIOinOn1Off2; break;
-    case 2: inMode = GPIOinOnHold1; break;
-    case 3: inMode = GPIOinOn1Off1; break;
-  }
-  return inMode;
+  return _calValues.Options.GPIO;
 }
 
-void 
-CHeaterStorage::setGPIOinMode(unsigned char val)
+void
+CHeaterStorage::setGPIOparams(const sGPIOparams& params) 
 {
-  _calValues.Options.GPIOinMode = val;
+  _calValues.Options.GPIO = params;
 }
 
-GPIOoutModes
-CHeaterStorage::getGPIOoutMode()
-{
-  GPIOoutModes outMode = GPIOoutNone;
-  switch(_calValues.Options.GPIOoutMode) {
-    case 0: outMode = GPIOoutNone; break;
-    case 1: outMode = GPIOoutStatus; break;
-    case 2: outMode = GPIOoutUser; break;
-  }
-  return outMode;
-}
-
-void 
-CHeaterStorage::setGPIOoutMode(unsigned char val)
-{
-  _calValues.Options.GPIOoutMode = val;
-}
-
-GPIOalgModes
-CHeaterStorage::getGPIOalgMode()
-{
-  GPIOalgModes algMode = GPIOalgNone;
-  switch (_calValues.Options.GPIOalgMode) {
-    case 0: algMode = GPIOalgNone; break;
-    case 1: algMode = GPIOalgHeatDemand; break;
-  }
-  return algMode;
-}
-
-void 
-CHeaterStorage::setGPIOalgMode(unsigned char val)
-{
-  _calValues.Options.GPIOalgMode = val;
-}
 
 uint16_t
 CHeaterStorage::getFrameRate()
@@ -531,9 +490,10 @@ sBTCoptions::load()
   validatedLoad("enableOTA", enableOTA, 1, u8inBounds, 0, 1);
   validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
   validatedLoad("cyclicStart", cyclic.Start, -1, s8inBounds, -20, 0);
-  validatedLoad("GPIOinMode", GPIOinMode, 0, u8inBounds, 0, 3);
-  validatedLoad("GPIOoutMode", GPIOoutMode, 0, u8inBounds, 0, 2);
-  validatedLoad("GPIOalgMode", GPIOalgMode, 0, u8inBounds, 0, 2);
+  uint8_t tVal;
+  validatedLoad("GPIOinMode", tVal, 0, u8inBounds, 0, 3);  GPIO.inMode = (GPIOinModes)tVal;
+  validatedLoad("GPIOoutMode", tVal, 0, u8inBounds, 0, 2); GPIO.outMode = (GPIOoutModes)tVal;
+  validatedLoad("GPIOalgMode", tVal, 0, u8inBounds, 0, 2); GPIO.algMode = (GPIOalgModes)tVal;
   validatedLoad("MenuonTimeout", HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
   validatedLoad("MenuonStart", HomeMenu.onStart, 0, u8inBounds, 0, 3);
   validatedLoad("MenuonStop", HomeMenu.onStop, 0, u8inBounds, 0, 3);
@@ -554,9 +514,9 @@ sBTCoptions::save()
   preferences.putUChar("enableOTA", enableOTA);
   preferences.putChar("cyclicStop", cyclic.Stop);
   preferences.putChar("cyclicStart",cyclic.Start);  
-  preferences.putUChar("GPIOinMode", GPIOinMode);
-  preferences.putUChar("GPIOoutMode", GPIOoutMode);
-  preferences.putUChar("GPIOalgMode", GPIOalgMode);
+  preferences.putUChar("GPIOinMode", GPIO.inMode);
+  preferences.putUChar("GPIOoutMode", GPIO.outMode);
+  preferences.putUChar("GPIOalgMode", GPIO.algMode);
   preferences.putUChar("MenuOnTimeout", HomeMenu.onTimeout);
   preferences.putUChar("MenuonStart", HomeMenu.onStart);
   preferences.putUChar("MenuonStop", HomeMenu.onStop);

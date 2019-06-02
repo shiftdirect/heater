@@ -44,6 +44,12 @@ enum GPIOalgModes {
   GPIOalgHeatDemand,
 };
 
+struct sGPIOparams {
+  GPIOinModes inMode;
+  GPIOoutModes outMode;
+  GPIOalgModes algMode;
+};
+
 
 class CGPIOin {
   GPIOinModes _Mode;

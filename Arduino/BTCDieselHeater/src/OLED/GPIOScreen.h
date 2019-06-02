@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "PasswordScreen.h"
+#include "../Utility/GPIO.h"
 
 class C128x64_OLED;
 class CScreenManager;
@@ -32,9 +33,7 @@ class CGPIOScreen : public CPasswordScreen
 {
   int _rowSel;
   void _adjust(int dir);
-  int _GPIOinMode;
-  int _GPIOoutMode;
-  int _GPIOalgMode;
+  sGPIOparams _GPIOparams;
   int _animateCount;
   int _scrollChar;
   void _initUI();

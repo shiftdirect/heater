@@ -199,18 +199,15 @@ CHomeMenuSelScreen::adjust(int dir)
   switch(_rowSel) {
     case 1:
       _action.onStop += dir;
-      ROLLLOWERLIMIT(_action.onStop, 0, 3);
-      ROLLUPPERLIMIT(_action.onStop, 3, 0);
+      WRAPLIMITS(_action.onStop, 0, 3);
       break;
     case 2:
       _action.onStart += dir;
-      ROLLLOWERLIMIT(_action.onStart, 0, 3);
-      ROLLUPPERLIMIT(_action.onStart, 3, 0);
+      WRAPLIMITS(_action.onStart, 0, 3);
       break;
     case 3: 
       _action.onTimeout += dir;
-      ROLLLOWERLIMIT(_action.onTimeout, 0, 3);
-      ROLLUPPERLIMIT(_action.onTimeout, 3, 0);
+      WRAPLIMITS(_action.onTimeout, 0, 3);
       break;
   }
 }

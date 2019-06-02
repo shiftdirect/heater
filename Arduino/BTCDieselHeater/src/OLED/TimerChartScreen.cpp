@@ -122,7 +122,7 @@ CTimerChartScreen::show()
       if(pixel > 4) {
         pixel = 0;
         subpixel++;
-        ROLLUPPERLIMIT(subpixel, 2, 0);
+        WRAPUPPERLIMIT(subpixel, 2, 0);
       }
       if((interval == 119) && blockStart >=0) {  // timer ran up until midnight
         IDcentre = hour0 + (blockStart + 120) / 2;
@@ -158,8 +158,8 @@ CTimerChartScreen::keyHandler(uint8_t event)
   // handle initial key press
   if(event & keyPressed) {
     bHeld = false;
-    // press CENTRE
-    if(event & key_Centre) {
+    // press CENTRE, UP or DOWN
+    if(event & (key_Centre | key_Down | key_Up)) {
       _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // exit: return to clock screen
     }
     // press LEFT - navigate fields, or screens
@@ -169,12 +169,6 @@ CTimerChartScreen::keyHandler(uint8_t event)
     // press RIGHT - navigate fields, or screens
     if(event & key_Right) {
       _ScreenManager.nextMenu(); 
-    }
-    // press UP  
-    if(event & key_Up) {
-    }
-    // press DOWN
-    if(event & key_Down) {
     }
   }
 

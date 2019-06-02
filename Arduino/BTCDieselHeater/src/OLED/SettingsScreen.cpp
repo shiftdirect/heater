@@ -103,7 +103,7 @@ CSettingsScreen::animate()
   }
   else {
     _animateCount++;
-    ROLLUPPERLIMIT(_animateCount, 9, 0);
+    WRAPUPPERLIMIT(_animateCount, 9, 0);
 
     int glowDrive = getHeaterInfo().getGlow_Drive();
     _printMenuText(Column, Line1, "     ");

@@ -135,7 +135,7 @@ CBasicScreen::show()
           break;
         case 1:
         case 2:
-          sprintf(msg, "GPIO output #%d %s", _feedbackType, getGPIO(_feedbackType-1) ? "ON" : "OFF");
+          sprintf(msg, "GPIO output #%d %s", _feedbackType, getGPIOout(_feedbackType-1) ? "ON" : "OFF");
           break;
       }
       // centre message at bottom of screen
@@ -170,21 +170,23 @@ CBasicScreen::keyHandler(uint8_t event)
       // hold LEFT to toggle GPIO output #1
       if(event & key_Left) {
         if(repeatCount > 2) {
-          repeatCount = -1;         // prevent double handling
-          setGPIO(0, !getGPIO(0));  // toggle GPIO output #1
-          _showSetModeTime = millis() + 2000;
-          _feedbackType = 1;
-          _ScreenManager.reqUpdate();
+          repeatCount = -1;      // prevent double handling
+          if(toggleGPIOout(0)) {    // toggle GPIO output #1
+            _showSetModeTime = millis() + 2000;
+            _feedbackType = 1;
+            _ScreenManager.reqUpdate();
+          }
         }
       }
       // hold RIGHT to toggle GPIO output #2
       if(event & key_Right) {
         if(repeatCount > 2) {
           repeatCount = -1;         // prevent double handling
-          setGPIO(1, !getGPIO(1));  // toggle GPIO output #2
-          _showSetModeTime = millis() + 2000;
-          _feedbackType = 2;
-          _ScreenManager.reqUpdate();
+          if(toggleGPIOout(1)) {    // toggle GPIO output #2
+            _showSetModeTime = millis() + 2000;
+            _feedbackType = 2;
+            _ScreenManager.reqUpdate();
+          }
         }
       }
       // hold DOWN to enter thermostat / fixed mode selection

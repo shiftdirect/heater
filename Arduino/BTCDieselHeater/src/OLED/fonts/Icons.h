@@ -73,6 +73,7 @@ extern const BITMAP_INFO TimerIconInfo;
 extern const BITMAP_INFO LargeTimerIconInfo;
 extern const BITMAP_INFO VerticalRepeatIconInfo;
 
+extern const BITMAP_INFO CrossLgIconInfo;
 
 // Bitmap for open
 extern const BITMAP_INFO OpenIconInfo;

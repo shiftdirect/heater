@@ -292,7 +292,7 @@ CTimerManager::findNextTimer(int hour, int minute, int dow)
     if(dayMinute == _dayMinutes) {
       dayMinute = 0;
       dow++;
-      ROLLUPPERLIMIT(dow, 6, 0);
+      WRAPUPPERLIMIT(dow, 6, 0);
     }
   }
   nextTimer = 0;
