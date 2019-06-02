@@ -152,9 +152,16 @@ CScreen::_reqOEMWarning()
 }
 
 void 
-CScreen::_drawBitmap(int x, int y, const BITMAP_INFO& info, uint16_t colour)
+CScreen::_drawBitmap(int x, int y, const BITMAP_INFO& info, uint16_t colour, uint16_t bg)
 {
-  _display.drawBitmap(x, y, info.pBitmap, info.width, info.height, colour);
+  if(bg == 0xffff) {
+     // normal mode - does not erase background
+    _display.drawBitmap(x, y, info.pBitmap, info.width, info.height, colour);
+  } 
+  else {
+     // overwrite mode - erases background
+    _display.drawBitmap(x, y, info.pBitmap, info.width, info.height, colour, bg);
+  }
 }
 
 

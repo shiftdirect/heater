@@ -144,7 +144,7 @@ const BITMAP_INFO ThermoPtrIconInfo(3, 5, thermoPtr);
 
 // 'Bluetooth icon', 6x11px
 const unsigned char BTicon [] PROGMEM = {
-	0x20, //   #
+  0x20, //   #
   0x30, //   ##
   0x28, //   # #
   0xa4, // # #  #
@@ -154,24 +154,40 @@ const unsigned char BTicon [] PROGMEM = {
   0xa4, // # #  #
   0x28, //   # #
   0x30, //   ##
-	0x20  //   #
+  0x20  //   #
 };
 const BITMAP_INFO BluetoothIconInfo(6, 11, BTicon);
 
 // 'wifiIcon', 13x10px
 const unsigned char wifiIcon [] PROGMEM = {
-	0x1f, 0xc0, //    #######
+  0x1f, 0xc0, //    #######
   0x20, 0x20, //   #       #
   0x40, 0x10, //  #         #
   0x8f, 0x88, // #   #####   #
   0x10, 0x40, //    #     #
   0x20, 0x20, //   #       #
-	0x07, 0x00, //      ###
+  0x07, 0x00, //      ###
   0x08, 0x80, //     #   #
   0x00, 0x00, //
   0x02, 0x00  //       #
 };
 const BITMAP_INFO WifiIconInfo(13, 10, wifiIcon);
+
+// 'wifiIconWide', 13x10px
+const unsigned char wifiwideIcon [] PROGMEM = {
+  0x1f, 0xc0, 0x00, 0x00, //    #######
+  0x20, 0x20, 0x00, 0x00, //   #       #
+  0x40, 0x10, 0x00, 0x00, //  #         #
+  0x8f, 0x88, 0x00, 0x00, // #   #####   #
+  0x10, 0x40, 0x00, 0x00, //    #     #
+  0x20, 0x20, 0x00, 0x00, //   #       #
+  0x07, 0x00, 0x00, 0x00, //      ###
+  0x08, 0x80, 0x00, 0x00, //     #   #
+  0x00, 0x00, 0x00, 0x00, //
+  0x02, 0x00, 0x00, 0x00, //       #
+  0x00, 0x00, 0x00, 0x00  //
+};
+const BITMAP_INFO WifiWideIconInfo(25, 11, wifiwideIcon);
 
 
 // 'wifiInIcon, 5x5px
@@ -214,7 +230,7 @@ const BITMAP_INFO BatteryIconInfo(15, 10, BatteryIcon);
 
 // 'GlowPlugIcon', 16x9px
 const unsigned char GlowPlugIcon [] PROGMEM = {
-	0x71, 0xc7, //  ###   ###   ###
+  0x71, 0xc7, //  ###   ###   ###
   0x0e, 0x38, //     ###   ###
   0x14, 0x14, //    # #     # #
   0x12, 0x24, //    #  #   #  #
@@ -222,21 +238,21 @@ const unsigned char GlowPlugIcon [] PROGMEM = {
   0x11, 0x44, //    #   # #   #
   0x11, 0x44, //    #   # #   #
   0x0a, 0x28, //     # #   # #
-	0x0e, 0x38  //     ###   ###
+  0x0e, 0x38  //     ###   ###
 };
 const BITMAP_INFO GlowPlugIconInfo(16, 9, GlowPlugIcon);
 
 
 // 'HeatRise', 17x2px
 const unsigned char GlowHeatIcon [] PROGMEM = {
-	0x80, 0x00, 0x80, // #               #
+  0x80, 0x00, 0x80, // #               #
   0x40, 0x01, 0x00  //  #             #
 };
 const BITMAP_INFO GlowHeatIconInfo(17, 2, GlowHeatIcon);
 
 // 'Fan3_1a', 16x16px
 const unsigned char FanIcon1 [] PROGMEM = {
-	0x03, 0xc0, //       ####
+  0x03, 0xc0, //       ####
   0x04, 0x20, //      #    #  
   0x04, 0x20, //      #    #  
   0x04, 0x20, //      #    #  
@@ -244,7 +260,7 @@ const unsigned char FanIcon1 [] PROGMEM = {
   0x03, 0xc0, //       ####
   0x07, 0xe0, //      ######
   0x06, 0x60, //      ##  ##
-	0x7e, 0x7e, //  ######  ######
+  0x7e, 0x7e, //  ######  ######
   0x87, 0xe1, // #   ###  ###   #
   0x87, 0xe1, // #   ###  ###   #
   0x84, 0x21, // #    #    #    #
@@ -255,7 +271,7 @@ const unsigned char FanIcon1 [] PROGMEM = {
 };
 // 'Fan3_2a', 16x16px
 const unsigned char FanIcon2 [] PROGMEM = {
-	0x00, 0x78, //          ####
+  0x00, 0x78, //          ####
   0x00, 0x84, //         #    #
   0x00, 0x84, //         #    #
   0x00, 0x84, //         #    #
@@ -270,21 +286,21 @@ const unsigned char FanIcon2 [] PROGMEM = {
   0x00, 0x84, //         #    #
   0x00, 0x84, //         #    #
   0x00, 0x84, //         #    #
-	0x00, 0x78, //          ####
+  0x00, 0x78, //          ####
 };
 // 'Fan3_3a', 16x16px
 const unsigned char FanIcon3 [] PROGMEM = {
-	0x00, 0x00, 
+  0x00, 0x00, 
   0x00, 0x00, 
   0x78, 0x1e, //  ####      ####
   0x84, 0x21, // #    #    #    #
   0x84, 0x21, // #    #    #    #
   0x87, 0xe1, // #   ###  ###   #
   0x87, 0xe1, // #   #### ###   #
-	0x7e, 0x7e, //  ######  ######
+  0x7e, 0x7e, //  ######  ######
   0x06, 0x60, //      ##  ##
   0x07, 0xe0, //      ######
-	0x03, 0xc0, //       ####
+  0x03, 0xc0, //       ####
   0x04, 0x20, //      #    #  
   0x04, 0x20, //      #    #  
   0x04, 0x20, //      #    #  
@@ -293,7 +309,7 @@ const unsigned char FanIcon3 [] PROGMEM = {
 };
 // 'Fan3_4a', 16x16px
 const unsigned char FanIcon4 [] PROGMEM = {
-	0x1e, 0x00, //    ####
+  0x1e, 0x00, //    ####
   0x21, 0x00, //   #    #
   0x21, 0x00, //   #    #
   0x21, 0x00, //   #    #
@@ -308,7 +324,7 @@ const unsigned char FanIcon4 [] PROGMEM = {
   0x21, 0x00, //   #    #
   0x21, 0x00, //   #    #
   0x21, 0x00, //   #    #
-	0x1e, 0x00  //    ####
+  0x1e, 0x00  //    ####
 };
 const BITMAP_INFO FanIcon1Info(16, 16, FanIcon1);
 const BITMAP_INFO FanIcon2Info(16, 16, FanIcon2);
@@ -318,7 +334,7 @@ const BITMAP_INFO FanIcon4Info(16, 16, FanIcon4);
 
 // 'FuelIcon', 7x12px
 const unsigned char FuelIcon [] PROGMEM = {
-	0x10, //    #
+  0x10, //    #
   0x10, //    #
   0x38, //   ###
   0x38, //   ###
@@ -353,7 +369,6 @@ const BITMAP_INFO TargetIconInfo(13, 13, TargetIcon);
 
 // 'repeat', 15x15px
 const unsigned char repeatIcon [] PROGMEM = {
-	0x00, 0x00, 
   0x00, 0x00, 
   0x00, 0x00, 
   0x00, 0x00, 
@@ -361,7 +376,8 @@ const unsigned char repeatIcon [] PROGMEM = {
   0x00, 0x00, 
   0x00, 0x00, 
   0x00, 0x00, 
-	0x00, 0x02, //               #
+  0x00, 0x00, 
+  0x00, 0x02, //               #
   0x00, 0x02, //               #
   0xf0, 0x04, // ####         #
   0xe0, 0x04, // ###          #
@@ -381,8 +397,8 @@ const unsigned char timerID1Icon [] PROGMEM = {
   0x21, 0x08, //   #    #    #
   0x2d, 0x08, //   # ## #    #
   0x25, 0xe8, //   #  # #### #
-	0x24, 0x08, //   #  #      #
-	0x24, 0x08, //   #  #      #
+  0x24, 0x08, //   #  #      #
+  0x24, 0x08, //   #  #      #
   0x10, 0x10, //    #       #
   0x08, 0x20, //     #     #
   0x07, 0xc0, //      #####
@@ -401,7 +417,7 @@ const unsigned char timerID2Icon [] PROGMEM = {
   0x21, 0x08, //   #    #    #
   0x2d, 0x08, //   # ## #    #
   0x25, 0xe8, //   #  # #### #
-	0x28, 0x08, //   # #       #
+  0x28, 0x08, //   # #       #
   0x2c, 0x08, //   # ##      #
   0x10, 0x10, //    #       #
   0x08, 0x20, //     #     #
@@ -434,41 +450,41 @@ const BITMAP_INFO TimerIconInfo(15, 15, timerIcon);
 // 'large timer', 15x15px
 const unsigned char largeTimerIcon[] PROGMEM  =
 {
-	0x07, 0xC0, //      #####     
-	0x19, 0x30, //    ##  #  ##   
-	0x21, 0x08, //   #    #    #  
-	0x41, 0x04, //  #     #     # 
-	0x41, 0x04, //  #     #     # 
-	0x81, 0x02, // #      #      #
-	0x81, 0xF2, // #      #####  #
-	0x80, 0x02, // #             #
-	0x80, 0x02, // #             #
-	0x80, 0x02, // #             #
-	0x40, 0x04, //  #           # 
-	0x40, 0x04, //  #           # 
-	0x20, 0x08, //   #         #  
-	0x18, 0x30, //    ##     ##   
-	0x0F, 0xE0, //     #######    
+  0x07, 0xC0, //      #####     
+  0x19, 0x30, //    ##  #  ##   
+  0x21, 0x08, //   #    #    #  
+  0x41, 0x04, //  #     #     # 
+  0x41, 0x04, //  #     #     # 
+  0x81, 0x02, // #      #      #
+  0x81, 0xF2, // #      #####  #
+  0x80, 0x02, // #             #
+  0x80, 0x02, // #             #
+  0x80, 0x02, // #             #
+  0x40, 0x04, //  #           # 
+  0x40, 0x04, //  #           # 
+  0x20, 0x08, //   #         #  
+  0x18, 0x30, //    ##     ##   
+  0x0F, 0xE0, //     #######    
 };
 const BITMAP_INFO LargeTimerIconInfo(15, 15, largeTimerIcon);
 
 const uint8_t PROGMEM verticalRepeatIcon [] =
 {
-	0x78, //  #### 
-	0x38, //   ### 
-	0x38, //   ### 
-	0x48, //  #  # 
-	0x80, // #     
-	0x80, // #     
-	0x80, // #     
-	0x80, // #     
-	0x80, // #     
-	0x80, // #     
-	0x80, // #     
-	0x40, //  #    
-	0x40, //  #   
-	0x20, //   #  
-	0x20, //   #    
+  0x78, //  #### 
+  0x38, //   ### 
+  0x38, //   ### 
+  0x48, //  #  # 
+  0x80, // #     
+  0x80, // #     
+  0x80, // #     
+  0x80, // #     
+  0x80, // #     
+  0x80, // #     
+  0x80, // #     
+  0x40, //  #    
+  0x40, //  #   
+  0x20, //   #  
+  0x20, //   #    
 };
 const BITMAP_INFO VerticalRepeatIconInfo(15, 5, verticalRepeatIcon);
 

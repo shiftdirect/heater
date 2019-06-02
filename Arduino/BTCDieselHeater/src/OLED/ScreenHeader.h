@@ -27,10 +27,25 @@
 #include "../Utility/UtilClasses.h"
 #include "fonts/FontTypes.h"
 
+struct sScreenholdoff {
+  int  holdon;
+  int  holdoff;
+  sScreenholdoff() {
+    reset();
+  }
+  void reset() {
+    holdon = 0;
+    holdoff = 0;
+  }
+  void set(int hldon = 2, int hldoff = 8) {
+    holdon = hldon;
+    holdoff = hldoff;
+  }
+};
 
 class CScreenHeader : public CScreen {
-  bool _clearUpAnimation;
-  bool _clearDnAnimation;
+  sScreenholdoff _UpAnnotation;
+  sScreenholdoff _DnAnnotation;
   bool _colon;
   int  _animateCount;
 protected:
@@ -39,7 +54,6 @@ protected:
   void showBatteryIcon(float voltage);
   int  showTimers();
   virtual void showTime();  // x location depends upon how many timers are active
-  void showGPIO();
 public:
   CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
   bool show();

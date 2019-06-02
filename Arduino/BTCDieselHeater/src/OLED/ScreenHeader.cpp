@@ -61,8 +61,6 @@
 
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
 {
-  _clearUpAnimation = false;
-  _clearDnAnimation = false;
   _colon = false;
 }
 
@@ -75,8 +73,7 @@ CScreenHeader::show()
   // Bluetooth
   showBTicon();
 
-  // WiFi
-  showWifiIcon();
+  // WiFi icon is updated in animate()
 
   // battery
   showBatteryIcon(getHeaterInfo().getBattVoltage());
@@ -104,8 +101,8 @@ CScreenHeader::show()
 bool 
 CScreenHeader::animate()
 {
-  bool retval = true;
-
+  // animate timer icon, 
+  // inserting an update icon if new firmware available from internet web server
   _animateCount++;
   ROLLUPPERLIMIT(_animateCount, 10, 0);
   if(isUpdateAvailable(true)) {
@@ -125,59 +122,9 @@ CScreenHeader::animate()
     }
   }
 
-  if((isWifiConnected() || isWifiAP()) && isWebClientConnected()) {
+  showWifiIcon();
 
-    int xPos = X_WIFI_ICON + WifiIconInfo.width;
-
-    // UP arrow animation
-    //
-    int yPos = 0;
-    bool uploadActive = hasWebServerSpoken(true);
-
-    if(_clearUpAnimation && !uploadActive) { 
-      // arrow was drawn in the prior iteration, now erase it 
-      if(NVstore.getOTAEnabled()) 
-        _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
-      else
-        _display.fillRect(xPos, yPos, WifiInIconInfo.width, WifiInIconInfo.height, BLACK);
-      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
-      retval = true;
-      _clearUpAnimation = false;
-    }
-    else if(uploadActive) {
-      // we have emitted data to the web client, show an UP arrow
-      if(NVstore.getOTAEnabled()) 
-        _display.fillRect(X_WIFI_ICON +12, Y_WIFI_ICON, 12, 5, BLACK);
-      else
-        _display.fillRect(xPos, yPos, WifiInIconInfo.width, WifiInIconInfo.height, BLACK);
-      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
-      _drawBitmap(xPos, yPos, WifiOutIconInfo);
-      _clearUpAnimation = true;  // clear arrow upon next iteration
-      retval = true;
-    }
-    
-    // DOWN arrow animation
-    //
-    yPos = WifiIconInfo.height - WifiInIconInfo.height + 1;
-    if(_clearDnAnimation) { 
-      // arrow was drawn in the prior iteration, now erase it 
-      _display.fillRect(X_WIFI_ICON + 12, Y_WIFI_ICON + 6, 12, 5, BLACK);
-//      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
-      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
-      retval = true;
-      _clearDnAnimation = false;
-    }
-    else if(hasWebClientSpoken(true)) {
-      // we have receievd data from the web client, show an DOWN arrow
-      _display.fillRect(X_WIFI_ICON + 12, Y_WIFI_ICON + 6, 12, 5, BLACK);
-//      _display.fillRect(xPos, yPos, W_WIFIOUT_ICON, H_WIFIOUT_ICON, BLACK);
-      _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
-      _drawBitmap(xPos, yPos, WifiInIconInfo, WHITE);
-      _clearDnAnimation = true;  // clear arrow upon next iteration
-      retval = true;
-    }
-  }
-  return retval;                 // true if we need to update the physical display
+  return true;                 // true if we need to update the physical display
 }
 
 void 
@@ -191,10 +138,41 @@ CScreenHeader::showBTicon()
 void 
 CScreenHeader::showWifiIcon()
 {
-  if(isWifiConnected() || isWifiAP()) {
-    _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiIconInfo, WHITE);
+  if(isWifiConnected() || isWifiAP()) {   // STA or AP mode active
+    _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiWideIconInfo, WHITE, BLACK);  // wide icon erases annotations!
+
+    int xPos = X_WIFI_ICON + WifiIconInfo.width + 1;  // x loaction of upload/download arrows
+
+    // UP arrow animation
+    //
+    int yPos = 0;
+
+    if(hasWebServerSpoken(true)) {
+      // we have emitted data to the web client, show an UP arrow
+      _UpAnnotation.holdon = 2;   // hold up arrow on for 2 cycles
+      _UpAnnotation.holdoff = 8;  // hold blank for 8 cycles
+    };
+
+    if(_UpAnnotation.holdon) {
+      _UpAnnotation.holdon--;
+      _drawBitmap(xPos, yPos, WifiOutIconInfo);     // add upload arrow
+    }
+    else if(_UpAnnotation.holdoff > 0) {
+      _UpAnnotation.holdoff--;     // animation of arrow is now cleared
+    }
+    else {
+      if(NVstore.getOTAEnabled()) {
+        // OTA is enabled, show OTA
+        // erase top right portion of wifi icon
+        _display.fillRect(X_WIFI_ICON+11, Y_WIFI_ICON, 2, 6, BLACK);
+        CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+        _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON);
+        _display.print("OTA");
+      }
+    }
+    
+    // low side wifi icon annotation
     if(isWifiButton()) {
-      _display.fillRect(X_WIFI_ICON + 11, Y_WIFI_ICON + 5, 15, 7, BLACK);
       CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
       _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON+6);
       switch(isWifiButton()) {
@@ -203,25 +181,40 @@ CScreenHeader::showWifiIcon()
         case 3:  _display.print("ERS"); break;
       }
     }
-    else if(isWifiConfigPortal()) {
-      _display.fillRect(X_WIFI_ICON + 11, Y_WIFI_ICON + 5, 15, 7, BLACK);
-      CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-      _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON+6);
-//      _display.print("PTL");
-      _display.print("CFG");
-    }
-    else if(isWifiAP()) {
-      _display.fillRect(X_WIFI_ICON + 11, Y_WIFI_ICON + 5, 10, 7, BLACK);
-      CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-      _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON+6);
-      _display.print("AP");
-    }
-    if(NVstore.getOTAEnabled()) {
-      _display.fillRect(X_WIFI_ICON +11, Y_WIFI_ICON, 14, 6, BLACK);
-      CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-      _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON);
-      _display.print("OTA");
-    }
+    else {
+      // DOWN arrow animation
+      //
+      yPos = WifiIconInfo.height - WifiInIconInfo.height + 1;
+      
+      if(hasWebClientSpoken(true)) {
+        // we have received data from the web client, show a DOWN arrow
+        _DnAnnotation.holdon = 2;  // hold down arrow on for 2 cycles
+        _DnAnnotation.holdoff = 8; // hold blank for 8 cycles
+      } 
+
+      if(_DnAnnotation.holdon) {
+        _DnAnnotation.holdon--;
+        _drawBitmap(xPos, yPos, WifiInIconInfo, WHITE);    // add down arrow
+      }
+      else if(_DnAnnotation.holdoff > 0) {
+        _DnAnnotation.holdoff--;    // nothing drawn after arrow, side annotation stays clear for a while
+      }
+      else {
+        // no activity for a while now
+        if(isWifiConfigPortal()) {
+          // if config portal, show CFG
+          CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+          _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON+6);
+          _display.print("CFG");
+        }
+        else if(isWifiAP()) {
+          // if AP only, show AP
+          CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+          _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON+6);
+          _display.print("AP");
+        }
+      }
+    }      
   }
 }
 
@@ -293,22 +286,3 @@ CScreenHeader::showTime()
   }
 }
 
-void 
-CScreenHeader::showGPIO()
-{
-/*  int xPos = X_GPIO_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
-  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-  _display.setCursor(xPos, 0);
-  _display.print("1");
-  _display.drawBitmap(xPos + 4, 0, getGPIO(0) ? TickIcon : CrossIcon, TickIconWidth, TickIconHeight, WHITE);
-  _display.setCursor(xPos, 6);
-  _display.print("2");
-  _display.drawBitmap(xPos + 4, 6, getGPIO(1) ? TickIcon : CrossIcon, TickIconWidth, TickIconHeight, WHITE);*/
-}
-/*void 
-CScreenHeader::showGPIO()
-{
-  int xPos = X_GPIO_ICON;   // both are enabled - draw icon 1 to the left, otherwise leave to the right
-  _display.drawBitmap(xPos, 0, getGPIO(0) ? GPIO1ONIcon : GPIO1OFFIcon, GPIOIconWidthPixels, GPIOIconHeightPixels, WHITE);
-  _display.drawBitmap(xPos, 8, getGPIO(1) ? GPIO2ONIcon : GPIO2OFFIcon, GPIOIconWidthPixels, GPIOIconHeightPixels, WHITE);
-}*/

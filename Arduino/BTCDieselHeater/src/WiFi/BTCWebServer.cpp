@@ -132,6 +132,7 @@ void handleBTCNotFound() {
 	digitalWrite(led, 0);
 }
 
+// embedded HTML & Javascript to perform browser based updates of firmware or SPIFFS
 const char* updateIndex = R"=====(
 <!DOCTYPE html>
 <html lang="en">
@@ -233,22 +234,6 @@ const char* updateIndex = R"=====(
 </html>
 )=====";
 
-const char* rootIndex = R"=====(
-<!DOCTYPE html>
-<script>
-function init() {
-  window.location.assign("/"); 
-}
-</script
-<html>
-  <head>
-    <title>HTML Meta Tag</title>
-  </head>
-  <body onload="javascript:init()">
-    <p>Root redirect</p>
-  </body>
-</html>
-)=====";
 
 void rootRedirect()
 {

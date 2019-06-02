@@ -263,18 +263,22 @@ void APstartedCallback(WiFiManager*)
 
 const char* getWifiAPAddrStr()
 { 
-  noInterrupts();
-  static IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
-  interrupts();
-  return IPaddr.toString().c_str(); 
+//  noInterrupts();
+  IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
+  static char APIPaddr[16];
+  sprintf(APIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
+//  interrupts();
+  return APIPaddr;
 }
   
 const char* getWifiSTAAddrStr()
 { 
-  noInterrupts();
-  static IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
-  interrupts();
-  return IPaddr.toString().c_str(); 
+//  noInterrupts();
+  IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
+  static char STAIPaddr[16];
+  sprintf(STAIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
+//  interrupts();
+  return STAIPaddr;
 }
   
 const char* getWifiAPMACStr()

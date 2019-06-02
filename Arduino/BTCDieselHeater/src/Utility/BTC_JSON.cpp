@@ -393,7 +393,11 @@ void updateJSONclients(bool report)
 void resetJSONmoderator()
 {
   JSONmoderator.reset();
+#ifdef SALWAYS_SEND_TIMERS
+  TimerModerator.reset();
+#else
   initTimerJSONmoderator();
+#endif
   initMQTTJSONmoderator();
 }
 

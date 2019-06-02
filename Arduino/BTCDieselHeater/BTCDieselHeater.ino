@@ -119,7 +119,7 @@
 
 const int FirmwareRevision = 23;
 const int FirmwareSubRevision = 0;
-const char* FirmwareDate = "21 May 2019";
+const char* FirmwareDate = "1 Jun 2019";
 
 
 #ifdef ESP32
@@ -143,6 +143,7 @@ bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
 void manageCyclicMode();
+void doStreaming();
 
 // DS18B20 temperature sensor support
 OneWire  ds(15);  // on pin 5 (a 4.7K resistor is necessary)
@@ -325,6 +326,8 @@ void setup() {
   BoardRevision = BoardDetect();
   DebugPort.printf("Board revision: V%.1f\r\n", float(BoardRevision) * 0.1);
 
+  DebugPort.printf("ESP32 IDF Version: %s\r\n", esp_get_idf_version());
+
 #if USE_SPIFFS == 1  
  // Initialize SPIFFS
   if(!SPIFFS.begin(true)){
@@ -373,8 +376,8 @@ void setup() {
   
   NVstore.init();
   NVstore.load();
-  initMQTTJSONmoderator();   // prevent JSON for MQTT unless requested
-  initTimerJSONmoderator();  // prevent JSON for timers unless requested
+  initMQTTJSONmoderator();   // prevents JSON for MQTT unless requested
+  initTimerJSONmoderator();  // prevents JSON for timers unless requested
 
 
   KeyPad.begin(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
@@ -437,7 +440,7 @@ void setup() {
 #if USE_SW_WATCHDOG == 1
   // create a watchdog timer
   watchdogTimer = timerBegin(0, 80, true); //timer 0, divisor 80     
-  timerAlarmWrite(watchdogTimer, 4000000, false); //set time in uS must be fed within this time or reboot     
+  timerAlarmWrite(watchdogTimer, 15000000, false); //set time in uS must be fed within this time or reboot     
   timerAttachInterrupt(watchdogTimer, &interruptReboot, true);     
   timerAlarmEnable(watchdogTimer); //enable interrupt
 #endif
@@ -457,45 +460,7 @@ void loop()
   float fTemperature;
   unsigned long timenow = millis();
 
-  DebugPort.handle();    // keep telnet spy alive
-
-#if USE_WIFI == 1
-
-  doWiFiManager();
-#if USE_OTA == 1
-  DoOTA();
-#endif // USE_OTA 
-#if USE_WEBSERVER == 1
-  bHaveWebClient = doWebServer();
-#endif //USE_WEBSERVER
-
-#endif // USE_WIFI
-
-  checkDebugCommands();
-
-  KeyPad.update();      // scan keypad - key presses handler via callback functions!
-
-  Bluetooth.check();    // check for Bluetooth activity
-
-  GPIOin.manage();
-  GPIOout.manage();
-  GPIOalg.manage();
-
-  // manage changes in Bluetooth connection status
-  if(Bluetooth.isConnected()) {
-    if(!bBTconnected) {
-      resetJSONmoderator();  // force full send upon BT client connect
-    }
-    bBTconnected = true;
-  }
-  else {
-    bBTconnected = false;
-  }
-  // manage changes in number of wifi clients
-  if(isWebServerClientChange()) {
-    resetJSONmoderator();  // force full send upon number of Wifi clients change
-  }
-
+  // DebugPort.handle();    // keep telnet spy alive
 
   //////////////////////////////////////////////////////////////////////////////////////
   // Blue wire data reception
@@ -568,6 +533,9 @@ void loop()
       feedWatchdog(); //reset timer (feed watchdog)  
 #endif
       
+      doStreaming();   // do wifi, BT tx etc when NOT in midst of handling blue wire
+                       // this especially avoids E-07 faults due to larger data transfers
+
       moderator = 50;
 
 #if RX_LED == 1
@@ -1344,5 +1312,53 @@ void ShowOTAScreen(int percent, bool webupdate)
 
 void feedWatchdog()
 {
+  uint64_t timeRem = timerRead(watchdogTimer);
+  if(timeRem > 100000)  // 100ms
+    DebugPort.printf("WD time = %lld\r\n", timeRem);  // print longer WD intervals
+
   timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
+}
+
+
+void doStreaming() 
+{
+#if USE_WIFI == 1
+
+  doWiFiManager();
+#if USE_OTA == 1
+  DoOTA();
+#endif // USE_OTA 
+#if USE_WEBSERVER == 1
+  bHaveWebClient = doWebServer();
+#endif //USE_WEBSERVER
+
+#endif // USE_WIFI
+
+  checkDebugCommands();
+
+  KeyPad.update();      // scan keypad - key presses handler via callback functions!
+
+  Bluetooth.check();    // check for Bluetooth activity
+
+  GPIOin.manage();
+  GPIOout.manage();
+  GPIOalg.manage();
+
+  // manage changes in Bluetooth connection status
+  if(Bluetooth.isConnected()) {
+    if(!bBTconnected) {
+      resetJSONmoderator();  // force full send upon BT client connect
+    }
+    bBTconnected = true;
+  }
+  else {
+    bBTconnected = false;
+  }
+  // manage changes in number of wifi clients
+  if(isWebServerClientChange()) {
+    resetJSONmoderator();  // force full send upon number of Wifi clients change
+  }
+
+  DebugPort.handle();    // keep telnet spy alive
+
 }

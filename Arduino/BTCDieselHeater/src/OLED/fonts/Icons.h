@@ -33,6 +33,7 @@ extern const BITMAP_INFO BluetoothIconInfo;
 
 // 'wifiIcon', 13x10px
 extern const BITMAP_INFO WifiIconInfo;
+extern const BITMAP_INFO WifiWideIconInfo;
 
 // 'wifiInIcon', 5x5px
 extern const BITMAP_INFO WifiInIconInfo;
