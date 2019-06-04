@@ -36,6 +36,7 @@ CModerator JSONmoderator;
 CTimerModerator TimerModerator;
 int timerConflict = 0;
 CModerator MQTTmoderator;
+CModerator GPIOmoderator;
 
 void validateTimer(int ID);
 
@@ -193,6 +194,18 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("UploadSize", it->key) == 0) {
       setUploadSize(it->value.as<long>());
 		}
+    else if(strcmp("GPout1", it->key) == 0) {
+      setGPIOout(0, it->value.as<unsigned char>() ? true : false);
+    }
+    else if(strcmp("GPout2", it->key) == 0) {
+      setGPIOout(1, it->value.as<unsigned char>() ? true : false);
+    }
+    else if(strcmp("GPin1", it->key) == 0) {
+      simulateGPIOin(it->value.as<unsigned char>() ? 0x01 : 0x00);  // simulate key 1 press
+    }
+    else if(strcmp("GPin2", it->key) == 0) {
+      simulateGPIOin(it->value.as<unsigned char>() ? 0x02 : 0x00);  // simulate key 2 press
+    }
 	}
 }
 
@@ -271,6 +284,20 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
   return bSend;
 }
 
+/*bool makeJSONStringGPIO(const sGPIO& GPIOinfo, char* opStr, int len)
+{
+  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+	bool bSend = GPIOmoderator.addJson(GPIOinfo, root);  
+
+  if(bSend) {
+		root.printTo(opStr, len);
+  }
+
+  return bSend;
+}*/
+
 // the way the JSON timer strings are crafted, we have to iterate over each timer's parameters
 // individually, the JSON name is always the same for each timer, the payload IDs the specific
 // timer
@@ -278,10 +305,10 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 // {"TimerStart":XX:XX,"TimerStop":XX:XX,"TimerDays":XX,"TimerRepeat":X}
 bool makeJSONTimerString(int channel, char* opStr, int len)
 {
+	bool bSend = false;  // reset should send flag
   StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
-	bool bSend = false;  // reset should send flag
 
   sTimer timerInfo;
   NVstore.getTimerInfo(channel, timerInfo);
@@ -294,6 +321,31 @@ bool makeJSONTimerString(int channel, char* opStr, int len)
   return bSend;
 }
 
+bool makeJSONStringGPIO(CModerator& moderator, char* opStr, int len)
+{
+  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+	bool bSend = false;  // reset should send flag
+
+  sGPIO info;
+  getGPIOinfo(info);
+
+  bSend |= moderator.addJson("GPin1", info.inState[0], root); 
+  bSend |= moderator.addJson("GPin2", info.inState[1], root); 
+  bSend |= moderator.addJson("GPout1", info.outState[0], root); 
+  bSend |= moderator.addJson("GPout2", info.outState[1], root); 
+  bSend |= moderator.addJson("GPanlg", info.algVal * 100 / 4096, root); 
+  bSend |= moderator.addJson("GPmodeIn", GPIOinNames[info.inMode], root); 
+  bSend |= moderator.addJson("GPmodeOut", GPIOoutNames[info.outMode], root); 
+  bSend |= moderator.addJson("GPmodeAnlg", GPIOalgNames[info.algMode], root); 
+
+  if(bSend) {
+		root.printTo(opStr, len);
+  }
+
+  return bSend;
+}
 
 bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
 {
@@ -387,6 +439,17 @@ void updateJSONclients(bool report)
       getBluetoothClient().send( jsonStr );
     }
   }
+
+  {
+    if(makeJSONStringGPIO(GPIOmoderator, jsonStr, sizeof(jsonStr))) {
+      if (report) {
+        DebugPort.printf("JSON send: %s\r\n", jsonStr);
+      }
+      sendWebServerString( jsonStr );
+      getBluetoothClient().send( jsonStr );
+    }
+  }
+
 }
 
 
@@ -399,6 +462,7 @@ void resetJSONmoderator()
   initTimerJSONmoderator();
 #endif
   initMQTTJSONmoderator();
+  GPIOmoderator.reset();
 }
 
 void initMQTTJSONmoderator()

@@ -26,6 +26,10 @@
 #include <driver/adc.h>
 #include "Debounce.h"
 
+extern const char* GPIOinNames[4];
+extern const char* GPIOoutNames[3];
+extern const char* GPIOalgNames[2];
+
 enum GPIOinModes { 
   GPIOinNone, 
   GPIOinOn1Off2,   // input 1 closure, heater starts; input2 closure, heater stops
@@ -33,16 +37,19 @@ enum GPIOinModes {
   GPIOinOn1Off1    // alternate input 1 closures start or stop the heater 
 };
 
+
 enum GPIOoutModes { 
   GPIOoutNone, 
   GPIOoutStatus,
   GPIOoutUser
 };
 
+
 enum GPIOalgModes {
   GPIOalgNone,   // Unmodified V2.0 PCBs must use this - ADC2 / Wifi unresolvable conflict
   GPIOalgHeatDemand,
 };
+
 
 struct sGPIOparams {
   GPIOinModes inMode;
@@ -62,15 +69,17 @@ class CGPIOin {
 //  unsigned long _lastDebounceTime;
 //  unsigned long _debounceDelay;
 //  uint8_t _scanInputs();
-  void _doOn1Off2();
-  void _doOnHold1();
-  void _doOn1Off1();
+  void _doOn1Off2(uint8_t newKey);
+  void _doOnHold1(uint8_t newKey);
+  void _doOn1Off1(uint8_t newKey);
 public:
   CGPIOin();
   void setMode(GPIOinModes mode) { _Mode = mode; };
   void begin(int pin1, int pin2, GPIOinModes mode, int activeState);
   void manage();
   uint8_t getState(int channel);
+  GPIOinModes getMode() const;
+  void simulateKey(uint8_t newKey);
 };
 
 class CGPIOout {
@@ -93,6 +102,7 @@ public:
   void manage();
   void setState(int channel, bool state);
   bool getState(int channel);
+  GPIOoutModes getMode() const;
 };
 
 class CGPIOalg {
@@ -104,7 +114,27 @@ public:
   void begin(adc1_channel_t pin, GPIOalgModes mode);
   void manage();
   int getValue();
+  GPIOalgModes getMode() const;
 };
 
+struct sGPIO {
+  bool outState[2];
+  bool inState[2];
+  int  algVal;
+  GPIOoutModes outMode;
+  GPIOinModes inMode;
+  GPIOalgModes algMode;
+  sGPIO& operator=(const sGPIO& rhs) {
+    outState[0] = rhs.outState[0];
+    outState[1] = rhs.outState[1];
+    inState[0] = rhs.inState[0];
+    inState[1] = rhs.inState[1];
+    algVal = rhs.algVal;
+    outMode = rhs.outMode;
+    inMode = rhs.inMode;
+    algMode = rhs.algMode;
+    return *this;
+  }
+};
 
 #endif // __BTCGPIO_H__

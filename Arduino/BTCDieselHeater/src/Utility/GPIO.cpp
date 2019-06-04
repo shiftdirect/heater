@@ -29,6 +29,25 @@ const int FADEAMOUNT = 3;
 const int FLASHPERIOD = 2000;
 const int ONFLASHINTERVAL = 50;
 
+const char* GPIOinNames[4] = {
+  "Disabled",
+  "On1Off1",
+  "Hold1",
+  "On1Off1"
+};
+
+const char* GPIOoutNames[3] = {
+  "Disabled",
+  "Status",
+  "User"
+};
+
+const char* GPIOalgNames[2] = {
+  "Disabled",
+  "HeatDemand"
+};
+
+
 CGPIOin::CGPIOin()
 {
   _Mode = GPIOinNone;
@@ -52,79 +71,89 @@ CGPIOin::getState(int channel)
   return (_Debounce.getState() & mask) != 0; 
 }
 
+GPIOinModes CGPIOin::getMode() const
+{
+  return _Mode;
+};
+
 void 
 CGPIOin::manage() 
+{
+  uint8_t newKey = _Debounce.manage();
+  // determine edge events
+  uint8_t keyChange = newKey ^ _lastKey;
+  _lastKey = newKey;
+
+  if(keyChange) {
+    simulateKey(newKey);
+/*    switch (_Mode) {
+      case GPIOinNone:
+        break;
+      case GPIOinOn1Off2:
+        _doOn1Off2(newKey);
+        break;
+      case GPIOinOnHold1:
+        _doOnHold1(newKey);
+        break;
+      case GPIOinOn1Off1:
+        _doOn1Off1(newKey);
+        break;
+    }*/
+  }
+}
+
+void 
+CGPIOin::simulateKey(uint8_t newKey)
 {
   switch (_Mode) {
     case GPIOinNone:
       break;
     case GPIOinOn1Off2:
-      _doOn1Off2();
+      _doOn1Off2(newKey);
       break;
     case GPIOinOnHold1:
-      _doOnHold1();
+      _doOnHold1(newKey);
       break;
     case GPIOinOn1Off1:
-      _doOn1Off1();
+      _doOn1Off1(newKey);
       break;
   }
 }
 
 void 
-CGPIOin::_doOn1Off2()
+CGPIOin::_doOn1Off2(uint8_t newKey)
 {
-  uint8_t newKey = _Debounce.manage();
-  // determine edge events
-  uint8_t keyChange = newKey ^ _lastKey;
-  _lastKey = newKey;
-
-  if(keyChange) {
-    if(newKey & 0x01) {
-      requestOn();
-    }
-    if(newKey & 0x02) {
-      requestOff();
-    }
+  if(newKey & 0x01) {
+    requestOn();
+  }
+  if(newKey & 0x02) {
+    requestOff();
   }
 }
 
 // mode where heater runs if input 1 is shorted
 // stops when open
 void 
-CGPIOin::_doOnHold1()
+CGPIOin::_doOnHold1(uint8_t newKey)
 {
-  uint8_t newKey = _Debounce.manage();
-  // determine edge events
-  uint8_t keyChange = newKey ^ _lastKey;
-  _lastKey = newKey;
-
-  if(keyChange) {
-    if(newKey & 0x01) {
-      requestOn();
-    }
-    else {
-      requestOff();
-    }
+  if(newKey & 0x01) {
+    requestOn();
+  }
+  else {
+    requestOff();
   }
 }
 
 // mode where heater runs if input 1 is shorted
 // stops when open
 void 
-CGPIOin::_doOn1Off1()
+CGPIOin::_doOn1Off1(uint8_t newKey)
 {
-  uint8_t newKey = _Debounce.manage();
-  // determine edge events
-  uint8_t keyChange = newKey ^ _lastKey;
-  _lastKey = newKey;
-
-  if(keyChange) {
-    if(newKey & 0x01) {
-      if(getHeaterInfo().getRunStateEx())
-        requestOff();
-      else 
-        requestOn();
-    }
+  if(newKey & 0x01) {
+    if(getHeaterInfo().getRunStateEx())
+      requestOff();
+    else 
+      requestOn();
   }
 }
 
@@ -168,6 +197,11 @@ CGPIOout::setMode(GPIOoutModes mode)
   _prevState = -1;
   ledcDetachPin(_pins[0]);     // ensure PWM detached from IO line
   ledcDetachPin(_pins[1]);     // ensure PWM detached from IO line
+};
+
+GPIOoutModes CGPIOout::getMode() const
+{
+  return _Mode;
 };
 
 void
@@ -352,6 +386,12 @@ CGPIOalg::begin(adc1_channel_t pin, GPIOalgModes mode)
     adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_11db);
   }
 }
+
+GPIOalgModes CGPIOalg::getMode() const
+{
+  return _Mode;
+};
+
 
 void CGPIOalg::manage()
 {

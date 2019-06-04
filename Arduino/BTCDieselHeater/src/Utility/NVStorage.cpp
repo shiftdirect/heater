@@ -327,7 +327,7 @@ CHeaterStorage::getHomeMenu() const
 }
 
 void
-CHeaterStorage::setHomeMenu(sHomeMenuActions val)
+CHeaterStorage::setHomeMenu(const sHomeMenuActions& val)
 {
   _calValues.Options.HomeMenu = val;
 }

@@ -26,6 +26,8 @@
 #include "Protocol.h"
 #include "../Utility/UtilClasses.h"
 
+struct sGPIO;
+
 
 extern void  ToggleOnOff();
 extern void  requestOn();
@@ -72,6 +74,8 @@ extern void  feedWatchdog();
 extern bool  isUpdateAvailable(bool test=true);
 extern void  checkFOTA();
 extern void  setUploadSize(long val);
+extern void getGPIOinfo(sGPIO& info);
+extern void simulateGPIOin(uint8_t newKey);   
 
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);

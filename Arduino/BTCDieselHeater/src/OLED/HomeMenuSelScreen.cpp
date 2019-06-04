@@ -157,7 +157,7 @@ CHomeMenuSelScreen::keyHandler(uint8_t event)
         UPPERLIMIT(_rowSel, 3);
       }
     }
-    // UP press
+    // DOWN press
     if(event & key_Down) {
       _scrollChar = 0;
       _rowSel--;

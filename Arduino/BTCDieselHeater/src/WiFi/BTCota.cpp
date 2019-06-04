@@ -87,7 +87,8 @@ void initOTA(){
 	ArduinoOTA.begin();
 }
 
-void DoOTA(){
+void DoOTA()
+{
   ArduinoOTA.handle();
 
   // manage Firmware OTA

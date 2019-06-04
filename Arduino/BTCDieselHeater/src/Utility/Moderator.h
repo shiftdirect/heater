@@ -26,6 +26,8 @@
 #include <ArduinoJSON.h>
 #include "../RTC/Timers.h"
 #include "DebugPort.h"
+#include "GPIO.h"
+
 
 class CTimerModerator {
   sTimer Memory[14];

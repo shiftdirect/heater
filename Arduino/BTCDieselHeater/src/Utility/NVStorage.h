@@ -65,6 +65,18 @@ struct sHeater : public CESP32_NVStorage {
   };
   void load();
   void save();
+  sHeater& operator=(const sHeater& rhs) {
+    Pmin = rhs.Pmin;
+    Pmax = rhs.Pmax;
+    Fmin = rhs.Fmin;
+    Fmax = rhs.Fmax;
+    ThermostatMode = rhs.ThermostatMode;
+    setTemperature = rhs.setTemperature;
+    sysVoltage = rhs.sysVoltage;
+    fanSensor = rhs.fanSensor;
+    glowDrive = rhs.glowDrive;
+    return *this;
+  }
 };
 
 struct sHomeMenuActions {
@@ -82,6 +94,12 @@ struct sHomeMenuActions {
     onTimeout = 0;
     onStart = 0;
     onStop = 0;
+  }
+  sHomeMenuActions& operator=(const sHomeMenuActions& rhs) {
+    onTimeout = rhs.onTimeout;
+    onStart = rhs.onStart;
+    onStop = rhs.onStop;
+    return *this;
   }
 };
 
@@ -122,6 +140,13 @@ struct sCredentials : public CESP32_NVStorage {
   void load();
   void save();
   bool valid();
+  sCredentials& operator=(const sCredentials& rhs) {
+    strcpy(SSID, rhs.SSID);
+    strcpy(APpassword, rhs.APpassword);
+    strcpy(webUpdateUsername, rhs.webUpdateUsername);
+    strcpy(webUpdatePassword, rhs.webUpdatePassword);
+    return *this;
+  }
 };
 
 struct sMQTTparams : public CESP32_NVStorage {
@@ -146,6 +171,7 @@ struct sMQTTparams : public CESP32_NVStorage {
     host[127] = 0;
     username[31] = 0;
     password[31] = 0;
+    return *this;
   }
   void load();
   void save();
@@ -195,6 +221,21 @@ struct sBTCoptions : public CESP32_NVStorage {
   };
   void load();
   void save();
+  sBTCoptions& operator=(const sBTCoptions& rhs) {
+    dimTime = rhs.dimTime;
+    menuTimeout = rhs.menuTimeout;
+    degF = rhs.degF;
+    ThermostatMethod = rhs.ThermostatMethod;
+    enableWifi = rhs.enableWifi;
+    enableOTA = rhs.enableOTA;
+    GPIO.inMode = rhs.GPIO.inMode;
+    GPIO.outMode = rhs.GPIO.outMode;
+    GPIO.algMode = rhs.GPIO.algMode;
+    FrameRate = rhs.FrameRate;
+    cyclic = rhs.cyclic;
+    HomeMenu = rhs.HomeMenu;
+    return *this;
+  }
 };
 
 
@@ -207,6 +248,15 @@ struct sNVStore {
   sCredentials Credentials;
   bool valid();
   void init();
+  sNVStore& operator=(const sNVStore& rhs) {
+    Heater = rhs.Heater;
+    Options = rhs.Options;
+    for(int i = 0; i < 14; i++)
+      timer[i] = rhs.timer[i];
+    MQTT = rhs.MQTT;
+    Credentials = rhs.Credentials;
+    return *this;
+  }
 };
 
 
@@ -267,12 +317,15 @@ public:
     void setCyclicMode(const sCyclicThermostat& val);
     void setGPIOparams(const sGPIOparams& params);
     void setFrameRate(uint16_t val);
-    void setHomeMenu(sHomeMenuActions val);
+    void setHomeMenu(const sHomeMenuActions& val);
 
     void getTimerInfo(int idx, sTimer& timerInfo);
     void setTimerInfo(int idx, const sTimer& timerInfo);
     void setMQTTinfo(const sMQTTparams& info);
     void setCredentials(const sCredentials& info);
+    CHeaterStorage& operator=(const CHeaterStorage& rhs) {
+      _calValues = rhs._calValues;
+    }
 };
 
 

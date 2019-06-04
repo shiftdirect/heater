@@ -1371,3 +1371,21 @@ void doStreaming()
   DebugPort.handle();    // keep telnet spy alive
 
 }
+
+void getGPIOinfo(sGPIO& info)
+{
+  info.inState[0] = GPIOin.getState(0);
+  info.inState[1] = GPIOin.getState(1);
+  info.outState[0] = GPIOout.getState(0);
+  info.outState[1] = GPIOout.getState(1);
+  info.algVal = GPIOalg.getValue();
+  info.inMode = GPIOin.getMode();
+  info.outMode = GPIOout.getMode();
+  info.algMode = GPIOalg.getMode();
+}
+
+// hook for JSON input, simulating a GPIO key press
+void simulateGPIOin(uint8_t newKey)   
+{
+  GPIOin.simulateKey(newKey);
+}
