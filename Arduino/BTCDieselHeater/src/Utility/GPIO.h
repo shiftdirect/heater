@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <driver/adc.h>
 #include "Debounce.h"
+#include <list>
 
 extern const char* GPIOinNames[4];
 extern const char* GPIOoutNames[3];
@@ -61,14 +62,8 @@ struct sGPIOparams {
 class CGPIOin {
   GPIOinModes _Mode;
   CDebounce _Debounce;
-//  int _pinActive;
-//  int _pins[2];
-//  uint8_t _prevPins;
-//  uint8_t _debouncedPins;
   uint8_t _lastKey;
-//  unsigned long _lastDebounceTime;
-//  unsigned long _debounceDelay;
-//  uint8_t _scanInputs();
+  std::list<uint8_t> _eventList[2];
   void _doOn1Off2(uint8_t newKey);
   void _doOnHold1(uint8_t newKey);
   void _doOn1Off1(uint8_t newKey);

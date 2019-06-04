@@ -67,8 +67,24 @@ CGPIOin::begin(int pin1, int pin2, GPIOinModes mode, int activeState)
 uint8_t 
 CGPIOin::getState(int channel) 
 { 
-  int mask = 0x01 << (channel & 0x01);
-  return (_Debounce.getState() & mask) != 0; 
+  uint8_t retval = 0;
+
+  if((channel & ~0x01) == 0) {
+    // index is in bounds 0 or 1
+
+    // check for transient events
+    if(_eventList[channel].empty()) {
+      // read last actual state
+      int mask = 0x01 << (channel & 0x01);
+      retval = (_Debounce.getState() & mask) != 0; 
+    }
+    else {
+      // emit transient events if they occured
+      retval = _eventList[channel].front() != 0;
+      _eventList[channel].pop_front();
+    }
+  }
+  return retval;
 }
 
 GPIOinModes CGPIOin::getMode() const
@@ -86,19 +102,12 @@ CGPIOin::manage()
 
   if(keyChange) {
     simulateKey(newKey);
-/*    switch (_Mode) {
-      case GPIOinNone:
-        break;
-      case GPIOinOn1Off2:
-        _doOn1Off2(newKey);
-        break;
-      case GPIOinOnHold1:
-        _doOnHold1(newKey);
-        break;
-      case GPIOinOn1Off1:
-        _doOn1Off1(newKey);
-        break;
-    }*/
+    
+    // record possible sub sample transients - JSON usage especially
+    if(keyChange & 0x01)
+      _eventList[0].push_back(newKey & 0x01);  // mask the channel bit
+    if(keyChange & 0x02)
+      _eventList[1].push_back(newKey & 0x02);  // mask the channel bit
   }
 }
 
