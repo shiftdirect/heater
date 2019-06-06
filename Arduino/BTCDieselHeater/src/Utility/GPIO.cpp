@@ -31,7 +31,7 @@ const int ONFLASHINTERVAL = 50;
 
 const char* GPIOinNames[4] = {
   "Disabled",
-  "On1Off1",
+  "On1Off2",
   "Hold1",
   "On1Off1"
 };

@@ -59,7 +59,7 @@ CBasicScreen::show()
 
   float fTemp = getTemperatureSensor();
   if(fTemp > -80) {
-    if(NVstore.getDegFMode()) {
+    if(NVstore.getUserSettings().degF) {
       fTemp = fTemp * 9 / 5 + 32;
       sprintf(msg, "%.1f`F", fTemp);
     }
@@ -121,7 +121,7 @@ CBasicScreen::show()
 
           if(getThermostatModeActive()) {
             float fTemp = getTemperatureDesired();
-            if(NVstore.getDegFMode()) {
+            if(NVstore.getUserSettings().degF) {
               fTemp = fTemp * 9 / 5 + 32;
               sprintf(msg, "Setpoint = %.0f`F", fTemp);
             }
@@ -202,7 +202,10 @@ CBasicScreen::keyHandler(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
           _showModeTime = millis() + 5000;
-          NVstore.setDegFMode(NVstore.getDegFMode() ? 0 : 1);
+          sUserSettings settings = NVstore.getUserSettings();
+          toggle(settings.degF);
+          NVstore.setUserSettings(settings);
+          NVstore.save();
         }
       }
       // hold CENTRE to turn ON or OFF

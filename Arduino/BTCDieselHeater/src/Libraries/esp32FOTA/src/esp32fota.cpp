@@ -205,7 +205,6 @@ bool esp32FOTA::execHTTPcheck()
 
         if (httpCode == 200)
         { //Check is a file was returned
-
             String payload = http.getString();
 
             int str_len = payload.length() + 1;
@@ -247,6 +246,7 @@ bool esp32FOTA::execHTTPcheck()
             {
                 return false;
             }
+            
         }
 
         else

@@ -30,7 +30,6 @@ bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
 bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim);
 bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2);
 bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
-bool s32inBounds(long test, long minLim, long maxLim);
 bool thermoMethodinBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
 
 class CNVStorage {
@@ -50,8 +49,9 @@ protected:
   bool validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max);
   bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask=0xff);
   bool validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max);
-  bool validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max);
+  bool validatedLoad(const char* key, long& val, long defVal, long min, long max);
   bool validatedLoad(const char* key, char* val, int maxlen, const char* defVal);
+  bool validatedLoad(const char* key, float& val, float defVal, float min, float max);
 };
 
 

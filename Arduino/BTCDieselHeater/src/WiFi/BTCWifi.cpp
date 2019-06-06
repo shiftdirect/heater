@@ -194,7 +194,9 @@ void doWiFiManager()
 
 void wifiDisable(long rebootDelay) 
 {
-  NVstore.setWifiEnabled(0); 
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.enableWifi = 0;
+  NVstore.setUserSettings(settings);
   NVstore.save(); 
 
   DebugPort.println("*** Disabling WiFi ***");
@@ -211,7 +213,9 @@ void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay)
 {
 	wm.disconnect();
 
-  NVstore.setWifiEnabled(1); 
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.enableWifi = 1;
+  NVstore.setUserSettings(settings);
   NVstore.save(); 
 
   prepBootIntoConfigPortal(state);  
@@ -246,7 +250,10 @@ void wifiFactoryDefault()
 {
   wm.resetSettings();
   prepBootIntoConfigPortal(false);
-  NVstore.setWifiEnabled(1); 
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.enableWifi = 1;
+  NVstore.setUserSettings(settings);
+  NVstore.save(); 
 }
 
 // callback is invoked by WiFiManager after new credentials are saved and verified

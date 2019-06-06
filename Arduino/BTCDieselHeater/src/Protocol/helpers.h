@@ -76,6 +76,7 @@ extern void  checkFOTA();
 extern void  setUploadSize(long val);
 extern void getGPIOinfo(sGPIO& info);
 extern void simulateGPIOin(uint8_t newKey);   
+extern void setDegFMode(bool state);
 
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
@@ -88,5 +89,6 @@ extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 #define WRAPUPPERLIMIT(A, B, C) if((A) > (B)) (A) = (C)        
 #define WRAPLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        
 #define WRAPLIMITS(A, B, C) if((A) < (B)) (A) = (C) ; if((A) > (C)) (A) = (B)               
+#define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((tst) <= (MAX)))
 
 #endif

@@ -56,11 +56,11 @@ CWiFiScreen::_initUI()
 {
   _rowSel = 0;
   _colSel = 0;
-  _OTAsel = NVstore.getOTAEnabled();
+  _OTAsel = NVstore.getUserSettings().enableOTA;
   _colLimit = LIMIT_LEFT;   // left most selection
   _bShowMAC = false;
 
-  if(NVstore.getWifiEnabled()) {
+  if(NVstore.getUserSettings().enableWifi) {
     if(isWifiAP()) {
       if(isWifiConfigPortal()) {
         _colSel = 1;  // " WiFi: CFG AP only "
@@ -297,7 +297,9 @@ CWiFiScreen::keyHandler(uint8_t event)
         _rowSel = 3;  // stop ticker display
       }
       if(_rowSel == 2) {
-        NVstore.setOTAEnabled(_OTAsel);
+        sUserSettings settings = NVstore.getUserSettings();
+        settings.enableOTA = _OTAsel;
+        NVstore.setUserSettings(settings);
         NVstore.save();
         const char* content[2];
         if(_OTAsel)

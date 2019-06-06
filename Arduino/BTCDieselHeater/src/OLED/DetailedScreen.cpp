@@ -224,7 +224,10 @@ CDetailedScreen::keyHandler(uint8_t event)
       if(event & key_Up) {
         if(_keyRepeatCount > 1) {    // held Down - togle thermo/fixed mode
           _keyRepeatCount = -1;      // prevent double handling
-          NVstore.setDegFMode(NVstore.getDegFMode() ? 0 : 1);
+          sUserSettings settings = NVstore.getUserSettings();
+          toggle(settings.degF);
+          NVstore.setUserSettings(settings);
+          NVstore.save();
         }
       }
     }
@@ -276,7 +279,7 @@ CDetailedScreen::showThermometer(float desired, float actual)
   if(actual > -80) {
 #ifdef MINI_TEMPLABEL  
     CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-    if(NVstore.getDegFMode()) {
+    if(NVstore.getUserSettings().degF) {
       actual = actual * 9 / 5 + 32;
       sprintf(msg, "%.1f`F", actual);
     }
@@ -299,7 +302,7 @@ CDetailedScreen::showThermometer(float desired, float actual)
     if(desired > 0) {
       int yPos = Y_BULB + TEMP_YPOS(desired) - 2;
       _drawBitmap(X_BULB-1, yPos, ThermoPtrIconInfo);   // set indicator against bulb
-      if(NVstore.getDegFMode()) {
+      if(NVstore.getUserSettings().degF) {
         desired = desired * 9 / 5 + 32;
         sprintf(msg, "%.0f`F", desired);
       }
@@ -333,7 +336,7 @@ CDetailedScreen::showBodyThermometer(int actual)
   // determine width and position right justified
 #ifdef MINI_BODYLABEL
   CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-  if(NVstore.getDegFMode()) {
+  if(NVstore.getUserSettings().degF) {
     actual = actual * 9 / 5 + 32;
     sprintf(label, "%d`F", actual);
   }

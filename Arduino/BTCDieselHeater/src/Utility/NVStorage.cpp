@@ -29,8 +29,8 @@ bool
 sNVStore::valid()
 {
   bool retval = true;
-  retval &= Heater.valid();
-  retval &= Options.valid();
+  retval &= heaterTuning.valid();
+  retval &= userSettings.valid();
   for(int i=0; i<2; i++) {
     retval &= timer[i].valid();
   }
@@ -42,8 +42,8 @@ sNVStore::valid()
 void 
 sNVStore::init()
 {
-  Heater.init();
-  Options.init();
+  heaterTuning.init();
+  userSettings.init();
   for(int i=0; i<2; i++) {
     timer[i].init();
   }
@@ -57,151 +57,42 @@ CHeaterStorage::CHeaterStorage()
 }
 
 float
-CHeaterStorage::getPmin()
+sHeaterTuning::getPmin() const
 {
-  return float(_calValues.Heater.Pmin) * 0.1f;
+  return float(Pmin) * 0.1f;
 }
 
 float
-CHeaterStorage::getPmax()
+sHeaterTuning::getPmax() const
 {
-  return float(_calValues.Heater.Pmax) * 0.1f;
+  return float(Pmax) * 0.1f;
 }
 
-unsigned short
-CHeaterStorage::getFmin()
-{
-  return _calValues.Heater.Fmin;
-}
-
-unsigned short
-CHeaterStorage::getFmax()
-{
-  return _calValues.Heater.Fmax;
-}
-
-unsigned char
-CHeaterStorage::getDesiredTemperature()
-{
-  return _calValues.Heater.setTemperature;
-}
-
-unsigned char
-CHeaterStorage::getThermostatMode()
-{
-  return _calValues.Heater.ThermostatMode;
-}
-
-unsigned char 
-CHeaterStorage::getThermostatMethodMode()
-{
-  return _calValues.Options.ThermostatMethod & 0x03;
-}
-
-float
-CHeaterStorage::getThermostatMethodWindow()
-{
-  return float((_calValues.Options.ThermostatMethod >> 2) & 0x3f) * 0.1f;  // top 5 bits / 10, then / 2
-}
 
 void
-CHeaterStorage::setPmin(float val)
+sHeaterTuning::setPmin(float val)
 {
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
-  _calValues.Heater.Pmin = cVal;
+  Pmin = cVal;
 }
 
 void
-CHeaterStorage::setPmax(float val)
+sHeaterTuning::setPmax(float val)
 {
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
-  _calValues.Heater.Pmax = cVal;
-}
-
-void
-CHeaterStorage::setFmin(unsigned short val)
-{
-  _calValues.Heater.Fmin = val;
-}
-
-void
-CHeaterStorage::setFmax(unsigned short val)
-{
-  _calValues.Heater.Fmax = val;
-}
-
-void
-CHeaterStorage::setDesiredTemperature(unsigned char val)
-{
-  _calValues.Heater.setTemperature = val;
-}
-
-void
-CHeaterStorage::setThermostatMode(unsigned char val)
-{
-  _calValues.Heater.ThermostatMode = val;
-}
-
-void
-CHeaterStorage::setThermostatMethodMode(unsigned char val)
-{
-  _calValues.Options.ThermostatMethod &= ~0x03;
-  _calValues.Options.ThermostatMethod |= (val & 0x03);
-}
-
-void
-CHeaterStorage::setThermostatMethodWindow(float val)
-{
-  _calValues.Options.ThermostatMethod &= 0x03;
-  int nVal = int(val * 10 + 0.5);
-  _calValues.Options.ThermostatMethod |= ((nVal & 0x3F) << 2);
+  Pmax = cVal;
 }
 
 
 void 
-CHeaterStorage::setSystemVoltage(float fVal)
+sHeaterTuning::setSysVoltage(float fVal)
 {
   int val = int(fVal * 10.0);
   if(val == 120 || val == 240) {
-    _calValues.Heater.sysVoltage = val;
+    sysVoltage = val;
   }
 }
 
-unsigned char
-CHeaterStorage::getSysVoltage()
-{
-  return _calValues.Heater.sysVoltage;
-}
-
-void
-CHeaterStorage::setFanSensor(unsigned char val)
-{
-  if(val == 2)
-    _calValues.Heater.fanSensor = 2;
-  else 
-    _calValues.Heater.fanSensor = 1;
-}
-
-unsigned char
-CHeaterStorage::getFanSensor()
-{
-  return _calValues.Heater.fanSensor;
-}
-
-void
-CHeaterStorage::setGlowDrive(unsigned char val)
-{
-  if(val >=1 && val <= 6)
-    _calValues.Heater.glowDrive = val;
-  else 
-    _calValues.Heater.glowDrive = 5;
-}
-
-unsigned char
-CHeaterStorage::getGlowDrive()
-{
-  return _calValues.Heater.glowDrive;
-}
 
 void 
 CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
@@ -219,117 +110,42 @@ CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
   }
 }
 
-long 
-CHeaterStorage::getDimTime()
-{
-  return _calValues.Options.dimTime;
-}
-
-void 
-CHeaterStorage::setDimTime(long val)
-{
-  _calValues.Options.dimTime = val;
-}
-
-long 
-CHeaterStorage::getMenuTimeout()
-{
-  return _calValues.Options.menuTimeout;
-}
-
-void 
-CHeaterStorage::setMenuTimeout(long val)
-{
-  _calValues.Options.menuTimeout = val;
-}
-
-unsigned char 
-CHeaterStorage::getDegFMode()
-{
-  return _calValues.Options.degF;
-}
-
-void 
-CHeaterStorage::setDegFMode(unsigned char val)
-{
-  _calValues.Options.degF = val;
-  save();
-}
-
-unsigned char 
-CHeaterStorage::getWifiEnabled()
-{
-  return _calValues.Options.enableWifi;
-}
-
-void 
-CHeaterStorage::setWifiEnabled(unsigned char val)
-{
-  _calValues.Options.enableWifi = val;
-  save();
-}
-
-unsigned char 
-CHeaterStorage::getOTAEnabled()
-{
-  return _calValues.Options.enableOTA;
-}
-
-void 
-CHeaterStorage::setOTAEnabled(unsigned char val)
-{
-  _calValues.Options.enableOTA = val;
-  save();
-}
-
 const sCyclicThermostat&
 CHeaterStorage::getCyclicMode() const
 {
-  return _calValues.Options.cyclic;
+  return _calValues.userSettings.cyclic;
 }
 
 void 
 CHeaterStorage::setCyclicMode(const sCyclicThermostat& val)
 {
-  _calValues.Options.cyclic = val;
+  _calValues.userSettings.cyclic = val;
   save();
 }
 
 const sGPIOparams&
 CHeaterStorage::getGPIOparams() const
 {
-  return _calValues.Options.GPIO;
+  return _calValues.userSettings.GPIO;
 }
 
 void
 CHeaterStorage::setGPIOparams(const sGPIOparams& params) 
 {
-  _calValues.Options.GPIO = params;
+  _calValues.userSettings.GPIO = params;
 }
 
-
-uint16_t
-CHeaterStorage::getFrameRate()
-{
-  return _calValues.Options.FrameRate;
-}
-
-void
-CHeaterStorage::setFrameRate(uint16_t val)
-{
-  _calValues.Options.FrameRate = val;
-}
 
 const sHomeMenuActions&
 CHeaterStorage::getHomeMenu() const
 {
-  return _calValues.Options.HomeMenu;
+  return _calValues.userSettings.HomeMenu;
 }
 
 void
 CHeaterStorage::setHomeMenu(const sHomeMenuActions& val)
 {
-  _calValues.Options.HomeMenu = val;
+  _calValues.userSettings.HomeMenu = val;
 }
 
 // MQTT parameter read/save
@@ -358,6 +174,30 @@ CHeaterStorage::setCredentials(const sCredentials& info)
   _calValues.Credentials = info;
 }
 
+const sUserSettings& 
+CHeaterStorage::getUserSettings() const
+{
+  return _calValues.userSettings;
+}
+
+void 
+CHeaterStorage::setUserSettings(const sUserSettings& info) {
+  _calValues.userSettings = info;
+}
+
+const sHeaterTuning& 
+CHeaterStorage::getHeaterTuning() const
+{
+  return _calValues.heaterTuning;
+}
+
+void 
+CHeaterStorage::setHeaterTuning(const sHeaterTuning& info)
+{
+  _calValues.heaterTuning = info;
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //          ESP32
@@ -385,11 +225,11 @@ void
 CESP32HeaterStorage::load()
 {
   DebugPort.println("Reading from NV storage");
-  _calValues.Heater.load();
+  _calValues.heaterTuning.load();
   for(int i=0; i<14; i++) {
     _calValues.timer[i].load();
   }
-  _calValues.Options.load();
+  _calValues.userSettings.load();
   _calValues.MQTT.load();
   _calValues.Credentials.load();
 }
@@ -398,17 +238,17 @@ void
 CESP32HeaterStorage::save()
 {
   DebugPort.println("Saving to NV storage");
-  _calValues.Heater.save();
+  _calValues.heaterTuning.save();
   for(int i=0; i<14; i++) {
     _calValues.timer[i].save();
   }
-  _calValues.Options.save();
+  _calValues.userSettings.save();
   _calValues.MQTT.save();
   _calValues.Credentials.save();
 }
 
 void 
-sHeater::load()
+sHeaterTuning::load()
 {
   // section for heater calibration params
   // **** MAX LENGTH is 15 for names ****
@@ -417,8 +257,6 @@ sHeater::load()
   validatedLoad("maxPump", Pmax, 45, u8inBounds, 4, 150);
   validatedLoad("minFan", Fmin, 1500, u16inBounds, 100, 5000);
   validatedLoad("maxFan", Fmax, 4500, u16inBounds, 100, 6000);
-  validatedLoad("thermostat", ThermostatMode, 1, u8inBounds, 0, 1);
-  validatedLoad("setTemperature", setTemperature, 22, u8inBounds, 0, 40);
   validatedLoad("systemVoltage", sysVoltage, 120, u8Match2, 120, 240);
   validatedLoad("fanSensor", fanSensor, 1, u8inBounds, 1, 2);
   validatedLoad("glowDrive", glowDrive, 5, u8inBounds, 1, 6);
@@ -426,7 +264,7 @@ sHeater::load()
 }
 
 void 
-sHeater::save()
+sHeaterTuning::save()
 {
   // section for heater calibration params
   // **** MAX LENGTH is 15 for names ****
@@ -435,8 +273,6 @@ sHeater::save()
   preferences.putUChar("maxPump", Pmax);
   preferences.putUShort("minFan", Fmin);
   preferences.putUShort("maxFan", Fmax);
-  preferences.putUChar("thermostat", ThermostatMode);
-  preferences.putUChar("setTemperature", setTemperature);
   preferences.putUChar("systemVoltage", sysVoltage);
   preferences.putUChar("fanSensor", fanSensor);
   preferences.putUChar("glowDrive", glowDrive);
@@ -478,14 +314,24 @@ sTimer::save()
 }
 
 void 
-sBTCoptions::load()
+sUserSettings::load()
 {
   // **** MAX LENGTH is 15 for names ****
   preferences.begin("user", false);
-  validatedLoad("dimTime", dimTime, 60000, s32inBounds, -600000, 600000);
-  validatedLoad("menuTimeout", menuTimeout, 60000, s32inBounds, 0, 300000);
+  validatedLoad("dimTime", dimTime, 60000, -600000, 600000);
+  validatedLoad("menuTimeout", menuTimeout, 60000, 0, 300000);
   validatedLoad("degF", degF, 0, u8inBounds, 0, 1);
-  validatedLoad("thermoMethod", ThermostatMethod, (10 << 2), u8inBounds, 0, 2, 0x03);
+  validatedLoad("thermostat", useThermostat, 1, u8inBounds, 0, 1);
+  validatedLoad("setTemperature", desiredTemperature, 22, u8inBounds, 0, 40);
+  validatedLoad("thermoMethod", ThermostatMethod, 0, u8inBounds, 0, 255);
+  // catch and migrate old combined method & window
+  if(ThermostatMethod & 0xFC) {
+    float defVal = float(ThermostatMethod>>2) * 0.1f;
+    validatedLoad("thermoWindow", ThermostatWindow, defVal, 0.2f, 10.0f);
+    preferences.putUChar("thermoMethod", ThermostatMethod & 0x03);  // strip old window
+  }
+  validatedLoad("thermoWindow", ThermostatWindow, 1.0f, 0.2f, 10.f);
+  DebugPort.printf("2) Window = %f\r\n", ThermostatWindow);
   validatedLoad("enableWifi", enableWifi, 1, u8inBounds, 0, 1);
   validatedLoad("enableOTA", enableOTA, 1, u8inBounds, 0, 1);
   validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
@@ -494,7 +340,7 @@ sBTCoptions::load()
   validatedLoad("GPIOinMode", tVal, 0, u8inBounds, 0, 3);  GPIO.inMode = (GPIOinModes)tVal;
   validatedLoad("GPIOoutMode", tVal, 0, u8inBounds, 0, 2); GPIO.outMode = (GPIOoutModes)tVal;
   validatedLoad("GPIOalgMode", tVal, 0, u8inBounds, 0, 2); GPIO.algMode = (GPIOalgModes)tVal;
-  validatedLoad("MenuonTimeout", HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
+  validatedLoad("MenuOnTimeout", HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
   validatedLoad("MenuonStart", HomeMenu.onStart, 0, u8inBounds, 0, 3);
   validatedLoad("MenuonStop", HomeMenu.onStop, 0, u8inBounds, 0, 3);
   validatedLoad("FrameRate", FrameRate, 1000, u16inBounds, 300, 1500);
@@ -502,14 +348,17 @@ sBTCoptions::load()
 }
 
 void 
-sBTCoptions::save()
+sUserSettings::save()
 {
   // **** MAX LENGTH is 15 for names ****
   preferences.begin("user", false);
   preferences.putLong("dimTime", dimTime);
   preferences.putLong("menuTimeout", menuTimeout);
+  preferences.putUChar("thermostat", useThermostat);
+  preferences.putUChar("setTemperature", desiredTemperature);
   preferences.putUChar("degF", degF);
   preferences.putUChar("thermoMethod", ThermostatMethod);
+  preferences.putFloat("thermoWindow", ThermostatWindow);
   preferences.putUChar("enableWifi", enableWifi);
   preferences.putUChar("enableOTA", enableOTA);
   preferences.putChar("cyclicStop", cyclic.Stop);
@@ -586,3 +435,12 @@ sCredentials::valid()
   return true;
 }
 
+void toggle(bool& ref)
+{
+  ref = !ref;
+}
+
+void toggle(uint8_t& ref)
+{
+  ref = ref ? 0 : 1;
+}

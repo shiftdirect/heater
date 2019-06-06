@@ -119,21 +119,21 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
   // heater is happy either way, the OEM controller has set the max/min stuff already
   if(isBTCmaster) {
     m_TxFrame.setActiveMode();   // this allows heater to save the tuning params to EEPROM
-    m_TxFrame.setFan_Min(NVstore.getFmin());
-    m_TxFrame.setFan_Max(NVstore.getFmax());
-    m_TxFrame.setPump_Min(NVstore.getPmin());
-    m_TxFrame.setPump_Max(NVstore.getPmax());
+    m_TxFrame.setFan_Min(NVstore.getHeaterTuning().Fmin);
+    m_TxFrame.setFan_Max(NVstore.getHeaterTuning().Fmax);
+    m_TxFrame.setPump_Min(NVstore.getHeaterTuning().getPmin());
+    m_TxFrame.setPump_Max(NVstore.getHeaterTuning().getPmax());
 
     float tActual = getTemperatureSensor();
     uint8_t u8Temp = (uint8_t)(tActual);
     m_TxFrame.setTemperature_Actual(u8Temp);  // use current temp, for now
-    m_TxFrame.setTemperature_Desired(NVstore.getDesiredTemperature());
+    m_TxFrame.setTemperature_Desired(NVstore.getUserSettings().desiredTemperature);
 
-    if(NVstore.getThermostatMode()) {
-      uint8_t ThermoMode = NVstore.getThermostatMethodMode();  // get the METHOD of thermostat control
-      float Window = NVstore.getThermostatMethodWindow();
+    if(NVstore.getUserSettings().ThermostatMethod) {
+      uint8_t ThermoMode = NVstore.getUserSettings().ThermostatMethod;  // get the METHOD of thermostat control
+      float Window = NVstore.getUserSettings().ThermostatWindow;
       float tCurrent = getTemperatureSensor();
-      float tDesired = float(NVstore.getDesiredTemperature());
+      float tDesired = float(NVstore.getUserSettings().desiredTemperature);
       float tDelta = tCurrent - tDesired;
       float fTemp;
 #ifdef DEBUG_THERMOSTAT
@@ -157,11 +157,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           u8Temp = (uint8_t)(tActual + 0.5);  // use rounded actual unless within window
           if(fabs(tDelta) < Window) {
             // hold at desired if inside window
-            u8Temp = NVstore.getDesiredTemperature();   
+            u8Temp = NVstore.getUserSettings().desiredTemperature;   
           }
           else if(fabs(tDelta) <= 1.0) {
             // force outside if delta is <= 1 but greater than window
-            u8Temp = NVstore.getDesiredTemperature() + ((tDelta > 0) ? 1 : -1); 
+            u8Temp = NVstore.getUserSettings().desiredTemperature + ((tDelta > 0) ? 1 : -1); 
           }
           m_TxFrame.setTemperature_Actual(u8Temp);  
 #ifdef DEBUG_THERMOSTAT
@@ -200,9 +200,9 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     }
 //    m_TxFrame.setThermostatMode(NVstore.getThermostatMode());
 
-    m_TxFrame.Controller.OperatingVoltage = NVstore.getSysVoltage();
-    m_TxFrame.Controller.FanSensor = NVstore.getFanSensor();
-    m_TxFrame.Controller.GlowDrive = NVstore.getGlowDrive();
+    m_TxFrame.Controller.OperatingVoltage = NVstore.getHeaterTuning().sysVoltage;
+    m_TxFrame.Controller.FanSensor = NVstore.getHeaterTuning().fanSensor;
+    m_TxFrame.Controller.GlowDrive = NVstore.getHeaterTuning().glowDrive;
   }
   else {
     m_TxFrame.setPassiveMode();    // this prevents the tuning parameters being saved by heater

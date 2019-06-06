@@ -29,7 +29,7 @@
 
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));
-unsigned long FOTAtime = millis() + 60000;  // initially check in a minutes time 
+unsigned long FOTAtime = millis() + 60000;  // initial check in a minutes time 
 int FOTAauth = 0;
 
 #include <esp_int_wdt.h>
@@ -42,7 +42,6 @@ void hard_restart() {
 }
 
 void initOTA(){
-  FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
 	ArduinoOTA.setHostname("AfterburnerOTA");
 
 	ArduinoOTA
@@ -96,9 +95,12 @@ void DoOTA()
   // if so, it can download and implant using OTA and become effective next reboot!
   long tDelta = millis() - FOTAtime;
   if(tDelta > 0) {  
-//    FOTAtime = millis() + 600000;  // 10 minutes
-    FOTAtime = millis() + 3600000;  // 1 hour
+//    FOTAtime = millis() + 6000;  // 6 seconds
+//    FOTAtime = millis() + 60000;  // 60 seconds
+    FOTAtime = millis() + 600000;  // 10 minutes
+//    FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
+      FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
       DebugPort.println("Checking for new firmware...");
       if(FOTA.execHTTPcheck()) {
         DebugPort.println("New firmware available on web server!");
@@ -108,6 +110,9 @@ void DoOTA()
         }
         else 
           FOTAauth = 1;   // flag that new firmware is available
+      }
+      else {
+        FOTAauth = 0;      // cancel
       }
     }
   }

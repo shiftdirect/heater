@@ -54,8 +54,8 @@ CThermostatModeScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _initUI();
-  _window = NVstore.getThermostatMethodWindow();
-  _thermoMode = NVstore.getThermostatMethodMode();
+  _window = NVstore.getUserSettings().ThermostatWindow;
+  _thermoMode = NVstore.getUserSettings().ThermostatMethod;
   _cyclicMode = NVstore.getCyclicMode();
 }
 
@@ -84,7 +84,7 @@ CThermostatModeScreen::show()
       _printInverted(_display.xCentre(), 0, " Thermostat Mode ", true, eCentreJustify);
       _drawBitmap(3, 14, ThermostatIconInfo);
       float fTemp = _window;
-      if(NVstore.getDegFMode()) {
+      if(NVstore.getUserSettings().degF) {
         fTemp = fTemp * 9 / 5;
         sprintf(msg, "%.1f\367F", fTemp);
       }
@@ -105,7 +105,7 @@ CThermostatModeScreen::show()
       }
       if(_cyclicMode.isEnabled()) {
         float fTemp = _cyclicMode.Stop+1;
-        if(NVstore.getDegFMode()) {
+        if(NVstore.getUserSettings().degF) {
           fTemp = fTemp * 9 / 5;
           sprintf(msg, "\352>%.0f\367F", fTemp);
         }
@@ -119,7 +119,8 @@ CThermostatModeScreen::show()
       _printMenuText(Column, Line1, msg, _rowSel == 1);
       if(_cyclicMode.isEnabled()) {
         float fTemp = _cyclicMode.Start;
-        if(NVstore.getDegFMode()) {
+  //    if(NVstore.getDegFMode()) {
+        if(NVstore.getUserSettings().degF) {
           fTemp = fTemp * 9 / 5;
           sprintf(msg, "\352<%.0f\367F", fTemp);
         }
@@ -188,6 +189,7 @@ CThermostatModeScreen::animate()
 bool 
 CThermostatModeScreen::keyHandler(uint8_t event)
 {
+  sUserSettings settings;
   if(event & keyPressed) {
     _keyRepeat = 0;  // unlock hold function
     // press LEFT to select previous screen
@@ -250,8 +252,10 @@ CThermostatModeScreen::keyHandler(uint8_t event)
           break;
         case 10:    // confirmed save
           _showStoringMessage();
-          NVstore.setThermostatMethodMode(_thermoMode);
-          NVstore.setThermostatMethodWindow(_window);
+          settings = NVstore.getUserSettings();
+          settings.ThermostatMethod = _thermoMode;
+          settings.ThermostatWindow = _window;
+          NVstore.setUserSettings(settings);
           NVstore.setCyclicMode(_cyclicMode);
           saveNV();
           _rowSel = 0;
@@ -282,6 +286,16 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
       }
     }
+    if(_rowSel == 3) {
+      if(event & key_Right) {
+        _adjust(+1);
+        _ScreenManager.reqUpdate();
+      }
+      if(event & key_Left) {
+        _adjust(-1);
+        _ScreenManager.reqUpdate();
+      }
+    }
   }
   if(event & keyReleased) {
     _keyRepeat = -1;
@@ -306,7 +320,7 @@ CThermostatModeScreen::_adjust(int dir)
       break;
     case 3:   // window
       _window += (dir * 0.1);
-      UPPERLIMIT(_window, 6.3);
+      UPPERLIMIT(_window, 10.0);
       LOWERLIMIT(_window, 0.2);
       break;
     case 4:   // thermostat mode

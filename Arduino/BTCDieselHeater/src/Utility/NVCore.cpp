@@ -24,6 +24,8 @@
 #include "DebugPort.h"
 #include <functional>
 
+#define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((TST) <= (MAX)))
+
 
 bool 
 CESP32_NVStorage::validatedLoad(const char* key, char* val, int maxlen, const char* defVal)
@@ -91,16 +93,32 @@ CESP32_NVStorage::validatedLoad(const char* key, uint16_t& val, int defVal, std:
 }
 
 bool
-CESP32_NVStorage::validatedLoad(const char* key, long& val, long defVal, std::function<bool(long, long, long)> validator, long min, long max)
+CESP32_NVStorage::validatedLoad(const char* key, long& val, long defVal, long min, long max)
 {
   val = preferences.getLong(key, defVal);
-  if(!validator(val, min, max)) {
+  if(!INBOUNDS(val, min, max)) {
 
     DebugPort.printf("CESP32HeaterStorage::validatedLoad<long> invalid read %s=%ld", key, val);
     DebugPort.printf(" validator(%ld,%ld) reset to %ld\r\n", min, max, defVal);
 
     val = defVal;
     preferences.putLong(key, val);
+    return false;
+  }
+  return true;
+}
+
+bool
+CESP32_NVStorage::validatedLoad(const char* key, float& val, float defVal, float min, float max)
+{
+  val = preferences.getFloat(key, defVal);
+  if(!INBOUNDS(val, min, max)) {
+
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<float> invalid read %s=%f", key, val);
+    DebugPort.printf(" validator(%f,%f) reset to %f\r\n", min, max, defVal);
+
+    val = defVal;
+    preferences.putFloat(key, val);
     return false;
   }
   return true;
@@ -125,10 +143,4 @@ bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim)
 {
   return (test >= minLim) && (test <= maxLim);
 }
-
-bool s32inBounds(long test, long minLim, long maxLim)
-{
-  return (test >= minLim) && (test <= maxLim);
-}
-
 

@@ -27,14 +27,15 @@
 
 #include "../RTC/Timers.h"   // for sTimer
 
+void toggle(bool& ref);
+void toggle(uint8_t& ref);
 
-struct sHeater : public CESP32_NVStorage {
+
+struct sHeaterTuning : public CESP32_NVStorage {
   uint8_t   Pmin;
   uint8_t   Pmax;
   uint16_t  Fmin;
   uint16_t  Fmax;
-  uint8_t   ThermostatMode;
-  uint8_t   setTemperature;
   uint8_t   sysVoltage;
   uint8_t   fanSensor;
   uint8_t   glowDrive;
@@ -45,8 +46,6 @@ struct sHeater : public CESP32_NVStorage {
     retval &= Pmax < 150;
     retval &= Fmin < 5000;
     retval &= Fmax < 6000;
-    retval &= ThermostatMode < 2;
-    retval &= setTemperature < 40;
     retval &= sysVoltage == 120 || sysVoltage == 240;
     retval &= fanSensor == 1 || fanSensor == 2;
     retval &= glowDrive >= 1 && glowDrive <= 6;
@@ -57,26 +56,27 @@ struct sHeater : public CESP32_NVStorage {
     Pmax = 45;
     Fmin = 1500;
     Fmax = 4500;
-    ThermostatMode = 1;
-    setTemperature = 23;
     sysVoltage = 120;
     fanSensor = 1;
     glowDrive = 5;
   };
   void load();
   void save();
-  sHeater& operator=(const sHeater& rhs) {
+  sHeaterTuning& operator=(const sHeaterTuning& rhs) {
     Pmin = rhs.Pmin;
     Pmax = rhs.Pmax;
     Fmin = rhs.Fmin;
     Fmax = rhs.Fmax;
-    ThermostatMode = rhs.ThermostatMode;
-    setTemperature = rhs.setTemperature;
     sysVoltage = rhs.sysVoltage;
     fanSensor = rhs.fanSensor;
     glowDrive = rhs.glowDrive;
     return *this;
   }
+  float getPmin() const;
+  float getPmax() const;
+  void setPmin(float val);
+  void setPmax(float val);
+  void setSysVoltage(float val);
 };
 
 struct sHomeMenuActions {
@@ -178,11 +178,14 @@ struct sMQTTparams : public CESP32_NVStorage {
   bool valid();
 };
 
-struct sBTCoptions : public CESP32_NVStorage {
+struct sUserSettings : public CESP32_NVStorage {
   long dimTime;
   long menuTimeout;
+  uint8_t desiredTemperature;
   uint8_t degF;
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
+  float   ThermostatWindow;   
+  uint8_t useThermostat;
   uint8_t enableWifi;
   uint8_t enableOTA;
   uint16_t FrameRate;
@@ -194,8 +197,11 @@ struct sBTCoptions : public CESP32_NVStorage {
     bool retval = true;
     retval &= (dimTime >= -600000) && (dimTime < 600000);  // +/- 10 mins
     retval &= (menuTimeout >= 0) && (menuTimeout < 300000);  // 5 mins
+    retval &= desiredTemperature < 40;
     retval &= (degF == 0) || (degF == 1);
     retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
+    retval &= (ThermostatWindow >= 0.2f) && (ThermostatWindow <= 10.f);
+    retval &= useThermostat < 2;
     retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= (enableOTA == 0) || (enableOTA == 1);
     retval &= GPIO.inMode < 4;
@@ -208,8 +214,11 @@ struct sBTCoptions : public CESP32_NVStorage {
   void init() {
     dimTime = 60000;
     menuTimeout = 60000;
+    desiredTemperature = 23;
     degF = 0;
     ThermostatMethod = 0;
+    ThermostatWindow = 1.0;
+    useThermostat = 1;
     enableWifi = 1;
     enableOTA = 1;
     GPIO.inMode = GPIOinNone;
@@ -221,11 +230,14 @@ struct sBTCoptions : public CESP32_NVStorage {
   };
   void load();
   void save();
-  sBTCoptions& operator=(const sBTCoptions& rhs) {
+  sUserSettings& operator=(const sUserSettings& rhs) {
     dimTime = rhs.dimTime;
     menuTimeout = rhs.menuTimeout;
+    desiredTemperature = rhs.desiredTemperature;
     degF = rhs.degF;
     ThermostatMethod = rhs.ThermostatMethod;
+    ThermostatWindow = rhs.ThermostatWindow;
+    useThermostat = rhs.useThermostat;
     enableWifi = rhs.enableWifi;
     enableOTA = rhs.enableOTA;
     GPIO.inMode = rhs.GPIO.inMode;
@@ -238,19 +250,18 @@ struct sBTCoptions : public CESP32_NVStorage {
   }
 };
 
-
 // the actual data stored to NV memory
 struct sNVStore {
-  sHeater Heater;
-  sBTCoptions Options;
+  sHeaterTuning heaterTuning;
+  sUserSettings userSettings;
   sTimer timer[14];
   sMQTTparams MQTT;
   sCredentials Credentials;
   bool valid();
   void init();
   sNVStore& operator=(const sNVStore& rhs) {
-    Heater = rhs.Heater;
-    Options = rhs.Options;
+    heaterTuning = rhs.heaterTuning;
+    userSettings = rhs.userSettings;
     for(int i = 0; i < 14; i++)
       timer[i] = rhs.timer[i];
     MQTT = rhs.MQTT;
@@ -264,68 +275,38 @@ class CHeaterStorage /*: public CESP32_NVStorage*/ {
 protected:
   sNVStore _calValues;
 public:
-    CHeaterStorage();
-    virtual ~CHeaterStorage() {};
+  CHeaterStorage();
+  virtual ~CHeaterStorage() {};
 
-  // TODO: These are only here to allow building without fully 
-  // fleshing out NV storage for Due, Mega etc
-  // these should be removed once complete (pure virtual)
-    virtual void init() {};
-    virtual void load() {};
-    virtual void save() {};
+// TODO: These are only here to allow building without fully 
+// fleshing out NV storage for Due, Mega etc
+// these should be removed once complete (pure virtual)
+  virtual void init() {};
+  virtual void load() {};
+  virtual void save() {};
 
 
-    float getPmin();
-    float getPmax();
-    unsigned short getFmin();
-    unsigned short getFmax();
-    unsigned char getDesiredTemperature();
-    unsigned char getThermostatMode();
-    unsigned char getThermostatMethodMode();
-    float         getThermostatMethodWindow();
-    unsigned char getSysVoltage();
-    unsigned char getFanSensor();
-    unsigned char getGlowDrive();
-    long getDimTime();
-    long getMenuTimeout();
-    unsigned char getDegFMode();
-    unsigned char getWifiEnabled();
-    unsigned char getOTAEnabled();
-    const sCyclicThermostat& getCyclicMode() const;
-    const sMQTTparams& getMQTTinfo() const;
-    const sGPIOparams& getGPIOparams() const;
-    uint16_t     getFrameRate();
-    const sHomeMenuActions& getHomeMenu() const;
-    const sCredentials& getCredentials() const;
+  const sCyclicThermostat& getCyclicMode() const;
+  const sMQTTparams& getMQTTinfo() const;
+  const sGPIOparams& getGPIOparams() const;
+  const sHomeMenuActions& getHomeMenu() const;
+  const sCredentials& getCredentials() const;
+  const sUserSettings& getUserSettings() const;
+  const sHeaterTuning& getHeaterTuning() const;
 
-    void setPmin(float);
-    void setPmax(float);
-    void setFmin(unsigned short val);
-    void setFmax(unsigned short val);
-    void setDesiredTemperature(unsigned char val);
-    void setThermostatMode(unsigned char val);
-    void setThermostatMethodMode(unsigned char val);
-    void setThermostatMethodWindow(float val);
-    void setSystemVoltage(float fVal);
-    void setFanSensor(unsigned char val);
-    void setGlowDrive(unsigned char val);
-    void setDimTime(long val);
-    void setMenuTimeout(long val);
-    void setDegFMode(unsigned char val);
-    void setWifiEnabled(unsigned char val);
-    void setOTAEnabled(unsigned char val);
-    void setCyclicMode(const sCyclicThermostat& val);
-    void setGPIOparams(const sGPIOparams& params);
-    void setFrameRate(uint16_t val);
-    void setHomeMenu(const sHomeMenuActions& val);
+  void setCyclicMode(const sCyclicThermostat& val);
+  void setGPIOparams(const sGPIOparams& params);
+  void setHomeMenu(const sHomeMenuActions& val);
 
-    void getTimerInfo(int idx, sTimer& timerInfo);
-    void setTimerInfo(int idx, const sTimer& timerInfo);
-    void setMQTTinfo(const sMQTTparams& info);
-    void setCredentials(const sCredentials& info);
-    CHeaterStorage& operator=(const CHeaterStorage& rhs) {
-      _calValues = rhs._calValues;
-    }
+  void getTimerInfo(int idx, sTimer& timerInfo);
+  void setTimerInfo(int idx, const sTimer& timerInfo);
+  void setMQTTinfo(const sMQTTparams& info);
+  void setCredentials(const sCredentials& info);
+  CHeaterStorage& operator=(const CHeaterStorage& rhs) {
+    _calValues = rhs._calValues;
+  }
+  void setUserSettings(const sUserSettings& info);
+  void setHeaterTuning(const sHeaterTuning& info);
 };
 
 

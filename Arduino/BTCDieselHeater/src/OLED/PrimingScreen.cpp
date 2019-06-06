@@ -110,7 +110,7 @@ CPrimingScreen::show()
     _printMenuText(_display.width()-border, yPos, "degF", _colSel == 1, eRightJustify);
   }
   else {
-    int col = NVstore.getDegFMode();              
+    int col = NVstore.getUserSettings().degF ? 1 : 0;
     _printInverted(border, yPos, "degC", col == 0);
     _printInverted(_display.width()-border, yPos, "degF", col == 1, eRightJustify);
   }
@@ -168,7 +168,8 @@ CPrimingScreen::keyHandler(uint8_t event)
           break;
         case 2: 
           _colSel = 0; 
-          NVstore.setDegFMode(0);
+          setDegFMode(false);
+          saveNV();
           break;
         case 3: 
           _colSel = 1; 
@@ -189,7 +190,8 @@ CPrimingScreen::keyHandler(uint8_t event)
           break;
         case 2: 
           _colSel = 1; 
-          NVstore.setDegFMode(1);
+          setDegFMode(true);
+          saveNV();
           break;
         case 3: 
           if(!getHeaterInfo().getRunState()) 
@@ -208,9 +210,8 @@ CPrimingScreen::keyHandler(uint8_t event)
         if(_rowSel == 3)
           _colSel = 1;       // select OFF upon entry to priming menu
         if(_rowSel == 2)
-          _colSel = NVstore.getDegFMode();
+          _colSel = NVstore.getUserSettings().degF ? 1 : 0;
         if(_rowSel == 1)
-          // _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
           _colSel = getThermostatModeActive() ? 0 : 1;              
       }
     }
@@ -227,7 +228,7 @@ CPrimingScreen::keyHandler(uint8_t event)
           // _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
           _colSel = getThermostatModeActive() ? 0 : 1;              
         if(_rowSel == 2)
-          _colSel = NVstore.getDegFMode();
+          _colSel = NVstore.getUserSettings().degF ? 1 : 0;
       }
     }
 

@@ -118,8 +118,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 23;
-const int FirmwareSubRevision = 0;
-const char* FirmwareDate = "1 Jun 2019";
+const int FirmwareSubRevision = 1;
+const char* FirmwareDate = "6 Jun 2019";
 
 
 #ifdef ESP32
@@ -397,10 +397,10 @@ void setup() {
 
   sCredentials creds = NVstore.getCredentials();
 
-  if(NVstore.getWifiEnabled()) {
+  if(NVstore.getUserSettings().enableWifi) {
     initWifi(WiFi_TriggerPin, creds.SSID, creds.APpassword);
 #if USE_OTA == 1
-    if(NVstore.getOTAEnabled()) {
+    if(NVstore.getUserSettings().enableOTA) {
       initOTA();
     }
 #endif // USE_OTA
@@ -545,7 +545,7 @@ void loop()
       // This will be the first activity for considerable period on the blue wire
       // The heater always responds to a controller frame, but otherwise never by itself
       
-      if(RxTimeElapsed >= (NVstore.getFrameRate() - 60)) {  // compensate for the time spent just doing things in this state machine
+      if(RxTimeElapsed >= (NVstore.getUserSettings().FrameRate - 60)) {  // compensate for the time spent just doing things in this state machine
         // have not seen any receive data for a second.
         // OEM controller is probably not connected. 
         // Skip state machine immediately to BTC_Tx, sending our own settings.
@@ -922,8 +922,12 @@ bool reqTemp(unsigned char newTemp)
     newTemp = max;
   if(newTemp <= min)
     newTemp = min;
-     
-  NVstore.setDesiredTemperature(newTemp);
+  
+  // seta nd save the temperature to NV storage
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.desiredTemperature = newTemp;
+  NVstore.setUserSettings(settings);
+  NVstore.save();
 
   ScreenManager.reqUpdate();
   return true;
@@ -938,7 +942,7 @@ bool reqTempDelta(int delta)
 
 int getSetTemp()
 {
-  return NVstore.getDesiredTemperature();
+  return NVstore.getUserSettings().desiredTemperature;
 }
 
 bool reqThermoToggle()
@@ -951,8 +955,17 @@ bool setThermostatMode(unsigned char val)
   if(bHasOEMController)
     return false;
 
-  NVstore.setThermostatMode(val);
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.useThermostat = val;
+  NVstore.setUserSettings(settings);
   return true;
+}
+
+void setDegFMode(bool state)
+{
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.degF = state ? 0x01 : 0x00;
+  NVstore.setUserSettings(settings);
 }
 
 
@@ -962,7 +975,7 @@ bool getThermostatModeActive()
     return getHeaterInfo().isThermostat();
   }
   else {
-    return NVstore.getThermostatMode() != 0;
+    return NVstore.getUserSettings().useThermostat != 0;
   }
 }
 
@@ -995,7 +1008,7 @@ float getTemperatureDesired()
     return getHeaterInfo().getTemperature_Desired();
   }
   else {
-    return NVstore.getDesiredTemperature();
+    return NVstore.getUserSettings().desiredTemperature;
   }
 }
 
@@ -1006,35 +1019,49 @@ float getTemperatureSensor()
 
 void  setPumpMin(float val)
 {
-  NVstore.setPmin(val);
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.setPmin(val);
+  NVstore.setHeaterTuning(tuning);
 }
 
 void  setPumpMax(float val)
 {
-  NVstore.setPmax(val);
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.setPmax(val);
+  NVstore.setHeaterTuning(tuning);
 }
 
 void  setFanMin(short cVal)
 {
-  NVstore.setFmin(cVal);
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.Fmin = cVal;
+  NVstore.setHeaterTuning(tuning);
 }
 
 void  setFanMax(short cVal)
 {
-  NVstore.setFmax(cVal);
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.Fmax = cVal;
+  NVstore.setHeaterTuning(tuning);
 }
 
 void setFanSensor(unsigned char cVal)
 {
-  NVstore.setFanSensor(cVal);
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.fanSensor = cVal;
+  NVstore.setHeaterTuning(tuning);
 }
 
 void setSystemVoltage(float val) {
-  NVstore.setSystemVoltage(val);
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.setSysVoltage(val);
+  NVstore.setHeaterTuning(tuning);
 }
 
 void setGlowDrive(unsigned char val) {
-  NVstore.setGlowDrive(val);
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.glowDrive = val;
+  NVstore.setHeaterTuning(tuning);
 } 
 
 

@@ -161,7 +161,7 @@ CScreenHeader::showWifiIcon()
       _UpAnnotation.holdoff--;     // animation of arrow is now cleared
     }
     else {
-      if(NVstore.getOTAEnabled()) {
+      if(NVstore.getUserSettings().enableOTA) {
         // OTA is enabled, show OTA
         // erase top right portion of wifi icon
         _display.fillRect(X_WIFI_ICON+11, Y_WIFI_ICON, 2, 6, BLACK);

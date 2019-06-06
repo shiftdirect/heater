@@ -39,6 +39,7 @@ CModerator MQTTmoderator;
 CModerator GPIOmoderator;
 
 void validateTimer(int ID);
+void Expand(std::string& str);
 
 void interpretJsonCommand(char* pLine)
 {
@@ -94,10 +95,18 @@ void interpretJsonCommand(char* pLine)
 			NVstore.setCyclicMode(cyclic);
 		}
 		else if(strcmp("ThermostatMethod", it->key) == 0) {
-			NVstore.setThermostatMethodMode(it->value.as<unsigned char>());
+      sUserSettings settings = NVstore.getUserSettings();
+      uint8_t val = it->value.as<uint8_t>();
+      if(val <= 2)
+        settings.ThermostatMethod = val;
+			NVstore.setUserSettings(settings);
 		}
 		else if(strcmp("ThermostatWindow", it->key) == 0) {
-			NVstore.setThermostatMethodWindow(it->value.as<float>());
+      sUserSettings settings = NVstore.getUserSettings();
+      float val = it->value.as<float>();
+      if(val >= 0.2f && val <= 10.f)
+        settings.ThermostatWindow = val;
+			NVstore.setUserSettings(settings);
 		}
 		else if(strcmp("Thermostat", it->key) == 0) {
 			if(!setThermostatMode(it->value.as<unsigned char>())) {  // this request is blocked if OEM controller active
@@ -256,7 +265,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("GlowVoltage", getHeaterInfo().getGlow_Voltage(), root );
 	bSend |= moderator.addJson("GlowCurrent", getHeaterInfo().getGlow_Current(), root );
   bSend |= moderator.addJson("BluewireStat", getBlueWireStatStr(), root );
-	bSend |= moderator.addJson("TempMode", NVstore.getDegFMode(), root); 
+	bSend |= moderator.addJson("TempMode", NVstore.getUserSettings().degF, root); 
 
   if(bSend) {
 		root.printTo(opStr, len);
@@ -272,8 +281,8 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 
 	bool bSend = false;  // reset should send flag
 
-  bSend |= moderator.addJson("ThermostatMethod", NVstore.getThermostatMethodMode(), root); 
-  bSend |= moderator.addJson("ThermostatWindow", NVstore.getThermostatMethodWindow(), root); 
+  bSend |= moderator.addJson("ThermostatMethod", NVstore.getUserSettings().ThermostatMethod, root); 
+  bSend |= moderator.addJson("ThermostatWindow", NVstore.getUserSettings().ThermostatWindow, root); 
   bSend |= moderator.addJson("ThermostatOvertemp", NVstore.getCyclicMode().Stop, root); 
   bSend |= moderator.addJson("ThermostatUndertemp", NVstore.getCyclicMode().Start, root); 
 
@@ -379,7 +388,9 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebServerString( jsonStr );
-      getBluetoothClient().send( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
     }
   }
   // update extended params
@@ -389,7 +400,9 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebServerString( jsonStr );
-      getBluetoothClient().send( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
     }
   }
   // update timer parameters
@@ -406,7 +419,9 @@ void updateJSONclients(bool report)
       sendWebServerString( jsonStr );
       unsigned long tWF = millis() - tStart;
       tStart = millis();
-      getBluetoothClient().send( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
       unsigned long tBT = millis() - tStart;
       bNewTimerInfo = true;
       DebugPort.printf("JSON times : %ld,%ld,%ld\r\n", tJSON, tBT, tWF); 
@@ -426,7 +441,9 @@ void updateJSONclients(bool report)
 
     DebugPort.printf("JSON send: %s\r\n", jsonStr);
     sendWebServerString( jsonStr );
-    getBluetoothClient().send( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
   }
 
   // report MQTT params
@@ -436,7 +453,9 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebServerString( jsonStr );
-      getBluetoothClient().send( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
     }
   }
 
@@ -446,7 +465,9 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebServerString( jsonStr );
-      getBluetoothClient().send( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
     }
   }
 
@@ -476,5 +497,16 @@ void initTimerJSONmoderator()
   char jsonStr[800];
   for(int tmr=0; tmr<14; tmr++) 
     makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr));
+}
+
+
+void Expand(std::string& str)
+{
+  size_t pos = str.find(",\"");
+  while(pos != std::string::npos) {
+    str.replace(pos, 2, "}\n{\"");
+    pos = str.find(",\"");
+  }
+  str.append("\n");
 }
 

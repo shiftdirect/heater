@@ -251,7 +251,7 @@ CScreenManager::begin(bool bNoClock)
 bool 
 CScreenManager::checkUpdate()
 {
-  long dimTimeout = NVstore.getDimTime();
+  long dimTimeout = NVstore.getUserSettings().dimTime;
 
   // manage dimming or blanking the display, according to user defined inactivity interval
   if(dimTimeout && _DimTime_ms) {
@@ -268,7 +268,7 @@ CScreenManager::checkUpdate()
     }
   }
 
-  if(NVstore.getMenuTimeout() && _MenuTimeout) {
+  if(NVstore.getUserSettings().menuTimeout && _MenuTimeout) {
     long tDelta = millis() - _MenuTimeout;
     if(tDelta > 0) {
       _MenuTimeout = 0;
@@ -373,12 +373,16 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
-  if((NVstore.getDimTime() < 0) && (_DimTime_ms == 0)) {
+  if(_pRebootScreen) 
+  	return false;
+
+  if((NVstore.getUserSettings().dimTime < 0) && (_DimTime_ms == 0)) 
     // no screen updates, we should be blanked!
     return false;
-  }
+  
   if(_menu >= 0) 
     return _Screens[_menu][_subMenu]->animate();
+    
 	return false;
 }
 
@@ -436,20 +440,20 @@ CScreenManager::prevMenu()
 void 
 CScreenManager::keyHandler(uint8_t event)
 {
-  long dimTime = NVstore.getDimTime();
+  long dimTime = NVstore.getUserSettings().dimTime;
 
   if(_bDimmed) {
     if(event & keyReleased) {
       _dim(false);
       _DimTime_ms = (millis() + abs(dimTime)) | 1;
-      _MenuTimeout = millis() + NVstore.getMenuTimeout();
+      _MenuTimeout = millis() + NVstore.getUserSettings().menuTimeout;
     }
     return;   // initial press when dimmed is always thrown away
   }
 
 //  _dim(false);
   _DimTime_ms = (millis() + abs(dimTime)) | 1;
-  _MenuTimeout = millis() + NVstore.getMenuTimeout();
+  _MenuTimeout = millis() + NVstore.getUserSettings().menuTimeout;
 
   // call key handler for active screen
   if(_menu >= 0) 

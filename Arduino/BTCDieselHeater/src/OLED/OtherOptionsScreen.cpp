@@ -40,9 +40,9 @@ COtherOptionsScreen::onSelect()
   CScreenHeader::onSelect();
   _rowSel = 0;
   _repeatCount = -1;
-  _frameRate = NVstore.getFrameRate();
-  _dispTimeout = NVstore.getDimTime();
-  _menuTimeout = 60000;
+  _frameRate = NVstore.getUserSettings().FrameRate; 
+  _dispTimeout = NVstore.getUserSettings().dimTime; 
+  _menuTimeout = NVstore.getUserSettings().menuTimeout; 
 }
 
 void
@@ -144,10 +144,13 @@ COtherOptionsScreen::keyHandler(uint8_t event)
     // UP press
     if(event & key_Up) {
       if(_rowSel == 4) {
+        sUserSettings settings = NVstore.getUserSettings();
+        settings.dimTime = _dispTimeout;
+        settings.menuTimeout = _menuTimeout;
+        settings.FrameRate = _frameRate;
+        NVstore.setUserSettings(settings);
+        NVstore.save();
         _showStoringMessage();
-        NVstore.setFrameRate(_frameRate);
-        NVstore.setDimTime(_dispTimeout);
-        saveNV();
         _rowSel = 0;
       }
       else {
