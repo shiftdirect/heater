@@ -306,13 +306,13 @@ CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump)
     min = Y_BULB + TEMP_YPOS(min);   
 
     int xOfs = 8;                                                            
-                                                                             //  ####
-    _drawBitmap(X_BULB + xOfs, max, ThermoPtrHighIconInfo);                  //    ##
                                                                              //     #
-    _display.drawFastVLine(X_BULB + xOfs + 3, max, (min-max), WHITE);        //     #
-                                                                             //    ##
-    _drawBitmap(X_BULB + xOfs, min-2, ThermoPtrLowIconInfo);                 //  ####
-                                                                             
+    _drawBitmap(X_BULB + xOfs, max-2, ThermoPtrHighIconInfo);                //    ##
+                                                                             //  ####
+
+                                                                             //  ####
+    _drawBitmap(X_BULB + xOfs, min, ThermoPtrLowIconInfo);                   //    ##
+                                                                             //     #
   }
 
   // draw target setting
