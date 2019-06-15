@@ -22,7 +22,7 @@
 #include "128x64OLED.h"
 #include "ThermostatModeScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "fonts/Icons.h"
 #include "../Utility/NVStorage.h"

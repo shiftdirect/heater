@@ -21,7 +21,6 @@
 
 #include "BTC_JSON.h"
 #include "DebugPort.h"
-#include "../Protocol/helpers.h"
 #include "NVstorage.h"
 #include "../RTC/BTCDateTime.h"
 #include "../RTC/Timers.h"
@@ -29,6 +28,8 @@
 #include "../Bluetooth/BluetoothAbstract.h"
 #include "../WiFi/BTCWebServer.h"
 #include "../cfg/BTCConfig.h"
+#include "macros.h"
+#include "../Protocol/Protocol.h"
 
 
 char defaultJSONstr[64];
@@ -104,7 +105,7 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("ThermostatWindow", it->key) == 0) {
       sUserSettings settings = NVstore.getUserSettings();
       float val = it->value.as<float>();
-      if(val >= 0.2f && val <= 10.f)
+      if(INBOUNDS(val, 0.2f, 10.f))
         settings.ThermostatWindow = val;
 			NVstore.setUserSettings(settings);
 		}
@@ -215,13 +216,23 @@ void interpretJsonCommand(char* pLine)
     else if(strcmp("GPin2", it->key) == 0) {
       simulateGPIOin(it->value.as<unsigned char>() ? 0x02 : 0x00);  // simulate key 2 press
     }
-	}
+    else if(strcmp("JSONloose", it->key) == 0) {
+      sUserSettings us = NVstore.getUserSettings();
+      uint8_t loose = it->value.as<unsigned char>() ? 0x01 : 0x00;
+      us.JSON.LF = loose;
+      us.JSON.padding = loose;
+      us.JSON.singleElement = loose;
+      NVstore.setUserSettings(us);
+      NVstore.save();
+      resetJSONmoderator();
+    }
+  }
 }
 
 void validateTimer(int ID)
 {
   ID--;  // supplied as +1
-  if(!(ID >= 0 && ID < 14))
+  if(!INBOUNDS(ID, 0, 13))
     return;
 
   timerConflict = CTimerManager::conflictTest(ID);  // check targeted timer against other timers
@@ -292,20 +303,6 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 
   return bSend;
 }
-
-/*bool makeJSONStringGPIO(const sGPIO& GPIOinfo, char* opStr, int len)
-{
-  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
-  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
-
-	bool bSend = GPIOmoderator.addJson(GPIOinfo, root);  
-
-  if(bSend) {
-		root.printTo(opStr, len);
-  }
-
-  return bSend;
-}*/
 
 // the way the JSON timer strings are crafted, we have to iterate over each timer's parameters
 // individually, the JSON name is always the same for each timer, the payload IDs the specific
@@ -441,9 +438,9 @@ void updateJSONclients(bool report)
 
     DebugPort.printf("JSON send: %s\r\n", jsonStr);
     sendWebServerString( jsonStr );
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+    std::string expand = jsonStr;
+    Expand(expand);
+    getBluetoothClient().send( expand.c_str() );
   }
 
   // report MQTT params
@@ -502,11 +499,26 @@ void initTimerJSONmoderator()
 
 void Expand(std::string& str)
 {
-  size_t pos = str.find(",\"");
-  while(pos != std::string::npos) {
-    str.replace(pos, 2, "}\n{\"");
-    pos = str.find(",\"");
+  const sUserSettings& userOptions = NVstore.getUserSettings();
+
+  if(userOptions.JSON.singleElement) {
+    size_t pos = str.find(",\"");
+    while(pos != std::string::npos) {
+      if(userOptions.JSON.LF)
+        str.replace(pos, 2, "}\n{\"");  // converts {"name":value,"name2":value"} to {"name":value}\n{"name2":value}
+      else
+        str.replace(pos, 2, "}{\"");   // converts {"name":value,"name2":value"} to {"name":value}{"name2":value}
+      pos = str.find(",\"");
+    }
+    if(userOptions.JSON.padding) {    // converts {"name":value} to {"name": value}
+      pos = str.find("\":");
+      while(pos != std::string::npos) {
+        str.replace(pos, 2, "\": ");
+        pos = str.find("\":", pos+1);
+      }
+    }
+    if(userOptions.JSON.LF)
+      str.append("\n");
   }
-  str.append("\n");
 }
 

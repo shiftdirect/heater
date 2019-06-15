@@ -126,12 +126,12 @@ CESP32_NVStorage::validatedLoad(const char* key, float& val, float defVal, float
 
 bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
 {
-  return (test >= minLim) && (test <= maxLim);
+  return INBOUNDS(test, minLim, maxLim);
 }
 
 bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim)
 {
-  return (test >= minLim) && (test <= maxLim);
+  return INBOUNDS(test, minLim, maxLim);
 }
 
 bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2)
@@ -141,6 +141,6 @@ bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2)
 
 bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim)
 {
-  return (test >= minLim) && (test <= maxLim);
+  return INBOUNDS(test, minLim, maxLim);
 }
 

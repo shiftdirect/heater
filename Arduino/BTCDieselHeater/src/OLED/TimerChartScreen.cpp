@@ -30,7 +30,7 @@
 
 #include "TimerChartScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Utility/NVStorage.h"
 #include <RTClib.h>
 #include "fonts/MiniFont.h"

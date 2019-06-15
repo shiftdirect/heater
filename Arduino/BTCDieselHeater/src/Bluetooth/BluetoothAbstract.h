@@ -25,7 +25,7 @@
 #include <Arduino.h>
 #include "../Utility/UtilClasses.h"
 #include "../Utility/Debugport.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 
 class CProtocol;
 

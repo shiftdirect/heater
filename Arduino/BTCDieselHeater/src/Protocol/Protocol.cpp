@@ -22,8 +22,9 @@
 #include <Arduino.h>
 #include "Protocol.h"
 #include "../Utility/DebugPort.h"
-#include "helpers.h"
+#include "../Utility/helpers.h"
 #include "../cfg/BTCConfig.h"
+#include "../Utility/macros.h"
 
 
 unsigned short 
@@ -252,7 +253,7 @@ CProtocol::Init(int FrameMode)
     Controller.Len = 22;
     Controller.Command = 0;            // NOP
     setTemperature_Actual(18);  // 1degC / digit
-    setTemperature_Desired(20); // 1degC / digit
+    setHeaterDemand(20); // 1degC / digit
     setPump_Min(1.4f);          // Hz
     setPump_Max(4.3f);          // Hz
     setFan_Min(1450);           // 1RPM / digit

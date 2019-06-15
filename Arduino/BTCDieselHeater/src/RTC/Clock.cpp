@@ -25,7 +25,7 @@
 #include "TimerManager.h"
 #include <Wire.h>
 #include <RTClib.h>
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/DebugPort.h"
 

@@ -25,9 +25,10 @@
 #include "fonts/Icons.h"
 #include "BasicScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
+#include "../Protocol/Protocol.h"
 
 
 #define MAXIFONT tahoma_24ptFontInfo

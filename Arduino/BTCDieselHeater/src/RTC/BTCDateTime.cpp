@@ -20,7 +20,7 @@
  */
 
 #include "BTCDateTime.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/macros.h"
 
 const char*
 BTCDateTime::dowStr() const

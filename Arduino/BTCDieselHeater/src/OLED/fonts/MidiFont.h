@@ -18,41 +18,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
+#include "FontTypes.h"
 
-#ifndef __DETAILEDSCREEN_H__
-#define __DETAILEDSCREEN_H__
+// Font data for Segoe UI 8pt
+extern const uint8_t PROGMEM segoeUI_8ptBitmaps [] PROGMEM;
+extern const FONT_INFO segoeUI_8ptFontInfo ;
+extern const FONT_CHAR_INFO PROGMEM segoeUI_8ptDescriptors[] PROGMEM;
+extern const uint8_t PROGMEM segoeUI_Italic_8ptBitmaps [] PROGMEM;
+extern const FONT_INFO segoeUI_Italic_8ptFontInfo ;
+extern const FONT_CHAR_INFO PROGMEM segoeUI_Italic_8ptDescriptors[] PROGMEM;
 
-#include <stdint.h>
-#include "ScreenHeader.h"
+// Font data for Segoe UI 7pt
+extern const uint8_t PROGMEM segoeUI_7ptBitmaps [];
+extern const FONT_INFO segoeUI_7ptFontInfo;
+extern const FONT_CHAR_INFO PROGMEM segoeUI_7ptDescriptors[];
+extern const uint8_t PROGMEM segoeUI_Italic_7ptBitmaps [];
+extern const FONT_INFO segoeUI_Italic_7ptFontInfo;
+extern const FONT_CHAR_INFO PROGMEM segoeUI_Italic_7ptDescriptors[];
 
-class C128x64_OLED;
-class CScreenManager;
 
-class CDetailedScreen : public CScreenHeader
-{
-  bool _animatePump;
-  bool _animateRPM;
-  bool _animateGlow;
-  int  _fanAnimationState;
-  int  _dripAnimationState;
-  int  _heatAnimationState;
-  int  _keyRepeatCount;
 
-  unsigned long _showTarget;
 
-  void showRunState();
-  void showThermometer(float desired, float actual, float pump);
-  void showBodyThermometer(int actual);
-  void showGlowPlug(float power);
-  void showFan(int RPM);
-  void showFanV(float volts);
-  void showFuel(float rate);
-  void showRunState(int state, int errstate);
-public:
-  CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr);
-  bool show();
-  bool animate();
-  bool keyHandler(uint8_t event);
-};
-
-#endif

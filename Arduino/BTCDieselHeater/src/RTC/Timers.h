@@ -23,6 +23,7 @@
 #define __BTC_TIMERS_H__
 
 #include "../Utility/NVCore.h"
+#include "../Utility/macros.h"
 
 
 struct sHourMin {
@@ -73,12 +74,12 @@ struct sTimer : public CESP32_NVStorage {
   }
   bool valid() {
     bool retval = true;
-    retval &= (start.hour >= 0 && start.hour < 24);
-    retval &= (start.min >= 0 && start.min < 60);
-    retval &= (stop.hour >= 0 && stop.hour < 24);
-    retval &= (stop.min >= 0 && stop.min < 60);
+    retval &= INBOUNDS(start.hour, 0, 23);
+    retval &= INBOUNDS(start.min, 0, 59);
+    retval &= INBOUNDS(stop.hour, 0, 23);
+    retval &= INBOUNDS(stop.min, 0, 59);
     retval &= repeat <= 2;
-    retval &= (temperature >= 8 && temperature <= 35);
+    retval &= INBOUNDS(temperature, 8, 35);
     return retval;
   }
   void load();

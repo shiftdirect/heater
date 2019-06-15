@@ -20,9 +20,10 @@
  */
 
 #include "GPIO.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include <driver/adc.h>
 #include "DebugPort.h"
+#include "../Protocol/Protocol.h"
 
 const int BREATHINTERVAL = 45;
 const int FADEAMOUNT = 3;

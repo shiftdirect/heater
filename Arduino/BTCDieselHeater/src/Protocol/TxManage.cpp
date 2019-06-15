@@ -21,7 +21,7 @@
 
 #include "TxManage.h"
 #include "../Utility/NVStorage.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 
 //#define DEBUG_THERMOSTAT
 
@@ -125,15 +125,21 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     m_TxFrame.setPump_Max(NVstore.getHeaterTuning().getPmax());
 
     float tActual = getTemperatureSensor();
-    uint8_t u8Temp = (uint8_t)(tActual);
+    uint8_t u8Temp = (uint8_t)(tActual + 0.5);
     m_TxFrame.setTemperature_Actual(u8Temp);  // use current temp, for now
-    m_TxFrame.setTemperature_Desired(NVstore.getUserSettings().desiredTemperature);
+    m_TxFrame.setHeaterDemand(NVstore.getUserSettings().demandDegC);
+    m_TxFrame.setThermostatModeProtocol(1);  // assume using thermostat control for now
 
-    if(NVstore.getUserSettings().ThermostatMethod) {
+    if(!getThermostatModeActive()) {
+      m_TxFrame.setThermostatModeProtocol(0);  // not using any form of thermostat control
+      m_TxFrame.setHeaterDemand(NVstore.getUserSettings().demandPump);  // set fixed Hz demand instead
+      m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
+    } 
+    else if(NVstore.getUserSettings().ThermostatMethod) {
       uint8_t ThermoMode = NVstore.getUserSettings().ThermostatMethod;  // get the METHOD of thermostat control
       float Window = NVstore.getUserSettings().ThermostatWindow;
       float tCurrent = getTemperatureSensor();
-      float tDesired = float(NVstore.getUserSettings().desiredTemperature);
+      float tDesired = float(NVstore.getUserSettings().demandDegC);
       float tDelta = tCurrent - tDesired;
       float fTemp;
 #ifdef DEBUG_THERMOSTAT
@@ -157,11 +163,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           u8Temp = (uint8_t)(tActual + 0.5);  // use rounded actual unless within window
           if(fabs(tDelta) < Window) {
             // hold at desired if inside window
-            u8Temp = NVstore.getUserSettings().desiredTemperature;   
+            u8Temp = NVstore.getUserSettings().demandDegC;   
           }
           else if(fabs(tDelta) <= 1.0) {
             // force outside if delta is <= 1 but greater than window
-            u8Temp = NVstore.getUserSettings().desiredTemperature + ((tDelta > 0) ? 1 : -1); 
+            u8Temp = NVstore.getUserSettings().demandDegC + ((tDelta > 0) ? 1 : -1); 
           }
           m_TxFrame.setTemperature_Actual(u8Temp);  
 #ifdef DEBUG_THERMOSTAT
@@ -185,7 +191,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           UPPERLIMIT(fTemp, m_TxFrame.getTemperature_Max());
           // apply modifed desired temperature (works in conjunction with thermostatmode = 0!)
           u8Temp = (uint8_t)(fTemp + 0.5);
-          m_TxFrame.setTemperature_Desired(u8Temp);
+          m_TxFrame.setHeaterDemand(u8Temp);
           m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
           m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
 #ifdef DEBUG_THERMOSTAT
@@ -193,10 +199,6 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 #endif
           break;
       }
-    }
-    else {
-      m_TxFrame.setThermostatModeProtocol(0);  // not using any form of thermostat control
-      m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
     }
 //    m_TxFrame.setThermostatMode(NVstore.getThermostatMode());
 

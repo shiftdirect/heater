@@ -34,7 +34,7 @@ public:
       unsigned char Len;                //  [1] always 0x16 == 22
       unsigned char Command;            //  [2] transient commands: 00: NOP, 0xa0 START, 0x05: STOP
       unsigned char ActualTemperature;  //  [3] 1degC / digit
-      unsigned char DesiredTemperature; //  [4] 1degC / digit
+      unsigned char DesiredDemand;      //  [4] typ. 1degC / digit, but also gets used for Fixed Hx demand too!
       unsigned char MinPumpFreq;        //  [5] 0.1Hz/digit
       unsigned char MaxPumpFreq;        //  [6] 0.1Hz/digit
       unsigned char MinFanRPM_MSB;      //  [7] 16 bit - big endian MSB
@@ -175,11 +175,11 @@ public:
   float getPump_Fixed() const { return float(Heater.FixedPumpFreq) * 0.1f; };   // Fixed mode pump frequency
   void setPump_Prime(bool on) { Controller.Prime = on ? 0x5A : 0; };
   // temperature set/get
-  void setTemperature_Desired(unsigned char degC) { Controller.DesiredTemperature = degC; };
+  void setHeaterDemand(unsigned char degC) { Controller.DesiredDemand = degC; };
   void setTemperature_Min(unsigned char degC) { Controller.MinTemperature = degC; };
   void setTemperature_Max(unsigned char degC) { Controller.MaxTemperature = degC; };
   void setTemperature_Actual(unsigned char degC) { Controller.ActualTemperature = degC; };
-  unsigned char getTemperature_Desired() const { return Controller.DesiredTemperature; };
+  unsigned char getHeaterDemand() const { return Controller.DesiredDemand; };
   unsigned char getTemperature_Min() const { return Controller.MinTemperature; };
   unsigned char getTemperature_Max() const { return Controller.MaxTemperature; };
   unsigned char getTemperature_Actual() const { return Controller.ActualTemperature; };
@@ -224,7 +224,7 @@ public:
   const char* getErrStateStrEx() const;
   float getBattVoltage() const { return Heater.getVoltage_Supply(); };
   bool  isThermostat() const { return Controller.isThermostat(); };
-  float getTemperature_Desired() const { return float(Controller.getTemperature_Desired()); };
+  float getHeaterDemand() const { return float(Controller.getHeaterDemand()); };
   float getTemperature_HeatExchg() const { return float(Heater.getTemperature_HeatExchg()); };
   float getTemperature_Min() const { return float(Controller.getTemperature_Min()); };
   float getTemperature_Max() const { return float(Controller.getTemperature_Max()); };
@@ -247,5 +247,6 @@ public:
   void  reportFrames(bool isOEM);
 };
 
+extern const CProtocolPackage& getHeaterInfo();
 
 #endif

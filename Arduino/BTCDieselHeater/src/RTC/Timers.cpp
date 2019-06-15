@@ -22,6 +22,7 @@
 #include <Arduino.h>
 #include "Timers.h"
 #include "../Utility/NVStorage.h"
+#include "../Utility/macros.h"
 #include "BTCDateTime.h"
 
 
@@ -32,7 +33,7 @@ void decodeJSONTimerDays(const char* ipStr)
   if(2 == sscanf(ipStr, "%d %31s", &timerIdx, dayInfo)) {
     dayInfo[31] = 0;
     timerIdx--;
-    if(timerIdx >= 0 && timerIdx < 14) {
+    if(INBOUNDS(timerIdx, 0, 13)) {
       sTimer timer;
       NVstore.getTimerInfo(timerIdx, timer);
       unsigned char days = 0;
@@ -59,7 +60,7 @@ void decodeJSONTimerTime(int stop, const char* ipStr)
   int timerIdx;
   if(3 == sscanf(ipStr, "%d %d:%d", &timerIdx, &hour, &min)) {
     timerIdx--;
-    if(timerIdx >= 0 && timerIdx < 14) {
+    if(INBOUNDS(timerIdx, 0, 13)) {
       sTimer timer;
       NVstore.getTimerInfo(timerIdx, timer);
       if(stop) {
@@ -81,7 +82,7 @@ void decodeJSONTimerNumeric(int valID, const char* ipStr)
   int timerIdx;
   if(2 == sscanf(ipStr, "%d %d", &timerIdx, &value)) {
     timerIdx--;
-    if(timerIdx >= 0 && timerIdx < 14) {
+    if(INBOUNDS(timerIdx, 0, 13)) {
       sTimer timer;
       NVstore.getTimerInfo(timerIdx, timer);
       switch(valID) {
@@ -99,7 +100,7 @@ void decodeTimerTemp(const char* ipStr)
   int timerIdx;
   if(2 == sscanf(ipStr, "%d %d", &timerIdx, &degC)) {
     timerIdx--;
-    if(timerIdx >= 0 && timerIdx < 14) {
+    if(INBOUNDS(timerIdx, 0, 13)) {
       sTimer timer;
       NVstore.getTimerInfo(timerIdx, timer);
       timer.temperature = degC;

@@ -30,8 +30,8 @@
 
 #include "InheritSettingsScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
-// #include "../Wifi/BTCWifi.h"
+#include "../Utility/helpers.h"
+#include "../Protocol/Protocol.h"
 
 
 CInheritSettingsScreen::CInheritSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 

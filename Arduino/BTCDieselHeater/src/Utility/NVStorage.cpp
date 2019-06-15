@@ -97,7 +97,7 @@ sHeaterTuning::setSysVoltage(float fVal)
 void 
 CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
 {
-  if(idx >= 0 && idx < 14) {
+  if(INBOUNDS(idx, 0, 13)) {
     timerInfo = _calValues.timer[idx];
   }
 }
@@ -105,7 +105,7 @@ CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
 void 
 CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
 {
-  if(idx >= 0 && idx < 14) {
+  if(INBOUNDS(idx, 0, 13)) {
     _calValues.timer[idx] = timerInfo;
   }
 }
@@ -322,7 +322,8 @@ sUserSettings::load()
   validatedLoad("menuTimeout", menuTimeout, 60000, 0, 300000);
   validatedLoad("degF", degF, 0, u8inBounds, 0, 1);
   validatedLoad("thermostat", useThermostat, 1, u8inBounds, 0, 1);
-  validatedLoad("setTemperature", desiredTemperature, 22, u8inBounds, 0, 40);
+  validatedLoad("demandDegC", demandDegC, 22, u8inBounds, 8, 35);
+  validatedLoad("demandPump", demandPump, 22, u8inBounds, 8, 35);
   validatedLoad("thermoMethod", ThermostatMethod, 0, u8inBounds, 0, 255);
   // catch and migrate old combined method & window
   if(ThermostatMethod & 0xFC) {
@@ -344,6 +345,9 @@ sUserSettings::load()
   validatedLoad("MenuonStart", HomeMenu.onStart, 0, u8inBounds, 0, 3);
   validatedLoad("MenuonStop", HomeMenu.onStop, 0, u8inBounds, 0, 3);
   validatedLoad("FrameRate", FrameRate, 1000, u16inBounds, 300, 1500);
+  validatedLoad("JSONsingle", JSON.singleElement, 0, u8inBounds, 0, 1);
+  validatedLoad("JSONLF", JSON.LF, 0, u8inBounds, 0, 1);
+  validatedLoad("JSONpad", JSON.padding, 0, u8inBounds, 0, 1);
   preferences.end();    
 }
 
@@ -355,7 +359,8 @@ sUserSettings::save()
   preferences.putLong("dimTime", dimTime);
   preferences.putLong("menuTimeout", menuTimeout);
   preferences.putUChar("thermostat", useThermostat);
-  preferences.putUChar("setTemperature", desiredTemperature);
+  preferences.putUChar("demandDegC", demandDegC);
+  preferences.putUChar("demandPump", demandPump);
   preferences.putUChar("degF", degF);
   preferences.putUChar("thermoMethod", ThermostatMethod);
   preferences.putFloat("thermoWindow", ThermostatWindow);
@@ -370,6 +375,9 @@ sUserSettings::save()
   preferences.putUChar("MenuonStart", HomeMenu.onStart);
   preferences.putUChar("MenuonStop", HomeMenu.onStop);
   preferences.putUShort("FrameRate", FrameRate);
+  preferences.putUChar("JSONsingle", JSON.singleElement);
+  preferences.putUChar("JSONLF", JSON.LF);
+  preferences.putUChar("JSONpad", JSON.padding);
   preferences.end();    
 }
 

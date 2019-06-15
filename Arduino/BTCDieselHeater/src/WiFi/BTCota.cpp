@@ -25,7 +25,7 @@
 #include <SPIFFS.h>
 #endif
 #include "../Libraries/esp32FOTA/src/esp32fota.h" // local copy used due to a couple of issues
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));

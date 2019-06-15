@@ -26,7 +26,7 @@
 #include "DetailedScreen.h"
 #include "../Wifi/BTCWifi.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/NVStorage.h"
 
@@ -91,16 +91,21 @@ CDetailedScreen::show()
   }
 
   float desiredT = 0;
-  if((runstate && (runstate <= 5)) || _showTarget) {
+  float fPump = 0;
+  if((runstate && (runstate <= 5)) || (runstate == 9) || _showTarget) {  // state 9 = manufactured "heating glow plug"
     if(getThermostatModeActive())
       desiredT = getTemperatureDesired();
-    else
-      desiredT = -getHeaterInfo().getPump_Fixed();
+    else {
+      fPump = getHeaterInfo().getPump_Fixed();
+      if(NVstore.getUserSettings().cyclic.isEnabled())
+        desiredT = getTemperatureDesired();
+    }
   }
 
   float fTemp = getTemperatureSensor();
   showThermometer(desiredT,    // read values from most recently sent [BTC] frame
-                  fTemp);
+                  fTemp,
+                  fPump);
 
   _animateRPM = false;
   _animatePump = false;
@@ -263,55 +268,75 @@ CDetailedScreen::keyHandler(uint8_t event)
 
 #define TEMP_YPOS(A) ((20 - int(A)) + 27)  // 26 is location of 20deg tick
 void 
-CDetailedScreen::showThermometer(float desired, float actual) 
+CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump) 
 {
   char msg[16];
   // draw bulb design
   _drawBitmap(X_BULB, Y_BULB, AmbientThermometerIconInfo, WHITE);
 
-  if(actual > 0) { 
+  if(fActual > 0) { 
     // draw mercury
-    int yPos = Y_BULB + TEMP_YPOS(actual);
+    int yPos = Y_BULB + TEMP_YPOS(fActual);
     _display.drawLine(X_BULB + 3, yPos, X_BULB + 3, Y_BULB + 42, WHITE);
     _display.drawLine(X_BULB + 4, yPos, X_BULB + 4, Y_BULB + 42, WHITE);  
   }
   // print actual temperature
-  if(actual > -80) {
-#ifdef MINI_TEMPLABEL  
+  if(fActual > -80) {
     CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
     if(NVstore.getUserSettings().degF) {
-      actual = actual * 9 / 5 + 32;
-      sprintf(msg, "%.1f`F", actual);
+      fActual = fActual * 9 / 5 + 32;
+      sprintf(msg, "%.1f`F", fActual);
     }
     else {
-      sprintf(msg, "%.1f`C", actual);
+      sprintf(msg, "%.1f`C", fActual);
     }
-#else
-    sprintf(msg, "%.1f", actual);
-#endif
     _printMenuText(0, Y_BASELINE, msg);
   }
   else {
     _printInverted(1, Y_BASELINE-2, "N/A", true);
   }
 
+  // draw cyclic bracket (if enabled)
+  if(NVstore.getUserSettings().cyclic.isEnabled() && (fDesired != 0)) {
+    int max = fDesired + NVstore.getUserSettings().cyclic.Stop + 1;
+    int min = fDesired + NVstore.getUserSettings().cyclic.Start;  // stored as a negative value!
+
+    // convert to screen coordinates
+    max = Y_BULB + TEMP_YPOS(max);   
+    min = Y_BULB + TEMP_YPOS(min);   
+
+    int xOfs = 8;                                                            
+                                                                             //  ####
+    _drawBitmap(X_BULB + xOfs, max, ThermoPtrHighIconInfo);                  //    ##
+                                                                             //     #
+    _display.drawFastVLine(X_BULB + xOfs + 3, max, (min-max), WHITE);        //     #
+                                                                             //    ##
+    _drawBitmap(X_BULB + xOfs, min-2, ThermoPtrLowIconInfo);                 //  ####
+                                                                             
+  }
+
   // draw target setting
-  if(desired) {
-    _drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIconInfo);   // set indicator against bulb
+  // may be suppressed if not in normal start or run state
+  if((fDesired != 0) || (fPump != 0)) {
+    _drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIconInfo);   // draw target icon
     char msg[16];
-    if(desired > 0) {
-      int yPos = Y_BULB + TEMP_YPOS(desired) - 2;
-      _drawBitmap(X_BULB-1, yPos, ThermoPtrIconInfo);   // set indicator against bulb
+    if(fPump == 0) {
+      int yPos = Y_BULB + TEMP_YPOS(fDesired) - 2;      // 2 offsets mid height of icon
+      _drawBitmap(X_BULB-1, yPos, ThermoPtrIconInfo);   // set closed indicator against bulb
       if(NVstore.getUserSettings().degF) {
-        desired = desired * 9 / 5 + 32;
-        sprintf(msg, "%.0f`F", desired);
+        fDesired = fDesired * 9 / 5 + 32;
+        sprintf(msg, "%.0f`F", fDesired);
       }
       else {
-        sprintf(msg, "%.0f`C", desired);
+        sprintf(msg, "%.0f`C", fDesired);
       }
     }
     else {
-      sprintf(msg, "%.1fHz", -desired);
+      if(fDesired) {
+        int yPos = Y_BULB + TEMP_YPOS(fDesired) - 2;
+        _drawBitmap(X_BULB-1, yPos, ThermoOpenPtrIconInfo);   // set open style indicator against bulb
+      }
+      sprintf(msg, "%.1fHz", fPump);
     }
 #ifdef MINI_TARGETLABEL
     CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font

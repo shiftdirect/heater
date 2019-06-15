@@ -3,6 +3,7 @@
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
  * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2018  James Clark
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,40 +20,14 @@
  * 
  */
 
-#ifndef __DETAILEDSCREEN_H__
-#define __DETAILEDSCREEN_H__
+#ifndef __MACROS_H__
+#define __MACROS_H__
 
-#include <stdint.h>
-#include "ScreenHeader.h"
-
-class C128x64_OLED;
-class CScreenManager;
-
-class CDetailedScreen : public CScreenHeader
-{
-  bool _animatePump;
-  bool _animateRPM;
-  bool _animateGlow;
-  int  _fanAnimationState;
-  int  _dripAnimationState;
-  int  _heatAnimationState;
-  int  _keyRepeatCount;
-
-  unsigned long _showTarget;
-
-  void showRunState();
-  void showThermometer(float desired, float actual, float pump);
-  void showBodyThermometer(int actual);
-  void showGlowPlug(float power);
-  void showFan(int RPM);
-  void showFanV(float volts);
-  void showFuel(float rate);
-  void showRunState(int state, int errstate);
-public:
-  CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr);
-  bool show();
-  bool animate();
-  bool keyHandler(uint8_t event);
-};
+#define LOWERLIMIT(A, B) if((A) < (B)) (A) = (B)
+#define UPPERLIMIT(A, B) if((A) > (B)) (A) = (B)
+#define WRAPUPPERLIMIT(A, B, C) if((A) > (B)) (A) = (C)        
+#define WRAPLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        
+#define WRAPLIMITS(A, B, C) if((A) < (B)) (A) = (C) ; if((A) > (C)) (A) = (B)               
+#define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((TST) <= (MAX)))
 
 #endif

@@ -21,7 +21,7 @@
 
 #include "Moderator.h"
 #include "DebugPort.h"
-//#include "NVStorage.h"
+#include "../Utility/helpers.h"
 
 CTimerModerator::CTimerModerator()
 {
@@ -89,7 +89,7 @@ CTimerModerator::reset()
 void
 CTimerModerator::reset(int timer)
 {
-  if(timer >= 0 && timer < 14) {
+  if(INBOUNDS(timer, 0, 13)) {
     Memory[timer].start.hour = -1;  // force full update
     Memory[timer].stop.hour = -1;  // force full update
     Memory[timer].enabled = 0xff;  // invalid combination - force full update

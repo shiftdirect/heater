@@ -23,13 +23,11 @@
 #ifndef __BTC_HELPERS_H__
 #define __BTC_HELPERS_H__
 
-#include "Protocol.h"
-#include "../Utility/UtilClasses.h"
+#include "UtilClasses.h"
 
 struct sGPIO;
 
 
-extern void  ToggleOnOff();
 extern void  requestOn();
 extern void  requestOff();
 extern bool  reqTempDelta(int delta);
@@ -40,7 +38,6 @@ extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC
 extern void  reqPumpPrime(bool on);
 float getTemperatureDesired();    // OEM: the advertised value, BTC our setpoint
 extern float getTemperatureSensor();
-extern int   getSetTemp();
 extern void  setPumpMin(float);
 extern void  setPumpMax(float);
 extern void  setFanMin(short);
@@ -52,7 +49,6 @@ extern void  setTime(const char* newTime);
 extern void  setGlowDrive(unsigned char val);
 extern void  saveNV();
 extern void  setSystemVoltage(float val);
-extern const CProtocolPackage& getHeaterInfo();
 extern void  interpretJsonCommand(char* pLine);
 extern void  resetWebModerator();
 extern void  resetJSONmoderator();
@@ -81,14 +77,5 @@ extern void setDegFMode(bool state);
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 
-
-
-
-#define LOWERLIMIT(A, B) if((A) < (B)) (A) = (B)
-#define UPPERLIMIT(A, B) if((A) > (B)) (A) = (B)
-#define WRAPUPPERLIMIT(A, B, C) if((A) > (B)) (A) = (C)        
-#define WRAPLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        
-#define WRAPLIMITS(A, B, C) if((A) < (B)) (A) = (C) ; if((A) > (C)) (A) = (B)               
-#define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((tst) <= (MAX)))
 
 #endif

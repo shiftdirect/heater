@@ -21,7 +21,7 @@
 
 #include "WiFiScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Wifi/BTCWifi.h"
 #include "../Utility/NVstorage.h"
 

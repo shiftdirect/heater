@@ -21,8 +21,8 @@
 
 #include "PrimingScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
 #include "../Utility/NVStorage.h"
+#include "../Protocol/Protocol.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //

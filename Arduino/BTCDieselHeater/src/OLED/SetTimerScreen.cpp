@@ -30,7 +30,7 @@
 
 #include "SetTimerScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Utility/NVStorage.h"
 #include <RTClib.h>
 #include "../RTC/TimerManager.h"

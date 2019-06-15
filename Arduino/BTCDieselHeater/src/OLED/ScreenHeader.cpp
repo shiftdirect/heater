@@ -22,7 +22,7 @@
 #include <Arduino.h>
 #include "ScreenHeader.h"
 #include "../Protocol/Protocol.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Wifi/BTCWifi.h"
 #include "../Bluetooth/BluetoothAbstract.h" 
 #include "../Utility/NVStorage.h"

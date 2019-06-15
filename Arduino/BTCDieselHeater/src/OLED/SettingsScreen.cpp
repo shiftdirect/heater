@@ -30,8 +30,10 @@
 
 #include "SettingsScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Wifi/BTCWifi.h"
+#include "../Utility/macros.h"
+#include "../Protocol/Protocol.h"
 
 static const int Line3 = 20;       // system voltage
 static const int Line2 = 30;       // fan sensor

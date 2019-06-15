@@ -30,9 +30,11 @@
 
 #include "FuelMixtureScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Wifi/BTCWifi.h"
 #include "../utility/debugPort.h"
+#include "../Utility/macros.h"
+#include "../Protocol/Protocol.h"
 
 
 CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 

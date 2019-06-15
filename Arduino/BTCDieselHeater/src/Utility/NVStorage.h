@@ -24,6 +24,7 @@
 
 #include "GPIO.h"
 #include "NVCore.h"
+#include "../Utility/helpers.h"
 
 #include "../RTC/Timers.h"   // for sTimer
 
@@ -48,7 +49,7 @@ struct sHeaterTuning : public CESP32_NVStorage {
     retval &= Fmax < 6000;
     retval &= sysVoltage == 120 || sysVoltage == 240;
     retval &= fanSensor == 1 || fanSensor == 2;
-    retval &= glowDrive >= 1 && glowDrive <= 6;
+    retval &= INBOUNDS(glowDrive, 1, 6);
     return retval;
   };
   void init() {
@@ -108,8 +109,8 @@ struct sCyclicThermostat {
   int8_t Start;
   bool valid() {
     bool retval = true;
-    retval &= Start >= -10 && Start <= 0;
-    retval &= Stop >= 0 && Stop <= 10;
+    retval &= INBOUNDS(Start, -10, 0);
+    retval &= INBOUNDS(Stop, 0, 10);
     return retval;  
   }
   void init() {
@@ -125,6 +126,32 @@ struct sCyclicThermostat {
     return *this;
   }
 };
+
+
+struct sJSONoptions {
+  int8_t singleElement;
+  int8_t LF;
+  int8_t padding;
+  bool valid() {
+    bool retval = true;
+    retval &= singleElement <= 1;
+    retval &= LF <= 1;
+    retval &= padding <= 1;
+    return retval;  
+  }
+  void init() {
+    singleElement = 0;
+    LF = 0;
+    padding = 0;
+  }
+  sJSONoptions& operator=(const sJSONoptions& rhs) {
+    singleElement = rhs.singleElement;
+    LF = rhs.LF;
+    padding = rhs.padding;
+    return *this;
+  }
+};
+
 
 struct sCredentials : public CESP32_NVStorage {
   char SSID[32];
@@ -181,7 +208,8 @@ struct sMQTTparams : public CESP32_NVStorage {
 struct sUserSettings : public CESP32_NVStorage {
   long dimTime;
   long menuTimeout;
-  uint8_t desiredTemperature;
+  uint8_t demandDegC;
+  uint8_t demandPump;
   uint8_t degF;
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   float   ThermostatWindow;   
@@ -192,29 +220,33 @@ struct sUserSettings : public CESP32_NVStorage {
   sCyclicThermostat cyclic;
   sHomeMenuActions HomeMenu;
   sGPIOparams GPIO;
+  sJSONoptions JSON;
 
   bool valid() {
     bool retval = true;
-    retval &= (dimTime >= -600000) && (dimTime < 600000);  // +/- 10 mins
-    retval &= (menuTimeout >= 0) && (menuTimeout < 300000);  // 5 mins
-    retval &= desiredTemperature < 40;
+    retval &= INBOUNDS(dimTime, -600000, 600000);  // +/- 10 mins
+    retval &= INBOUNDS(menuTimeout, 0, 300000);  // 5 mins
+    retval &= INBOUNDS(demandDegC, 8, 35);
+    retval &= INBOUNDS(demandPump, 8, 35);
     retval &= (degF == 0) || (degF == 1);
     retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
-    retval &= (ThermostatWindow >= 0.2f) && (ThermostatWindow <= 10.f);
+    retval &= INBOUNDS(ThermostatWindow, 0.2f, 10.f);
     retval &= useThermostat < 2;
     retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= (enableOTA == 0) || (enableOTA == 1);
     retval &= GPIO.inMode < 4;
     retval &= GPIO.outMode < 3;
-    retval &= (FrameRate >= 300) && (FrameRate <= 1500);
+    retval &= INBOUNDS(FrameRate, 300, 1500);
     retval &= cyclic.valid();
     retval &= HomeMenu.valid();
+    retval &= JSON.valid();
     return retval;  
   }
   void init() {
     dimTime = 60000;
     menuTimeout = 60000;
-    desiredTemperature = 23;
+    demandDegC = 22;
+    demandPump = 22;
     degF = 0;
     ThermostatMethod = 0;
     ThermostatWindow = 1.0;
@@ -227,13 +259,15 @@ struct sUserSettings : public CESP32_NVStorage {
     FrameRate = 1000;
     cyclic.init();
     HomeMenu.init();
+    JSON.init();
   };
   void load();
   void save();
   sUserSettings& operator=(const sUserSettings& rhs) {
     dimTime = rhs.dimTime;
     menuTimeout = rhs.menuTimeout;
-    desiredTemperature = rhs.desiredTemperature;
+    demandDegC = rhs.demandDegC;
+    demandPump = rhs.demandPump;
     degF = rhs.degF;
     ThermostatMethod = rhs.ThermostatMethod;
     ThermostatWindow = rhs.ThermostatWindow;
@@ -246,6 +280,7 @@ struct sUserSettings : public CESP32_NVStorage {
     FrameRate = rhs.FrameRate;
     cyclic = rhs.cyclic;
     HomeMenu = rhs.HomeMenu;
+    JSON = rhs.JSON;
     return *this;
   }
 };

@@ -27,6 +27,9 @@ extern const BITMAP_INFO AmbientThermometerIconInfo;
 
 // 'ThermoPtr', 3x5px
 extern const BITMAP_INFO ThermoPtrIconInfo;
+extern const BITMAP_INFO ThermoOpenPtrIconInfo;
+extern const BITMAP_INFO ThermoPtrHighIconInfo;
+extern const BITMAP_INFO ThermoPtrLowIconInfo;
 
 // 'Bluetooth icon', 6x11px
 extern const BITMAP_INFO BluetoothIconInfo;

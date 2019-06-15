@@ -23,7 +23,7 @@
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
 #include "../Protocol/Protocol.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Utility/DebugPort.h"
 
 // Bluetooth access via HC-05 Module, using a UART
@@ -248,7 +248,7 @@ CBluetoothHC05::foldbackDesiredTemp()
   StaticJsonBuffer<32> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
-	if(foldbackModerator.addJson("TempDesired", getSetTemp(), root)) { 
+	if(foldbackModerator.addJson("TempDesired", getTemperatureDesired(), root)) { 
     char opStr[32];
 		root.printTo(opStr);
     send(opStr);

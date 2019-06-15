@@ -22,7 +22,7 @@
 #include "128x64OLED.h"
 #include "OtherOptionsScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/GPIO.h"

@@ -30,9 +30,9 @@
 
 #include "PasswordScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
 #include "../Wifi/BTCWifi.h"
 #include "fonts/Arial.h"
+#include "../Utility/macros.h"
 
 
 CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 

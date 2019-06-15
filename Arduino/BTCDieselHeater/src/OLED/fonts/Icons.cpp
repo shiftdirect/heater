@@ -142,6 +142,32 @@ const unsigned char thermoPtr [] PROGMEM = {
 };
 const BITMAP_INFO ThermoPtrIconInfo(3, 5, thermoPtr);
 
+// 'ThermoPtr', 3x5px
+const unsigned char thermoOpenPtr [] PROGMEM = {
+  0x80, //   #
+  0x40, //    #
+  0x20, //     #
+  0x40, //    #
+  0x80  //   #
+};
+const BITMAP_INFO ThermoOpenPtrIconInfo(3, 5, thermoOpenPtr);
+
+// 'ThermoPtrHigh', 4x3px
+const unsigned char thermoPtrHigh [] PROGMEM = {
+  0xf0, //   ####
+  0x30, //     ##
+  0x10  //      #
+};
+const BITMAP_INFO ThermoPtrHighIconInfo(4, 3, thermoPtrHigh);
+
+// 'ThermoPtrLow', 4x3px
+const unsigned char thermoPtrLow [] PROGMEM = {
+  0x10, //      #
+  0x30, //     ##
+  0xf0  //   ####
+};
+const BITMAP_INFO ThermoPtrLowIconInfo(4, 3, thermoPtrLow);
+
 // 'Bluetooth icon', 6x11px
 const unsigned char BTicon [] PROGMEM = {
   0x20, //   #

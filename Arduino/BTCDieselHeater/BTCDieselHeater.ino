@@ -97,7 +97,7 @@
 #include "src/Protocol/Protocol.h"
 #include "src/Protocol/TxManage.h"
 #include "src/Protocol/SmartError.h"
-#include "src/Protocol/helpers.h"
+#include "src/Utility/helpers.h"
 #include "src/Utility/NVStorage.h"
 #include "src/Utility/DebugPort.h"
 #include "src/Utility/UtilClasses.h"
@@ -118,8 +118,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 23;
-const int FirmwareSubRevision = 1;
-const char* FirmwareDate = "6 Jun 2019";
+const int FirmwareSubRevision = 2;
+const char* FirmwareDate = "16 Jun 2019";
 
 
 #ifdef ESP32
@@ -144,6 +144,8 @@ void checkDisplayUpdate();
 void checkDebugCommands();
 void manageCyclicMode();
 void doStreaming();
+void heaterOn();
+void heaterOff();
 
 // DS18B20 temperature sensor support
 OneWire  ds(15);  // on pin 5 (a 4.7K resistor is necessary)
@@ -376,6 +378,7 @@ void setup() {
   
   NVstore.init();
   NVstore.load();
+  
   initMQTTJSONmoderator();   // prevents JSON for MQTT unless requested
   initTimerJSONmoderator();  // prevents JSON for timers unless requested
 
@@ -423,7 +426,7 @@ void setup() {
   TxManage.begin(); // ensure Tx enable pin is setup
 
   // define defaults should OEM controller be missing
-  DefaultBTCParams.setTemperature_Desired(23);
+  DefaultBTCParams.setHeaterDemand(23);
   DefaultBTCParams.setTemperature_Actual(22);
   DefaultBTCParams.setSystemVoltage(12.0);
   DefaultBTCParams.setPump_Min(1.6f);
@@ -815,7 +818,7 @@ void manageCyclicMode()
   const sCyclicThermostat& cyclic = NVstore.getCyclicMode();
   if(cyclic.Stop && bUserON) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
-    float deltaT = fFilteredTemperature - getSetTemp();
+    float deltaT = fFilteredTemperature - getTemperatureDesired();
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
 
     // ensure we cancel user ON mode if heater throws an error
@@ -898,18 +901,6 @@ void heaterOff()
   SmartError.inhibit();
 }
 
-void ToggleOnOff()
-{
-  if(primaryHeaterData.getRunState()) {
-    DebugPort.println("ToggleOnOff: Heater OFF");
-    requestOff();
-  }
-  else {
-    DebugPort.println("ToggleOnOff: Heater ON");
-    requestOn();
-  }
-}
-
 
 bool reqTemp(unsigned char newTemp)
 {
@@ -923,9 +914,13 @@ bool reqTemp(unsigned char newTemp)
   if(newTemp <= min)
     newTemp = min;
   
-  // seta nd save the temperature to NV storage
+  // set and save the demand to NV storage
+  // note that we now maintain fixed Hz and Thermostat set points seperately
   sUserSettings settings = NVstore.getUserSettings();
-  settings.desiredTemperature = newTemp;
+  if(getThermostatModeActive())
+    settings.demandDegC = newTemp;
+  else 
+    settings.demandPump = newTemp;
   NVstore.setUserSettings(settings);
   NVstore.save();
 
@@ -935,14 +930,13 @@ bool reqTemp(unsigned char newTemp)
 
 bool reqTempDelta(int delta)
 {
-  unsigned char newTemp = getSetTemp() + delta;
+  unsigned char newTemp;
+  if(getThermostatModeActive()) 
+    newTemp = NVstore.getUserSettings().demandDegC + delta;
+  else
+    newTemp = NVstore.getUserSettings().demandPump + delta;
 
   return reqTemp(newTemp);
-}
-
-int getSetTemp()
-{
-  return NVstore.getUserSettings().desiredTemperature;
 }
 
 bool reqThermoToggle()
@@ -1005,10 +999,10 @@ void reqPumpPrime(bool on)
 float getTemperatureDesired()
 {
   if(bHasOEMController) {
-    return getHeaterInfo().getTemperature_Desired();
+    return getHeaterInfo().getHeaterDemand();
   }
   else {
-    return NVstore.getUserSettings().desiredTemperature;
+    return NVstore.getUserSettings().demandDegC;
   }
 }
 

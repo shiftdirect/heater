@@ -32,7 +32,7 @@
 #include "TimerManager.h"
 #include "Clock.h"
 #include "../Utility/NVStorage.h"
-#include "../Protocol/helpers.h"
+#include "../Utility/helpers.h"
 
 uint8_t CTimerManager::weekTimerIDs[7][CTimerManager::_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
 

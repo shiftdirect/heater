@@ -30,9 +30,9 @@
 
 #include "SetClockScreen.h"
 #include "KeyPad.h"
-#include "../Protocol/helpers.h"
 #include "fonts/Arial.h"
 #include "../RTC/Clock.h"
+#include "../Utility/macros.h"
 
 
 CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
