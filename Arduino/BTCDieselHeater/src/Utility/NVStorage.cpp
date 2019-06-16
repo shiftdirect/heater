@@ -44,9 +44,11 @@ sNVStore::init()
 {
   heaterTuning.init();
   userSettings.init();
-  for(int i=0; i<2; i++) {
-    timer[i].init();
+  
+  for(int i=0; i<14; i++) {
+    timer[i].init(i);
   }
+
   MQTT.init();
   Credentials.init();
 }
@@ -216,9 +218,7 @@ CESP32HeaterStorage::~CESP32HeaterStorage()
 void
 CESP32HeaterStorage::init()
 {
-  for(int i=0; i<14; i++) {
-    _calValues.timer[i].timerID = i;   // each instance needs a unique ID
-  }
+  _calValues.init();
 }
 
 void 

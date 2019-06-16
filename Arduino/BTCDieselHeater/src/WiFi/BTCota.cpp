@@ -97,8 +97,8 @@ void DoOTA()
   if(tDelta > 0) {  
 //    FOTAtime = millis() + 6000;  // 6 seconds
 //    FOTAtime = millis() + 60000;  // 60 seconds
-    FOTAtime = millis() + 600000;  // 10 minutes
-//    FOTAtime = millis() + 3600000;  // 1 hour
+//    FOTAtime = millis() + 600000;  // 10 minutes
+    FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
       FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
       DebugPort.println("Checking for new firmware...");

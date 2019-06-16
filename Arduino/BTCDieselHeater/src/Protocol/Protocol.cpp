@@ -440,17 +440,25 @@ CProtocolPackage::reportFrames(bool isOEM)
 }
 
 int   
-CProtocolPackage::getErrState() const 
+CProtocolPackage::getErrState() const
 { 
+  static int CommsErrHoldoff = 5;
+
   if(getBlueWireStat() & 0x01) {
-    return 8; // force E-07 - we're not seeing heater data
+    if(CommsErrHoldoff)
+      CommsErrHoldoff--;    // expire holdoff events, don't be too trigger happy on comms error
+    else
+      return 8;              // persistently not seeing heater data - force E-07 
   }
   else {
-    int smartErr = getSmartError();
-    if(smartErr)
-      return smartErr;
-    else
-      return Heater.getErrState(); 
+    CommsErrHoldoff = 5;
   }
+
+  int smartErr = getSmartError();
+  if(smartErr)
+    return smartErr;
+  else
+    return Heater.getErrState(); 
+ 
 }
 

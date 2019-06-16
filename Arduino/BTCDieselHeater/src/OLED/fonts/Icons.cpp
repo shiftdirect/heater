@@ -512,7 +512,7 @@ const uint8_t PROGMEM verticalRepeatIcon [] =
   0x20, //   #  
   0x20, //   #    
 };
-const BITMAP_INFO VerticalRepeatIconInfo(15, 5, verticalRepeatIcon);
+const BITMAP_INFO VerticalRepeatIconInfo(5, 15, verticalRepeatIcon);
 
 const uint8_t PROGMEM GPIO1OFFIcon[]  =
 {

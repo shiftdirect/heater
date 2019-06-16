@@ -121,6 +121,9 @@ CScreenHeader::animate()
         break;
     }
   }
+  else {
+    showTimers();
+  }
 
   showWifiIcon();
 

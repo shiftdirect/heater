@@ -63,7 +63,7 @@ struct sTimer : public CESP32_NVStorage {
     temperature = rhs.temperature;
     timerID = rhs.timerID;
   }
-  void init() {
+  void init(int idx) {
     start.hour = 0;
     start.min = 0;
     stop.hour = 0;
@@ -71,6 +71,7 @@ struct sTimer : public CESP32_NVStorage {
     enabled = 0;
     repeat = 0;
     temperature = 22;
+    timerID = idx;
   }
   bool valid() {
     bool retval = true;
