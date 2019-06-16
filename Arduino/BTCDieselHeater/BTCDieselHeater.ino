@@ -823,8 +823,8 @@ void manageCyclicMode()
 
     // ensure we cancel user ON mode if heater throws an error
     int errState = getHeaterInfo().getErrState();
-    if(errState > 1 && errState < 12) {
-      // excludes errors 0,1(OK) & 12(Retry)
+    if((errState > 1) && (errState < 12) && (errState != 8)) {
+      // excludes errors 0,1(OK), 12(E1-11,Retry) & 8(E-07,Comms Error)
       DebugPort.println("CYCLIC MODE: cancelling user ON status"); 
       requestOff();   // forcibly cancel cyclic operation - pretend user pressed OFF
     }

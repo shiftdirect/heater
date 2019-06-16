@@ -371,36 +371,36 @@ CProtocolPackage::getRunStateStr() const
 
 
 const char* Errstates [] PROGMEM = {
-  "",
-  "",
-  "Low voltage",     // E-01
-  "High voltage",    // E-02
-  "Glow plug fault", // E-03
-  "Pump fault",      // E-04
-  "Overheat",        // E-05
-  "Motor fault",     // E-06
-  "Comms fault",     // E-07
-  "Flame out",       // E-08
-  "Temp sense",      // E-09
-  "Ignition fail",   // E-10          SmartError manufactured state - sensing runstate 2 -> >5
-  "Failed 1st ignition attempt",  // E-11  SmartError manufactured state - sensing runstate 2 -> 3
+  "",                // [0] 
+  "",                // [1] 
+  "Low voltage",     // [2] E-01
+  "High voltage",    // [3] E-02
+  "Glow plug fault", // [4] E-03
+  "Pump fault",      // [5] E-04
+  "Overheat",        // [6] E-05
+  "Motor fault",     // [7] E-06
+  "Comms fault",     // [8] E-07
+  "Flame out",       // [9] E-08
+  "Temp sense",      // [10] E-09
+  "Ignition fail",   // [11] E-10          SmartError manufactured state - sensing runstate 2 -> >5
+  "Failed 1st ignition attempt",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
   "Unknown error?"   // mystery code!
 };
 
 const char* ErrstatesEx [] PROGMEM = {
-  "E-00: OK",
-  "E-00: OK",
-  "E-01: Low voltage",     // E-01
-  "E-02: High voltage",    // E-02
-  "E-03: Glow plug fault", // E-03
-  "E-04: Pump fault",      // E-04
-  "E-05: Overheat",        // E-05
-  "E-06: Motor fault",     // E-06
-  "E-07: No heater comms", // E-07
-  "E-08: Flame out",       // E-08
-  "E-09: Temp sense",      // E-09
-  "E-10: Ignition fail",   // E-10  SmartError manufactured state - sensing runstate 2 -> >5
-  "E-11: Failed 1st ignition attempt",  // E-11  SmartError manufactured state - sensing runstate 2 -> 3
+  "E-00: OK",              // [0] 
+  "E-00: OK",              // [1]
+  "E-01: Low voltage",     // [2] E-01
+  "E-02: High voltage",    // [3] E-02
+  "E-03: Glow plug fault", // [4] E-03
+  "E-04: Pump fault",      // [5] E-04
+  "E-05: Overheat",        // [6] E-05
+  "E-06: Motor fault",     // [7] E-06
+  "E-07: No heater comms", // [8] E-07
+  "E-08: Flame out",       // [9] E-08
+  "E-09: Temp sense",      // [10] E-09
+  "E-10: Ignition fail",   // [11] E-10  SmartError manufactured state - sensing runstate 2 -> >5
+  "E-11: Failed 1st ignition attempt",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
   "Unknown error?"   // mystery code!
 };
 
