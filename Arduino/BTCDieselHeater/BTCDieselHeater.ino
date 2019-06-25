@@ -108,6 +108,7 @@
 #include "src/OLED/keypad.h"
 #include <DallasTemperature.h>
 #if USE_SPIFFS == 1  
+#include <esp_spiffs.h>
 #include <SPIFFS.h>
 #endif
 
@@ -274,6 +275,7 @@ const char* print18B20Address(DeviceAddress deviceAddress)
 #if USE_SPIFFS == 1  
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels) 
 {
+
   DebugPort.printf("Listing directory: %s\r\n", dirname);
 
   File root = fs.open(dirname);
@@ -308,7 +310,16 @@ void interruptReboot()
 }
 
 void setup() {
+
   char msg[128];
+
+  // initially, ensure the GPIO outputs are not activated during startup
+  // (GPIO2 tends to be one with default chip startup)
+  pinMode(GPIOout1_pin, OUTPUT);  
+  pinMode(GPIOout2_pin, OUTPUT);  
+  digitalWrite(GPIOout1_pin, LOW);
+  digitalWrite(GPIOout2_pin, LOW);
+
   TempSensor.begin();
 
   // initialise TelnetSpy (port 23) as well as Serial to 115200 
@@ -337,6 +348,7 @@ void setup() {
   }
   else {
     DebugPort.println("Mounted SPIFFS OK");
+    DebugPort.printf("SPIFFS usage: %ld/%ld\r\n", SPIFFS.usedBytes(), SPIFFS.totalBytes());
     listDir(SPIFFS, "/", 2);
   }
 #endif
