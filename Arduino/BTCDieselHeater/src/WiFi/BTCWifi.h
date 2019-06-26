@@ -45,4 +45,4 @@
   void wifiFactoryDefault();
   int  isWifiButton();
 
-#endif __BTCWIFI_H__
+#endif // __BTCWIFI_H__

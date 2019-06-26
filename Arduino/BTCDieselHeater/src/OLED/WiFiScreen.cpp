@@ -147,7 +147,6 @@ CWiFiScreen::show()
 bool
 CWiFiScreen::animate()
 {
-  bool retval = false;
   // show next/prev menu navigation line
   if(_rowSel == 0) {
     _printMenuText(_display.xCentre(), 53, " \021               \020 ", true, eCentreJustify);

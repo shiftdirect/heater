@@ -86,7 +86,6 @@ CBasicScreen::show()
   
   if(_showModeTime) {
     const int border = 3;
-    const int radius = 4;
     // Show selection between Fixed or Thermostat mode
     long tDelta = millis() - _showModeTime;
     if(tDelta < 0) {

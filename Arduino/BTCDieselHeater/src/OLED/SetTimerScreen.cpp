@@ -316,7 +316,6 @@ CSetTimerScreen::keyHandler(uint8_t event)
 void 
 CSetTimerScreen::_adjust(int dir)
 {
-  int days;
   int maskDOW = 0x01 << _colSel;  // if doing Day of Week - (_rowSel == 2)  
 
   switch(_colSel) {

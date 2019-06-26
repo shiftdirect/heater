@@ -136,6 +136,8 @@ CScreen::_adjustExtents(CRect& extents, eJUSTIFY justify, const char* str)
 {
   _display.getTextExtents(str, extents);
   switch(justify) {
+    case eLeftJustify:
+      break;
     case eCentreJustify:
       extents.xPos -= extents.width/2;
       break;

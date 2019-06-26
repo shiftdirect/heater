@@ -61,7 +61,7 @@ void interpretJsonCommand(char* pLine)
 	for(it = obj.begin(); it != obj.end(); ++it) {
 
 		if(strcmp("TempDesired", it->key) == 0) {
-      if(!reqTemp(it->value.as<unsigned char>())) {  // this request is blocked if OEM controller active
+      if( !reqTemp(it->value.as<unsigned char>(), false) ) {  // this request is blocked if OEM controller active
         JSONmoderator.reset("TempDesired");
       }
 		}

@@ -70,7 +70,7 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   String contentType = getContentType(path);            // Get the MIME type
   if (SPIFFS.exists(path)) {                            // If the file exists
     File file = SPIFFS.open(path, "r");                 // Open it
-    size_t sent = server.streamFile(file, contentType); // And send it to the client
+    server.streamFile(file, contentType); // And send it to the client
     file.close();                                       // Then close the file again
     return true;
   }
@@ -401,7 +401,7 @@ void initWebServer(void) {
   server.onNotFound([]() 
   {                                                      // If the client requests any URI
     if (!handleFileRead(server.uri())) {                  // send it if it exists
-      DebugPort.printf("WEB: NOT FOUND : %s\r\n", server.uri());
+      DebugPort.printf("WEB: NOT FOUND : %s\r\n", server.uri().c_str());
       server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
     }
   });
@@ -423,6 +423,7 @@ bool doWebServer(void)
 {
 	webSocket.loop();
 	server.handleClient();
+  return true;
 }
 
 bool isWebServerClientChange() 

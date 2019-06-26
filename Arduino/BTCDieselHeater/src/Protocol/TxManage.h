@@ -40,6 +40,7 @@ public:
   const CProtocol& getFrame() const { return m_TxFrame; };
 
 private:
+  HardwareSerial& m_BlueWireSerial;
   CProtocol m_TxFrame;
   bool m_bOnReq;
   bool m_bOffReq;
@@ -47,7 +48,6 @@ private:
   int  m_nTxGatePin;
   unsigned char _rawCommand;
   unsigned long m_nStartTime;
-  HardwareSerial& m_BlueWireSerial;
 
 };
 

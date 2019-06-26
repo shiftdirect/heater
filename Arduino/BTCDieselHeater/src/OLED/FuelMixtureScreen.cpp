@@ -66,7 +66,6 @@ CFuelMixtureScreen::show()
 {
   char str[16];
   int xPos, yPos;
-  const int col2 = 90;
   const int col3 = _display.width() - border;
 
   _display.clearDisplay();

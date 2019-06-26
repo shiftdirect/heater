@@ -130,8 +130,6 @@ C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t
   DBG(pr); DBG(F(" fg=")); DBG(color); DBG(F(" bg=")); DBGln(bg);
 #endif
 
-	uint16_t char2print = c;
-
   if(c >= pFontDescriptor->StartChar && c <= pFontDescriptor->EndChar) {
 
 #ifdef DEBUG_FONT

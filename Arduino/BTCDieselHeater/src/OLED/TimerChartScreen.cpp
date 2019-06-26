@@ -87,7 +87,6 @@ CTimerChartScreen::show()
 
 
   for(int dow = 0; dow < 7; dow++) {
-    int day = 0x01 << dow;
     int ypos = dow*linespacing + 7;  // top of first line
     int pixel = 0;
     int subpixel = 0;

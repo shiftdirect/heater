@@ -155,7 +155,6 @@ CPasswordScreen::_showPassword()
     _display.getTextExtents("X", extents);
     int charWidth = extents.width;
     _display.getTextExtents(" ", extents);
-    int spaceWidth = extents.width;
 
     for(int idx =0 ; idx < 4; idx++) {
 

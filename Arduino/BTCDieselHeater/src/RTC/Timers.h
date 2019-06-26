@@ -36,6 +36,7 @@ struct sHourMin {
   sHourMin& operator=(const sHourMin& rhs) {
     hour = rhs.hour;
     min = rhs.min;
+    return *this;
   }
   bool operator!=(const sHourMin& rhs) {
     return (hour != rhs.hour) || (min != rhs.min);
@@ -62,6 +63,7 @@ struct sTimer : public CESP32_NVStorage {
     repeat = rhs.repeat;
     temperature = rhs.temperature;
     timerID = rhs.timerID;
+    return *this;
   }
   void init(int idx) {
     start.hour = 0;

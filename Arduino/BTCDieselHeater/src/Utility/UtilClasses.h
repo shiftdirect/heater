@@ -61,8 +61,13 @@ public:
   bool checkValidStart(unsigned char val);
   void setDelay(int ms);
   bool delayExpired();
-  bool toggleReporting() { _report = !_report; };
-  bool isReporting() {return _report != 0;};
+  bool toggleReporting() { 
+    _report = !_report; 
+    return isReporting();
+  };
+  bool isReporting() {
+    return _report != 0;
+  };
 };
 
 
@@ -76,6 +81,7 @@ public:
   }
   void reset() {
     newData = false;
+    Value = 0;
   }
   void setValue(int value) {
     newData = true;
@@ -135,7 +141,7 @@ public:
   };
   void report() {
     prevTime = millis();
-    DebugPort.printf("%8dlms ", prevTime - refTime);
+    DebugPort.printf("%8ldms ", prevTime - refTime);
   };
 };
 

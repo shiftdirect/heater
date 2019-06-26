@@ -31,7 +31,7 @@ struct sGPIO;
 extern void  requestOn();
 extern void  requestOff();
 extern bool  reqTempDelta(int delta);
-extern bool  reqTemp(unsigned char newTemp);
+extern bool  reqTemp(unsigned char newTemp, bool save=true);
 extern bool  reqThermoToggle();
 extern bool  setThermostatMode(unsigned char);
 extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC: or our NV

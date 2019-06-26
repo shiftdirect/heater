@@ -339,6 +339,7 @@ public:
   void setCredentials(const sCredentials& info);
   CHeaterStorage& operator=(const CHeaterStorage& rhs) {
     _calValues = rhs._calValues;
+    return *this;
   }
   void setUserSettings(const sUserSettings& info);
   void setHeaterTuning(const sHeaterTuning& info);

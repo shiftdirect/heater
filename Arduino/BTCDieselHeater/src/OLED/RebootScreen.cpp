@@ -53,7 +53,7 @@ CRebootScreen::show()
   char msg[20];
   char fillmsg[20];
   memset(fillmsg, ' ', 20);
-  sprintf(msg, " REBOOT %d ", tDelta);
+  sprintf(msg, " REBOOT %ld ", tDelta);
   fillmsg[strlen(msg)] = 0;
 
   _printInverted(_display.xCentre(), yPos, fillmsg, true, eCentreJustify); 

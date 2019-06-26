@@ -71,8 +71,6 @@ CSetClockScreen::show()
 
     char str[16];
     int xPos, yPos;
-    const int col2 = 90;
-    const int col3 = _display.width() - border;
 
     _printInverted(0, 15, " Set Clock ", true);
 
@@ -226,7 +224,6 @@ CSetClockScreen::keyHandler(uint8_t event)
 void 
 CSetClockScreen::_adjTimeDate(int dir)
 {
-  int days;
   switch(_rowSel) {
     case 1:
       working.adjustDay(dir);

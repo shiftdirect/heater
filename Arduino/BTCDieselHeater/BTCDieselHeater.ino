@@ -119,8 +119,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 23;
-const int FirmwareSubRevision = 2;
-const char* FirmwareDate = "16 Jun 2019";
+const int FirmwareSubRevision = 3;
+const char* FirmwareDate = "25 Jun 2019";
 
 
 #ifdef ESP32
@@ -156,6 +156,7 @@ long lastTemperatureTime;            // used to moderate DS18B20 access
 float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
 const float fAlpha = 0.95;           // exponential mean alpha
 int DS18B20holdoff = 2;
+int DS18B20holdon = 0;
 int BoardRevision = 0;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
@@ -296,7 +297,7 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels)
         listDir(fs, file.name(), levels - 1);
       }
     } else {
-      DebugPort.printf("  FILE: %s SIZE: %ld\r\n", file.name(), file.size());
+      DebugPort.printf("  FILE: %s SIZE: %d\r\n", file.name(), file.size());
     }
     file = root.openNextFile();
   }
@@ -311,8 +312,6 @@ void interruptReboot()
 
 void setup() {
 
-  char msg[128];
-
   // initially, ensure the GPIO outputs are not activated during startup
   // (GPIO2 tends to be one with default chip startup)
   pinMode(GPIOout1_pin, OUTPUT);  
@@ -326,9 +325,11 @@ void setup() {
   // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
   
-  DebugPort.setWelcomeMsg("*************************************************\r\n"
+  DebugPort.setWelcomeMsg((char*)(
+                          "*************************************************\r\n"
                           "* Connected to BTC heater controller debug port *\r\n"
-                          "*************************************************\r\n");
+                          "*************************************************\r\n"
+                          ));
   DebugPort.setBufferSize(8192);
   DebugPort.begin(115200);
   DebugPort.println("_______________________________________________________________");
@@ -348,7 +349,7 @@ void setup() {
   }
   else {
     DebugPort.println("Mounted SPIFFS OK");
-    DebugPort.printf("SPIFFS usage: %ld/%ld\r\n", SPIFFS.usedBytes(), SPIFFS.totalBytes());
+    DebugPort.printf("SPIFFS usage: %d/%d\r\n", SPIFFS.usedBytes(), SPIFFS.totalBytes());
     listDir(SPIFFS, "/", 2);
   }
 #endif
@@ -779,12 +780,13 @@ void loop()
       // update temperature reading, 
       // synchronised with serial reception as interrupts do get disabled in the OneWire library
       tDelta = timenow - lastTemperatureTime;
-      if(tDelta > TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
-        lastTemperatureTime += TEMPERATURE_INTERVAL;    // reset time to observe temeprature        
+      if(tDelta > MIN_TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
+        lastTemperatureTime = millis();    // reset time to observe temeprature        
         fTemperature = TempSensor.getTempCByIndex(0);   // read sensor
         // DebugPort.printf("DS18B20 = %f\r\n", fTemperature);
         // initialise filtered temperature upon very first pass
         if(fTemperature > -80) {                       // avoid disconnected sensor readings being integrated
+          DS18B20holdon = 0;
           if(DS18B20holdoff)
             DS18B20holdoff--;                            // first value upon sensor connect is bad
           else {
@@ -798,8 +800,14 @@ void loop()
           }
         }
         else {
-          DS18B20holdoff = 2;
-          fFilteredTemperature = -100;
+          DS18B20holdon++;
+          if(DS18B20holdon > 2) {
+            DS18B20holdon = 2;
+            if(!DS18B20holdoff)
+              DebugPort.println("\007DS18B20 sensor removed?");
+            DS18B20holdoff = 2;
+            fFilteredTemperature = -100;
+          }
         }
         TempSensor.requestTemperatures();               // prep sensor for future reading
 
@@ -914,7 +922,7 @@ void heaterOff()
 }
 
 
-bool reqTemp(unsigned char newTemp)
+bool reqTemp(unsigned char newTemp, bool save)
 {
   if(bHasOEMController)
     return false;
@@ -934,6 +942,7 @@ bool reqTemp(unsigned char newTemp)
   else 
     settings.demandPump = newTemp;
   NVstore.setUserSettings(settings);
+  if(save)
   NVstore.save();
 
   ScreenManager.reqUpdate();
@@ -1090,8 +1099,10 @@ void checkDebugCommands()
 {
   // check for test commands received from PC Over USB
   if(DebugPort.available()) {
+#ifdef PROTOCOL_INVESTIGATION    
     static int mode = 0;
     static int val = 0;
+#endif
 
     char rxVal = DebugPort.read();
 
@@ -1355,8 +1366,8 @@ void ShowOTAScreen(int percent, eOTAmodes updateType)
 void feedWatchdog()
 {
   uint64_t timeRem = timerRead(watchdogTimer);
-  if(timeRem > 100000)  // 100ms
-    DebugPort.printf("WD time = %lld\r\n", timeRem);  // print longer WD intervals
+  if(timeRem > 500000)  // 500ms
+    DebugPort.printf("\007WD time = %lld\r\n", timeRem);  // print longer WD intervals
 
   timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
 }

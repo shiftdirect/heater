@@ -80,9 +80,9 @@ bool TModerator<T>::shouldSend(const char* name, T value)
 template<class T>
 bool TModerator<T>::addJson(const char* name, T value, JsonObject& root) 
 {
-  bool retval;
-  if( retval = shouldSend(name, value ) ) 
-	  root.set(name, value);
+  bool retval = shouldSend(name, value);
+  if(retval)
+    root.set(name, value);
   return retval;
 }
 

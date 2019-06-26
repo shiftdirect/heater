@@ -79,8 +79,6 @@ CDetailedScreen::show()
 {
   CScreenHeader::show();
 
-  const char* c = String(getTemperatureSensor()).c_str();
-  
   int runstate = getHeaterInfo().getRunStateEx();
   int errstate = getHeaterInfo().getErrState(); 
   if(errstate) errstate--;  // correct for +1 biased return value
