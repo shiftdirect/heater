@@ -86,8 +86,6 @@
 */
 
 //#include "src/WiFi/ABMqtt.h"
-#include <OneWire.h>
-#include <Wire.h>
 #include "src/cfg/BTCConfig.h"
 #include "src/cfg/pins.h"
 #include "src/RTC/Timers.h"
@@ -106,7 +104,9 @@
 #include "src/Utility/BoardDetect.h"
 #include "src/OLED/ScreenManager.h"
 #include "src/OLED/keypad.h"
-#include <DallasTemperature.h>
+#include "src/Utility/TempSense.h"
+#include <rom/rtc.h>
+
 #if USE_SPIFFS == 1  
 #include <esp_spiffs.h>
 #include <SPIFFS.h>
@@ -119,8 +119,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 23;
-const int FirmwareSubRevision = 3;
-const char* FirmwareDate = "25 Jun 2019";
+const int FirmwareSubRevision = 4;
+const char* FirmwareDate = "29 Jun 2019";
 
 
 #ifdef ESP32
@@ -149,14 +149,13 @@ void heaterOn();
 void heaterOff();
 
 // DS18B20 temperature sensor support
-OneWire  ds(15);  // on pin 5 (a 4.7K resistor is necessary)
-DallasTemperature TempSensor(&ds);
-DeviceAddress tempSensorAddress;
+// Uses the RMT timeslot driver to operate as a one-wire bus
+CTempSense TempSensor;
 long lastTemperatureTime;            // used to moderate DS18B20 access
 float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
 const float fAlpha = 0.95;           // exponential mean alpha
 int DS18B20holdoff = 2;
-int DS18B20holdon = 0;
+
 int BoardRevision = 0;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
@@ -180,7 +179,12 @@ long lastRxTime;                     // used to observe inter character delays
 bool bHasOEMController = false;
 bool bHasOEMLCDController = false;
 bool bHasHtrData = false;
-bool bUserON = false;
+
+// these variables will persist over a soft reboot.
+__NOINIT_ATTR bool bForceInit; // = false;
+__NOINIT_ATTR bool bUserON; // = false;
+__NOINIT_ATTR uint8_t demandDegC;
+__NOINIT_ATTR uint8_t demandPump;
 
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
@@ -260,19 +264,6 @@ void parentKeyHandler(uint8_t event)
 }
 
 
-const char* print18B20Address(DeviceAddress deviceAddress)
-{
-  static char addrStr[32];
-  addrStr[0] = 0;
-  for (uint8_t i = 0; i < 8; i++)
-  {
-    char subset[8];
-    sprintf(subset, "%02X%c", deviceAddress[i], i<7 ? ':' : ' ');
-    strcat(addrStr, subset);
-  }
-  return addrStr;
-}
-
 #if USE_SPIFFS == 1  
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels) 
 {
@@ -312,14 +303,19 @@ void interruptReboot()
 
 void setup() {
 
+  // ensure proper initialisation of persistent vars after power on
+  if(rtc_get_reset_reason(0) == 1 || bForceInit) {
+    bForceInit = false;
+    bUserON = false;   
+    demandPump = demandDegC = 22;
+  }
+
   // initially, ensure the GPIO outputs are not activated during startup
   // (GPIO2 tends to be one with default chip startup)
   pinMode(GPIOout1_pin, OUTPUT);  
   pinMode(GPIOout2_pin, OUTPUT);  
   digitalWrite(GPIOout1_pin, LOW);
   digitalWrite(GPIOout2_pin, LOW);
-
-  TempSensor.begin();
 
   // initialise TelnetSpy (port 23) as well as Serial to 115200 
   // Serial is the usual USB connection to a PC
@@ -334,9 +330,17 @@ void setup() {
   DebugPort.begin(115200);
   DebugPort.println("_______________________________________________________________");
   
-  DebugPort.println("DS18B20 status dump");
-  DebugPort.printf("  Temperature for device#1 (idx 0) is: %.1f\r\n", TempSensor.getTempCByIndex(0));
+  DebugPort.printf("Reset reason: core0:%d, core1:%d\r\n", rtc_get_reset_reason(0), rtc_get_reset_reason(0));
+  DebugPort.printf("Previous user ON = %d\r\n", bUserON);   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
+  // initialise DS18B20 sensor interface
+  TempSensor.begin(DS18B20_Pin);
+  TempSensor.startConvert();  // kick off initial temperature sample
+
+
+  lastTemperatureTime = millis();
+  lastAnimationTime = millis();
+  
   BoardRevision = BoardDetect();
   DebugPort.printf("Board revision: V%.1f\r\n", float(BoardRevision) * 0.1);
 
@@ -354,41 +358,6 @@ void setup() {
   }
 #endif
 
-  // locate devices on the bus
-  DebugPort.print("Locating DS18B20 devices...");
-  
-  // initialise DS18B20 temperature sensor(s)
-    // Grab a count of devices on the wire
-  int numberOfDevices = TempSensor.getDeviceCount();
-  
-  DebugPort.printf("  Found %d devices\r\n", numberOfDevices);
-
-  // report parasite power requirements
-  DebugPort.printf("  Parasite power is: %s\r\n", TempSensor.isParasitePowerMode() ? "ON" : "OFF");
-  
-  // Loop through each device, print out address
-  for(int i=0;i<numberOfDevices; i++)
-  {
-    // Search the wire for address
-    DeviceAddress tempDeviceAddress;
-    if(TempSensor.getAddress(tempDeviceAddress, i)) {
-      DebugPort.printf("  Found DS18B20 device#%d with address: %s\r\n", i+1, print18B20Address(tempDeviceAddress));
-      
-      DebugPort.printf("  Resolution: %d bits\r\n", TempSensor.getResolution(tempDeviceAddress)); 
-    } else {
-      DebugPort.printf("  Found ghost @ device#%d, but could not detect address. Check power and cabling\r\n", i+1);
-    }
-  }
-  memset(tempSensorAddress, 0, 8);
-  if(numberOfDevices)
-    TempSensor.getAddress(tempSensorAddress, 0);
-
-  
-  TempSensor.setWaitForConversion(false);
-  TempSensor.requestTemperatures();
-  lastTemperatureTime = millis();
-  lastAnimationTime = millis();
-  
   NVstore.init();
   NVstore.load();
   
@@ -782,14 +751,14 @@ void loop()
       tDelta = timenow - lastTemperatureTime;
       if(tDelta > MIN_TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
         lastTemperatureTime = millis();    // reset time to observe temeprature        
-        fTemperature = TempSensor.getTempCByIndex(0);   // read sensor
-        // DebugPort.printf("DS18B20 = %f\r\n", fTemperature);
-        // initialise filtered temperature upon very first pass
-        if(fTemperature > -80) {                       // avoid disconnected sensor readings being integrated
-          DS18B20holdon = 0;
-          if(DS18B20holdoff)
-            DS18B20holdoff--;                            // first value upon sensor connect is bad
+
+        if(TempSensor.readTemperature(fTemperature)) {
+          if(DS18B20holdoff) {
+            DS18B20holdoff--; 
+            DebugPort.printf("Skipped initial DS18B20 reading: %f\r\n", fTemperature);
+          }                           // first value upon sensor connect is bad
           else {
+        // initialise filtered temperature upon very first pass
             if(fFilteredTemperature < -90) {            // avoid FP exactness issues - starts as -100 on boot
               fFilteredTemperature = fTemperature;       // prime with first *valid* reading
             }
@@ -800,21 +769,17 @@ void loop()
           }
         }
         else {
-          DS18B20holdon++;
-          if(DS18B20holdon > 2) {
-            DS18B20holdon = 2;
-            if(!DS18B20holdoff)
-              DebugPort.println("\007DS18B20 sensor removed?");
-            DS18B20holdoff = 2;
+          DS18B20holdoff = 3;
             fFilteredTemperature = -100;
           }
-        }
-        TempSensor.requestTemperatures();               // prep sensor for future reading
+
+        TempSensor.startConvert();  // request a new conversion, will be ready by the time we loop back around
 
         ScreenManager.reqUpdate();
       }
       updateJSONclients(bReportJSONData);
       CommState.set(CommStates::Idle);
+      NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
       break;
   }  // switch(CommState)
 
@@ -936,14 +901,10 @@ bool reqTemp(unsigned char newTemp, bool save)
   
   // set and save the demand to NV storage
   // note that we now maintain fixed Hz and Thermostat set points seperately
-  sUserSettings settings = NVstore.getUserSettings();
   if(getThermostatModeActive())
-    settings.demandDegC = newTemp;
+    demandDegC = newTemp;
   else 
-    settings.demandPump = newTemp;
-  NVstore.setUserSettings(settings);
-  if(save)
-  NVstore.save();
+    demandPump = newTemp;
 
   ScreenManager.reqUpdate();
   return true;
@@ -953,9 +914,9 @@ bool reqTempDelta(int delta)
 {
   unsigned char newTemp;
   if(getThermostatModeActive()) 
-    newTemp = NVstore.getUserSettings().demandDegC + delta;
+    newTemp = demandDegC + delta;
   else
-    newTemp = NVstore.getUserSettings().demandPump + delta;
+    newTemp = demandPump + delta;
 
   return reqTemp(newTemp);
 }
@@ -1017,13 +978,29 @@ void reqPumpPrime(bool on)
   DefaultBTCParams.setPump_Prime(on);
 }
 
+void forceBootInit()
+{
+  bForceInit = true;
+}
+
+uint8_t getDemandDegC() 
+{
+  return demandDegC;
+}
+
+uint8_t getDemandPump() 
+{
+  return demandPump;
+}
+
+
 float getTemperatureDesired()
 {
   if(bHasOEMController) {
     return getHeaterInfo().getHeaterDemand();
   }
   else {
-    return NVstore.getUserSettings().demandDegC;
+    return demandDegC;
   }
 }
 

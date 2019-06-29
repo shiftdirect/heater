@@ -216,12 +216,12 @@ void interpretJsonCommand(char* pLine)
     else if(strcmp("GPin2", it->key) == 0) {
       simulateGPIOin(it->value.as<unsigned char>() ? 0x02 : 0x00);  // simulate key 2 press
     }
-    else if(strcmp("JSONloose", it->key) == 0) {
+    else if(strcmp("JSONpack", it->key) == 0) {
       sUserSettings us = NVstore.getUserSettings();
-      uint8_t loose = it->value.as<unsigned char>() ? 0x01 : 0x00;
-      us.JSON.LF = loose;
-      us.JSON.padding = loose;
-      us.JSON.singleElement = loose;
+      uint8_t packed = it->value.as<unsigned char>() ? 0x00 : 0x01;
+      us.JSON.LF = packed;
+      us.JSON.padding = packed;
+      us.JSON.singleElement = packed;
       NVstore.setUserSettings(us);
       NVstore.save();
       resetJSONmoderator();

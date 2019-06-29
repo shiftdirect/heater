@@ -12,6 +12,8 @@
 #include <Update.h>
 #include "ArduinoJson.h"
 
+extern void forceBootInit();
+
 esp32FOTA::esp32FOTA(String firwmareType, int firwmareVersion)
 {
     _firwmareType = firwmareType;
@@ -146,6 +148,7 @@ void esp32FOTA::execOTA()
                 if (Update.isFinished())
                 {
                     Serial.println("Update successfully completed. Rebooting.");
+          forceBootInit();
                     ESP.restart();
                 }
                 else

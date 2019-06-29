@@ -309,15 +309,16 @@ void initWebServer(void) {
     }
     else {
       if(Update.hasError()) {
-        DebugPort.println("WEB: UDPATE FAIL");
+        DebugPort.println("WEB: UPDATE FAIL");
         server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
       }
       else {
-        DebugPort.println("WEB: UDPATE OK");
+        DebugPort.println("WEB: UPDATE OK");
         server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
       }
       delay(1000);
       // javascript redirects to root page so we go there after reboot!
+      forceBootInit();
       ESP.restart();                             // reboot
     }
   }, []() {

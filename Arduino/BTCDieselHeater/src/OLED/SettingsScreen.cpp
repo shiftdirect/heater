@@ -172,6 +172,10 @@ CSettingsScreen::keyHandler(uint8_t event)
 //        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);
         _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::ExThermostatUI);
       }
+      // THREE FINGER SALUTE!
+      if((event & (key_Left|key_Right|key_Centre)) == (key_Left|key_Right|key_Centre)) {
+        for(;;);  // force watchdog reboot!
+      }
     }
   }
   _ScreenManager.reqUpdate();

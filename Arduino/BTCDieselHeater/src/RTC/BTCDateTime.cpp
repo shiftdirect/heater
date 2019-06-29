@@ -43,6 +43,7 @@ BTCDateTime::operator=(const DateTime& rhs)
   hh = rhs.hour();
   mm = rhs.minute();
   ss = rhs.second();
+  return *this;
 }
 
 BTCDateTime& 
@@ -54,6 +55,7 @@ BTCDateTime::operator=(const BTCDateTime& rhs)
   hh = rhs.hh;
   mm = rhs.mm;
   ss = rhs.ss;
+  return *this;
 }
 
 void 

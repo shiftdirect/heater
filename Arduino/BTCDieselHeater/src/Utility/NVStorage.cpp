@@ -218,6 +218,7 @@ CESP32HeaterStorage::~CESP32HeaterStorage()
 void
 CESP32HeaterStorage::init()
 {
+  _bShouldSave = false;
   _calValues.init();
 }
 
@@ -235,8 +236,10 @@ CESP32HeaterStorage::load()
 }
 
 void 
-CESP32HeaterStorage::save()
+CESP32HeaterStorage::doSave()
 {
+  if(_bShouldSave) {
+    _bShouldSave = false;
   DebugPort.println("Saving to NV storage");
   _calValues.heaterTuning.save();
   for(int i=0; i<14; i++) {
@@ -245,6 +248,13 @@ CESP32HeaterStorage::save()
   _calValues.userSettings.save();
   _calValues.MQTT.save();
   _calValues.Credentials.save();
+}
+}
+
+void 
+CESP32HeaterStorage::save()
+{
+  _bShouldSave = true;   // queue request to save to NV
 }
 
 void 
@@ -322,8 +332,6 @@ sUserSettings::load()
   validatedLoad("menuTimeout", menuTimeout, 60000, 0, 300000);
   validatedLoad("degF", degF, 0, u8inBounds, 0, 1);
   validatedLoad("thermostat", useThermostat, 1, u8inBounds, 0, 1);
-  validatedLoad("demandDegC", demandDegC, 22, u8inBounds, 8, 35);
-  validatedLoad("demandPump", demandPump, 22, u8inBounds, 8, 35);
   validatedLoad("thermoMethod", ThermostatMethod, 0, u8inBounds, 0, 255);
   // catch and migrate old combined method & window
   if(ThermostatMethod & 0xFC) {
@@ -359,8 +367,6 @@ sUserSettings::save()
   preferences.putLong("dimTime", dimTime);
   preferences.putLong("menuTimeout", menuTimeout);
   preferences.putUChar("thermostat", useThermostat);
-  preferences.putUChar("demandDegC", demandDegC);
-  preferences.putUChar("demandPump", demandPump);
   preferences.putUChar("degF", degF);
   preferences.putUChar("thermoMethod", ThermostatMethod);
   preferences.putFloat("thermoWindow", ThermostatWindow);

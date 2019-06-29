@@ -27,6 +27,7 @@
 
 struct sGPIO;
 
+extern void forceBootInit();
 
 extern void  requestOn();
 extern void  requestOff();
@@ -36,7 +37,10 @@ extern bool  reqThermoToggle();
 extern bool  setThermostatMode(unsigned char);
 extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC: or our NV
 extern void  reqPumpPrime(bool on);
-float getTemperatureDesired();    // OEM: the advertised value, BTC our setpoint
+extern float getTemperatureDesired();    // OEM: the advertised value, BTC our setpoint
+extern uint8_t getDemandDegC();
+extern uint8_t getDemandPump();
+
 extern float getTemperatureSensor();
 extern void  setPumpMin(float);
 extern void  setPumpMax(float);

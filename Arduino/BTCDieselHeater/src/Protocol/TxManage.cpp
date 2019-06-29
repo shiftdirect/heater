@@ -127,19 +127,19 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     float tActual = getTemperatureSensor();
     uint8_t u8Temp = (uint8_t)(tActual + 0.5);
     m_TxFrame.setTemperature_Actual(u8Temp);  // use current temp, for now
-    m_TxFrame.setHeaterDemand(NVstore.getUserSettings().demandDegC);
+    m_TxFrame.setHeaterDemand(getDemandDegC());
     m_TxFrame.setThermostatModeProtocol(1);  // assume using thermostat control for now
 
     if(!getThermostatModeActive()) {
       m_TxFrame.setThermostatModeProtocol(0);  // not using any form of thermostat control
-      m_TxFrame.setHeaterDemand(NVstore.getUserSettings().demandPump);  // set fixed Hz demand instead
+      m_TxFrame.setHeaterDemand(getDemandPump());  // set fixed Hz demand instead
       m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
     } 
     else if(NVstore.getUserSettings().ThermostatMethod) {
       uint8_t ThermoMode = NVstore.getUserSettings().ThermostatMethod;  // get the METHOD of thermostat control
       float Window = NVstore.getUserSettings().ThermostatWindow;
       float tCurrent = getTemperatureSensor();
-      float tDesired = float(NVstore.getUserSettings().demandDegC);
+      float tDesired = float(getDemandDegC());
       float tDelta = tCurrent - tDesired;
       float fTemp;
 #ifdef DEBUG_THERMOSTAT
@@ -163,11 +163,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           u8Temp = (uint8_t)(tActual + 0.5);  // use rounded actual unless within window
           if(fabs(tDelta) < Window) {
             // hold at desired if inside window
-            u8Temp = NVstore.getUserSettings().demandDegC;   
+            u8Temp = getDemandDegC();   
           }
           else if(fabs(tDelta) <= 1.0) {
             // force outside if delta is <= 1 but greater than window
-            u8Temp = NVstore.getUserSettings().demandDegC + ((tDelta > 0) ? 1 : -1); 
+            u8Temp = getDemandDegC() + ((tDelta > 0) ? 1 : -1); 
           }
           m_TxFrame.setTemperature_Actual(u8Temp);  
 #ifdef DEBUG_THERMOSTAT

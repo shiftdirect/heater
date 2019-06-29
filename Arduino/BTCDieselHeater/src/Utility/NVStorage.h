@@ -129,9 +129,9 @@ struct sCyclicThermostat {
 
 
 struct sJSONoptions {
-  int8_t singleElement;
-  int8_t LF;
-  int8_t padding;
+  uint8_t singleElement;
+  uint8_t LF;
+  uint8_t padding;
   bool valid() {
     bool retval = true;
     retval &= singleElement <= 1;
@@ -208,8 +208,6 @@ struct sMQTTparams : public CESP32_NVStorage {
 struct sUserSettings : public CESP32_NVStorage {
   long dimTime;
   long menuTimeout;
-  uint8_t demandDegC;
-  uint8_t demandPump;
   uint8_t degF;
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   float   ThermostatWindow;   
@@ -226,8 +224,6 @@ struct sUserSettings : public CESP32_NVStorage {
     bool retval = true;
     retval &= INBOUNDS(dimTime, -600000, 600000);  // +/- 10 mins
     retval &= INBOUNDS(menuTimeout, 0, 300000);  // 5 mins
-    retval &= INBOUNDS(demandDegC, 8, 35);
-    retval &= INBOUNDS(demandPump, 8, 35);
     retval &= (degF == 0) || (degF == 1);
     retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
     retval &= INBOUNDS(ThermostatWindow, 0.2f, 10.f);
@@ -245,8 +241,6 @@ struct sUserSettings : public CESP32_NVStorage {
   void init() {
     dimTime = 60000;
     menuTimeout = 60000;
-    demandDegC = 22;
-    demandPump = 22;
     degF = 0;
     ThermostatMethod = 0;
     ThermostatWindow = 1.0;
@@ -266,8 +260,6 @@ struct sUserSettings : public CESP32_NVStorage {
   sUserSettings& operator=(const sUserSettings& rhs) {
     dimTime = rhs.dimTime;
     menuTimeout = rhs.menuTimeout;
-    demandDegC = rhs.demandDegC;
-    demandPump = rhs.demandPump;
     degF = rhs.degF;
     ThermostatMethod = rhs.ThermostatMethod;
     ThermostatWindow = rhs.ThermostatWindow;
@@ -319,6 +311,7 @@ public:
   virtual void init() {};
   virtual void load() {};
   virtual void save() {};
+  virtual void doSave() {}
 
 
   const sCyclicThermostat& getCyclicMode() const;
@@ -348,12 +341,14 @@ public:
 
 
 class CESP32HeaterStorage : public CHeaterStorage {
+  bool _bShouldSave;
 public:
   CESP32HeaterStorage();
   virtual ~CESP32HeaterStorage();
   void init();
   void load();
   void save();
+  void doSave();
 };
 
 extern CHeaterStorage& NVstore;
