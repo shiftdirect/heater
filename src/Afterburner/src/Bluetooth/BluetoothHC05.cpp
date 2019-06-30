@@ -185,40 +185,6 @@ CBluetoothHC05::send(const char* Str)
 //    DebugPort.print("No Bluetooth client");
   }
 }
-/*
-void
-CBluetoothHC05::sendFrame(const char* pHdr, const CProtocol& Frame, bool lineterm)
-{
-  // report to debug port
-  CBluetoothAbstract::sendFrame(pHdr, Frame, false);
-
-  if(isConnected()) {
-    if(Frame.verifyCRC()) {
-      // send data frame to HC-05
-      HC05_SerialPort.print(pHdr);
-      HC05_SerialPort.write(Frame.Data, 24);
-      // toggle LED
-#if BT_LED == 1     
-      digitalWrite(LED_Pin, !digitalRead(LED_Pin)); // toggle LED
-#endif
-    }
-    else {
-      DebugPort.print("Bluetooth data not sent, CRC error ");
-    }
-  }
-  else {
-    if(lineterm) {    // only report no client if this will be at end of line (long line support)
-      DebugPort.print("No Bluetooth client");
-    }
-      // force LED off
-#if BT_LED == 1
-    digitalWrite(LED_Pin, LOW);
-#endif
-  }
-  if(lineterm)
-    DebugPort.println("");
-}
-*/
 
 void 
 CBluetoothHC05::openSerial(int baudrate)

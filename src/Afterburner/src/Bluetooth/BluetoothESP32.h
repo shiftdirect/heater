@@ -31,6 +31,8 @@ protected:
   void openSerial(int baudrate);
 };
 
+#if USE_CLASSIC_BLUETOOTH == 1
+
 class CBluetoothESP32Classic : public CBluetoothAbstract {
   BluetoothSerial SerialBT;
 public:
@@ -39,6 +41,10 @@ public:
   virtual void check();
   virtual bool isConnected();
 };
+
+#endif
+
+#if USE_BLE_BLUETOOTH == 1
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -63,3 +69,5 @@ public:
   virtual bool isConnected();
 
 };
+
+#endif

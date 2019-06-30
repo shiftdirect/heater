@@ -21,14 +21,15 @@
 
 #include <Arduino.h>
 #include "../cfg/pins.h"
+#include "../cfg/BTCConfig.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/debugport.h"
 #include "BluetoothESP32.h"
-#include "../cfg/BTCConfig.h"
 
 
 #ifdef ESP32
 
+#if USE_HC05_BLUETOOTH == 1
 /////////////////////////////////////////////////////////////////////////////////////////
 //                    HC-05 BLUETOOTH with ESP32
 //                              |
@@ -56,7 +57,7 @@ CBluetoothESP32HC05::openSerial(int baudrate)
 //                    HC-05 BLUETOOTH with ESP32
 /////////////////////////////////////////////////////////////////////////////////////////
 
-
+#endif
 
 #if USE_CLASSIC_BLUETOOTH == 1
 /////////////////////////////////////////////////////////////////////////////////////////
