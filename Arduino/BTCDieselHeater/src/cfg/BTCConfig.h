@@ -42,7 +42,6 @@
 #define USE_WIFI      1
 #define USE_OTA       1
 #define USE_WEBSERVER 1
-#define USE_SPIFFS    1  
 
 #define USE_PORTAL_TRIGGER_PIN 0
 

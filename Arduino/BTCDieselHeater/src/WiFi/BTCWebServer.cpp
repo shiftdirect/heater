@@ -32,10 +32,8 @@
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
 #include <WiFiManager.h>
-#if USE_SPIFFS == 1  
 #include <FS.H>
 #include <SPIFFS.h>
-#endif
 #include "../Utility/NVStorage.h"
 
 extern WiFiManager wm;
@@ -51,9 +49,9 @@ bool bTxWebData = false;
 bool bUpdateAccessed = false;  // flag used to ensure web update always starts via /update. direct accesses to /updatenow will FAIL
 long _SuppliedFileSize = 0;
 
-const int led = 13;
+void handleBTCNotFound();
+bool checkFile(File &file);
 
-#if USE_SPIFFS == 1  
 
 String getContentType(String filename) { // convert the file extension to the MIME type
   if (filename.endsWith(".html")) return "text/html";
@@ -70,25 +68,35 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   String contentType = getContentType(path);            // Get the MIME type
   if (SPIFFS.exists(path)) {                            // If the file exists
     File file = SPIFFS.open(path, "r");                 // Open it
-    server.streamFile(file, contentType); // And send it to the client
-    file.close();                                       // Then close the file again
+    if(!checkFile(file)) {                              // check it is readable
+      file.close();                                     // Then close the file again
+    }
+    if(!file) {
+      DebugPort.println("\tFile exists, but could not be read?");
+      String SPIFFSfmtpath = "http://" + server.client().localIP().toString() + "/formatspiffs";
+      String Updatepath = "http://" + server.client().localIP().toString() + "/update";
+    	String message = "<h1>Internal Server Error</h1>";
+      message += "<h3>Sorry, cannot open file</h3>";
+      message += "<p><b><i>" + path + "</i></b> exists, but cannot be opened?<br>";
+      message += "Recommended remedy is to re-format SPIFFS, then reload the web content.";
+      message += "<p><b>Use:<br><i><a href=\"" + SPIFFSfmtpath + "\" target=\"_blank\">" + SPIFFSfmtpath + "</a></b></i>  to format SPIFFS.";
+      message += "<p><b>Then:<br><i>" + Updatepath + "</b></i>  to upload each file of the web content.<br>";
+      message += "<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>";
+      message += "<p><b>Please ensure you unzip the web page content, then upload all the contained files.</b>";
+      server.send(500, "text/html", message);
+    }
+    else {
+      server.streamFile(file, contentType); // And send it to the client
+      file.close();                                       // Then close the file again
+    }
     return true;
   }
   DebugPort.println("\tFile Not Found");
   return false;                                         // If the file doesn't exist, return false
 }
 
-void handleBTCRoot() {
-  handleFileRead("/index.html");
-}
-#else
-void handleBTCRoot() {
-	String s = MAIN_PAGE; //Read HTML contents
-	server.send(200, "text/html", s); //Send web page
-}
-#endif
-
-void handleWMConfig() {
+void handleWMConfig() 
+{
   DebugPort.println("WEB: GET /wmconfig");
 	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
 	DebugPort.println("Starting web portal for wifi config");
@@ -96,7 +104,8 @@ void handleWMConfig() {
   wifiEnterConfigPortal(true, false, 3000);
 }
 
-void handleReset() {
+void handleReset() 
+{
   DebugPort.println("WEB: GET /resetwifi");
 	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
 	DebugPort.println("diconnecting client and wifi, then rebooting");
@@ -104,29 +113,67 @@ void handleReset() {
   wifiEnterConfigPortal(true, true, 3000);
 }
 
-void handleFormat() {
+void handleFormat() 
+{
   DebugPort.println("WEB: GET /formatspiffs");
-	server.send(200, "text/plain", "Formatting SPIFFS partition!");
+  String Updatepath = "http://" + server.client().localIP().toString() + "/update";
+	String message = "<h1>SPIFFS partition formatted</h1>";
+  message += "<h3>You must now upload the web content.</h3>";
+  message += "<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>";
+  message += "<p><b>Use:<br><i><a href=\"" + Updatepath + "\">" + Updatepath + "</a></b></i>  to then upload each file of the web content.<br>";
+  message += "<p><b>Please ensure you unzip the web page content, then upload all the contained files.</b>";
+	server.send(200, "text/html", message);
+
 	DebugPort.println("Formatting SPIFFS partition");
   delay(500);
   SPIFFS.format();
 }
 
-void handleBTCNotFound() {
-	digitalWrite(led, 1);
-	String message = "File Not Found\n\n";
-	message += "URI: ";
-	message += server.uri();
-	message += "\nMethod: ";
+void handleSpiffs() 
+{
+  String report;
+  String message;
+  listDir(SPIFFS, "/", 2, report, true);
+  message += "<h1>Current SPIFFS contents:</h1>";
+  char usage[128];
+  sprintf(usage, "Usage: %d/%d <p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
+  message += usage;
+  message += report;
+  message += "<p><a href=\"/update\">Add more files</a><br>";
+  message += "<p><a href=\"/index.html\">Home</a>";
+
+	server.send(200, "text/html", message);
+}
+
+void handleBTCNotFound() 
+{
+  String path = server.uri();
+  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+  String Updatepath = "http://" + server.client().localIP().toString() + "/update";
+
+	String message = "<h1>404: File Not Found</h1>";
+	message += "<p>URI: <b><i>" + path + "</i></b>";
+	message += "<br>Method: ";
 	message += (server.method() == HTTP_GET) ? "GET" : "POST";
-	message += "\nArguments: ";
-	message += server.args();
-	message += "\n";
+	message += "<br>Arguments: ";
 	for (uint8_t i = 0; i < server.args(); i++) {
-		message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+		message += " " + server.argName(i) + ": " + server.arg(i) + "<br>";
 	}
-	server.send(404, "text/plain", message);
-	digitalWrite(led, 0);
+  message += "<hr>";
+  message += "<p>Please try uploading the file from the web content.";
+  message += "<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>";
+  message += "<p><b>Use:<br><i><a href=\"/update\">" + Updatepath + "</a></b></i>  to upload the web content.<br>";
+  message += "<p><b>Please ensure you unzip the web page content, then upload all the contained files.</b>";
+
+  String report;
+  listDir(SPIFFS, "/", 2, report);
+  message += "<hr><h3>Current SPIFFS contents:</h3>";
+  char usage[128];
+  sprintf(usage, "Usage: %d/%d<p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
+  message += usage;
+  message += report;
+
+	server.send(404, "text/html", message);
 }
 
 // embedded HTML & Javascript to perform browser based updates of firmware or SPIFFS
@@ -254,11 +301,10 @@ void initWebServer(void) {
 		DebugPort.println("MDNS responder started");
 	}
 	
-//	server.on("/", handleBTCRoot);
-
 	server.on("/wmconfig", handleWMConfig);
 	server.on("/resetwifi", handleReset);
 	server.on("/formatspiffs", handleFormat);
+	server.on("/spiffs", handleSpiffs);
 
   server.on("/tst", HTTP_GET, []() {
     DebugPort.println("WEB: GET /tst");
@@ -397,20 +443,16 @@ void initWebServer(void) {
     }
   });
 
-#if USE_SPIFFS == 1  
   // NOTE: this serves the default home page, and favicon.ico
   server.onNotFound([]() 
   {                                                      // If the client requests any URI
     if (!handleFileRead(server.uri())) {                  // send it if it exists
-      DebugPort.printf("WEB: NOT FOUND : %s\r\n", server.uri().c_str());
-      server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
+      handleBTCNotFound();
     }
   });
-#else
-	server.onNotFound(handleBTCNotFound);
-#endif
 
 	server.begin();
+  
 	webSocket.begin();
 	webSocket.onEvent(webSocketEvent);
 
@@ -488,3 +530,70 @@ void setUploadSize(long val)
 {
   _SuppliedFileSize = val;
 };
+
+// Sometimes SPIFFS gets corrupted (WTF?)
+// When this happens, you can see the files exist, but you cannot read them
+// This routine checks the file is readable.
+// Typical failure mechanism is read returns 0, and the WifiClient upload never progresses
+// The software watchdog then steps in after 15 seconds of that nonsense
+bool checkFile(File &file) 
+{
+  uint8_t buf[128];
+  bool bOK = true;
+
+  size_t available = file.available();
+  while(available) {
+    int toRead = (available > 128) ? 128 : available;
+    int Read = file.read(buf, toRead);
+    if(Read != toRead) {
+      bOK = false;
+      DebugPort.printf("SPIFFS precautionary file check failed for %s\r\n", file.name());
+      break;
+    }
+    available = file.available();
+  }
+  file.seek(0);
+  return bOK;
+}
+
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLreport, bool withHTMLanchors) 
+{
+  char msg[128];
+  File root = fs.open(dirname);
+  if (!root) {
+    sprintf(msg, "Failed to open directory \"%s\"", dirname);
+    DebugPort.println(msg);
+    HTMLreport += msg; HTMLreport += "<br>";
+    return;
+  }
+  if (!root.isDirectory()) {
+    sprintf(msg, "\"%s\" is not a directory", dirname);
+    DebugPort.println(msg);
+    HTMLreport += msg; HTMLreport += "<br>";
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    if (file.isDirectory()) {
+      sprintf(msg, "  DIR : %s", file.name());
+      DebugPort.println(msg);
+      HTMLreport += msg; HTMLreport += "<br>";
+      if (levels) {
+        listDir(fs, file.name(), levels - 1, HTMLreport);
+      }
+    } else {
+      String fn = file.name();
+      if(withHTMLanchors) {
+        if(fn.endsWith(".html") || fn.endsWith(".htm")) {
+          String fn2(fn);
+          fn = "<a href=\"" + fn2 + "\">" + fn2 + "</a>";
+        }
+      }
+      sprintf(msg, "  FILE: %s SIZE: %d", fn.c_str(), file.size());
+      DebugPort.println(msg);
+      HTMLreport += msg; HTMLreport += "<br>";
+    }
+    file = root.openNextFile();
+  }
+}    

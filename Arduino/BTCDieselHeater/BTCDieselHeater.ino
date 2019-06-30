@@ -106,11 +106,8 @@
 #include "src/OLED/keypad.h"
 #include "src/Utility/TempSense.h"
 #include <rom/rtc.h>
-
-#if USE_SPIFFS == 1  
 #include <esp_spiffs.h>
 #include <SPIFFS.h>
-#endif
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
@@ -119,8 +116,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 23;
-const int FirmwareSubRevision = 4;
-const char* FirmwareDate = "29 Jun 2019";
+const int FirmwareSubRevision = 5;
+const char* FirmwareDate = "30 Jun 2019";
 
 
 #ifdef ESP32
@@ -264,37 +261,6 @@ void parentKeyHandler(uint8_t event)
 }
 
 
-#if USE_SPIFFS == 1  
-void listDir(fs::FS &fs, const char * dirname, uint8_t levels) 
-{
-
-  DebugPort.printf("Listing directory: %s\r\n", dirname);
-
-  File root = fs.open(dirname);
-  if (!root) {
-    DebugPort.println("Failed to open directory");
-    return;
-  }
-  if (!root.isDirectory()) {
-    DebugPort.println("Not a directory");
-    return;
-  }
-
-  File file = root.openNextFile();
-  while (file) {
-    if (file.isDirectory()) {
-      DebugPort.printf("  DIR : %s\r\n", file.name());
-      if (levels) {
-        listDir(fs, file.name(), levels - 1);
-      }
-    } else {
-      DebugPort.printf("  FILE: %s SIZE: %d\r\n", file.name(), file.size());
-    }
-    file = root.openNextFile();
-  }
-}    
-#endif
-
 void interruptReboot()
 {     
   ets_printf("Software watchdog reboot......\r\n");
@@ -303,7 +269,7 @@ void interruptReboot()
 
 void setup() {
 
-  // ensure proper initialisation of persistent vars after power on
+  // ensure cyclic mode is disabled after power on
   if(rtc_get_reset_reason(0) == 1 || bForceInit) {
     bForceInit = false;
     bUserON = false;   
@@ -346,7 +312,6 @@ void setup() {
 
   DebugPort.printf("ESP32 IDF Version: %s\r\n", esp_get_idf_version());
 
-#if USE_SPIFFS == 1  
  // Initialize SPIFFS
   if(!SPIFFS.begin(true)){
     DebugPort.println("An Error has occurred while mounting SPIFFS");
@@ -354,9 +319,10 @@ void setup() {
   else {
     DebugPort.println("Mounted SPIFFS OK");
     DebugPort.printf("SPIFFS usage: %d/%d\r\n", SPIFFS.usedBytes(), SPIFFS.totalBytes());
-    listDir(SPIFFS, "/", 2);
+    DebugPort.println("Listing SPIFFS contents:");
+    String report;
+    listDir(SPIFFS, "/", 2, report);
   }
-#endif
 
   NVstore.init();
   NVstore.load();

@@ -55,3 +55,4 @@ void webturnOff();
 
 bool sendWebServerString(const char* Str);
 bool isWebServerClientChange(); 
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLreport, bool withHTMLanchors=false);

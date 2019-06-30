@@ -21,9 +21,7 @@
 
 #include "BTCota.h"
 #include "../cfg/BTCConfig.h"
-#if USE_SPIFFS == 1  
 #include <SPIFFS.h>
-#endif
 #include "../Libraries/esp32FOTA/src/esp32fota.h" // local copy used due to a couple of issues
 #include "../Utility/helpers.h"
 
