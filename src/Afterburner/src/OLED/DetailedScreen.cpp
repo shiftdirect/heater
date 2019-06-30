@@ -24,7 +24,7 @@
 #include "fonts/Icons.h"
 #include "../Bluetooth/BluetoothAbstract.h" 
 #include "DetailedScreen.h"
-#include "../Wifi/BTCWifi.h"
+#include "../WiFi/BTCWifi.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../Protocol/Protocol.h"

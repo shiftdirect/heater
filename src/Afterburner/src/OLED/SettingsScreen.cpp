@@ -31,7 +31,7 @@
 #include "SettingsScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
-#include "../Wifi/BTCWifi.h"
+#include "../WiFi/BTCWifi.h"
 #include "../Utility/macros.h"
 #include "../Protocol/Protocol.h"
 

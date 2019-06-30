@@ -88,6 +88,7 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("ThermostatOvertemp", it->key) == 0) {
       sCyclicThermostat cyclic = NVstore.getCyclicMode();
       cyclic.Stop = it->value.as<char>();
+      if(cyclic.Stop > 1) cyclic.Stop--;   // internal uses a 1 offset
 			NVstore.setCyclicMode(cyclic);
 		}
 		else if(strcmp("ThermostatUndertemp", it->key) == 0) {
@@ -294,7 +295,9 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 
   bSend |= moderator.addJson("ThermostatMethod", NVstore.getUserSettings().ThermostatMethod, root); 
   bSend |= moderator.addJson("ThermostatWindow", NVstore.getUserSettings().ThermostatWindow, root); 
-  bSend |= moderator.addJson("ThermostatOvertemp", NVstore.getCyclicMode().Stop, root); 
+  int stop = NVstore.getCyclicMode().Stop;
+  if(stop) stop++;  // deliver effective threshold, not internal working value
+  bSend |= moderator.addJson("ThermostatOvertemp", stop, root); 
   bSend |= moderator.addJson("ThermostatUndertemp", NVstore.getCyclicMode().Start, root); 
 
   if(bSend) {

@@ -30,7 +30,7 @@
 
 #include "PasswordScreen.h"
 #include "KeyPad.h"
-#include "../Wifi/BTCWifi.h"
+#include "../WiFi/BTCWifi.h"
 #include "fonts/Arial.h"
 #include "../Utility/macros.h"
 

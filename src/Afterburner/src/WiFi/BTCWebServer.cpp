@@ -134,11 +134,11 @@ void handleSpiffs()
   String report;
   String message;
   listDir(SPIFFS, "/", 2, report, true);
-  message += "<h1>Current SPIFFS contents:</h1>";
   char usage[128];
-  sprintf(usage, "Usage: %d/%d <p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
-  message += usage;
+  sprintf(usage, "<p>Usage: %d/%d <p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
+  message += "<h1>Current SPIFFS contents:</h1>";
   message += report;
+  message += usage;
   message += "<p><a href=\"/update\">Add more files</a><br>";
   message += "<p><a href=\"/index.html\">Home</a>";
 
@@ -165,13 +165,13 @@ void handleBTCNotFound()
   message += "<p><b>Use:<br><i><a href=\"/update\">" + Updatepath + "</a></b></i>  to upload the web content.<br>";
   message += "<p><b>Please ensure you unzip the web page content, then upload all the contained files.</b>";
 
+  char usage[128];
+  sprintf(usage, "<p>Usage: %d/%d<p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
   String report;
   listDir(SPIFFS, "/", 2, report);
   message += "<hr><h3>Current SPIFFS contents:</h3>";
-  char usage[128];
-  sprintf(usage, "Usage: %d/%d<p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
-  message += usage;
   message += report;
+  message += usage;
 
 	server.send(404, "text/html", message);
 }

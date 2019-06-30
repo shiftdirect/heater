@@ -31,8 +31,8 @@
 #include "FuelMixtureScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
-#include "../Wifi/BTCWifi.h"
-#include "../utility/debugPort.h"
+#include "../WiFi/BTCWifi.h"
+#include "../Utility/debugPort.h"
 #include "../Utility/macros.h"
 #include "../Protocol/Protocol.h"
 

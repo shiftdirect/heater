@@ -23,7 +23,7 @@
 #include "ScreenHeader.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/helpers.h"
-#include "../Wifi/BTCWifi.h"
+#include "../WiFi/BTCWifi.h"
 #include "../Bluetooth/BluetoothAbstract.h" 
 #include "../Utility/NVStorage.h"
 #include "../RTC/Clock.h"
