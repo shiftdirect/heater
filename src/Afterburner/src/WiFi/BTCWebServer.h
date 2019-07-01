@@ -36,7 +36,7 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include <Update.h>
-#include <WebSocketsServer.h>
+#include "../Libraries/arduinoWebSockets/src/WebSocketsServer.h"
 
 
 

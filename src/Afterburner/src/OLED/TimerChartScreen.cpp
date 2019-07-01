@@ -32,7 +32,7 @@
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../Utility/NVStorage.h"
-#include <RTClib.h>
+#include "../Libraries/RTClib/RTClib.h"
 #include "fonts/MiniFont.h"
 #include "../RTC/TimerManager.h"
 

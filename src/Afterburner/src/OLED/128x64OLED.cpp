@@ -74,7 +74,7 @@ size_t C128x64_OLED::write(uint8_t c)
 {
   if(m_pFontInfo) {
     if (c == '\n') {
-      cursor_y += textsize*8;
+      cursor_y += textsize_y*8;
       cursor_x  = 0;
     } else if (c == '\r') {
       // skip em

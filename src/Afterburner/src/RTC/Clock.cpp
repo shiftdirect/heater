@@ -24,7 +24,7 @@
 #include "BTCDateTime.h"
 #include "TimerManager.h"
 #include <Wire.h>
-#include <RTClib.h>
+#include "../Libraries/RTClib/RTClib.h"
 #include "../Utility/helpers.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/DebugPort.h"

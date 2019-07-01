@@ -23,7 +23,7 @@
 #define __BTCWIFI_H__
 
 #include <Arduino.h>
-#include <WiFiManager.h>
+#include "../Libraries/WiFiManager-dev/WiFiManager.h"
 #include <WiFi.h>
 
   void doWiFiManager();

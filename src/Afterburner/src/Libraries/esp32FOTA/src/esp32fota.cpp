@@ -10,7 +10,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Update.h>
-#include "ArduinoJson.h"
+#include "../../ArduinoJson/ArduinoJson.h"
 
 extern void forceBootInit();
 

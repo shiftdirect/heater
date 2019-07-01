@@ -21,7 +21,7 @@
  */
 
 #include <Arduino.h>
-#include <TelnetSpy.h>
+#include "../Libraries/TelnetSpy/TelnetSpy.h"
 
 #ifndef __DEBUGPORT_H__
 #define __DEBUGPORT_H__

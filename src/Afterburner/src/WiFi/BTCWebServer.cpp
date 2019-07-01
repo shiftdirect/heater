@@ -31,8 +31,7 @@
 #include "Index.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
-#include <WiFiManager.h>
-#include <FS.H>
+#include "../Libraries/WiFiManager-dev/WiFiManager.h"
 #include <SPIFFS.h>
 #include "../Utility/NVStorage.h"
 

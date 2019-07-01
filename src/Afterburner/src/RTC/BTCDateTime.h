@@ -22,7 +22,7 @@
 #ifndef __BTCDATETIME_H__
 #define __BTCDATETIME_H__
 
-#include <RTClib.h>
+#include "../Libraries/RTClib/RTClib.h"
 
 const char daysOfTheWeek[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
