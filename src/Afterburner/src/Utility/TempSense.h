@@ -22,8 +22,6 @@
 #ifndef __BTC_TEMPSENSE_H__
 #define __BTC_TEMPSENSE_H__
 
-#include "../Libraries/esp32-owb/owb.h"
-#include "../Libraries/esp32-owb/owb_rmt.h"
 #include "../Libraries/esp32-ds18b20/ds18b20.h"
 
 class CTempSense {

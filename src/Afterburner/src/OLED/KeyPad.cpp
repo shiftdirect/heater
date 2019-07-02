@@ -20,7 +20,7 @@
  */
 
 #include <Arduino.h>
-#include "keypad.h"
+#include "KeyPad.h"
 #include "../cfg/pins.h"
 
 CKeyPad::CKeyPad()

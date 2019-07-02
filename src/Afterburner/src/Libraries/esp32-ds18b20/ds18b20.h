@@ -34,7 +34,7 @@
 #ifndef DS18B20_H
 #define DS18B20_H
 
-#include "../esp32-owb/owb.h"
+#include "owb.h"
 
 #ifdef __cplusplus
 extern "C" {
