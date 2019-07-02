@@ -1,22 +1,19 @@
 
 EVERYTHING IN THIS FOLDER IS FAKE!
 
-It is highly likely when you pull from gitlab, the symbolic links will not be recreated correctly.
+When you pull from gitlab, no symbolic links will be created.
 
-To create a working Arduino build, please open a command prompt AS ADMINISTRATOR
+Then execute MakeSymLinks_Windows.bat from Explorer.
 
-Navigate to *this* directory, 
-
-Delete the data, src, and .ino files.
-
-Then execute MakeSymLinks_Windows.bat
-
-They are symbolic links to the real locations in repo\src\Afterburner.
-The directories must be soft links so thay can be added to git!
-
-This is becasue Arduino insists upon .ino for their projects, and 
-that file has to match the directory name. 
+The real root source exists as a .cpp file: repo\src\Afterburner\Afterburner.cpp
+However Arduino insists upon .ino for their projects, and the file name also 
+has to match the parent directory name. 
 
 If .ino and .cpp live in same directory - double trouble at link time!
+Works for PlatformIO, but not Arduino builds.
 
-Ugggh.
+Ugggh. I hate Arduino IDE (and it's build environment!)
+
+Likewise:
+ src is linked to repo\src\Afterburner\src
+ data is linked to repo\src\Afterburner\data
