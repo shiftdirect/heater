@@ -23,7 +23,7 @@
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../WiFi/BTCWifi.h"
-#include "../Utility/NVstorage.h"
+#include "../Utility/NVStorage.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //

@@ -20,7 +20,7 @@
  */
 
 #include "RebootScreen.h"
-#include "../Utility/NVstorage.h"
+#include "../Utility/NVStorage.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
