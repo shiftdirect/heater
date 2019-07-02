@@ -29,7 +29,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include "tahoma24.h"
+#include "Tahoma24.h"
 
 // Character bitmaps for Tahoma 24pt
 const uint8_t tahoma_24ptBitmaps [] PROGMEM = 

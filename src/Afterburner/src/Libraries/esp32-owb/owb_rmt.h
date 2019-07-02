@@ -27,9 +27,9 @@
 #ifndef OWB_RMT_H
 #define OWB_RMT_H
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/ringbuf.h"
+#include "FreeRTOS/FreeRTOS.h"
+#include "FreeRTOS/queue.h"
+#include "FreeRTOS/ringbuf.h"
 #include "driver/rmt.h"
 
 #ifdef __cplusplus

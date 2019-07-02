@@ -23,7 +23,7 @@
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
 #include "../Protocol/Protocol.h"
-#include "../Utility/debugport.h"
+#include "../Utility/DebugPort.h"
 #include "BluetoothESP32.h"
 
 

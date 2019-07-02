@@ -1,7 +1,7 @@
 #ifndef shimclient_h
 #define shimclient_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "Client.h"
 #include "IPAddress.h"
 #include "Buffer.h"

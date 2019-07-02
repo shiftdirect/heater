@@ -61,6 +61,7 @@ To be implemented
 * MQTT pub/sub 
 * "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
 * Regular Hot Burn cycle (DPF mode!)
+* Hour meter - run time, glow time
 * list under construction.....
 
 Suggestions

@@ -19,8 +19,8 @@
  * 
  */
 
-#include "GPIO.h"
-#include "../Utility/helpers.h"
+#include "BTC_GPIO.h"
+#include "helpers.h"
 #include <driver/adc.h>
 #include "DebugPort.h"
 #include "../Protocol/Protocol.h"

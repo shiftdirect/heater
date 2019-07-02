@@ -25,7 +25,7 @@
 #include "../Utility/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
-#include "../Utility/GPIO.h"
+#include "../Utility/BTC_GPIO.h"
 #include "fonts/Icons.h"
 
 

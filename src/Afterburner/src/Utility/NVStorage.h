@@ -22,7 +22,7 @@
 #ifndef __BTC_NV_STORAGE_H__
 #define __BTC_NV_STORAGE_H__
 
-#include "GPIO.h"
+#include "BTC_GPIO.h"
 #include "NVCore.h"
 #include "../Utility/helpers.h"
 

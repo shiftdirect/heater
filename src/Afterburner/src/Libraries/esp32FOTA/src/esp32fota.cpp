@@ -6,7 +6,7 @@
 */
 
 #include "esp32fota.h"
-#include "Arduino.h"
+#include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Update.h>

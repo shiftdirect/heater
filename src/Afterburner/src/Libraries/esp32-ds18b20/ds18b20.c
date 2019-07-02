@@ -38,8 +38,8 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "FreeRTOS/FreeRTOS.h"
+#include "FreeRTOS/task.h"
 #include "driver/gpio.h"
 #include "esp_system.h"
 #include "esp_log.h"

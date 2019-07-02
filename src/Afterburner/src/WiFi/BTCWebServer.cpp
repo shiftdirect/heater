@@ -28,7 +28,7 @@
 #include "../Utility/helpers.h"
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
-#include "Index.h"
+//#include "Index.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
 #include "../Libraries/WiFiManager-dev/WiFiManager.h"

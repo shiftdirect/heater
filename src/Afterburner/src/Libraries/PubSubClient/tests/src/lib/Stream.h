@@ -1,7 +1,7 @@
 #ifndef Stream_h
 #define Stream_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "Buffer.h"
 
 class Stream {

@@ -26,7 +26,7 @@
 #include "../Libraries/ArduinoJson/ArduinoJson.h"
 #include "../RTC/Timers.h"
 #include "DebugPort.h"
-#include "GPIO.h"
+#include "BTC_GPIO.h"
 
 
 class CTimerModerator {

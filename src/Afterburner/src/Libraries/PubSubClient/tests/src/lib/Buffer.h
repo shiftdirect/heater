@@ -1,7 +1,7 @@
 #ifndef buffer_h
 #define buffer_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 class Buffer {
 private:

@@ -42,7 +42,7 @@
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
-#include "keypad.h"
+#include "KeyPad.h"
 #include "fonts/Icons.h"
 #include "fonts/MiniFont.h"
 #include "fonts/MidiFont.h"

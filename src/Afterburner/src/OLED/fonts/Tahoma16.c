@@ -29,7 +29,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include "tahoma16.h"
+#include "Tahoma16.h"
 
 // Character bitmaps for Tahoma 16pt
 const uint8_t tahoma_16ptBitmaps[] PROGMEM =

@@ -100,10 +100,10 @@
 #include "src/Utility/DebugPort.h"
 #include "src/Utility/UtilClasses.h"
 #include "src/Utility/BTC_JSON.h"
-#include "src/Utility/GPIO.h"
+#include "src/Utility/RTC_GPIO.h"
 #include "src/Utility/BoardDetect.h"
 #include "src/OLED/ScreenManager.h"
-#include "src/OLED/keypad.h"
+#include "src/OLED/KeyPad.h"
 #include "src/Utility/TempSense.h"
 #include <rom/rtc.h>
 #include <esp_spiffs.h>

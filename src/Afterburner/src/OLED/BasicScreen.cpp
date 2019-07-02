@@ -20,8 +20,8 @@
  */
 
 #include "128x64OLED.h"
-#include "fonts/tahoma16.h"
-#include "fonts/tahoma24.h"
+#include "fonts/Tahoma16.h"
+#include "fonts/Tahoma24.h"
 #include "fonts/Icons.h"
 #include "BasicScreen.h"
 #include "KeyPad.h"

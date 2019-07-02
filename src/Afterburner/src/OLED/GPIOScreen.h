@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 #include "PasswordScreen.h"
-#include "../Utility/GPIO.h"
+#include "../Utility/BTC_GPIO.h"
 
 class C128x64_OLED;
 class CScreenManager;
