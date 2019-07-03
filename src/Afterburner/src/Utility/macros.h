@@ -29,5 +29,6 @@
 #define WRAPLOWERLIMIT(A, B, C) if((A) < (B)) (A) = (C)        
 #define WRAPLIMITS(A, B, C) if((A) < (B)) (A) = (C) ; if((A) > (C)) (A) = (B)               
 #define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((TST) <= (MAX)))
+#define BOUNDSLIMIT(A, B, C) if((A) < (B)) (A) = (B); if((A) > (C)) (A) = (C)
 
 #endif

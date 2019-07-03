@@ -237,8 +237,7 @@ CHeaterSettingsScreen::_adjust(int dir)
   switch(_rowSel) {
     case 1:   // glow power
       _glowDrive += dir;
-      UPPERLIMIT(_glowDrive, 6);
-      LOWERLIMIT(_glowDrive, 1);
+      BOUNDSLIMIT(_glowDrive, 1, 6);
       break;
     case 2:   // fan sensor
       _fanSensor = (_fanSensor == 1) ? 2 : 1;

@@ -85,21 +85,28 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("FanMax", it->key) == 0) {
 			setFanMax(it->value.as<short>());
 		}
-		else if(strcmp("ThermostatOvertemp", it->key) == 0) {
-      sCyclicThermostat cyclic = NVstore.getCyclicMode();
-      cyclic.Stop = it->value.as<char>();
-      if(cyclic.Stop > 1) cyclic.Stop--;   // internal uses a 1 offset
-			NVstore.setCyclicMode(cyclic);
+    else if(strcmp("CyclicTemp", it->key) == 0) {
+      setDemandDegC(it->value.as<unsigned char>());  // directly set demandDegC
+    }
+		else if((strcmp("CyclicOff", it->key) == 0) || (strcmp("ThermostatOvertemp", it->key) == 0)) {
+      sUserSettings us = NVstore.getUserSettings();
+      char val = it->value.as<char>();
+      if(val > 1) val--;   // internal uses a 1 offset
+      if(INBOUNDS(val, 0, 10))
+        us.cyclic.Stop = val;
+			NVstore.setUserSettings(us);
 		}
-		else if(strcmp("ThermostatUndertemp", it->key) == 0) {
-      sCyclicThermostat cyclic = NVstore.getCyclicMode();
-      cyclic.Start = it->value.as<char>();
-			NVstore.setCyclicMode(cyclic);
+		else if((strcmp("CyclicOn", it->key) == 0) || (strcmp("ThermostatUndertemp", it->key) == 0)) {
+      sUserSettings us = NVstore.getUserSettings();
+      char val = it->value.as<char>();
+      if(INBOUNDS(val, -20, 0))
+        us.cyclic.Start = val;
+			NVstore.setUserSettings(us);
 		}
 		else if(strcmp("ThermostatMethod", it->key) == 0) {
       sUserSettings settings = NVstore.getUserSettings();
       uint8_t val = it->value.as<uint8_t>();
-      if(val <= 2)
+      if(INBOUNDS(val, 0, 2))
         settings.ThermostatMethod = val;
 			NVstore.setUserSettings(settings);
 		}
@@ -227,6 +234,12 @@ void interpretJsonCommand(char* pLine)
       NVstore.save();
       resetJSONmoderator();
     }
+    else if(strcmp("TempMode", it->key) == 0) {
+      sUserSettings us = NVstore.getUserSettings();
+      us.degF = it->value.as<unsigned char>() ? 0x01 : 0x00;
+      NVstore.setUserSettings(us);
+      NVstore.save();
+    }
   }
 }
 
@@ -295,10 +308,13 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 
   bSend |= moderator.addJson("ThermostatMethod", NVstore.getUserSettings().ThermostatMethod, root); 
   bSend |= moderator.addJson("ThermostatWindow", NVstore.getUserSettings().ThermostatWindow, root); 
-  int stop = NVstore.getCyclicMode().Stop;
+  int stop = NVstore.getUserSettings().cyclic.Stop;
   if(stop) stop++;  // deliver effective threshold, not internal working value
   bSend |= moderator.addJson("ThermostatOvertemp", stop, root); 
-  bSend |= moderator.addJson("ThermostatUndertemp", NVstore.getCyclicMode().Start, root); 
+  bSend |= moderator.addJson("ThermostatUndertemp", NVstore.getUserSettings().cyclic.Start, root); 
+  bSend |= moderator.addJson("CyclicTemp", getDemandDegC(), root);             // actual pivot point for cyclic mode
+  bSend |= moderator.addJson("CyclicOff", stop, root);                         // threshold of over temp for cyclic mode
+  bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root); // threshold of under temp for cyclic mode
 
   if(bSend) {
 		root.printTo(opStr, len);

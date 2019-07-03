@@ -314,17 +314,10 @@ public:
   virtual void doSave() {}
 
 
-  const sCyclicThermostat& getCyclicMode() const;
   const sMQTTparams& getMQTTinfo() const;
-  const sGPIOparams& getGPIOparams() const;
-  const sHomeMenuActions& getHomeMenu() const;
   const sCredentials& getCredentials() const;
   const sUserSettings& getUserSettings() const;
   const sHeaterTuning& getHeaterTuning() const;
-
-  void setCyclicMode(const sCyclicThermostat& val);
-  void setGPIOparams(const sGPIOparams& params);
-  void setHomeMenu(const sHomeMenuActions& val);
 
   void getTimerInfo(int idx, sTimer& timerInfo);
   void setTimerInfo(int idx, const sTimer& timerInfo);

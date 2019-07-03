@@ -116,8 +116,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 23;
-const int FirmwareSubRevision = 5;
-const char* FirmwareDate = "30 Jun 2019";
+const int FirmwareSubRevision = 6;
+const char* FirmwareDate = "3 Jul 2019";
 
 
 #ifdef ESP32
@@ -766,7 +766,7 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 
 void manageCyclicMode()
 {
-  const sCyclicThermostat& cyclic = NVstore.getCyclicMode();
+  const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
   if(cyclic.Stop && bUserON) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
     float deltaT = fFilteredTemperature - getDemandDegC();
@@ -898,7 +898,8 @@ bool setThermostatMode(unsigned char val)
     return false;
 
   sUserSettings settings = NVstore.getUserSettings();
-  settings.useThermostat = val;
+  if(INBOUNDS(val, 0, 1))
+    settings.useThermostat = val;
   NVstore.setUserSettings(settings);
   return true;
 }
@@ -954,6 +955,14 @@ uint8_t getDemandDegC()
   return demandDegC;
 }
 
+void  setDemandDegC(uint8_t val) 
+{
+  unsigned char max = DefaultBTCParams.getTemperature_Max();
+  unsigned char min = DefaultBTCParams.getTemperature_Min();
+  BOUNDSLIMIT(val, min, max);
+  demandDegC = val;
+}
+
 uint8_t getDemandPump() 
 {
   return demandPump;
@@ -995,21 +1004,24 @@ void  setPumpMax(float val)
 void  setFanMin(short cVal)
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.Fmin = cVal;
+  if(INBOUNDS(cVal, 500, 5000))
+    tuning.Fmin = cVal;
   NVstore.setHeaterTuning(tuning);
 }
 
 void  setFanMax(short cVal)
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.Fmax = cVal;
+  if(INBOUNDS(cVal, 500, 5000))
+    tuning.Fmax = cVal;
   NVstore.setHeaterTuning(tuning);
 }
 
 void setFanSensor(unsigned char cVal)
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.fanSensor = cVal;
+  if(INBOUNDS(cVal, 1, 2))
+    tuning.fanSensor = cVal;
   NVstore.setHeaterTuning(tuning);
 }
 
@@ -1021,7 +1033,8 @@ void setSystemVoltage(float val) {
 
 void setGlowDrive(unsigned char val) {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.glowDrive = val;
+  if(INBOUNDS(val, 1, 6))
+    tuning.glowDrive = val;
   NVstore.setHeaterTuning(tuning);
 } 
 
@@ -1215,7 +1228,7 @@ int getSmartError()
 
 bool isCyclicActive()
 {
-  return bUserON && NVstore.getCyclicMode().isEnabled();
+  return bUserON && NVstore.getUserSettings().cyclic.isEnabled();
 }
 
 void setupGPIO()
@@ -1226,12 +1239,12 @@ void setupGPIO()
     // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
     int activePinState = (BoardRevision == 10) ? LOW : HIGH;  
     int Input1 = BoardRevision == 20 ? GPIOin1_pinV20 : GPIOin1_pinV21V10;
-    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getGPIOparams().inMode, activePinState);
+    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getUserSettings().GPIO.inMode, activePinState);
 
     // GPIO out is always active high from ESP32
     // V1.0 PCBs only expose the bare pins
     // V2.0+ PCBs provide an open collector output that conducts when active
-    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getGPIOparams().outMode);
+    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getUserSettings().GPIO.outMode);
 
     // ### MAJOR ISSUE WITH ADC INPUTS ###
     //
@@ -1247,7 +1260,7 @@ void setupGPIO()
     // This will be properly fixed in V2.1 PCBs
     //
     // As V1.0 PCBS expose the bare pins, the correct GPIO33 input can be readily chosen.
-    GPIOalgModes algMode = NVstore.getGPIOparams().algMode;
+    GPIOalgModes algMode = NVstore.getUserSettings().GPIO.algMode;
     if(BoardRevision == 20)  
       algMode = GPIOalgNone;      // force off analogue support in V2.0 PCBs
     GPIOalg.begin(GPIOalg_pin, algMode);
@@ -1262,7 +1275,7 @@ void setupGPIO()
 
 bool toggleGPIOout(int channel) 
 {
-  if(NVstore.getGPIOparams().outMode == GPIOoutUser) {
+  if(NVstore.getUserSettings().GPIO.outMode == GPIOoutUser) {
     setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
     return true;
   }

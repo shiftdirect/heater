@@ -59,7 +59,7 @@ CGPIOScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _initUI();
-  _GPIOparams = NVstore.getGPIOparams();
+  _GPIOparams = NVstore.getUserSettings().GPIO;
 }
 
 void
@@ -176,6 +176,7 @@ CGPIOScreen::animate()
 bool 
 CGPIOScreen::keyHandler(uint8_t event)
 {
+  sUserSettings us;
   if(event & keyPressed) {
     // press LEFT to select previous screen
     if(event & key_Left) {
@@ -229,7 +230,9 @@ CGPIOScreen::keyHandler(uint8_t event)
           break;
         case 4:    // confirmed save
           _showStoringMessage();
-          NVstore.setGPIOparams(_GPIOparams);
+          us = NVstore.getUserSettings();
+          us.GPIO = _GPIOparams;
+          NVstore.setUserSettings(us);
           saveNV();
 
           setupGPIO();
@@ -318,32 +321,32 @@ CGPIOInfoScreen::show()
 
   _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
 
-  if(NVstore.getGPIOparams().inMode == GPIOinNone) {
+  if(NVstore.getUserSettings().GPIO.inMode == GPIOinNone) {
     _drawBitmap(7, 28, CrossLgIconInfo);
     _drawBitmap(30, 28, CrossLgIconInfo);
   }
   else {
     _drawBitmap(4, 29, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
-    if(NVstore.getGPIOparams().inMode == GPIOinOn1Off1) 
+    if(NVstore.getUserSettings().GPIO.inMode == GPIOinOn1Off1) 
       _drawBitmap(30, 28, CrossLgIconInfo);
     else 
       _drawBitmap(27, 29, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
   }
 
   
-  if(NVstore.getGPIOparams().outMode == GPIOoutNone) {
+  if(NVstore.getUserSettings().GPIO.outMode == GPIOoutNone) {
     _drawBitmap(87, 28, CrossLgIconInfo);
     _drawBitmap(114, 28, CrossLgIconInfo);
   }
   else {
     _drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIconInfo : BulbOffIconInfo);
-    if(NVstore.getGPIOparams().outMode == GPIOoutStatus) 
+    if(NVstore.getUserSettings().GPIO.outMode == GPIOoutStatus) 
       _drawBitmap(114, 28, CrossLgIconInfo);
     else 
       _drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIconInfo : BulbOffIconInfo);
   }
 
-  if(NVstore.getGPIOparams().algMode == GPIOalgNone) {
+  if(NVstore.getUserSettings().GPIO.algMode == GPIOalgNone) {
     _drawBitmap(58, Line1, CrossLgIconInfo);
   }
   else {

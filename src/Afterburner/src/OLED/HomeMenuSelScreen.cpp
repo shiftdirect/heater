@@ -39,7 +39,7 @@ CHomeMenuSelScreen::onSelect()
 {
   CScreenHeader::onSelect();
   _rowSel = 0;
-  _action = NVstore.getHomeMenu();
+  _action = NVstore.getUserSettings().HomeMenu;
 }
 
 void
@@ -142,12 +142,15 @@ CHomeMenuSelScreen::animate()
 bool 
 CHomeMenuSelScreen::keyHandler(uint8_t event)
 {
+  sUserSettings us;
   if(event & keyPressed) {
     // UP press
     if(event & key_Up) {
       if(_rowSel == 4) {
         _showStoringMessage();
-        NVstore.setHomeMenu(_action);
+        us = NVstore.getUserSettings();
+        us.HomeMenu = _action;
+        NVstore.setUserSettings(us);
         saveNV();
         _rowSel = 0;
       }

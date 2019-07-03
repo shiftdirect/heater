@@ -359,7 +359,7 @@ CScreenManager::checkUpdate()
       //   Clock
       // return to those upon timeout, otherwise return to Basic Control screen
       if(_rootMenu > 2) {
-        uint8_t userHomeMenu = NVstore.getHomeMenu().onTimeout;
+        uint8_t userHomeMenu = NVstore.getUserSettings().HomeMenu.onTimeout;
         if(userHomeMenu) {  // allow user to override defualt screen
           userHomeMenu--;
           DebugPort.print("Screen Manager: Menu timeout, falling back to user preferred screen: "); 
@@ -384,7 +384,7 @@ CScreenManager::checkUpdate()
   if(runState != prevRunState) {
     if(runState > 0 && prevRunState == 0) {
       // heater has started
-      uint8_t userStartMenu = NVstore.getHomeMenu().onStart;
+      uint8_t userStartMenu = NVstore.getUserSettings().HomeMenu.onStart;
       if(userStartMenu && userStartMenu <= 3) {  // allow user to override defualt screen
         userStartMenu--;
         DebugPort.print("Screen Manager: Heater start detected, switching to user preferred screen: "); 
@@ -399,7 +399,7 @@ CScreenManager::checkUpdate()
     }
     if(runState == 0 && prevRunState != 0) {
       // heater has stopped
-      uint8_t userStopMenu = NVstore.getHomeMenu().onStop;
+      uint8_t userStopMenu = NVstore.getUserSettings().HomeMenu.onStop;
       if(userStopMenu && userStopMenu <= 3) {  // allow user to override defualt screen
         userStopMenu--;
         DebugPort.print("Screen Manager: Heater stop detected, switching to user preferred screen: "); 

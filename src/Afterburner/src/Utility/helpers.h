@@ -39,6 +39,7 @@ extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC
 extern void  reqPumpPrime(bool on);
 extern float getTemperatureDesired();    // OEM: the advertised value, BTC our setpoint
 extern uint8_t getDemandDegC();
+extern void  setDemandDegC(uint8_t val);
 extern uint8_t getDemandPump();
 
 extern float getTemperatureSensor();

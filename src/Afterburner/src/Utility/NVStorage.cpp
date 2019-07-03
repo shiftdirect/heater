@@ -74,6 +74,7 @@ sHeaterTuning::getPmax() const
 void
 sHeaterTuning::setPmin(float val)
 {
+  BOUNDSLIMIT(val, 0.4, 5.0);
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
   Pmin = cVal;
 }
@@ -81,6 +82,7 @@ sHeaterTuning::setPmin(float val)
 void
 sHeaterTuning::setPmax(float val)
 {
+  BOUNDSLIMIT(val, 1.0, 10.0);
   uint8_t cVal = (uint8_t)(val * 10.f + 0.5f);
   Pmax = cVal;
 }
@@ -112,43 +114,6 @@ CHeaterStorage::setTimerInfo(int idx, const sTimer& timerInfo)
   }
 }
 
-const sCyclicThermostat&
-CHeaterStorage::getCyclicMode() const
-{
-  return _calValues.userSettings.cyclic;
-}
-
-void 
-CHeaterStorage::setCyclicMode(const sCyclicThermostat& val)
-{
-  _calValues.userSettings.cyclic = val;
-  save();
-}
-
-const sGPIOparams&
-CHeaterStorage::getGPIOparams() const
-{
-  return _calValues.userSettings.GPIO;
-}
-
-void
-CHeaterStorage::setGPIOparams(const sGPIOparams& params) 
-{
-  _calValues.userSettings.GPIO = params;
-}
-
-
-const sHomeMenuActions&
-CHeaterStorage::getHomeMenu() const
-{
-  return _calValues.userSettings.HomeMenu;
-}
-
-void
-CHeaterStorage::setHomeMenu(const sHomeMenuActions& val)
-{
-  _calValues.userSettings.HomeMenu = val;
-}
 
 // MQTT parameter read/save
 const sMQTTparams& 

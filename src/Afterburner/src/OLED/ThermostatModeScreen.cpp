@@ -56,7 +56,7 @@ CThermostatModeScreen::onSelect()
   _initUI();
   _window = NVstore.getUserSettings().ThermostatWindow;
   _thermoMode = NVstore.getUserSettings().ThermostatMethod;
-  _cyclicMode = NVstore.getCyclicMode();
+  _cyclicMode = NVstore.getUserSettings().cyclic;
 }
 
 void
@@ -255,8 +255,8 @@ CThermostatModeScreen::keyHandler(uint8_t event)
           settings = NVstore.getUserSettings();
           settings.ThermostatMethod = _thermoMode;
           settings.ThermostatWindow = _window;
+          settings.cyclic = _cyclicMode;
           NVstore.setUserSettings(settings);
-          NVstore.setCyclicMode(_cyclicMode);
           saveNV();
           _rowSel = 0;
           break;
@@ -310,18 +310,15 @@ CThermostatModeScreen::_adjust(int dir)
   switch(_rowSel) {
     case 1:
       _cyclicMode.Stop += dir;
-      LOWERLIMIT(_cyclicMode.Stop, 0);
-      UPPERLIMIT(_cyclicMode.Stop, 10);
+      BOUNDSLIMIT(_cyclicMode.Stop, 0, 9);
       break;
     case 2:
       _cyclicMode.Start += dir;
-      LOWERLIMIT(_cyclicMode.Start, -20);
-      UPPERLIMIT(_cyclicMode.Start, 0);
+      BOUNDSLIMIT(_cyclicMode.Start, -20, 0);
       break;
     case 3:   // window
       _window += (dir * 0.1);
-      UPPERLIMIT(_window, 10.0);
-      LOWERLIMIT(_window, 0.2);
+      BOUNDSLIMIT(_window, 0.2, 10.0);
       break;
     case 4:   // thermostat mode
       _thermoMode += dir;
