@@ -96,7 +96,7 @@ CDetailedScreen::show()
     else {
       fPump = getHeaterInfo().getPump_Fixed();
       if(NVstore.getUserSettings().cyclic.isEnabled())
-        desiredT = getTemperatureDesired();
+        desiredT = getDemandDegC();
     }
   }
 

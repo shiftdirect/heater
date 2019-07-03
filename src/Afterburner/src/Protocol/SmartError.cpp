@@ -41,7 +41,7 @@ void
 CSmartError::inhibit()
 {
   m_bInhibit = true;
-  m_Error = 0;
+//  m_Error = 0;
 }
 
 // accept a fresh heater frame

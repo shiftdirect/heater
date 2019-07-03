@@ -769,7 +769,7 @@ void manageCyclicMode()
   const sCyclicThermostat& cyclic = NVstore.getCyclicMode();
   if(cyclic.Stop && bUserON) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
-    float deltaT = fFilteredTemperature - getTemperatureDesired();
+    float deltaT = fFilteredTemperature - getDemandDegC();
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
 
     // ensure we cancel user ON mode if heater throws an error
@@ -966,7 +966,10 @@ float getTemperatureDesired()
     return getHeaterInfo().getHeaterDemand();
   }
   else {
-    return demandDegC;
+    if(getThermostatModeActive()) 
+      return demandDegC;
+    else 
+      return demandPump;
   }
 }
 
