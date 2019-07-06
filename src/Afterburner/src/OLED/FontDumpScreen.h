@@ -30,7 +30,7 @@ class CScreenManager;
 
 class CFontDumpScreen : public CScreen
 {
-  unsigned char  _startChar;
+  uint8_t  _startChar;
   void _initUI();
 public:
   CFontDumpScreen(C128x64_OLED& display, CScreenManager& mgr);

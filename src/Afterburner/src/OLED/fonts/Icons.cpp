@@ -24,7 +24,7 @@
 #include "../Screen.h"
 
 // 'Thermometer', 8x50px
-const unsigned char bodyThermometerIcon [] PROGMEM = {
+const uint8_t bodyThermometerIcon [] PROGMEM = {
 	0x00,   // 
   0x18,   //    ##   
   0x24,   //   #  #  
@@ -78,7 +78,7 @@ const unsigned char bodyThermometerIcon [] PROGMEM = {
 const BITMAP_INFO BodyThermometerIconInfo(8, 50, bodyThermometerIcon);
 
 // 'ThermometerActual', 8x50px
-const unsigned char ambientThermometerIcon [] PROGMEM = {
+const uint8_t ambientThermometerIcon [] PROGMEM = {
 	0x00,   // 
   0x18,   //    ##   
   0x24,   //   #  #  
@@ -133,7 +133,7 @@ const BITMAP_INFO AmbientThermometerIconInfo(8, 50, ambientThermometerIcon);
 
 
 // 'ThermoPtr', 3x5px
-const unsigned char thermoPtr [] PROGMEM = {
+const uint8_t thermoPtr [] PROGMEM = {
 	0x80, //   #
   0xc0, //   ##
   0xe0, //   ###
@@ -143,7 +143,7 @@ const unsigned char thermoPtr [] PROGMEM = {
 const BITMAP_INFO ThermoPtrIconInfo(3, 5, thermoPtr);
 
 // 'ThermoPtr', 3x5px
-const unsigned char thermoOpenPtr [] PROGMEM = {
+const uint8_t thermoOpenPtr [] PROGMEM = {
   0x80, //   #
   0x40, //    #
   0x20, //     #
@@ -153,7 +153,7 @@ const unsigned char thermoOpenPtr [] PROGMEM = {
 const BITMAP_INFO ThermoOpenPtrIconInfo(3, 5, thermoOpenPtr);
 
 // 'ThermoPtrHigh', 3x3px
-const unsigned char thermoPtrLow [] PROGMEM = {
+const uint8_t thermoPtrLow [] PROGMEM = {
   0xe0, //   ####
   0x60, //     ##
   0x20, //      #
@@ -161,7 +161,7 @@ const unsigned char thermoPtrLow [] PROGMEM = {
 const BITMAP_INFO ThermoPtrLowIconInfo(3, 3, thermoPtrLow);
 
 // 'ThermoPtrLow', 3x3px
-const unsigned char thermoPtrHigh [] PROGMEM = {
+const uint8_t thermoPtrHigh [] PROGMEM = {
   0x20, //     #
   0x60, //    ##
   0xe0  //   ###
@@ -169,7 +169,7 @@ const unsigned char thermoPtrHigh [] PROGMEM = {
 const BITMAP_INFO ThermoPtrHighIconInfo(3, 3, thermoPtrHigh);
 
 // 'Bluetooth icon', 6x11px
-const unsigned char BTicon [] PROGMEM = {
+const uint8_t BTicon [] PROGMEM = {
   0x20, //   #
   0x30, //   ##
   0x28, //   # #
@@ -185,7 +185,7 @@ const unsigned char BTicon [] PROGMEM = {
 const BITMAP_INFO BluetoothIconInfo(6, 11, BTicon);
 
 // 'wifiIcon', 13x10px
-const unsigned char wifiIcon [] PROGMEM = {
+const uint8_t wifiIcon [] PROGMEM = {
   0x1f, 0xc0, //    #######
   0x20, 0x20, //   #       #
   0x40, 0x10, //  #         #
@@ -200,7 +200,7 @@ const unsigned char wifiIcon [] PROGMEM = {
 const BITMAP_INFO WifiIconInfo(13, 10, wifiIcon);
 
 // 'wifiIconWide', 13x10px
-const unsigned char wifiwideIcon [] PROGMEM = {
+const uint8_t wifiwideIcon [] PROGMEM = {
   0x1f, 0xc0, 0x00, 0x00, //    #######
   0x20, 0x20, 0x00, 0x00, //   #       #
   0x40, 0x10, 0x00, 0x00, //  #         #
@@ -217,7 +217,7 @@ const BITMAP_INFO WifiWideIconInfo(25, 11, wifiwideIcon);
 
 
 // 'wifiInIcon, 5x5px
-const unsigned char wifiInIcon [] PROGMEM = {
+const uint8_t wifiInIcon [] PROGMEM = {
   0x70,   //  ###
   0x70,   //  ###
   0xf8,   // #####
@@ -227,7 +227,7 @@ const unsigned char wifiInIcon [] PROGMEM = {
 const BITMAP_INFO WifiInIconInfo(5, 5, wifiInIcon);
 
 // 'wifiOutIcon, 5x5px
-const unsigned char wifiOutIcon [] PROGMEM = {
+const uint8_t wifiOutIcon [] PROGMEM = {
   0x20,   //   #
   0x70,   //  ###
   0xf8,   // #####
@@ -239,7 +239,7 @@ const unsigned char wifiOutIcon [] PROGMEM = {
 const BITMAP_INFO WifiOutIconInfo(5, 5, wifiOutIcon);
 
 // 'BatteryIcon', 15x10px
-const unsigned char BatteryIcon [] PROGMEM = {
+const uint8_t BatteryIcon [] PROGMEM = {
 	0x30, 0x18, //   ##       ##
   0xff, 0xfe, // ###############
   0x80, 0x02, // #             #
@@ -255,7 +255,7 @@ const BITMAP_INFO BatteryIconInfo(15, 10, BatteryIcon);
 
 
 // 'GlowPlugIcon', 16x9px
-const unsigned char GlowPlugIcon [] PROGMEM = {
+const uint8_t GlowPlugIcon [] PROGMEM = {
   0x71, 0xc7, //  ###   ###   ###
   0x0e, 0x38, //     ###   ###
   0x14, 0x14, //    # #     # #
@@ -270,14 +270,14 @@ const BITMAP_INFO GlowPlugIconInfo(16, 9, GlowPlugIcon);
 
 
 // 'HeatRise', 17x2px
-const unsigned char GlowHeatIcon [] PROGMEM = {
+const uint8_t GlowHeatIcon [] PROGMEM = {
   0x80, 0x00, 0x80, // #               #
   0x40, 0x01, 0x00  //  #             #
 };
 const BITMAP_INFO GlowHeatIconInfo(17, 2, GlowHeatIcon);
 
 // 'Fan3_1a', 16x16px
-const unsigned char FanIcon1 [] PROGMEM = {
+const uint8_t FanIcon1 [] PROGMEM = {
   0x03, 0xc0, //       ####
   0x04, 0x20, //      #    #  
   0x04, 0x20, //      #    #  
@@ -296,7 +296,7 @@ const unsigned char FanIcon1 [] PROGMEM = {
   0x00, 0x00
 };
 // 'Fan3_2a', 16x16px
-const unsigned char FanIcon2 [] PROGMEM = {
+const uint8_t FanIcon2 [] PROGMEM = {
   0x00, 0x78, //          ####
   0x00, 0x84, //         #    #
   0x00, 0x84, //         #    #
@@ -315,7 +315,7 @@ const unsigned char FanIcon2 [] PROGMEM = {
   0x00, 0x78, //          ####
 };
 // 'Fan3_3a', 16x16px
-const unsigned char FanIcon3 [] PROGMEM = {
+const uint8_t FanIcon3 [] PROGMEM = {
   0x00, 0x00, 
   0x00, 0x00, 
   0x78, 0x1e, //  ####      ####
@@ -334,7 +334,7 @@ const unsigned char FanIcon3 [] PROGMEM = {
   0x03, 0xc0  //       ####
 };
 // 'Fan3_4a', 16x16px
-const unsigned char FanIcon4 [] PROGMEM = {
+const uint8_t FanIcon4 [] PROGMEM = {
   0x1e, 0x00, //    ####
   0x21, 0x00, //   #    #
   0x21, 0x00, //   #    #
@@ -359,7 +359,7 @@ const BITMAP_INFO FanIcon4Info(16, 16, FanIcon4);
 
 
 // 'FuelIcon', 7x12px
-const unsigned char FuelIcon [] PROGMEM = {
+const uint8_t FuelIcon [] PROGMEM = {
   0x10, //    #
   0x10, //    #
   0x38, //   ###
@@ -376,7 +376,7 @@ const unsigned char FuelIcon [] PROGMEM = {
 const BITMAP_INFO FuelIconInfo(7, 12, FuelIcon);
 
 // 'Target', 13x13px
-const unsigned char TargetIcon [] PROGMEM = {
+const uint8_t TargetIcon [] PROGMEM = {
   0x0f, 0x80, //     #####
   0x10, 0x40, //    #     #
   0x20, 0x20, //   #       #
@@ -394,7 +394,7 @@ const unsigned char TargetIcon [] PROGMEM = {
 const BITMAP_INFO TargetIconInfo(13, 13, TargetIcon);
 
 // 'repeat', 15x15px
-const unsigned char repeatIcon [] PROGMEM = {
+const uint8_t repeatIcon [] PROGMEM = {
   0x00, 0x00, 
   0x00, 0x00, 
   0x00, 0x00, 
@@ -414,7 +414,7 @@ const unsigned char repeatIcon [] PROGMEM = {
 const BITMAP_INFO RepeatIconInfo(15, 15, repeatIcon);
 
 // 'timerID1', 15x15px
-const unsigned char timerID1Icon [] PROGMEM = {
+const uint8_t timerID1Icon [] PROGMEM = {
   0x00, 0x00, //
   0x00, 0x00, //
   0x07, 0xc0, //      #####
@@ -434,7 +434,7 @@ const unsigned char timerID1Icon [] PROGMEM = {
 const BITMAP_INFO TimerId1IconInfo(15, 15, timerID1Icon);
 
 // 'timerID2', 15x15px
-const unsigned char timerID2Icon [] PROGMEM = {
+const uint8_t timerID2Icon [] PROGMEM = {
   0x00, 0x00, //
   0x00, 0x00, //
   0x07, 0xc0, //      #####
@@ -454,7 +454,7 @@ const unsigned char timerID2Icon [] PROGMEM = {
 const BITMAP_INFO TimerId2IconInfo(15, 15, timerID2Icon);
 
 // 'timer', 15x15px
-const unsigned char timerIcon [] PROGMEM = {
+const uint8_t timerIcon [] PROGMEM = {
   0x00, 0x00, //
   0x00, 0x00, //
   0x07, 0xc0, //      #####
@@ -474,7 +474,7 @@ const unsigned char timerIcon [] PROGMEM = {
 const BITMAP_INFO TimerIconInfo(15, 15, timerIcon);
 
 // 'large timer', 15x15px
-const unsigned char largeTimerIcon[] PROGMEM  =
+const uint8_t largeTimerIcon[] PROGMEM  =
 {
   0x07, 0xC0, //      #####     
   0x19, 0x30, //    ##  #  ##   

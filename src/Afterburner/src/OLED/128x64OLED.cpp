@@ -102,7 +102,7 @@ void C128x64_OLED::getTextExtents(const char* str, CRect& rect)
   rect.height = 0;
   if(m_pFontInfo) {
     while(*str) {
-      unsigned char c = (unsigned char)*str++;
+      uint8_t c = (uint8_t)*str++;
       if(c >= m_pFontInfo->StartChar && c <= m_pFontInfo->EndChar) {
     	  const FONT_CHAR_INFO* pCharInfo = &m_pFontInfo->pCharInfo[c - m_pFontInfo->StartChar];
         // and extract info from flash (program) storage
@@ -123,7 +123,7 @@ void C128x64_OLED::getTextExtents(const char* str, CRect& rect)
 }
 
 void
-C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, const FONT_INFO* pFontDescriptor, int& xsize, int& ysize)
+C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, uint8_t c, uint16_t color, uint16_t bg, const FONT_INFO* pFontDescriptor, int& xsize, int& ysize)
 {
 #ifdef DEBUG_FONT
   char pr = c;
@@ -140,7 +140,7 @@ C128x64_OLED::drawDotFactoryChar(int16_t x, int16_t y, unsigned char c, uint16_t
 	  // point to info for selected character
 	  const FONT_CHAR_INFO* pCharInfo = &pFontDescriptor->pCharInfo[c - pFontDescriptor->StartChar];
     // and extract info from flash (program) storage
-    unsigned char* addr = (unsigned char*)&pCharInfo->Offset;
+    uint8_t* addr = (uint8_t*)&pCharInfo->Offset;
 //	  uint8_t LSB = pgm_read_byte(&pCharInfo->Offset);
 	  uint8_t LSB = pgm_read_byte(addr++);
 	  uint8_t MSB = pgm_read_byte(addr);

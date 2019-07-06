@@ -61,12 +61,12 @@ void interpretJsonCommand(char* pLine)
 	for(it = obj.begin(); it != obj.end(); ++it) {
 
 		if(strcmp("TempDesired", it->key) == 0) {
-      if( !reqTemp(it->value.as<unsigned char>(), false) ) {  // this request is blocked if OEM controller active
+      if( !reqTemp(it->value.as<uint8_t>(), false) ) {  // this request is blocked if OEM controller active
         JSONmoderator.reset("TempDesired");
       }
 		}
 		else if(strcmp("RunState", it->key) == 0) {
-			if(it->value.as<unsigned char>()) {
+			if(it->value.as<uint8_t>()) {
 	      requestOn();
 			}
 			else {
@@ -80,27 +80,29 @@ void interpretJsonCommand(char* pLine)
 			setPumpMax(it->value.as<float>());
 		}
 		else if(strcmp("FanMin", it->key) == 0) {
-			setFanMin(it->value.as<short>());
+			setFanMin(it->value.as<uint16_t>());
 		}
 		else if(strcmp("FanMax", it->key) == 0) {
-			setFanMax(it->value.as<short>());
+			setFanMax(it->value.as<uint16_t>());
 		}
     else if(strcmp("CyclicTemp", it->key) == 0) {
-      setDemandDegC(it->value.as<unsigned char>());  // directly set demandDegC
+      setDemandDegC(it->value.as<uint8_t>());  // directly set demandDegC
     }
 		else if((strcmp("CyclicOff", it->key) == 0) || (strcmp("ThermostatOvertemp", it->key) == 0)) {
       sUserSettings us = NVstore.getUserSettings();
-      char val = it->value.as<char>();
-      if(val > 1) val--;   // internal uses a 1 offset
-      if(INBOUNDS(val, 0, 10))
+      int8_t val = it->value.as<int8_t>();
+      if(INBOUNDS(val, 0, 10)) {
+        if(val > 1) val--;   // internal uses a 1 offset
         us.cyclic.Stop = val;
+      }
 			NVstore.setUserSettings(us);
 		}
 		else if((strcmp("CyclicOn", it->key) == 0) || (strcmp("ThermostatUndertemp", it->key) == 0)) {
       sUserSettings us = NVstore.getUserSettings();
-      char val = it->value.as<char>();
-      if(INBOUNDS(val, -20, 0))
-        us.cyclic.Start = val;
+      int8_t val = it->value.as<int8_t>();
+      if(INBOUNDS(val, -20, 0)) {
+        us.cyclic.Start = val; 
+      }
 			NVstore.setUserSettings(us);
 		}
 		else if(strcmp("ThermostatMethod", it->key) == 0) {
@@ -118,7 +120,7 @@ void interpretJsonCommand(char* pLine)
 			NVstore.setUserSettings(settings);
 		}
 		else if(strcmp("Thermostat", it->key) == 0) {
-			if(!setThermostatMode(it->value.as<unsigned char>())) {  // this request is blocked if OEM controller active
+			if(!setThermostatMode(it->value.as<uint8_t>())) {  // this request is blocked if OEM controller active
         JSONmoderator.reset("ThermoStat");   
       }
 		}
@@ -136,7 +138,7 @@ void interpretJsonCommand(char* pLine)
       setTime(it->value.as<const char*>());
 		}
 		else if(strcmp("PumpPrime", it->key) == 0) {
-      reqPumpPrime(it->value.as<unsigned char>());
+      reqPumpPrime(it->value.as<uint8_t>());
 		}
 		else if(strcmp("Refresh", it->key) == 0) {
       resetJSONmoderator();
@@ -175,7 +177,7 @@ void interpretJsonCommand(char* pLine)
         TimerModerator.reset();
 		}
 		else if(strcmp("FanSensor", it->key) == 0) {
-      setFanSensor(it->value.as<unsigned char>());
+      setFanSensor(it->value.as<uint8_t>());
 		}
     // MQTT parameters
 		else if(strcmp("MQuery", it->key) == 0) {
@@ -183,12 +185,12 @@ void interpretJsonCommand(char* pLine)
     }
 		else if(strcmp("MEn", it->key) == 0) {
       sMQTTparams info = NVstore.getMQTTinfo();
-      info.enabled = it->value.as<unsigned char>();
+      info.enabled = it->value.as<uint8_t>();
 			NVstore.setMQTTinfo(info);
     }
 		else if(strcmp("MPort", it->key) == 0) {
       sMQTTparams info = NVstore.getMQTTinfo();
-      info.port = it->value.as<unsigned short>();
+      info.port = it->value.as<uint16_t>();
 			NVstore.setMQTTinfo(info);
     }
 		else if(strcmp("MHost", it->key) == 0) {
@@ -213,20 +215,20 @@ void interpretJsonCommand(char* pLine)
       setUploadSize(it->value.as<long>());
 		}
     else if(strcmp("GPout1", it->key) == 0) {
-      setGPIOout(0, it->value.as<unsigned char>() ? true : false);
+      setGPIOout(0, it->value.as<uint8_t>() ? true : false);
     }
     else if(strcmp("GPout2", it->key) == 0) {
-      setGPIOout(1, it->value.as<unsigned char>() ? true : false);
+      setGPIOout(1, it->value.as<uint8_t>() ? true : false);
     }
     else if(strcmp("GPin1", it->key) == 0) {
-      simulateGPIOin(it->value.as<unsigned char>() ? 0x01 : 0x00);  // simulate key 1 press
+      simulateGPIOin(it->value.as<uint8_t>() ? 0x01 : 0x00);  // simulate key 1 press
     }
     else if(strcmp("GPin2", it->key) == 0) {
-      simulateGPIOin(it->value.as<unsigned char>() ? 0x02 : 0x00);  // simulate key 2 press
+      simulateGPIOin(it->value.as<uint8_t>() ? 0x02 : 0x00);  // simulate key 2 press
     }
     else if(strcmp("JSONpack", it->key) == 0) {
       sUserSettings us = NVstore.getUserSettings();
-      uint8_t packed = it->value.as<unsigned char>() ? 0x00 : 0x01;
+      uint8_t packed = it->value.as<uint8_t>() ? 0x00 : 0x01;
       us.JSON.LF = packed;
       us.JSON.padding = packed;
       us.JSON.singleElement = packed;
@@ -236,7 +238,7 @@ void interpretJsonCommand(char* pLine)
     }
     else if(strcmp("TempMode", it->key) == 0) {
       sUserSettings us = NVstore.getUserSettings();
-      us.degF = it->value.as<unsigned char>() ? 0x01 : 0x00;
+      us.degF = it->value.as<uint8_t>() ? 0x01 : 0x00;
       NVstore.setUserSettings(us);
       NVstore.save();
     }
@@ -282,13 +284,13 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("PumpActual", getHeaterInfo().getPump_Actual(), root );
 	bSend |= moderator.addJson("FanMin", getHeaterInfo().getFan_Min(), root );
 	bSend |= moderator.addJson("FanMax", getHeaterInfo().getFan_Max(), root );
-	bSend |= moderator.addJson("FanRPM", getHeaterInfo().getFan_Actual(), root );
+	bSend |= moderator.addJson("FanRPM", getFanSpeed(), root );
 	bSend |= moderator.addJson("FanVoltage", getHeaterInfo().getFan_Voltage(), root );
 	bSend |= moderator.addJson("FanSensor", getHeaterInfo().getFan_Sensor(), root );
-	bSend |= moderator.addJson("InputVoltage", getHeaterInfo().getBattVoltage(), root );
+	bSend |= moderator.addJson("InputVoltage", getBatteryVoltage(), root );
 	bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getSystemVoltage(), root );
-	bSend |= moderator.addJson("GlowVoltage", getHeaterInfo().getGlow_Voltage(), root );
-	bSend |= moderator.addJson("GlowCurrent", getHeaterInfo().getGlow_Current(), root );
+	bSend |= moderator.addJson("GlowVoltage", getGlowVolts(), root );
+	bSend |= moderator.addJson("GlowCurrent", getGlowCurrent(), root );
   bSend |= moderator.addJson("BluewireStat", getBlueWireStatStr(), root );
 	bSend |= moderator.addJson("TempMode", NVstore.getUserSettings().degF, root); 
 

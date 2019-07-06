@@ -76,7 +76,7 @@ CScreenHeader::show()
   // WiFi icon is updated in animate()
 
   // battery
-  showBatteryIcon(getHeaterInfo().getBattVoltage());
+  showBatteryIcon(getBatteryVoltage());
 
   // clock
   showTime();

@@ -58,7 +58,7 @@
 //      Identifier: DieselSplash
 //      Draw Mode: Horizontal
 //
-/*const unsigned char DieselSplash [] PROGMEM = {
+/*const uint8_t DieselSplash [] PROGMEM = {
 // 'Splash3, 128x64px
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -128,7 +128,7 @@
 */
 
 
-const unsigned char DieselSplash [] PROGMEM = 
+const uint8_t DieselSplash [] PROGMEM = 
 {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //                                                                                                                                 
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //                                                                                                                                 
@@ -571,7 +571,11 @@ void
 CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
 {
   static int prevPercent = -1;
-  if(percent != prevPercent) {
+  static long prevTime = millis();
+
+  long tDelta = millis() - prevTime;
+  if(percent != prevPercent && tDelta > 500) {
+    prevTime = millis();
     _pDisplay->clearDisplay();
     _pDisplay->setCursor(64,22);
     switch(updateType) {

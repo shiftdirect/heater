@@ -43,13 +43,13 @@ CommStates::set(eCS eState)
 }
 
 bool 
-CommStates::collectData(CProtocol& Frame, unsigned char val, int limit) {   // returns true when buffer filled
+CommStates::collectData(CProtocol& Frame, uint8_t val, int limit) {   // returns true when buffer filled
   Frame.Data[_Count++] = val;
   return _Count >= limit;
 }
 
 bool 
-CommStates::collectDataEx(CProtocol& Frame, unsigned char val, int limit) {   // returns true when buffer filled
+CommStates::collectDataEx(CProtocol& Frame, uint8_t val, int limit) {   // returns true when buffer filled
   // guarding against rogue rx kernel buffer stutters....
   if((_Count == 0) && (val != 0x76)) {
     DebugPort.println("First heater byte not 0x76 - SKIPPING");
@@ -60,7 +60,7 @@ CommStates::collectDataEx(CProtocol& Frame, unsigned char val, int limit) {   //
 }
 
 bool 
-CommStates::checkValidStart(unsigned char val)
+CommStates::checkValidStart(uint8_t val)
 {
   if(_Count) 
     return true;

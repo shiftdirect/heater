@@ -56,9 +56,9 @@ public:
   bool is(eCS eState) {
     return _State == eState;
   }
-  bool collectData(CProtocol& Frame, unsigned char val, int limit = 24);
-  bool collectDataEx(CProtocol& Frame, unsigned char val, int limit = 24);
-  bool checkValidStart(unsigned char val);
+  bool collectData(CProtocol& Frame, uint8_t val, int limit = 24);
+  bool collectDataEx(CProtocol& Frame, uint8_t val, int limit = 24);
+  bool checkValidStart(uint8_t val);
   void setDelay(int ms);
   bool delayExpired();
   bool toggleReporting() { 

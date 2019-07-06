@@ -108,7 +108,7 @@ void TModerator<T>::reset(const char* name)
 class CModerator {
   TModerator<int> iModerator;
   TModerator<float> fModerator;
-  TModerator<unsigned char> ucModerator;
+  TModerator<uint8_t> ucModerator;
   CStringModerator szModerator;
 public:
   // integer values
@@ -119,8 +119,8 @@ public:
   bool addJson(const char* name, float value, JsonObject& root) { 
     return fModerator.addJson(name, value, root); 
   };
-  // unsigned char values
-  bool addJson(const char* name, unsigned char value, JsonObject& root) { 
+  // uint8_t values
+  bool addJson(const char* name, uint8_t value, JsonObject& root) { 
     return ucModerator.addJson(name, value, root); 
   };
   // const char* values

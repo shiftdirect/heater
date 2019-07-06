@@ -63,7 +63,7 @@ CSmartError::monitor(const CProtocol& heaterFrame)
 // test the new run state value, comparing to previous
 // detect abnormal transitions
 void 
-CSmartError::monitor(unsigned char newRunState)
+CSmartError::monitor(uint8_t newRunState)
 {
   // check if moving away from heater Idle state (S0)
   // especially useful if an OEM controller exists
@@ -110,7 +110,7 @@ CSmartError::monitor(unsigned char newRunState)
 }
 
 // return our smart error, if it exists, as the registered code
-unsigned char 
+uint8_t 
 CSmartError::getError()
 {
   if(m_Error) {

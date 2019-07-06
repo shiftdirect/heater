@@ -32,7 +32,7 @@ public:
   CTxManage(int TxGatePin, HardwareSerial& serial);
   void queueOnRequest(bool set = true);   // use false to remove repeating command
   void queueOffRequest(bool set = true);  // use false to remove repeating command
-  void queueRawCommand(unsigned char val);
+  void queueRawCommand(uint8_t val);
   void PrepareFrame(const CProtocol& Frame, bool isBTCmaster);
   void Start(unsigned long timenow);
   bool CheckTx(unsigned long timenow);
@@ -46,7 +46,7 @@ private:
   bool m_bOffReq;
   bool m_bTxPending;
   int  m_nTxGatePin;
-  unsigned char _rawCommand;
+  uint8_t _rawCommand;
   unsigned long m_nStartTime;
 
 };

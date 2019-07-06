@@ -22,16 +22,16 @@
 #include "Protocol.h"
 
 class CSmartError {
-  unsigned char m_prevRunState;
-  unsigned char m_Error;
+  uint8_t m_prevRunState;
+  uint8_t m_Error;
   bool m_bInhibit;
 public: 
   CSmartError();
   void reset();
   void inhibit();
   void monitor(const CProtocol& heaterFrame);
-  void monitor(unsigned char runstate);
-  unsigned char getError();
+  void monitor(uint8_t runstate);
+  uint8_t getError();
 };
 
 extern CSmartError SmartError;

@@ -36,6 +36,10 @@
 #include "../Utility/NVStorage.h"
 
 extern WiFiManager wm;
+extern const char* stdHeader;
+extern const char* formatIndex;
+extern const char* updateIndex;
+extern const char* formatDoneContent;
 
 File fsUploadFile;              // a File object to temporarily store the received file
 int SPIFFSupload = 0;
@@ -46,244 +50,26 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 bool bUpdateAccessed = false;  // flag used to ensure web update always starts via /update. direct accesses to /updatenow will FAIL
+bool bFormatAccessed = false;
 long _SuppliedFileSize = 0;
 
-void handleBTCNotFound();
 bool checkFile(File &file);
-
-
-String getContentType(String filename) { // convert the file extension to the MIME type
-  if (filename.endsWith(".html")) return "text/html";
-  else if (filename.endsWith(".css")) return "text/css";
-  else if (filename.endsWith(".js")) return "application/javascript";
-  else if (filename.endsWith(".ico")) return "image/x-icon";
-  else if (filename.endsWith(".bin")) return "application/octet-stream";
-  return "text/plain";
-}
-
-bool handleFileRead(String path) { // send the right file to the client (if it exists)
-  DebugPort.println("handleFileRead: " + path);
-  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
-  String contentType = getContentType(path);            // Get the MIME type
-  if (SPIFFS.exists(path)) {                            // If the file exists
-    File file = SPIFFS.open(path, "r");                 // Open it
-    if(!checkFile(file)) {                              // check it is readable
-      file.close();                                     // Then close the file again
-    }
-    if(!file) {
-      DebugPort.println("\tFile exists, but could not be read?");
-      String SPIFFSfmtpath = "http://" + server.client().localIP().toString() + "/formatspiffs";
-      String Updatepath = "http://" + server.client().localIP().toString() + "/update";
-    	String message = "<h1>Internal Server Error</h1>";
-      message += "<h3>Sorry, cannot open file</h3>";
-      message += "<p><b><i>" + path + "</i></b> exists, but cannot be opened?<br>";
-      message += "Recommended remedy is to re-format SPIFFS, then reload the web content.";
-      message += "<p><b>Use:<br><i><a href=\"" + SPIFFSfmtpath + "\" target=\"_blank\">" + SPIFFSfmtpath + "</a></b></i>  to format SPIFFS.";
-      message += "<p><b>Then:<br><i>" + Updatepath + "</b></i>  to upload each file of the web content.<br>";
-      message += "<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>";
-      message += "<p><b>Please ensure you unzip the web page content, then upload all the contained files.</b>";
-      server.send(500, "text/html", message);
-    }
-    else {
-      server.streamFile(file, contentType); // And send it to the client
-      file.close();                                       // Then close the file again
-    }
-    return true;
-  }
-  DebugPort.println("\tFile Not Found");
-  return false;                                         // If the file doesn't exist, return false
-}
-
-void handleWMConfig() 
-{
-  DebugPort.println("WEB: GET /wmconfig");
-	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
-	DebugPort.println("Starting web portal for wifi config");
-  delay(500);
-  wifiEnterConfigPortal(true, false, 3000);
-}
-
-void handleReset() 
-{
-  DebugPort.println("WEB: GET /resetwifi");
-	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
-	DebugPort.println("diconnecting client and wifi, then rebooting");
-  delay(500);
-  wifiEnterConfigPortal(true, true, 3000);
-}
-
-void handleFormat() 
-{
-  DebugPort.println("WEB: GET /formatspiffs");
-  String Updatepath = "http://" + server.client().localIP().toString() + "/update";
-	String message = "<h1>SPIFFS partition formatted</h1>";
-  message += "<h3>You must now upload the web content.</h3>";
-  message += "<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>";
-  message += "<p><b>Use:<br><i><a href=\"" + Updatepath + "\">" + Updatepath + "</a></b></i>  to then upload each file of the web content.<br>";
-  message += "<p><b>Please ensure you unzip the web page content, then upload all the contained files.</b>";
-	server.send(200, "text/html", message);
-
-	DebugPort.println("Formatting SPIFFS partition");
-  delay(500);
-  SPIFFS.format();
-}
-
-void handleSpiffs() 
-{
-  String report;
-  String message;
-  listDir(SPIFFS, "/", 2, report, true);
-  char usage[128];
-  sprintf(usage, "<p>Usage: %d/%d <p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
-  message += "<h1>Current SPIFFS contents:</h1>";
-  message += report;
-  message += usage;
-  message += "<p><a href=\"/update\">Add more files</a><br>";
-  message += "<p><a href=\"/index.html\">Home</a>";
-
-	server.send(200, "text/html", message);
-}
-
-void handleBTCNotFound() 
-{
-  String path = server.uri();
-  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
-  String Updatepath = "http://" + server.client().localIP().toString() + "/update";
-
-	String message = "<h1>404: File Not Found</h1>";
-	message += "<p>URI: <b><i>" + path + "</i></b>";
-	message += "<br>Method: ";
-	message += (server.method() == HTTP_GET) ? "GET" : "POST";
-	message += "<br>Arguments: ";
-	for (uint8_t i = 0; i < server.args(); i++) {
-		message += " " + server.argName(i) + ": " + server.arg(i) + "<br>";
-	}
-  message += "<hr>";
-  message += "<p>Please try uploading the file from the web content.";
-  message += "<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>";
-  message += "<p><b>Use:<br><i><a href=\"/update\">" + Updatepath + "</a></b></i>  to upload the web content.<br>";
-  message += "<p><b>Please ensure you unzip the web page content, then upload all the contained files.</b>";
-
-  char usage[128];
-  sprintf(usage, "<p>Usage: %d/%d<p>", SPIFFS.usedBytes(), SPIFFS.totalBytes());
-  String report;
-  listDir(SPIFFS, "/", 2, report);
-  message += "<hr><h3>Current SPIFFS contents:</h3>";
-  message += report;
-  message += usage;
-
-	server.send(404, "text/html", message);
-}
-
-// embedded HTML & Javascript to perform browser based updates of firmware or SPIFFS
-const char* updateIndex = R"=====(
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-  <meta charset="utf-8"/>
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="-1">
-  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
-<script>
-  // global variables
-  var sendSize;
-  var ws;
-
-  function _(el) {
-    return document.getElementById(el);
-  }
-  function init() {
-    ws = new WebSocket('ws://' + window.location.hostname + ':81/');
-
-    ws.onmessage = function(event){
-      var response = JSON.parse(event.data);
-      var key;
-      for(key in response) {
-        switch(key) {
-          case "progress":
-            // actual data bytes received as fed back via web socket
-            var bytes = response[key];
-            _("loaded_n_total").innerHTML = "Uploaded " + bytes + " bytes of " + sendSize;
-            var percent = Math.round( 100 * (bytes / sendSize));
-            _("progressBar").value = percent;
-            _("status").innerHTML = percent+"% uploaded.. please wait";
-            break;
-        }
-      }
-    }
-  }
-  function uploadFile() {
-    _("cancel").hidden = true;
-    var file = _("file1").files[0];
-    sendSize = file.size;
-
-    var JSONmsg = {};
-    JSONmsg['UploadSize'] = sendSize;
-    var str = JSON.stringify(JSONmsg);
-    console.log("JSON Tx:", str);
-    ws.send(str);
-
-    var formdata = new FormData();
-    formdata.append("update", file);
-    var ajax = new XMLHttpRequest();
-    // progress is handled via websocket JSON sent from controller
-    // using server side progress only shows the buffer filling, not actual delivery.
-    ajax.addEventListener("load", completeHandler, false);
-    ajax.addEventListener("error", errorHandler, false);
-    ajax.addEventListener("abort", abortHandler, false);
-    ajax.open("POST", "/updatenow");
-    ajax.send(formdata);
-  }
-  function completeHandler(event) {
-   _("status").innerHTML = event.target.responseText;
-   _("progressBar").value = 0;
-   _("loaded_n_total").innerHTML = "Uploaded " + sendSize + " bytes of " + sendSize;
-    var file = _("file1").files[0];
-    if(file.name.endsWith(".bin")) {
-      setTimeout(function () { 
-        window.location.assign("/"); 
-      }, 5000);    
-    }
-    else {
-      setTimeout(function () { 
-        window.location.reload(); 
-      }, 1000);    
-    }
-  }
-  function errorHandler(event) {
-    _("status").innerHTML = "Upload Failed";
-  }
-  function abortHandler(event) {
-    _("status").innerHTML = "Upload Aborted";
-  }
-</script>
-<style>
-  body {font-family: Arial, Helvetica, sans-serif;}
-</style>
-  <title>Afterburner firmware update</title>
-</head>
-<body onload="javascript:init()">
-  <h1>Afterburner firmware update</h1>
-  <form id="upload_form" method="POST" enctype="multipart/form-data" autocomplete="off">
-    <input type="file" name="file1" id="file1"> <BR>
-    <input type="button" value="Update" onclick="uploadFile()"> 
-    <progress id="progressBar" value="0" max="100" style="width:300px;"></progress><BR>
-    <h3 id="status"></h3>
-    <p id="loaded_n_total"></p>
-    <BR>
-    <input type="button" onclick=window.location.assign("/") value="Cancel" id="cancel">
-  </form>
-</body>
-</html>
-)=====";
-
-
-void rootRedirect()
-{
-  server.sendHeader("Location","/");      // reselect the update page
-  server.send(303);
-}
-
+void addTableData(String& HTML, String dta);
+void rootRedirect();
+String getContentType(String filename);
+bool handleFileRead(String path);
+void handleBTCNotFound();
+void onSPIFFSErase();
+void onFormatSPIFFS();
+void onFormatNow();
+void onFormatDone();
+void onWMConfig();
+void onWebReset();
+void onUploadBegin();
+void onUploadCompletion();
+void onUploadProgression();
+void build404Response(String& content, String file);
+void build500Response(String& content, String file);
 
 void initWebServer(void) {
 
@@ -300,147 +86,32 @@ void initWebServer(void) {
 		DebugPort.println("MDNS responder started");
 	}
 	
-	server.on("/wmconfig", handleWMConfig);
-	server.on("/resetwifi", handleReset);
-	server.on("/formatspiffs", handleFormat);
-	server.on("/spiffs", handleSpiffs);
+	server.on("/wmconfig", onWMConfig);
+	server.on("/resetwifi", onWebReset);
+  server.on("/erase", HTTP_POST, onSPIFFSErase);  // erase file from SPIFFS
 
-  server.on("/tst", HTTP_GET, []() {
-    DebugPort.println("WEB: GET /tst");
-    server.sendHeader("Location","/");      // reselect the update page
-    server.send(303);
-  });
-
-  // Magical code originally shamelessly lifted from Arduino WebUpdate example, then modified
+  // Magical code originally shamelessly lifted from Arduino WebUpdate example, then greatly modified
   // This allows pushing new firmware to the ESP from a WEB BROWSER!
   // Added authentication and a sequencing flag to ensure this is not bypassed
+  // You can also upload files to SPIFFS via this same portal
   //
   // Initial launch page
-  server.on("/update", HTTP_GET, []() {
-    DebugPort.println("WEB: GET /update");
-    sCredentials creds = NVstore.getCredentials();
-    if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
-      return server.requestAuthentication();
-    }
-    bUpdateAccessed = true;
-#ifdef USE_EMBEDDED_WEBUPDATECODE    
-    server.send(200, "text/html", updateIndex);
-#else
-     handleFileRead("/uploadfirmware.html");
-#endif
-  });
-
-  // handle attempts to just browse the /updatenow path - force redirect to root
+  server.on("/update", HTTP_GET, onUploadBegin);
+  // handle attempts to browse the /updatenow path - force redirect to root
   server.on("/updatenow", HTTP_GET, []() {  
     DebugPort.println("WEB: GET /updatenow - ILLEGAL - root redirect");
     rootRedirect();
   });
+  // valid upload attempts must use post, AND they must have also passed thru /update (bUpdateAccessed = true)
+  server.on("/updatenow", HTTP_POST, onUploadCompletion, onUploadProgression);
 
-  // actual guts that manages the new firmware upload
-  server.on("/updatenow", HTTP_POST, []() {
-    DebugPort.println("WEB: POST /updatenow completion");
-    // completion functionality
-    if(SPIFFSupload) {
-      if(SPIFFSupload == 1) {
-        DebugPort.println("WEB: SPIFFS OK");
-        server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
-        // javascript reselects the /update page!
-      }
-      else {
-        DebugPort.println("WEB: SPIFFS FAIL");
-        server.send(500, "text/plain", "500: couldn't create file");
-      }
-      SPIFFSupload = 0;
-    }
-    else {
-      if(Update.hasError()) {
-        DebugPort.println("WEB: UPDATE FAIL");
-        server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
-      }
-      else {
-        DebugPort.println("WEB: UPDATE OK");
-        server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
-      }
-      delay(1000);
-      // javascript redirects to root page so we go there after reboot!
-      forceBootInit();
-      ESP.restart();                             // reboot
-    }
-  }, []() {
-    if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
-      HTTPUpload& upload = server.upload();
-      if (upload.status == UPLOAD_FILE_START) {
-        String filename = upload.filename;
-        DebugPort.setDebugOutput(true);
-        if(filename.endsWith(".bin")) {
-          DebugPort.printf("Update: %s %d\r\n", filename.c_str(), upload.totalSize);
-          if (!Update.begin()) { //start with max available size
-            Update.printError(DebugPort);
-          }
-        }
-        else {
-          if(!filename.startsWith("/")) filename = "/"+filename;
-          DebugPort.printf("handleFileUpload Name: %s\r\n", filename.c_str());
-          fsUploadFile = SPIFFS.open(filename, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
-          SPIFFSupload = fsUploadFile ? 1 : 2;
-          //filename = String();
-        }
-      } 
-
-      // handle file segments
-      else if (upload.status == UPLOAD_FILE_WRITE) {
-#if USE_SW_WATCHDOG == 1
-        feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
-#endif
-        if(upload.totalSize) {
-          char JSON[64];
-          sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-          sendWebServerString(JSON);  // feedback proper byte count of update to browser via websocket
-        }
-        int percent = 0;
-        if(_SuppliedFileSize) 
-          percent = 100 * upload.totalSize / _SuppliedFileSize;
-        ShowOTAScreen(percent, eOTAbrowser);  // browser update 
-
-        DebugPort.print(".");
-        if(fsUploadFile) {
-          fsUploadFile.write(upload.buf, upload.currentSize); // Write the received bytes to the file
-        }
-        else {
-          if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-            Update.printError(DebugPort);
-          }
-        }
-      } 
-      
-      // handle end of upload
-      else if (upload.status == UPLOAD_FILE_END) {
-        if(SPIFFSupload) {
-          if(fsUploadFile) {
-            fsUploadFile.close();                               // Close the file again
-            DebugPort.printf("handleFileUpload Size: %d\r\n", upload.totalSize);
-          }
-        }
-        else {
-          if (Update.end(true)) { //true to set the size to the current progress
-            DebugPort.printf("Update Success: %u\r\nRebooting...\r\n", upload.totalSize);
-          } else {
-            Update.printError(DebugPort);
-          }
-        }
-        DebugPort.setDebugOutput(false);
-        bUpdateAccessed = false;
-      } else {
-        DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\r\n", upload.status);
-        bUpdateAccessed = false;
-      }
-    }
-    else {
-      // attempt to POST without using /update - forced redirect to root
-      DebugPort.println("WEB: POST /updatenow forbidden entry");
-      rootRedirect();
-    }
+  // SPIFFS formatting
+  server.on("/formatspiffs", HTTP_GET, onFormatSPIFFS);
+  server.on("/formatnow", HTTP_GET, []() {     // deny browse access
+    DebugPort.println("WEB: GET /formatnow - ILLEGAL - root redirect");
+    rootRedirect();
   });
+	server.on("/formatnow", HTTP_POST, onFormatNow);  // access via POST is legal, but only if bFormatAccess == true
 
   // NOTE: this serves the default home page, and favicon.ico
   server.onNotFound([]() 
@@ -466,6 +137,208 @@ bool doWebServer(void)
 	webSocket.loop();
 	server.handleClient();
   return true;
+}
+
+String getContentType(String filename) { // convert the file extension to the MIME type
+  if (filename.endsWith(".html")) return "text/html";
+  else if (filename.endsWith(".css")) return "text/css";
+  else if (filename.endsWith(".js")) return "application/javascript";
+  else if (filename.endsWith(".ico")) return "image/x-icon";
+  else if (filename.endsWith(".bin")) return "application/octet-stream";
+  return "text/plain";
+}
+
+bool handleFileRead(String path) { // send the right file to the client (if it exists)
+  DebugPort.println("handleFileRead: " + path);
+  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+  String contentType = getContentType(path);            // Get the MIME type
+  if (SPIFFS.exists(path)) {                            // If the file exists
+    File file = SPIFFS.open(path, "r");                 // Open it
+    if(!checkFile(file)) {                              // check it is readable
+      file.close();                                     // if not, close the file
+    }
+    if(!file) {
+      DebugPort.println("\tFile exists, but could not be read?");  // dodgy file - throw error back to client
+
+      String content;
+      build500Response(content, path);
+      server.send(500, "text/html", content);
+      return false;                                     // If the file is broken, return false
+    }
+    else {
+      server.streamFile(file, contentType);             // File good, send it to the client
+      file.close();                                     // Then close the file 
+      return true;
+    }
+  }
+  DebugPort.println("\tFile Not Found");
+  return false;                                         // If the file doesn't exist, return false
+}
+
+const char* stdHeader = R"=====(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="-1">
+<meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+</head>
+<style>
+body { font-family: Arial, Helvetica, sans-serif; }
+th { text-align: left; }
+.throb { animation: throbber 1s linear infinite; }
+@keyframes throbber { 50% { opacity: 0; } }
+</style>
+)=====";
+
+const char* updateIndex = R"=====(
+<script>
+// globals
+var sendSize;
+var ws;
+
+function _(el) {
+ return document.getElementById(el);
+}
+
+function onWebSocket(event) {
+  var response = JSON.parse(event.data);
+  var key;
+  for(key in response) {
+   switch(key) {
+    case "progress":
+     // actual data bytes received as fed back via web socket
+     var bytes = response[key];
+     _("loaded_n_total").innerHTML = "Uploaded " + bytes + " bytes of " + sendSize;
+     var percent = Math.round( 100 * (bytes / sendSize));
+     _("progressBar").value = percent;
+     _("status").innerHTML = percent+"% uploaded.. please wait";
+     break;
+   }
+  }
+}
+
+function init() {
+ ws = new WebSocket('ws://' + window.location.hostname + ':81/');
+ ws.onmessage = onWebSocket;
+}
+
+function uploadFile() {
+ _("cancel").hidden = true;
+ var file = _("file1").files[0];
+ sendSize = file.size;
+ var JSONmsg = {};
+ JSONmsg['UploadSize'] = sendSize;
+ var str = JSON.stringify(JSONmsg);
+ console.log("JSON Tx:", str);
+ ws.send(str);
+ var formdata = new FormData();
+ formdata.append("update", file);
+ var ajax = new XMLHttpRequest();
+ // progress is handled via websocket JSON sent from controller
+ // using server side progress only shows the buffer filling, not actual delivery.
+ ajax.addEventListener("load", completeHandler, false);
+ ajax.addEventListener("error", errorHandler, false);
+ ajax.addEventListener("abort", abortHandler, false);
+ ajax.open("POST", "/updatenow");
+ ajax.send(formdata);
+}
+
+function completeHandler(event) {
+ _("status").innerHTML = event.target.responseText;
+ _("progressBar").value = 0;
+ _("loaded_n_total").innerHTML = "Uploaded " + sendSize + " bytes of " + sendSize;
+ var file = _("file1").files[0];
+ if(file.name.endsWith(".bin")) {
+  setTimeout( function() { window.location.assign('/'); }, 5000);    
+ }
+ else {
+  setTimeout( function() { location.assign('/update'); }, 500);    
+ }
+}
+
+function errorHandler(event) {
+ _("status").innerHTML = "Upload Failed";
+}
+
+function abortHandler(event) {
+ _("status").innerHTML = "Upload Aborted";
+}
+
+function onErase(fn) {
+ if(confirm('Do you really want to erase ' + fn +' ?')) {
+  var formdata = new FormData();
+  formdata.append("filename", fn);
+  var ajax = new XMLHttpRequest();
+  ajax.open("POST", "/erase");
+  ajax.send(formdata);
+  setTimeout(function () { location.reload(); }, 500);    
+ }
+}
+
+function onBrowseChange() {
+  _("upload").hidden = false;
+  _("progressBar").hidden = false;
+  _("status").hidden = false;
+  _("loaded_n_total").hidden = false;
+  _("spacer").hidden = false;
+}
+</script>
+
+<title>Afterburner update</title>
+<body onload="javascript:init()">
+ <h1>Afterburner update</h1>
+ <form id='upload_form' method="POST" enctype="multipart/form-data" autocomplete="off">
+  <label for='file1'>Select a file to upload:<br></label>
+  <input type="file" name="file1" id="file1" size="50" onchange="onBrowseChange()"><p>
+  <input id="upload" type='button' onclick='uploadFile()' value='Upload' hidden>
+  <progress id='progressBar' value='0' max='100' style='width:300px;' hidden></progress>
+  <p id='spacer' hidden> </p>
+  <input type='button' onclick=window.location.assign('/') id='cancel' value='Cancel'>
+  <h3 id='status' hidden></h3>
+  <div id='loaded_n_total' hidden></div>
+ </form>
+)=====";
+
+
+void onWMConfig() 
+{
+  DebugPort.println("WEB: GET /wmconfig");
+	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
+	DebugPort.println("Starting web portal for wifi config");
+  delay(500);
+  wifiEnterConfigPortal(true, false, 3000);
+}
+
+void onWebReset() 
+{
+  DebugPort.println("WEB: GET /resetwifi");
+	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
+	DebugPort.println("diconnecting client and wifi, then rebooting");
+  delay(500);
+  wifiEnterConfigPortal(true, true, 3000);
+}
+
+
+//<p><a href="/update"> <button type="button">Add</button></a>
+//<p><a href="/"><button type="button">Home</button></a>
+
+void handleBTCNotFound() 
+{
+  String path = server.uri();
+  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+
+  String message;
+  build404Response(message, path);
+
+	server.send(404, "text/html", message);
+}
+
+void rootRedirect()
+{
+  server.sendHeader("Location","/");      // reselect the update page
+  server.send(303);
 }
 
 bool isWebServerClientChange() 
@@ -555,7 +428,7 @@ bool checkFile(File &file)
   return bOK;
 }
 
-void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLreport, bool withHTMLanchors) 
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLreport, int withHTMLanchors) 
 {
   char msg[128];
   File root = fs.open(dirname);
@@ -572,27 +445,373 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLrepor
     return;
   }
 
+  HTMLreport += "<hr><h3>Current SPIFFS contents:</h3>";
+
+  // create HTML table header
+  HTMLreport += R"=====(<table>
+<tr>
+<th></th>
+<th style="width:200px">Name</th>
+<th style="width:60px">Size</th>
+<th></th>
+</tr>
+)=====";
   File file = root.openNextFile();
   while (file) {
+    HTMLreport += "<tr>\n";
     if (file.isDirectory()) {
+      addTableData(HTMLreport, "DIR");
+      addTableData(HTMLreport, file.name());
+      addTableData(HTMLreport, "");
+      addTableData(HTMLreport, "");
+
       sprintf(msg, "  DIR : %s", file.name());
       DebugPort.println(msg);
-      HTMLreport += msg; HTMLreport += "<br>";
+
       if (levels) {
         listDir(fs, file.name(), levels - 1, HTMLreport);
       }
     } else {
       String fn = file.name();
+      String ers;
+      if(withHTMLanchors == 2)
+        ers = "<input type=\"button\" value=\"X\" onClick=\"onErase('" + fn + "')\">";
       if(withHTMLanchors) {
         if(fn.endsWith(".html") || fn.endsWith(".htm")) {
           String fn2(fn);
           fn = "<a href=\"" + fn2 + "\">" + fn2 + "</a>";
         }
       }
-      sprintf(msg, "  FILE: %s SIZE: %d", fn.c_str(), file.size());
+      String sz; sz += int(file.size());
+      addTableData(HTMLreport, "");
+      addTableData(HTMLreport, fn);
+      addTableData(HTMLreport, sz);
+      addTableData(HTMLreport, ers);
+
+      sprintf(msg, "  FILE: %s  SIZE: %d", fn.c_str(), file.size());
       DebugPort.println(msg);
-      HTMLreport += msg; HTMLreport += "<br>";
     }
+    HTMLreport += "</tr>\n";
     file = root.openNextFile();
   }
+  HTMLreport += "</table>\n";
+
+  if(withHTMLanchors) {
+    char usage[128];
+    int used = SPIFFS.usedBytes();
+    int total = SPIFFS.totalBytes();
+    float percent = used * 100. / total;
+    sprintf(usage, "<p><b>Usage</b><br> %d/%d bytes (%.1f%%)\n<p>", used, total, percent);
+    HTMLreport += usage;
+  }    
 }    
+
+void addTableData(String& HTML, String dta) 
+{
+  HTML += "<td>";
+  HTML += dta;
+  HTML += "</td>\n";
+}
+
+// erase a file from SPIFFS partition
+void onSPIFFSErase()
+{
+  String filename = server.arg("filename");        // get request argument value by name
+
+  if(filename.length() != 0)  {
+    DebugPort.printf("onSPIFFSErase: %s ", filename.c_str());
+    if(SPIFFS.exists(filename.c_str())) {
+      SPIFFS.remove(filename.c_str());
+      DebugPort.println("ERASED\r\n");
+    }
+    else
+      DebugPort.println("NOT FOUND\r\n");
+  }
+}
+
+// function called upon completion of file (form) upload
+void onUploadCompletion()
+{
+  DebugPort.println("WEB: POST /updatenow completion");
+  // completion functionality
+  if(SPIFFSupload) {
+    if(SPIFFSupload == 1) {
+      DebugPort.println("WEB: SPIFFS OK");
+      server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
+      // javascript reselects the /update page!
+    }
+    else {
+      DebugPort.println("WEB: SPIFFS FAIL");
+      server.send(500, "text/plain", "500: couldn't create file");
+    }
+    SPIFFSupload = 0;
+  }
+  else {
+    if(Update.hasError()) {
+      DebugPort.println("WEB: UPDATE FAIL");
+      server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
+    }
+    else {
+      DebugPort.println("WEB: UPDATE OK");
+      server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
+    }
+    delay(1000);
+    // javascript redirects to root page so we go there after reboot!
+    forceBootInit();
+    ESP.restart();                             // reboot
+  }
+}
+
+void onUploadBegin()
+{
+  DebugPort.println("WEB: GET /update");
+  sCredentials creds = NVstore.getCredentials();
+  if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
+    return server.requestAuthentication();
+  }
+  bUpdateAccessed = true;
+  bFormatAccessed = false;
+#ifdef USE_EMBEDDED_WEBUPDATECODE    
+  String SPIFFSinfo;
+  listDir(SPIFFS, "/", 2, SPIFFSinfo, 2);
+  String content = stdHeader;
+  content += updateIndex + SPIFFSinfo;
+  content += "<p><button onclick=window.location.assign('/formatspiffs')>Format SPIFFS</button>";
+  content += "</body></html>";
+  server.send(200, "text/html", content );
+#else
+    handleFileRead("/uploadfirmware.html");
+#endif
+}
+
+void onUploadProgression()
+{
+  if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
+    HTTPUpload& upload = server.upload();
+    if (upload.status == UPLOAD_FILE_START) {
+      String filename = upload.filename;
+      DebugPort.setDebugOutput(true);
+      if(filename.endsWith(".bin")) {
+        DebugPort.printf("Update: %s %d\r\n", filename.c_str(), upload.totalSize);
+        if (!Update.begin()) { //start with max available size
+          Update.printError(DebugPort);
+        }
+      }
+      else {
+        if(!filename.startsWith("/")) filename = "/"+filename;
+        DebugPort.printf("handleFileUpload Name: %s\r\n", filename.c_str());
+        fsUploadFile = SPIFFS.open(filename, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
+        SPIFFSupload = fsUploadFile ? 1 : 2;
+        //filename = String();
+      }
+    } 
+
+    // handle file segments
+    else if (upload.status == UPLOAD_FILE_WRITE) {
+#if USE_SW_WATCHDOG == 1
+      feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
+#endif
+      if(upload.totalSize) {
+        char JSON[64];
+        sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
+        sendWebServerString(JSON);  // feedback proper byte count of update to browser via websocket
+      }
+      int percent = 0;
+      if(_SuppliedFileSize) 
+        percent = 100 * upload.totalSize / _SuppliedFileSize;
+      ShowOTAScreen(percent, eOTAbrowser);  // browser update 
+
+      DebugPort.print(".");
+      if(fsUploadFile) {
+        fsUploadFile.write(upload.buf, upload.currentSize); // Write the received bytes to the file
+      }
+      else {
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+          Update.printError(DebugPort);
+        }
+      }
+    } 
+    
+    // handle end of upload
+    else if (upload.status == UPLOAD_FILE_END) {
+      if(SPIFFSupload) {
+        if(fsUploadFile) {
+          fsUploadFile.close();                               // Close the file again
+          DebugPort.printf("handleFileUpload Size: %d\r\n", upload.totalSize);
+        }
+      }
+      else {
+        if (Update.end(true)) { //true to set the size to the current progress
+          DebugPort.printf("Update Success: %u\r\nRebooting...\r\n", upload.totalSize);
+        } else {
+          Update.printError(DebugPort);
+        }
+      }
+      DebugPort.setDebugOutput(false);
+      bUpdateAccessed = false;
+    } else {
+      DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\r\n", upload.status);
+      bUpdateAccessed = false;
+    }
+  }
+  else {
+    // attempt to POST without using /update - forced redirect to root
+    DebugPort.println("WEB: POST /updatenow forbidden entry");
+    rootRedirect();
+  }
+}
+
+/***************************************************************************************
+ * FORMAT SPIFFS HANDLING
+ *
+ * User must first access /formatspiffs.
+ * If not already authenticated, an Username/Password challenge is presented
+ * If that passes, bFormatAccessed is set, unlocking access to the /formatnow path
+ * The presneted web page offers Format and Cancel button.
+ * Cancel will immediatly return to the file upload path '/update'
+ * Format will then present a confirmation dialog, user must press Yes to proceed.
+ * 
+ * Assuming Yes was pressed, a HTTP POST to /format now with the payload 'confirm'='yes' is performed
+ * The /formatnow handler will check that confirm does equal yes, and that bFormatAccessed was set
+ * If all good SPIFFS is re-formatted - no response is set.
+ * The javascript though from the /formatspiffs page performs a reload shortly after the post (200ms timeout)
+ * 
+ * As bFormatAccessed is still set, a confimration page is the presented advising files now need to be uploaded
+ * A button allows direct access to /update
+ */
+
+void onFormatSPIFFS()
+{
+  DebugPort.println("WEB: GET /formatspiffs");
+  bUpdateAccessed = false;
+  String content = stdHeader;
+  if(!bFormatAccessed) {
+    sCredentials creds = NVstore.getCredentials();
+    if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
+      return server.requestAuthentication();
+    }
+    bFormatAccessed = true;   // only set after we pass authentication
+
+    content += formatIndex;
+  }
+  else {
+    bFormatAccessed = false;
+
+    content += formatDoneContent;
+  }
+  server.send(200, "text/html", content );
+}
+
+const char* formatDoneContent = R"=====(<body>
+<h1>SPIFFS partition has been formatted</h1>
+<h3>You must now upload the web content.</h3>
+<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>
+<h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>
+<p><button onclick=window.location.assign('/update')>Upload web content</button> 
+</body>
+</html>
+)=====";
+
+const char* formatIndex = R"=====(
+<script>
+function init() {
+}
+function onFormat() {
+ var formdata = new FormData();
+ if(confirm('Do you really want to reformat the SPIFFS partition ?')) {
+  formdata.append("confirm", "yes");
+  setTimeout(function () { location.reload(); }, 200);    
+ }
+ else {
+  formdata.append("confirm", "no");
+  setTimeout(function () { location.assign('/update'); }, 200);    
+ }
+ var ajax = new XMLHttpRequest();
+ ajax.open("POST", "/formatnow");
+ ajax.send(formdata);
+}
+</script>
+<title>Afterburner SPIFFS format</title>
+<body onload="javascript:init()">
+<h1>Format SPIFFS partition</h1>
+<h3 class="throb">CAUTION!  This will erase all web content</h1>
+<p><button onClick='onFormat()'>Format</button><br>
+<p><a href="/update"><button>Cancel</button></a>
+</body>
+</html>
+)=====";
+
+
+void onFormatNow() 
+{
+  // HTTP POST handler, do not need to return a web page!
+  DebugPort.println("WEB: POST /formatnow");
+  String confirm = server.arg("confirm");        // get request argument value by name
+  if(confirm == "yes" && bFormatAccessed) {      // confirm user agrees, and we did pass thru /formatspiffs first
+	  DebugPort.println("Formatting SPIFFS partition");
+    SPIFFS.format();                             // re-format the SPIFFS partition
+  }
+  else {
+    bFormatAccessed = false;                     // user cancelled upon last confirm popup, or not authenticated access
+    rootRedirect();
+  }
+}
+
+
+
+/***************************************************************************************
+ * HTTP RESPONSE 404 - FILE NOT FOUND HANDLING
+ */
+void build404Response(String& content, String file)
+{
+content += stdHeader;
+content += R"=====(<body>
+<h1>404: File Not Found</h1>
+<p>URI: <b><i>)=====";
+content +=  file;
+content += R"=====(</i></b><br>
+Method: )=====";
+content += (server.method() == HTTP_GET) ? "GET" : "POST";
+content += "<br>Arguments: ";
+for (uint8_t i = 0; i < server.args(); i++) {
+	content += " " + server.argName(i) + ": " + server.arg(i) + "<br>";
+}
+content += R"=====(<hr>
+<p>Please check the URL.<br>
+If OK please try uploading the file from the web content.
+<p>Latest web content can be downloaded from <a href="http://www.mrjones.id.au/afterburner/firmware.html" target="_blank">http://www.mrjones.id.au/afterburner/firmware.html</a>
+<h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>
+<p><a href="/update"><button>Upload web content</button></a><br>
+)=====";
+
+String SPIFFSinfo;
+listDir(SPIFFS, "/", 2, SPIFFSinfo, 1);
+content += SPIFFSinfo;
+content += "</body>";
+content += "</html>";
+}
+
+/***************************************************************************************
+ * HTTP RESPONSE 500 - SERVER ERROR HANDLING
+ */
+void build500Response(String& content, String file)
+{
+content = stdHeader;
+content += R"=====(<body>
+<h1>500: Internal Server Error</h1>
+<h3 class="throb">Sorry, cannot open file</h3>
+<p><b><i> ")=====";
+content += file;
+content += R"=====(" </i></b> exists, but cannot be streamed?
+<hr>
+<p>Recommended remedy is to re-format the SPIFFS partition, then reload the web content files.
+<br>Latest web content can be downloaded from <a href="http://www.mrjones.id.au/afterburner/firmware.html" target="_blank">http://www.mrjones.id.au/afterburner/firmware.html</a> <i>(opens in new page)</i>.
+<p>To format the SPIFFS partition, press <button onClick=location.assign('/formatspiffs')>Format SPIFFS</button>
+<p>You will then need to upload each file of the web content by using the subsequent "<b>Upload</b>" button.
+<hr>
+<h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>
+</body>
+</html>
+)=====";
+}
+

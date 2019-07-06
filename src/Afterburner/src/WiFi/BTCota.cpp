@@ -66,10 +66,15 @@ void initOTA(){
 //    DebugPort.end();       // force graceful close of telnetspy - ensures a client will reconnect cleanly
 	})
 		.onProgress([](unsigned int progress, unsigned int total) {
+    feedWatchdog();
     int percent = (progress / (total / 100));
-		DebugPort.printf("Progress: %u%%\r", percent);
-    DebugPort.handle();    // keep telnet spy alive
-    ShowOTAScreen(percent);
+    static int prevPC = 0;
+    if(percent != prevPC) {
+      prevPC = percent;
+		  DebugPort.printf("Progress: %u%%\r", percent);
+      DebugPort.handle();    // keep telnet spy alive
+      ShowOTAScreen(percent);
+    }
 	})
 		.onError([](ota_error_t error) {
 		DebugPort.printf("Error[%u]: ", error);

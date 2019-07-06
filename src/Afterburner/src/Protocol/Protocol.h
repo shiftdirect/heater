@@ -28,63 +28,63 @@
 class CProtocol {
 public:
   union {
-    unsigned char Data[24];
+    uint8_t Data[24];
     struct {
-      unsigned char Byte0;              //  [0] always 0x76
-      unsigned char Len;                //  [1] always 0x16 == 22
-      unsigned char Command;            //  [2] transient commands: 00: NOP, 0xa0 START, 0x05: STOP
-      unsigned char ActualTemperature;  //  [3] 1degC / digit
-      unsigned char DesiredDemand;      //  [4] typ. 1degC / digit, but also gets used for Fixed Hx demand too!
-      unsigned char MinPumpFreq;        //  [5] 0.1Hz/digit
-      unsigned char MaxPumpFreq;        //  [6] 0.1Hz/digit
-      unsigned char MinFanRPM_MSB;      //  [7] 16 bit - big endian MSB
-      unsigned char MinFanRPM_LSB;      //  [8] 16 bit - big endian LSB : 1 RPM / digit
-      unsigned char MaxFanRPM_MSB;      //  [9] 16 bit - big endian MSB
-      unsigned char MaxFanRPM_LSB;      // [10] 16 bit - big endian LSB : 1 RPM / digit
-      unsigned char OperatingVoltage;   // [11] 120, 240 : 0.1V/digit
-      unsigned char FanSensor;          // [12] SN-1 or SN-2
-      unsigned char OperatingMode;      // [13] 0x32:Thermostat, 0xCD:Fixed
-      unsigned char MinTemperature;     // [14] Minimum settable temperature
-      unsigned char MaxTemperature;     // [15] Maximum settable temperature
-      unsigned char GlowDrive;          // [16] power to supply to glow plug
-      unsigned char Prime;              // [17] 00: normal, 0x5A: fuel prime
-      unsigned char Unknown1_MSB;       // [18] always 0x01
-      unsigned char Unknown1_LSB;       // [19] always 0x2c  "300 secs = max run without burn detected"?
-      unsigned char Unknown2_MSB;       // [20] always 0x0d
-      unsigned char Unknown2_LSB;       // [21] always 0xac  "3500 ?"
-      unsigned char CRC_MSB;            // [22]
-      unsigned char CRC_LSB;            // [23]
+      uint8_t Byte0;              //  [0] always 0x76
+      uint8_t Len;                //  [1] always 0x16 == 22
+      uint8_t Command;            //  [2] transient commands: 00: NOP, 0xa0 START, 0x05: STOP
+      uint8_t ActualTemperature;  //  [3] 1degC / digit
+      uint8_t DesiredDemand;      //  [4] typ. 1degC / digit, but also gets used for Fixed Hx demand too!
+      uint8_t MinPumpFreq;        //  [5] 0.1Hz/digit
+      uint8_t MaxPumpFreq;        //  [6] 0.1Hz/digit
+      uint8_t MinFanRPM_MSB;      //  [7] 16 bit - big endian MSB
+      uint8_t MinFanRPM_LSB;      //  [8] 16 bit - big endian LSB : 1 RPM / digit
+      uint8_t MaxFanRPM_MSB;      //  [9] 16 bit - big endian MSB
+      uint8_t MaxFanRPM_LSB;      // [10] 16 bit - big endian LSB : 1 RPM / digit
+      uint8_t OperatingVoltage;   // [11] 120, 240 : 0.1V/digit
+      uint8_t FanSensor;          // [12] SN-1 or SN-2
+      uint8_t OperatingMode;      // [13] 0x32:Thermostat, 0xCD:Fixed
+      uint8_t MinTemperature;     // [14] Minimum settable temperature
+      uint8_t MaxTemperature;     // [15] Maximum settable temperature
+      uint8_t GlowDrive;          // [16] power to supply to glow plug
+      uint8_t Prime;              // [17] 00: normal, 0x5A: fuel prime
+      uint8_t Unknown1_MSB;       // [18] always 0x01
+      uint8_t Unknown1_LSB;       // [19] always 0x2c  "300 secs = max run without burn detected"?
+      uint8_t Unknown2_MSB;       // [20] always 0x0d
+      uint8_t Unknown2_LSB;       // [21] always 0xac  "3500 ?"
+      uint8_t CRC_MSB;            // [22]
+      uint8_t CRC_LSB;            // [23]
     } Controller;
     struct {
-      unsigned char Byte0;              // always 0x76
-      unsigned char Len;                // always 0x16 == 22 bytes
-      unsigned char RunState;           // operating state
-      unsigned char ErrState;           // 0: OFF, 1: ON, 2+ (E-0n + 1)
-      unsigned char SupplyV_MSB;        // 16 bit - big endian MSB
-      unsigned char SupplyV_LSB;        // 16 bit - big endian MSB : 0.1V / digit
-      unsigned char FanRPM_MSB;         // 16 bit - big endian MSB
-      unsigned char FanRPM_LSB;         // 16 bit - big endian LSB : 1 RPM / digit
-      unsigned char FanVoltage_MSB;     // 16 bit - big endian MSB  
-      unsigned char FanVoltage_LSB;     // 16 bit - big endian LSB : 0.1V / digit
-      unsigned char HeatExchgTemp_MSB;  // 16 bit - big endian MSB  
-      unsigned char HeatExchgTemp_LSB;  // 16 bit - big endian LSB : 1 degC / digit
-      unsigned char GlowPlugVoltage_MSB;   // 16 bit - big endian MSB  
-      unsigned char GlowPlugVoltage_LSB;   // 16 bit - big endian LSB : 0.1V / digit
-      unsigned char GlowPlugCurrent_MSB; // 16 bit - big endian MSB  
-      unsigned char GlowPlugCurrent_LSB; // 16 bit - big endian LSB : 10mA / digit
-      unsigned char ActualPumpFreq;     // fuel pump freq.: 0.1Hz / digit
-      unsigned char StoredErrorCode;    // 
-      unsigned char Unknown1;           // always 0x00
-      unsigned char FixedPumpFreq;      // fixed mode frequency set point: 0.1Hz / digit
-      unsigned char Unknown2;           // always 0x64  "100 ?"
-      unsigned char Unknown3;           // always 0x00  
-      unsigned char CRC_MSB;
-      unsigned char CRC_LSB;
+      uint8_t Byte0;              // always 0x76
+      uint8_t Len;                // always 0x16 == 22 bytes
+      uint8_t RunState;           // operating state
+      uint8_t ErrState;           // 0: OFF, 1: ON, 2+ (E-0n + 1)
+      uint8_t SupplyV_MSB;        // 16 bit - big endian MSB
+      uint8_t SupplyV_LSB;        // 16 bit - big endian MSB : 0.1V / digit
+      uint8_t FanRPM_MSB;         // 16 bit - big endian MSB
+      uint8_t FanRPM_LSB;         // 16 bit - big endian LSB : 1 RPM / digit
+      uint8_t FanVoltage_MSB;     // 16 bit - big endian MSB  
+      uint8_t FanVoltage_LSB;     // 16 bit - big endian LSB : 0.1V / digit
+      uint8_t HeatExchgTemp_MSB;  // 16 bit - big endian MSB  
+      uint8_t HeatExchgTemp_LSB;  // 16 bit - big endian LSB : 1 degC / digit
+      uint8_t GlowPlugVoltage_MSB;   // 16 bit - big endian MSB  
+      uint8_t GlowPlugVoltage_LSB;   // 16 bit - big endian LSB : 0.1V / digit
+      uint8_t GlowPlugCurrent_MSB; // 16 bit - big endian MSB  
+      uint8_t GlowPlugCurrent_LSB; // 16 bit - big endian LSB : 10mA / digit
+      uint8_t ActualPumpFreq;     // fuel pump freq.: 0.1Hz / digit
+      uint8_t StoredErrorCode;    // 
+      uint8_t Unknown1;           // always 0x00
+      uint8_t FixedPumpFreq;      // fixed mode frequency set point: 0.1Hz / digit
+      uint8_t Unknown2;           // always 0x64  "100 ?"
+      uint8_t Unknown3;           // always 0x00  
+      uint8_t CRC_MSB;
+      uint8_t CRC_LSB;
     } Heater;
   };
   static const int CtrlMode = 1;
   static const int HeatMode = 2;
-  const unsigned short wCRCTable[256] = {
+  const uint16_t wCRCTable[256] = {
     0X0000, 0XC0C1, 0XC181, 0X0140, 0XC301, 0X03C0, 0X0280, 0XC241,
     0XC601, 0X06C0, 0X0780, 0XC741, 0X0500, 0XC5C1, 0XC481, 0X0440,
     0XCC01, 0X0CC0, 0X0D80, 0XCD41, 0X0F00, 0XCFC1, 0XCE81, 0X0E40,
@@ -125,10 +125,10 @@ public:
 
   void Init(int Txmode);
   // CRC handlers
-  unsigned short CalcCRC(int len) const;  // calculate the CRC upon len bytes
+  uint16_t CalcCRC(int len) const;  // calculate the CRC upon len bytes
   void setCRC();                    // calculate and set the CRC in the buffer
-  void setCRC(unsigned short CRC);  // set  the CRC in the buffer
-  unsigned short getCRC() const;    // extract CRC value from buffer
+  void setCRC(uint16_t CRC);  // set  the CRC in the buffer
+  uint16_t getCRC() const;    // extract CRC value from buffer
   bool verifyCRC(bool silent=false) const;           // return true for CRC match
 
   void setActiveMode() { Controller.Byte0 = 0x76; };  // this allows heater to save tuning params to EEPROM
@@ -141,12 +141,12 @@ public:
   int getRawCommand() const { return Controller.Command; };
   void setRawCommand(int mode) { Controller.Command = mode; };
   // Run state
-  unsigned char getRunState() const { return Heater.RunState; };
-  void setRunState(unsigned char state) { Heater.RunState = state; };
-  unsigned char getErrState() const { return Heater.ErrState; };
-  void setErrState(unsigned char state) { Heater.ErrState = state; };
-  unsigned char getStoredErrCode() const { return Heater.StoredErrorCode; };
-  void setStoredErrCode(unsigned char state) { Heater.StoredErrorCode = state; };
+  uint8_t getRunState() const { return Heater.RunState; };
+  void setRunState(uint8_t state) { Heater.RunState = state; };
+  uint8_t getErrState() const { return Heater.ErrState; };
+  void setErrState(uint8_t state) { Heater.ErrState = state; };
+  uint8_t getStoredErrCode() const { return Heater.StoredErrorCode; };
+  void setStoredErrCode(uint8_t state) { Heater.StoredErrorCode = state; };
   //
   float getVoltage_Supply() const;
   float getVoltage_SupplyRaw() const;
@@ -155,12 +155,12 @@ public:
   void  setSystemVoltage(float val);
   
   // fan set/get
-  short getFan_Actual() const;  // Heater side, actual
-  short getFan_Min() const;  // Controller side, define min fan speed
-  short getFan_Max() const;  // Controller side, define max fan speed
-  void setFan_Actual(short speed);  // Heater side, actual
-  void setFan_Min(short speed); // Controller side, define min fan speed
-  void setFan_Max(short speed); // Controller side, define max fan speed
+  uint16_t getFan_Actual() const;  // Heater side, actual
+  uint16_t getFan_Min() const;  // Controller side, define min fan speed
+  uint16_t getFan_Max() const;  // Controller side, define max fan speed
+  void setFan_Actual(uint16_t speed);  // Heater side, actual
+  void setFan_Min(uint16_t speed); // Controller side, define min fan speed
+  void setFan_Max(uint16_t speed); // Controller side, define max fan speed
   float getFan_Voltage() const;      // fan voltage
   void setFan_Voltage(float volts);  // fan voltage
   
@@ -175,26 +175,26 @@ public:
   float getPump_Fixed() const { return float(Heater.FixedPumpFreq) * 0.1f; };   // Fixed mode pump frequency
   void setPump_Prime(bool on) { Controller.Prime = on ? 0x5A : 0; };
   // temperature set/get
-  void setHeaterDemand(unsigned char degC) { Controller.DesiredDemand = degC; };
-  void setTemperature_Min(unsigned char degC) { Controller.MinTemperature = degC; };
-  void setTemperature_Max(unsigned char degC) { Controller.MaxTemperature = degC; };
-  void setTemperature_Actual(unsigned char degC) { Controller.ActualTemperature = degC; };
-  unsigned char getHeaterDemand() const { return Controller.DesiredDemand; };
-  unsigned char getTemperature_Min() const { return Controller.MinTemperature; };
-  unsigned char getTemperature_Max() const { return Controller.MaxTemperature; };
-  unsigned char getTemperature_Actual() const { return Controller.ActualTemperature; };
+  void setHeaterDemand(uint8_t degC) { Controller.DesiredDemand = degC; };
+  void setTemperature_Min(uint8_t degC) { Controller.MinTemperature = degC; };
+  void setTemperature_Max(uint8_t degC) { Controller.MaxTemperature = degC; };
+  void setTemperature_Actual(uint8_t degC) { Controller.ActualTemperature = degC; };
+  uint8_t getHeaterDemand() const { return Controller.DesiredDemand; };
+  uint8_t getTemperature_Min() const { return Controller.MinTemperature; };
+  uint8_t getTemperature_Max() const { return Controller.MaxTemperature; };
+  uint8_t getTemperature_Actual() const { return Controller.ActualTemperature; };
   void setThermostatModeProtocol(unsigned on);
   bool isThermostat() const { return Controller.OperatingMode == 0x32; };
   // glow plug
   float getGlowPlug_Current() const;   // glow plug current
   float getGlowPlug_Voltage() const;   // glow plug voltage
-  void setGlowPlug_Current(short ampsx100);   // glow plug current
-  void setGlowPlug_Voltage(short voltsx10);   // glow plug voltage
-  void setGlowDrive(unsigned char val) { Controller.GlowDrive = val; };
-  unsigned char getGlowDrive() const { return Controller.GlowDrive; };
+  void setGlowPlug_Current(uint16_t ampsx100);   // glow plug current
+  void setGlowPlug_Voltage(uint16_t voltsx10);   // glow plug voltage
+  void setGlowDrive(uint8_t val) { Controller.GlowDrive = val; };
+  uint8_t getGlowDrive() const { return Controller.GlowDrive; };
   // heat exchanger
-  short getTemperature_HeatExchg() const; // temperature of heat exchanger
-  void setTemperature_HeatExchg(short degC); // temperature of heat exchanger
+  uint16_t getTemperature_HeatExchg() const; // temperature of heat exchanger
+  void setTemperature_HeatExchg(uint16_t degC); // temperature of heat exchanger
 
   void DebugReport(const char* hdr, const char* ftr);
 
@@ -233,8 +233,8 @@ public:
   float getPump_Min() const { return Controller.getPump_Min(); };
   float getPump_Max() const { return Controller.getPump_Max(); };
   float getFan_Actual() const { return Heater.getFan_Actual(); };
-  short getFan_Min() const { return Controller.getFan_Min(); };
-  short getFan_Max() const { return Controller.getFan_Max(); };
+  uint16_t getFan_Min() const { return Controller.getFan_Min(); };
+  uint16_t getFan_Max() const { return Controller.getFan_Max(); };
   float getFan_Voltage() const { return Heater.getFan_Voltage(); };
   int   getFan_Sensor() const { return Controller.Controller.FanSensor; };
   float getGlowPlug_Power() const { return Heater.getGlowPlug_Current() * Heater.getGlowPlug_Voltage(); };

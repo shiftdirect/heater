@@ -32,9 +32,9 @@ extern void forceBootInit();
 extern void  requestOn();
 extern void  requestOff();
 extern bool  reqTempDelta(int delta);
-extern bool  reqTemp(unsigned char newTemp, bool save=true);
+extern bool  reqTemp(uint8_t newTemp, bool save=true);
 extern bool  reqThermoToggle();
-extern bool  setThermostatMode(unsigned char);
+extern bool  setThermostatMode(uint8_t);
 extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC: or our NV
 extern void  reqPumpPrime(bool on);
 extern float getTemperatureDesired();    // OEM: the advertised value, BTC our setpoint
@@ -45,13 +45,13 @@ extern uint8_t getDemandPump();
 extern float getTemperatureSensor();
 extern void  setPumpMin(float);
 extern void  setPumpMax(float);
-extern void  setFanMin(short);
-extern void  setFanMax(short);
-extern void  setFanSensor(unsigned char cVal);
+extern void  setFanMin(uint16_t);
+extern void  setFanMax(uint16_t);
+extern void  setFanSensor(uint8_t cVal);
 extern void  setDateTime(const char* newTime);
 extern void  setDate(const char* newTime);
 extern void  setTime(const char* newTime);
-extern void  setGlowDrive(unsigned char val);
+extern void  setGlowDrive(uint8_t val);
 extern void  saveNV();
 extern void  setSystemVoltage(float val);
 extern void  interpretJsonCommand(char* pLine);
@@ -78,6 +78,10 @@ extern void  setUploadSize(long val);
 extern void getGPIOinfo(sGPIO& info);
 extern void simulateGPIOin(uint8_t newKey);   
 extern void setDegFMode(bool state);
+extern float getBatteryVoltage();
+extern float getGlowVolts();
+extern float getGlowCurrent();
+extern float getFanSpeed();
 
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);

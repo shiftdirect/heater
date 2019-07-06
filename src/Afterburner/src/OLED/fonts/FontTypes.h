@@ -44,7 +44,7 @@ typedef struct  {
   uint8_t EndChar;               //  End character
   uint8_t SpaceWidth;
   const FONT_CHAR_INFO* pCharInfo;  //  Character descriptor array
-  const unsigned char* pBitmaps;   //  Character bitmap array
+  const uint8_t* pBitmaps;   //  Character bitmap array
 } FONT_INFO;
 
 #endif

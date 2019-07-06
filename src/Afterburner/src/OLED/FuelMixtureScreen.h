@@ -30,7 +30,7 @@ class CScreenManager;
 
 class CFuelMixtureScreen : public CPasswordScreen {
   float adjPump[2];
-  short adjFan[2];
+  uint16_t adjFan[2];
   int  _rowSel;
   int  _colSel;
   void _adjustSetting(int dir);

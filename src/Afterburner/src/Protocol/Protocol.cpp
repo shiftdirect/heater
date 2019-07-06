@@ -27,17 +27,17 @@
 #include "../Utility/macros.h"
 
 
-unsigned short 
+uint16_t 
 CProtocol::CalcCRC(int len) const
 {
   // calculate a CRC-16/MODBUS checksum using the first 22 bytes of the data array
-  unsigned short  wCRCWord = 0xFFFF;
+  uint16_t  wCRCWord = 0xFFFF;
 
   int wLength = len;
-  const unsigned char* pData = Data;
+  const uint8_t* pData = Data;
    while (wLength--)
    {
-      unsigned char nTemp = *pData++ ^ wCRCWord;
+      uint8_t nTemp = *pData++ ^ wCRCWord;
       wCRCWord >>= 8;
       wCRCWord ^= wCRCTable[nTemp];
    }
@@ -52,17 +52,17 @@ CProtocol::setCRC()
 }
 
 void 
-CProtocol::setCRC(unsigned short CRC)
+CProtocol::setCRC(uint16_t CRC)
 {
   Data[22] = (CRC >> 8) & 0xff;   // MSB of CRC in Data[22]
   Data[23] = (CRC >> 0) & 0xff;   // LSB of CRC in Data[23]
 }
 
 
-unsigned short
+uint16_t
 CProtocol::getCRC() const
 {
-  unsigned short CRC;
+  uint16_t CRC;
   CRC = Data[22];   // MSB of CRC in Data[22]
   CRC <<= 8;
   CRC |= Data[23];  // LSB of CRC in Data[23]
@@ -73,8 +73,8 @@ CProtocol::getCRC() const
 bool
 CProtocol::verifyCRC(bool bSilent) const
 {
-  unsigned short CRC = CalcCRC(22);  // calculate CRC based on first 22 bytes
-  unsigned short FrameCRC = getCRC();
+  uint16_t CRC = CalcCRC(22);  // calculate CRC based on first 22 bytes
+  uint16_t FrameCRC = getCRC();
   bool bOK = (FrameCRC == CRC);
   if(!bOK && !bSilent) {
     DebugPort.printf("verifyCRC FAILED: calc: %04X data: %04X\r\n", CRC, FrameCRC);
@@ -91,7 +91,7 @@ CProtocol::operator=(const CProtocol& rhs)
 
 
 void 
-CProtocol::setFan_Min(short Speed) 
+CProtocol::setFan_Min(uint16_t Speed) 
 {
   // Minimum speed set
   Controller.MinFanRPM_MSB = (Speed >> 8) & 0xff;
@@ -99,17 +99,17 @@ CProtocol::setFan_Min(short Speed)
 }
 
 void 
-CProtocol::setFan_Max(short Speed) 
+CProtocol::setFan_Max(uint16_t Speed) 
 {
   // Minimum speed set
   Controller.MaxFanRPM_MSB = (Speed >> 8) & 0xff;
   Controller.MaxFanRPM_LSB = (Speed >> 0) & 0xff;
 }
 
-short 
+uint16_t
 CProtocol::getFan_Min() const
 {
-  short retval;
+  uint16_t retval;
   // Minimum speed get
   retval = Controller.MinFanRPM_MSB;
   retval <<= 8;
@@ -117,10 +117,10 @@ CProtocol::getFan_Min() const
   return retval;
 }
 
-short 
+uint16_t 
 CProtocol::getFan_Max() const
 {
-  short retval;
+  uint16_t retval;
   // Maximum speed get
   retval = Controller.MaxFanRPM_MSB;
   retval <<= 8;
@@ -128,11 +128,11 @@ CProtocol::getFan_Max() const
   return retval;
 }
 
-short
+uint16_t
 CProtocol::getFan_Actual() const
 {  
   // Rx side, actual
-  short retval;
+  uint16_t retval;
   retval = Heater.FanRPM_MSB;
   retval <<= 8;
   retval |= Heater.FanRPM_LSB;
@@ -140,7 +140,7 @@ CProtocol::getFan_Actual() const
 }
 
 void 
-CProtocol::setFan_Actual(short Speed)  // Heater side, actual
+CProtocol::setFan_Actual(uint16_t Speed)  // Heater side, actual
 {
   // actual speed set
   Heater.FanRPM_MSB = (Speed >> 8) & 0xff;
@@ -150,7 +150,7 @@ CProtocol::setFan_Actual(short Speed)  // Heater side, actual
 float 
 CProtocol::getGlowPlug_Current() const   // glow plug current
 {
-  short val;
+  uint16_t val;
   val = Heater.GlowPlugCurrent_MSB;
   val <<= 8;
   val |= Heater.GlowPlugCurrent_LSB;
@@ -158,7 +158,7 @@ CProtocol::getGlowPlug_Current() const   // glow plug current
 }
 
 void 
-CProtocol::setGlowPlug_Current(short ampsx100)    // glow plug current
+CProtocol::setGlowPlug_Current(uint16_t ampsx100)    // glow plug current
 {
   Heater.GlowPlugCurrent_MSB = (ampsx100 >> 8) & 0xff;
   Heater.GlowPlugCurrent_LSB = (ampsx100 >> 0) & 0xff;
@@ -167,7 +167,7 @@ CProtocol::setGlowPlug_Current(short ampsx100)    // glow plug current
 float 
 CProtocol::getGlowPlug_Voltage() const   // glow plug voltage
 {
-  short val;
+  uint16_t val;
   val = Heater.GlowPlugVoltage_MSB;
   val <<= 8;
   val |= Heater.GlowPlugVoltage_LSB;
@@ -176,16 +176,16 @@ CProtocol::getGlowPlug_Voltage() const   // glow plug voltage
 
 
 void 
-CProtocol::setGlowPlug_Voltage(short voltsx10)    // glow plug voltage
+CProtocol::setGlowPlug_Voltage(uint16_t voltsx10)    // glow plug voltage
 {
   Heater.GlowPlugVoltage_MSB = (voltsx10 >> 8) & 0xff;
   Heater.GlowPlugVoltage_LSB = (voltsx10 >> 0) & 0xff;
 }
 
-short 
+uint16_t 
 CProtocol::getTemperature_HeatExchg() const // temperature of heat exchanger
 {
-  short retval;
+  uint16_t retval;
   retval = Heater.HeatExchgTemp_MSB;
   retval <<= 8;
   retval |= Heater.HeatExchgTemp_LSB;
@@ -193,7 +193,7 @@ CProtocol::getTemperature_HeatExchg() const // temperature of heat exchanger
 }
 
 void
-CProtocol::setTemperature_HeatExchg(short degC) // temperature of heat exchanger
+CProtocol::setTemperature_HeatExchg(uint16_t degC) // temperature of heat exchanger
 {
   Heater.HeatExchgTemp_MSB = (degC >> 8) & 0xff;
   Heater.HeatExchgTemp_LSB = (degC >> 0) & 0xff;
@@ -203,7 +203,7 @@ float
 CProtocol::getFan_Voltage() const    // fan voltage
 {
   if(getRunState()) {                // fan volatge sensing goes stupid when main heater relay turns off!
-    short val;
+    uint16_t val;
     val = Heater.FanVoltage_MSB;
     val <<= 8;
     val |= Heater.FanVoltage_LSB;
@@ -215,7 +215,7 @@ CProtocol::getFan_Voltage() const    // fan voltage
 void
 CProtocol::setFan_Voltage(float volts)     // fan voltage
 {
-  short val = short(volts * 10);
+  uint16_t val = uint16_t(volts * 10);
   Heater.FanVoltage_MSB = (val >> 8) & 0xff;
   Heater.FanVoltage_LSB = (val >> 0) & 0xff;
 }
@@ -223,7 +223,7 @@ CProtocol::setFan_Voltage(float volts)     // fan voltage
 void
 CProtocol::setVoltage_Supply(float volts)
 {
-  short val = short(volts * 10);
+  uint16_t val = uint16_t(volts * 10);
   Heater.SupplyV_MSB = (val >> 8) & 0xff;
   Heater.SupplyV_LSB = (val >> 0) & 0xff;
 }
@@ -231,7 +231,7 @@ CProtocol::setVoltage_Supply(float volts)
 float
 CProtocol::getVoltage_SupplyRaw() const
 {
-  short val = 0;
+  uint16_t val = 0;
   val = Heater.SupplyV_MSB & 0xff;
   val <<= 8;
   val |= Heater.SupplyV_LSB & 0xff;

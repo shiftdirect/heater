@@ -36,7 +36,7 @@ void decodeJSONTimerDays(const char* ipStr)
     if(INBOUNDS(timerIdx, 0, 13)) {
       sTimer timer;
       NVstore.getTimerInfo(timerIdx, timer);
-      unsigned char days = 0;
+      uint8_t days = 0;
       if(strstr(dayInfo, "Next"))  {
         days = 0x80;
       }

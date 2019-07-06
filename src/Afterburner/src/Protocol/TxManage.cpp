@@ -81,7 +81,7 @@ CTxManage::queueOffRequest(bool set)
 }
 
 void 
-CTxManage::queueRawCommand(unsigned char val)
+CTxManage::queueRawCommand(uint8_t val)
 {
   _rawCommand = val;
 }

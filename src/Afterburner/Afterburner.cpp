@@ -105,6 +105,7 @@
 #include "src/OLED/ScreenManager.h"
 #include "src/OLED/KeyPad.h"
 #include "src/Utility/TempSense.h"
+#include "src/Utility/DataFilter.h"
 #include <rom/rtc.h>
 #include <esp_spiffs.h>
 #include <SPIFFS.h>
@@ -144,19 +145,19 @@ void manageCyclicMode();
 void doStreaming();
 void heaterOn();
 void heaterOff();
+void updateFilteredData();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus
 CTempSense TempSensor;
 long lastTemperatureTime;            // used to moderate DS18B20 access
-float fFilteredTemperature = -100;   // -100: force direct update uopn first pass
-const float fAlpha = 0.95;           // exponential mean alpha
 int DS18B20holdoff = 2;
 
 int BoardRevision = 0;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
+sFilteredData FilteredSamples;
 CommStates CommState;
 CTxManage TxManage(TxEnbPin, BlueWireSerial);
 CModeratedFrame OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
@@ -395,6 +396,13 @@ void setup() {
   timerAttachInterrupt(watchdogTimer, &interruptReboot, true);     
   timerAlarmEnable(watchdogTimer); //enable interrupt
 #endif
+
+  FilteredSamples.ipVolts.setRounding(0.1);
+  FilteredSamples.GlowAmps.setRounding(0.01);
+  FilteredSamples.GlowVolts.setRounding(0.1);
+  FilteredSamples.Fan.setRounding(10);
+  FilteredSamples.Fan.setAlpha(0.7);
+  FilteredSamples.AmbientTemp.reset(-100.0);
 
   delay(1000); // just to hold the splash screeen for while
 }
@@ -724,25 +732,22 @@ void loop()
             DebugPort.printf("Skipped initial DS18B20 reading: %f\r\n", fTemperature);
           }                           // first value upon sensor connect is bad
           else {
-        // initialise filtered temperature upon very first pass
-            if(fFilteredTemperature < -90) {            // avoid FP exactness issues - starts as -100 on boot
-              fFilteredTemperature = fTemperature;       // prime with first *valid* reading
-            }
             // exponential mean to stabilse readings
-            fFilteredTemperature = fFilteredTemperature * fAlpha + (1-fAlpha) * fTemperature;
+            FilteredSamples.AmbientTemp.update(fTemperature);
 
             manageCyclicMode();
           }
         }
         else {
           DS18B20holdoff = 3;
-            fFilteredTemperature = -100;
-          }
+          FilteredSamples.AmbientTemp.reset(-100.0);
+        }
 
         TempSensor.startConvert();  // request a new conversion, will be ready by the time we loop back around
 
         ScreenManager.reqUpdate();
       }
+      updateFilteredData();
       updateJSONclients(bReportJSONData);
       CommState.set(CommStates::Idle);
       NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
@@ -769,7 +774,7 @@ void manageCyclicMode()
   const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
   if(cyclic.Stop && bUserON) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
-    float deltaT = fFilteredTemperature - getDemandDegC();
+    float deltaT = FilteredSamples.AmbientTemp.getValue() - getDemandDegC();
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
 
     // ensure we cancel user ON mode if heater throws an error
@@ -853,13 +858,13 @@ void heaterOff()
 }
 
 
-bool reqTemp(unsigned char newTemp, bool save)
+bool reqTemp(uint8_t newTemp, bool save)
 {
   if(bHasOEMController)
     return false;
 
-  unsigned char max = DefaultBTCParams.getTemperature_Max();
-  unsigned char min = DefaultBTCParams.getTemperature_Min();
+  uint8_t max = DefaultBTCParams.getTemperature_Max();
+  uint8_t min = DefaultBTCParams.getTemperature_Min();
   if(newTemp >= max)
     newTemp = max;
   if(newTemp <= min)
@@ -878,7 +883,7 @@ bool reqTemp(unsigned char newTemp, bool save)
 
 bool reqTempDelta(int delta)
 {
-  unsigned char newTemp;
+  uint8_t newTemp;
   if(getThermostatModeActive()) 
     newTemp = demandDegC + delta;
   else
@@ -892,7 +897,7 @@ bool reqThermoToggle()
   return setThermostatMode(getThermostatModeActive() ? 0 : 1);
 }
 
-bool setThermostatMode(unsigned char val)
+bool setThermostatMode(uint8_t val)
 {
   if(bHasOEMController)
     return false;
@@ -957,8 +962,8 @@ uint8_t getDemandDegC()
 
 void  setDemandDegC(uint8_t val) 
 {
-  unsigned char max = DefaultBTCParams.getTemperature_Max();
-  unsigned char min = DefaultBTCParams.getTemperature_Min();
+  uint8_t max = DefaultBTCParams.getTemperature_Max();
+  uint8_t min = DefaultBTCParams.getTemperature_Min();
   BOUNDSLIMIT(val, min, max);
   demandDegC = val;
 }
@@ -984,7 +989,7 @@ float getTemperatureDesired()
 
 float getTemperatureSensor()
 {
-  return fFilteredTemperature;
+  return FilteredSamples.AmbientTemp.getValue();
 }
 
 void  setPumpMin(float val)
@@ -1001,7 +1006,7 @@ void  setPumpMax(float val)
   NVstore.setHeaterTuning(tuning);
 }
 
-void  setFanMin(short cVal)
+void  setFanMin(uint16_t cVal)
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
   if(INBOUNDS(cVal, 500, 5000))
@@ -1009,7 +1014,7 @@ void  setFanMin(short cVal)
   NVstore.setHeaterTuning(tuning);
 }
 
-void  setFanMax(short cVal)
+void  setFanMax(uint16_t cVal)
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
   if(INBOUNDS(cVal, 500, 5000))
@@ -1017,7 +1022,7 @@ void  setFanMax(short cVal)
   NVstore.setHeaterTuning(tuning);
 }
 
-void setFanSensor(unsigned char cVal)
+void setFanSensor(uint8_t cVal)
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
   if(INBOUNDS(cVal, 1, 2))
@@ -1031,7 +1036,7 @@ void setSystemVoltage(float val) {
   NVstore.setHeaterTuning(tuning);
 }
 
-void setGlowDrive(unsigned char val) {
+void setGlowDrive(uint8_t val) {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
   if(INBOUNDS(val, 1, 6))
     tuning.glowDrive = val;
@@ -1319,7 +1324,6 @@ int getBoardRevision()
 void ShowOTAScreen(int percent, eOTAmodes updateType)
 {
   ScreenManager.showOTAMessage(percent, updateType);
-  feedWatchdog();
 }
 
 void feedWatchdog()
@@ -1391,4 +1395,48 @@ void getGPIOinfo(sGPIO& info)
 void simulateGPIOin(uint8_t newKey)   
 {
   GPIOin.simulateKey(newKey);
+}
+
+float getBatteryVoltage()
+{
+#ifdef RAW_SAMPLES
+  return getHeaterInfo().getBattVoltage();
+#else
+  return FilteredSamples.ipVolts.getValue();
+#endif
+}
+
+float getGlowVolts()
+{
+#ifdef RAW_SAMPLES
+	return  getHeaterInfo().getGlow_Voltage();
+#else
+  return FilteredSamples.GlowVolts.getValue();
+#endif
+}
+
+float getGlowCurrent()
+{
+#ifdef RAW_SAMPLES
+	return getHeaterInfo().getGlow_Current();
+#else
+  return FilteredSamples.GlowAmps.getValue();
+#endif
+}
+
+float getFanSpeed()
+{
+#ifdef RAW_SAMPLES
+	return getHeaterInfo().getFan_Actual();
+#else
+  return FilteredSamples.Fan.getValue();
+#endif
+}
+
+void updateFilteredData()
+{
+  FilteredSamples.ipVolts.update(HeaterFrame2.getVoltage_Supply());
+  FilteredSamples.GlowVolts.update(HeaterFrame2.getGlowPlug_Voltage());
+  FilteredSamples.GlowAmps.update(HeaterFrame2.getGlowPlug_Current());
+  FilteredSamples.Fan.update(HeaterFrame2.getFan_Actual());
 }
