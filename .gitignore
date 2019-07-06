@@ -17,3 +17,7 @@ __vm
 /.vscode/extensions.json
 Arduino/Afterburner/data/*
 Arduino/Afterburner/src/*
+/Altium
+/Releases
+/webdev
+/case
