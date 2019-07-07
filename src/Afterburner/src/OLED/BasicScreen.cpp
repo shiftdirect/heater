@@ -19,10 +19,8 @@
  * 
  */
 
-#include "128x64OLED.h"
-#include "fonts/Tahoma16.h"
+#include <Arduino.h>
 #include "fonts/Tahoma24.h"
-#include "fonts/Icons.h"
 #include "BasicScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
@@ -32,7 +30,6 @@
 
 
 #define MAXIFONT tahoma_24ptFontInfo
-//#define MAXIFONT tahoma_16ptFontInfo
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -71,7 +68,6 @@ CBasicScreen::show()
     {
       CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
       _printMenuText(_display.xCentre(), 23, msg, false, eCentreJustify);
-//      _printMenuText(_display.xCentre(), 25, msg, false, eCentreJustify);
     }
   }
   else {

@@ -19,10 +19,10 @@
  * 
  */
 
-#include <ArduinoOTA.h>
-#include <Arduino.h>
-#include "BTCWifi.h"
-#include "../Utility/DebugPort.h"
+#ifndef __BTC_OTA_H
+#define __BTC_OTA_H
 
 void initOTA();
 void DoOTA();
+
+#endif

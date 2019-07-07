@@ -20,7 +20,6 @@
  * 
  */
 
-#include <Arduino.h>
 #include "../Libraries/TelnetSpy/TelnetSpy.h"
 
 #ifndef __DEBUGPORT_H__

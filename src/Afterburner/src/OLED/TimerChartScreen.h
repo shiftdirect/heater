@@ -24,13 +24,11 @@
 
 #include <stdint.h>
 #include "ScreenHeader.h"
-#include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-//class CTimerChartScreen : public CScreenHeader {
 class CTimerChartScreen : public CScreen {
   int  _rowSel;
   int  _colSel;

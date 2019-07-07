@@ -5,6 +5,7 @@
    Purpose: Perform an OTA update from a bin located on a webserver (HTTP Only)
 */
 
+#include <Arduino.h>
 #include "esp32fota.h"
 #include <Arduino.h>
 #include <WiFi.h>

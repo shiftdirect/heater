@@ -22,7 +22,6 @@
 #ifndef _CPROTOCOL_H_
 #define _CPROTOCOL_H_
 
-#include <Arduino.h>
 #include "../Utility/UtilClasses.h"
 
 class CProtocol {

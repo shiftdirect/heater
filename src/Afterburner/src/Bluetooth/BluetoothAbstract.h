@@ -22,9 +22,8 @@
 #ifndef __BLUETOOTHABSTRACT_H__
 #define __BLUETOOTHABSTRACT_H__
 
-#include <Arduino.h>
 #include "../Utility/UtilClasses.h"
-#include "../Utility/DebugPort.h"
+//#include "../Utility/DebugPort.h"
 #include "../Utility/helpers.h"
 
 class CProtocol;

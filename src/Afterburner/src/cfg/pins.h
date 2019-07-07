@@ -51,6 +51,5 @@ const uint8_t keyCentre_pin = 35;    // input only, no chip pullup
 const uint8_t keyRight_pin = 36;     // input only, no chip pullup
 const uint8_t keyLeft_pin = 39;      // input only, no chip pullup
 
-//const uint8_t ListenOnlyPin = 33;    
 const uint8_t WiFi_TriggerPin = 0;    // BOOT switch!
 

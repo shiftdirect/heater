@@ -22,27 +22,25 @@
 #ifndef __BTCWIFI_H__
 #define __BTCWIFI_H__
 
-#include <Arduino.h>
-#include "../Libraries/WiFiManager-dev/WiFiManager.h"
 #include <WiFi.h>
 
-  void doWiFiManager();
-  bool initWifi(int initpin,const char *failedssid, const char *failedpassword);
-  const char* getWifiAPAddrStr(); 
-  const char* getWifiSTAAddrStr(); 
-  const char* getWifiAPMACStr();
-  const char* getWifiSTAMACStr();
+void doWiFiManager();
+bool initWifi(int initpin,const char *failedssid, const char *failedpassword);
+const char* getWifiAPAddrStr(); 
+const char* getWifiSTAAddrStr(); 
+const char* getWifiAPMACStr();
+const char* getWifiSTAMACStr();
 
-  bool isWifiConnected();
-  bool isWifiAP();
-  bool isWifiSTA();
-  bool isWifiConfigPortal();
-  bool isWebClientConnected();
-  bool hasWebClientSpoken(bool reset = false);
-  bool hasWebServerSpoken(bool reset = false);
-  void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000);
-  void wifiDisable(long rebootDelay = 7000);
-  void wifiFactoryDefault();
-  int  isWifiButton();
+bool isWifiConnected();
+bool isWifiAP();
+bool isWifiSTA();
+bool isWifiConfigPortal();
+bool isWebClientConnected();
+bool hasWebClientSpoken(bool reset = false);
+bool hasWebServerSpoken(bool reset = false);
+void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000);
+void wifiDisable(long rebootDelay = 7000);
+void wifiFactoryDefault();
+int  isWifiButton();
 
 #endif // __BTCWIFI_H__

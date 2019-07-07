@@ -22,11 +22,8 @@
 #ifndef __SCREEN_H__
 #define __SCREEN_H__
 
-#include <Arduino.h>
 #include "128x64OLED.h"
 #include "ScreenManager.h"
-#include "fonts/FontTypes.h"
-#include "../Utility/UtilClasses.h"
 
 struct BITMAP_INFO {
   uint8_t width;

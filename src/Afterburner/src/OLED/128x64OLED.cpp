@@ -22,6 +22,7 @@
 
 #include "128x64OLED.h"
 #include "../Utility/DebugPort.h"
+#include "../Utility/UtilClasses.h"
 
 #define DBG DebugPort.print
 #define DBGln DebugPort.println

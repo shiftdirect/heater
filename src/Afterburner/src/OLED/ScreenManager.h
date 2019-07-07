@@ -22,11 +22,9 @@
 #ifndef __SCREEN_MANAGER_H__
 #define __SCREEN_MANAGER_H__
 
-#include <Arduino.h>
 #include <vector>
 #include "../Utility/UtilClasses.h"
 
-//class CProtocol;
 class C128x64_OLED;
 class CScreen;
 class CRebootScreen;

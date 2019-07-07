@@ -90,6 +90,7 @@
 #include "src/cfg/pins.h"
 #include "src/RTC/Timers.h"
 #include "src/RTC/Clock.h"
+#include "src/WiFi/BTCWifi.h"
 #include "src/WiFi/BTCWebServer.h"
 #include "src/WiFi/BTCota.h"
 #include "src/Protocol/Protocol.h"
@@ -322,7 +323,7 @@ void setup() {
     DebugPort.printf("SPIFFS usage: %d/%d\r\n", SPIFFS.usedBytes(), SPIFFS.totalBytes());
     DebugPort.println("Listing SPIFFS contents:");
     String report;
-    listDir(SPIFFS, "/", 2, report);
+    listSPIFFS("/", 2, report);
   }
 
   NVstore.init();
@@ -363,7 +364,6 @@ void setup() {
 
 #endif // USE_WIFI
 
-//  pinMode(ListenOnlyPin, INPUT_PULLUP);   // pin to enable passive mode
   pinMode(LED_Pin, OUTPUT);               // On board LED indicator
   digitalWrite(LED_Pin, LOW);
 
@@ -631,15 +631,10 @@ void loop()
 
     case CommStates::HeaterReport1:
       if(CommState.delayExpired()) {
-/*        if(digitalRead(ListenOnlyPin)) {  // pin open, pulled high (STANDARD OPERATION)*/
-          bool isBTCmaster = false;
-          TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
-          TxManage.Start(timenow);
-          CommState.set(CommStates::BTC_Tx);
-/*        }
-        else {   // pin shorted to ground
-          CommState.set(CommStates::TemperatureRead);    // "Listen Only" input is  held low, don't send our Tx
-        }*/
+        bool isBTCmaster = false;
+        TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
+        TxManage.Start(timenow);
+        CommState.set(CommStates::BTC_Tx);
       }
       break;
     
@@ -1371,7 +1366,7 @@ void doStreaming()
     bBTconnected = false;
   }
   // manage changes in number of wifi clients
-  if(isWebServerClientChange()) {
+  if(isWebSocketClientChange()) {
     resetJSONmoderator();  // force full send upon number of Wifi clients change
   }
 

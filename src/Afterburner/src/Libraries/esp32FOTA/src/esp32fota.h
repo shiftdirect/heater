@@ -8,7 +8,7 @@
 #ifndef esp32fota_h
 #define esp32fota_h
 
-#include <Arduino.h>
+//#include <Arduino.h>
 
 class esp32FOTA
 {

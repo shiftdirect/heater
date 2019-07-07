@@ -25,34 +25,14 @@
 #ifndef _BTCWEBSERVER_h
 #define _BTCWEBSERVER_h
 
-#if defined(ARDUINO) && ARDUINO >= 100
-	#include <Arduino.h>
-#else
-	#include <WProgram.h>
-#endif
-
-#include "BTCWifi.h"
-#include <WiFiClient.h>
-#include <WebServer.h>
-#include <ESPmDNS.h>
-#include <Update.h>
 #include "../Libraries/arduinoWebSockets/src/WebSocketsServer.h"
 
+void initWebServer();
+bool doWebServer();
 
-
+bool sendWebSocketString(const char* Str);
+bool isWebSocketClientChange(); 
+void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int withHTMLanchors=0);
 
 #endif
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
-void initWebServer();
-bool doWebServer();
-void handleWMConfig();
-void handleRoot();
-void handleReset();
-void handleNotFound();
-void webturnOn();
-void webturnOff();
-
-bool sendWebServerString(const char* Str);
-bool isWebServerClientChange(); 
-void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLreport, int withHTMLanchors=0);

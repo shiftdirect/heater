@@ -25,10 +25,10 @@
 #include "../Utility/DebugPort.h"
 #include <DNSServer.h>
 #include "../OLED/ScreenManager.h"
-
 #include "esp_system.h"
 #include <Preferences.h>
 #include "../Utility/NVStorage.h"
+#include "../Libraries/WiFiManager-dev/WiFiManager.h"
 
 #define USE_AP  
 

@@ -22,8 +22,7 @@
 #ifndef __UTIL_CLASSES_H__
 #define __UTIL_CLASSES_H__
 
-#include <Arduino.h>
-#include <string.h>
+//#include <string.h>
 #include "DebugPort.h"
 #include "../cfg/BTCConfig.h"
 

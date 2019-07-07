@@ -22,10 +22,7 @@
 #ifndef __SCREEN_HEADER_H__
 #define __SCREEN_HEADER_H__
 
-#include <Arduino.h>
 #include "Screen.h"
-#include "../Utility/UtilClasses.h"
-#include "fonts/FontTypes.h"
 
 struct sScreenholdoff {
   int  holdon;

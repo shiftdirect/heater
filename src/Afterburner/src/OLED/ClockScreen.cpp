@@ -19,10 +19,10 @@
  * 
  */
 
+#include <Arduino.h>
 #include "ClockScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
-#include "fonts/Tahoma16.h"
 #include "fonts/Tahoma24.h"
 #include "../RTC/Clock.h"
 #include "../Protocol/Protocol.h"

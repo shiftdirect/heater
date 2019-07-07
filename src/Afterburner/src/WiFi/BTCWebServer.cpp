@@ -22,18 +22,23 @@
 
 #define USE_EMBEDDED_WEBUPDATECODE    
 
+#include <Arduino.h>
+#include "BTCWifi.h"
 #include "BTCWebServer.h"
 #include "../Utility/DebugPort.h"
 #include "../Protocol/TxManage.h"
 #include "../Utility/helpers.h"
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
-//#include "Index.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
 #include "../Libraries/WiFiManager-dev/WiFiManager.h"
 #include <SPIFFS.h>
 #include "../Utility/NVStorage.h"
+#include <WiFiClient.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include <Update.h>
 
 extern WiFiManager wm;
 extern const char* stdHeader;
@@ -53,18 +58,19 @@ bool bUpdateAccessed = false;  // flag used to ensure web update always starts v
 bool bFormatAccessed = false;
 long _SuppliedFileSize = 0;
 
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 bool checkFile(File &file);
 void addTableData(String& HTML, String dta);
 void rootRedirect();
 String getContentType(String filename);
 bool handleFileRead(String path);
-void handleBTCNotFound();
-void onSPIFFSErase();
+void onNotFound();
+void onErase();
 void onFormatSPIFFS();
 void onFormatNow();
 void onFormatDone();
 void onWMConfig();
-void onWebReset();
+void onResetWifi();
 void onUploadBegin();
 void onUploadCompletion();
 void onUploadProgression();
@@ -87,8 +93,8 @@ void initWebServer(void) {
 	}
 	
 	server.on("/wmconfig", onWMConfig);
-	server.on("/resetwifi", onWebReset);
-  server.on("/erase", HTTP_POST, onSPIFFSErase);  // erase file from SPIFFS
+	server.on("/resetwifi", onResetWifi);
+  server.on("/erase", HTTP_POST, onErase);  // erase file from SPIFFS
 
   // Magical code originally shamelessly lifted from Arduino WebUpdate example, then greatly modified
   // This allows pushing new firmware to the ESP from a WEB BROWSER!
@@ -117,7 +123,7 @@ void initWebServer(void) {
   server.onNotFound([]() 
   {                                                      // If the client requests any URI
     if (!handleFileRead(server.uri())) {                  // send it if it exists
-      handleBTCNotFound();
+      onNotFound();
     }
   });
 
@@ -311,7 +317,7 @@ void onWMConfig()
   wifiEnterConfigPortal(true, false, 3000);
 }
 
-void onWebReset() 
+void onResetWifi() 
 {
   DebugPort.println("WEB: GET /resetwifi");
 	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
@@ -324,7 +330,7 @@ void onWebReset()
 //<p><a href="/update"> <button type="button">Add</button></a>
 //<p><a href="/"><button type="button">Home</button></a>
 
-void handleBTCNotFound() 
+void onNotFound() 
 {
   String path = server.uri();
   if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
@@ -341,20 +347,7 @@ void rootRedirect()
   server.send(303);
 }
 
-bool isWebServerClientChange() 
-{
-	static int prevNumClients = -1;
-
-	int numClients = webSocket.connectedClients();
-	if(numClients != prevNumClients) {
-		prevNumClients = numClients;
-		DebugPort.println("Changed number of web clients, should reset JSON moderator");
-    return true;
-	}
-  return false;
-}
-
-bool sendWebServerString(const char* Str)
+bool sendWebSocketString(const char* Str)
 {
   CProfile profile;
 	if(webSocket.connectedClients()) {
@@ -380,6 +373,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 		}
 		interpretJsonCommand(cmd);  // send to the main heater controller decode routine
   }
+}
+
+bool isWebSocketClientChange() 
+{
+	static int prevNumClients = -1;
+
+	int numClients = webSocket.connectedClients();
+	if(numClients != prevNumClients) {
+		prevNumClients = numClients;
+		DebugPort.println("Changed number of web clients, should reset JSON moderator");
+    return true;
+	}
+  return false;
 }
 
 bool hasWebClientSpoken(bool reset)
@@ -428,10 +434,10 @@ bool checkFile(File &file)
   return bOK;
 }
 
-void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLreport, int withHTMLanchors) 
+void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int withHTMLanchors) 
 {
   char msg[128];
-  File root = fs.open(dirname);
+  File root = SPIFFS.open(dirname);  
   if (!root) {
     sprintf(msg, "Failed to open directory \"%s\"", dirname);
     DebugPort.println(msg);
@@ -469,7 +475,7 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLrepor
       DebugPort.println(msg);
 
       if (levels) {
-        listDir(fs, file.name(), levels - 1, HTMLreport);
+        listSPIFFS(file.name(), levels - 1, HTMLreport);
       }
     } else {
       String fn = file.name();
@@ -501,7 +507,7 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels, String& HTMLrepor
     int used = SPIFFS.usedBytes();
     int total = SPIFFS.totalBytes();
     float percent = used * 100. / total;
-    sprintf(usage, "<p><b>Usage</b><br> %d/%d bytes (%.1f%%)\n<p>", used, total, percent);
+    sprintf(usage, "<p><b>Usage</b><br> %d / %d bytes  (%.1f%%)\n<p>", used, total, percent);
     HTMLreport += usage;
   }    
 }    
@@ -514,12 +520,12 @@ void addTableData(String& HTML, String dta)
 }
 
 // erase a file from SPIFFS partition
-void onSPIFFSErase()
+void onErase()
 {
   String filename = server.arg("filename");        // get request argument value by name
 
   if(filename.length() != 0)  {
-    DebugPort.printf("onSPIFFSErase: %s ", filename.c_str());
+    DebugPort.printf("onErase: %s ", filename.c_str());
     if(SPIFFS.exists(filename.c_str())) {
       SPIFFS.remove(filename.c_str());
       DebugPort.println("ERASED\r\n");
@@ -573,7 +579,7 @@ void onUploadBegin()
   bFormatAccessed = false;
 #ifdef USE_EMBEDDED_WEBUPDATECODE    
   String SPIFFSinfo;
-  listDir(SPIFFS, "/", 2, SPIFFSinfo, 2);
+  listSPIFFS("/", 2, SPIFFSinfo, 2);
   String content = stdHeader;
   content += updateIndex + SPIFFSinfo;
   content += "<p><button onclick=window.location.assign('/formatspiffs')>Format SPIFFS</button>";
@@ -614,7 +620,7 @@ void onUploadProgression()
       if(upload.totalSize) {
         char JSON[64];
         sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-        sendWebServerString(JSON);  // feedback proper byte count of update to browser via websocket
+        sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
       }
       int percent = 0;
       if(_SuppliedFileSize) 
@@ -785,7 +791,7 @@ If OK please try uploading the file from the web content.
 )=====";
 
 String SPIFFSinfo;
-listDir(SPIFFS, "/", 2, SPIFFSinfo, 1);
+listSPIFFS("/", 2, SPIFFSinfo, 1);
 content += SPIFFSinfo;
 content += "</body>";
 content += "</html>";

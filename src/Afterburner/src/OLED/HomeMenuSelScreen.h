@@ -29,7 +29,6 @@
 class C128x64_OLED;
 class CScreenManager;
 
-
 class CHomeMenuSelScreen : public CPasswordScreen
 {
   int _rowSel;

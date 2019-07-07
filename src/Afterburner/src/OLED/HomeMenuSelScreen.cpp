@@ -22,10 +22,6 @@
 #include "128x64OLED.h"
 #include "HomeMenuSelScreen.h"
 #include "KeyPad.h"
-#include "../Utility/helpers.h"
-#include "../Utility/UtilClasses.h"
-#include "../Utility/NVStorage.h"
-#include "../Utility/BTC_GPIO.h"
 #include "fonts/Icons.h"
 
 
@@ -64,7 +60,6 @@ CHomeMenuSelScreen::show()
     else {
       _printInverted(_display.xCentre(), 0, " Home Menu Actions ", true, eCentreJustify);
       
-//      _printMenuText(66, 14, "On timeout:", false, eRightJustify);
       _drawBitmap(30, 14, TimeoutIconInfo);
       switch(_action.onTimeout) {
         case 0: strcpy(msg, "Default"); break;
@@ -74,7 +69,6 @@ CHomeMenuSelScreen::show()
       }
       _printMenuText(50, 14, msg, _rowSel == 3);
 
-//      _printMenuText(66, 26, "On start:", false, eRightJustify);
       _drawBitmap(32, 26, StartIconInfo);
       switch(_action.onStart) {
         case 0: strcpy(msg, "Default"); break;
@@ -84,7 +78,6 @@ CHomeMenuSelScreen::show()
       }
       _printMenuText(50, 26, msg, _rowSel == 2);
 
-//      _printMenuText(66, 38, "On stop:", false, eRightJustify);
       _drawBitmap(31, 38, StopIconInfo);
       switch(_action.onStop) {
         case 0: strcpy(msg, "Default"); break;
@@ -94,13 +87,6 @@ CHomeMenuSelScreen::show()
       }
       _printMenuText(50, 38, msg, _rowSel == 1);
 
-/*      if(_rowSel == 0)
-        _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-      else {
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        _printMenuText(_display.xCentre(), 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
-        _printMenuText(_display.xCentre(), 56, "Save", false, eCentreJustify);
-      }*/
     }
   }
   return true;

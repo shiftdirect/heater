@@ -405,7 +405,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebServerString( jsonStr );
+      sendWebSocketString( jsonStr );
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -417,7 +417,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebServerString( jsonStr );
+      sendWebSocketString( jsonStr );
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -434,7 +434,7 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       tStart = millis();
-      sendWebServerString( jsonStr );
+      sendWebSocketString( jsonStr );
       unsigned long tWF = millis() - tStart;
       tStart = millis();
       std::string expand = jsonStr;
@@ -458,7 +458,7 @@ void updateJSONclients(bool report)
     root.printTo(jsonStr, 800);
 
     DebugPort.printf("JSON send: %s\r\n", jsonStr);
-    sendWebServerString( jsonStr );
+    sendWebSocketString( jsonStr );
     std::string expand = jsonStr;
     Expand(expand);
     getBluetoothClient().send( expand.c_str() );
@@ -470,7 +470,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebServerString( jsonStr );
+      sendWebSocketString( jsonStr );
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -482,7 +482,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebServerString( jsonStr );
+      sendWebSocketString( jsonStr );
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );

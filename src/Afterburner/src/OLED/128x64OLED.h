@@ -34,7 +34,9 @@
 #endif
 
 #include "fonts/FontTypes.h"
-#include "../Utility/UtilClasses.h"
+//#include "../Utility/UtilClasses.h"
+
+struct CRect;
 
 class C128x64_OLED : public OLED_BASE_CLASS {
 	const FONT_INFO* m_pFontInfo;

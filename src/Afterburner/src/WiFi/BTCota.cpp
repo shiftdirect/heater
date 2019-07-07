@@ -19,11 +19,15 @@
  * 
  */
 
+#include <Arduino.h>
+#include "BTCWifi.h"
 #include "BTCota.h"
 #include "../cfg/BTCConfig.h"
-#include <SPIFFS.h>
 #include "../Libraries/esp32FOTA/src/esp32fota.h" // local copy used due to a couple of issues
 #include "../Utility/helpers.h"
+#include <SPIFFS.h>
+#include <Update.h>
+#include <ArduinoOTA.h>
 
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));

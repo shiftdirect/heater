@@ -19,7 +19,6 @@
  * 
  */
 
-#include <Arduino.h>
 #include "Protocol.h"
 
 class CTxManage
