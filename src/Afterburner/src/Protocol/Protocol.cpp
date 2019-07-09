@@ -27,28 +27,11 @@
 #include "../Utility/macros.h"
 
 
-uint16_t 
-CProtocol::CalcCRC(int len) const
-{
-  // calculate a CRC-16/MODBUS checksum using the first 22 bytes of the data array
-  uint16_t  wCRCWord = 0xFFFF;
-
-  int wLength = len;
-  const uint8_t* pData = Data;
-   while (wLength--)
-   {
-      uint8_t nTemp = *pData++ ^ wCRCWord;
-      wCRCWord >>= 8;
-      wCRCWord ^= wCRCTable[nTemp];
-   }
-
-   return wCRCWord;
-}
-
 void 
 CProtocol::setCRC()
 {
-  setCRC(CalcCRC(22));
+  CModBusCRC16 CRCengine;
+  setCRC(CRCengine.process(22, Data));
 }
 
 void 
@@ -73,7 +56,9 @@ CProtocol::getCRC() const
 bool
 CProtocol::verifyCRC(bool bSilent) const
 {
-  uint16_t CRC = CalcCRC(22);  // calculate CRC based on first 22 bytes
+  CModBusCRC16 CRCengine;
+  uint16_t CRC = CRCengine.process(22, Data);  // calculate CRC based on first 22 bytes of our data buffer
+
   uint16_t FrameCRC = getCRC();
   bool bOK = (FrameCRC == CRC);
   if(!bOK && !bSilent) {

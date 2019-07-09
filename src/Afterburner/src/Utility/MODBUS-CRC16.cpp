@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  James Clark
+ * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,37 @@
  * 
  */
 
-#ifndef __BTC_OTA_H
-#define __BTC_OTA_H
+#include "MODBUS-CRC16.h"
 
-void initOTA();
-void DoOTA();
-bool CheckFirmwareCRC(int size);
+CModBusCRC16::CModBusCRC16()
+{
+  _CRC = 0xffff;
+}
 
-#endif
+void
+CModBusCRC16::reset()
+{
+  _CRC = 0xffff;
+}
+
+uint16_t 
+CModBusCRC16::process(int len, const uint8_t* pData)
+{
+  // calculate a CRC-16/MODBUS checksum using the bytes of the data array
+  // carries on from prior developed CRC value, or 0xffff if first pass
+
+  while (len--)
+  {
+    uint8_t nTemp = *pData++ ^ _CRC;
+    _CRC >>= 8;
+    _CRC ^= _CRCTable[nTemp];
+  }
+
+  return _CRC;
+}
+
+uint16_t 
+CModBusCRC16::get() const
+{ 
+  return _CRC; 
+}

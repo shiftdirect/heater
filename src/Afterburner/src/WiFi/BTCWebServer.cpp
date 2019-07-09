@@ -25,6 +25,7 @@
 #include <Arduino.h>
 #include "BTCWifi.h"
 #include "BTCWebServer.h"
+#include "BTCota.h"
 #include "../Utility/DebugPort.h"
 #include "../Protocol/TxManage.h"
 #include "../Utility/helpers.h"
@@ -56,6 +57,8 @@ bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 bool bUpdateAccessed = false;  // flag used to ensure web update always starts via /update. direct accesses to /updatenow will FAIL
 bool bFormatAccessed = false;
+uint16_t fileCRC = 0;
+int  nUploadSize = 0;
 long _SuppliedFileSize = 0;
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
@@ -349,13 +352,13 @@ void rootRedirect()
 
 bool sendWebSocketString(const char* Str)
 {
-  CProfile profile;
+//  CProfile profile;
 	if(webSocket.connectedClients()) {
-    unsigned long tCon = profile.elapsed(true);
+//    unsigned long tCon = profile.elapsed(true);
     bTxWebData = true;              // OLED tx data animation flag
     webSocket.broadcastTXT(Str);
-    unsigned long tWeb = profile.elapsed(true);
-    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
+//    unsigned long tWeb = profile.elapsed(true);
+//    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
 		return true;
 	}
   return false;
@@ -538,6 +541,7 @@ void onErase()
 // function called upon completion of file (form) upload
 void onUploadCompletion()
 {
+  _SuppliedFileSize = 0;
   DebugPort.println("WEB: POST /updatenow completion");
   // completion functionality
   if(SPIFFSupload) {
@@ -596,10 +600,17 @@ void onUploadProgression()
     HTTPUpload& upload = server.upload();
     if (upload.status == UPLOAD_FILE_START) {
       String filename = upload.filename;
+      // CRC checking
+      nUploadSize = upload.totalSize;
+
       DebugPort.setDebugOutput(true);
       if(filename.endsWith(".bin")) {
-        DebugPort.printf("Update: %s %d\r\n", filename.c_str(), upload.totalSize);
-        if (!Update.begin()) { //start with max available size
+        DebugPort.printf("Update: %s\r\n", filename.c_str());
+        int sizetouse = -1;   //start with max available size
+        if(_SuppliedFileSize) {
+          sizetouse = _SuppliedFileSize; // adapt to websocket supplied size
+        }
+        if (!Update.begin(sizetouse)) { 
           Update.printError(DebugPort);
         }
       }
@@ -608,7 +619,6 @@ void onUploadProgression()
         DebugPort.printf("handleFileUpload Name: %s\r\n", filename.c_str());
         fsUploadFile = SPIFFS.open(filename, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
         SPIFFSupload = fsUploadFile ? 1 : 2;
-        //filename = String();
       }
     } 
 
@@ -640,6 +650,7 @@ void onUploadProgression()
     
     // handle end of upload
     else if (upload.status == UPLOAD_FILE_END) {
+        delay(2000);
       if(SPIFFSupload) {
         if(fsUploadFile) {
           fsUploadFile.close();                               // Close the file again
@@ -647,7 +658,10 @@ void onUploadProgression()
         }
       }
       else {
-        if (Update.end(true)) { //true to set the size to the current progress
+        if(!CheckFirmwareCRC(_SuppliedFileSize))
+          Update.abort();
+
+        if (Update.end()) { 
           DebugPort.printf("Update Success: %u\r\nRebooting...\r\n", upload.totalSize);
         } else {
           Update.printError(DebugPort);

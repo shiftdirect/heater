@@ -28,6 +28,8 @@
 #include <SPIFFS.h>
 #include <Update.h>
 #include <ArduinoOTA.h>
+#include "../Utility/MODBUS-CRC16.h"
+#include "esp_ota_ops.h"
 
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));
@@ -142,4 +144,42 @@ bool isUpdateAvailable(bool test)
 void checkFOTA()
 {
   FOTAtime = millis();
+}
+
+const int CRCbufsize = 1024;
+uint8_t CRCReadBuff[CRCbufsize];   
+
+bool CheckFirmwareCRC(int filesize)
+{
+  const esp_partition_t* pUsePartition = esp_ota_get_next_update_partition(NULL);
+  if(NULL == pUsePartition) {
+    DebugPort.println("CheckCRC: FAILED - bad partition?");
+    return false;
+  }
+  int size = (filesize >> 2) << 2;  // mod 4
+  if((filesize - size) != 2) {
+    // we expect 2 extra bytes where the custom CRC is added
+    // all normal applications without CRC are multiples of 4
+    DebugPort.println("CheckCRC: FAILED - bad source file size");
+    return false;
+  }
+
+  CModBusCRC16 CRCengine;
+
+  int processed = 0;
+  while(processed < size) {
+    int toRead = size - processed;
+    if(toRead > CRCbufsize)
+      toRead = CRCbufsize;
+
+    ESP.flashRead(pUsePartition->address + processed, (uint32_t*)CRCReadBuff, toRead);
+    CRCengine.process(toRead, CRCReadBuff); 
+    processed += toRead;
+  }
+  ESP.flashRead(pUsePartition->address + processed, (uint32_t*)CRCReadBuff, 4);
+  uint32_t fileCRC = CRCReadBuff[0] + (CRCReadBuff[1]<<8);
+
+  DebugPort.printf("Upload CRC TEST: calcCRC= %04X, fileCRC = %08X\r\n", CRCengine.get(), fileCRC);
+
+  return fileCRC == CRCengine.get();
 }

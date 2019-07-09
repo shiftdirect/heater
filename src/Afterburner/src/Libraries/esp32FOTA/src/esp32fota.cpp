@@ -12,6 +12,7 @@
 #include <HTTPClient.h>
 #include <Update.h>
 #include "../../ArduinoJson/ArduinoJson.h"
+#include "../../../WiFi/BTCota.h"
 
 extern void forceBootInit();
 
@@ -141,6 +142,10 @@ void esp32FOTA::execOTA()
                 Serial.println("Written only : " + String(written) + "/" + String(contentLength) + ". Retry?");
                 // retry??
                 // execOTA();
+            }
+
+            if(!CheckFirmwareCRC(contentLength)) {
+              Update.abort();
             }
 
             if (Update.end())
@@ -273,3 +278,4 @@ String esp32FOTA::getDeviceID()
     String thisID(deviceid);
     return thisID;
 }
+
