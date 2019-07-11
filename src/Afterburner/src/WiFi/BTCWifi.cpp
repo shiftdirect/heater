@@ -298,6 +298,13 @@ const char* getWifiSTAMACStr()
   return MACstr[0]; 
 }
 
+String getSSID()
+{
+  wifi_config_t conf;
+  esp_wifi_get_config(WIFI_IF_STA, &conf);
+  return String(reinterpret_cast<const char*>(conf.sta.ssid));
+}
+
 bool isWifiConnected()
 {
   return WiFi.status() == WL_CONNECTED;

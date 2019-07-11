@@ -33,7 +33,9 @@ bool makeJSONTimerString(int channel, char* opStr, int len);
 bool makeJSONStringGPIO( CModerator& moderator, char* opStr, int len);
 void updateJSONclients(bool report);
 bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len);
+bool makeJSONStringIP(CModerator& moderator, char* opStr, int len);
 void initMQTTJSONmoderator();
+void initIPJSONmoderator();
 void initTimerJSONmoderator();
 
 template<class T>

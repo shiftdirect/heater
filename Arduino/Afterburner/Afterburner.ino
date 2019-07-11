@@ -330,6 +330,7 @@ void setup() {
   NVstore.load();
   
   initMQTTJSONmoderator();   // prevents JSON for MQTT unless requested
+  initIPJSONmoderator();   // prevents JSON for IP unless requested
   initTimerJSONmoderator();  // prevents JSON for timers unless requested
 
 
@@ -742,7 +743,8 @@ void loop()
 
         ScreenManager.reqUpdate();
       }
-      updateFilteredData();
+      if(bHasHtrData)
+        updateFilteredData();
       updateJSONclients(bReportJSONData);
       CommState.set(CommStates::Idle);
       NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity

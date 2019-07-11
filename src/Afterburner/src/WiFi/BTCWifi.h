@@ -30,6 +30,7 @@ const char* getWifiAPAddrStr();
 const char* getWifiSTAAddrStr(); 
 const char* getWifiAPMACStr();
 const char* getWifiSTAMACStr();
+String getSSID();
 
 bool isWifiConnected();
 bool isWifiAP();

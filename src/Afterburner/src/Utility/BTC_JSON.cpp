@@ -27,16 +27,17 @@
 #include "../RTC/TimerManager.h"
 #include "../Bluetooth/BluetoothAbstract.h"
 #include "../WiFi/BTCWebServer.h"
+#include "../WiFi/BTCWifi.h"
 #include "../cfg/BTCConfig.h"
 #include "macros.h"
 #include "../Protocol/Protocol.h"
-
 
 char defaultJSONstr[64];
 CModerator JSONmoderator;
 CTimerModerator TimerModerator;
 int timerConflict = 0;
 CModerator MQTTmoderator;
+CModerator IPmoderator;
 CModerator GPIOmoderator;
 
 void validateTimer(int ID);
@@ -179,6 +180,9 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("FanSensor", it->key) == 0) {
       setFanSensor(it->value.as<uint8_t>());
 		}
+		else if(strcmp("IQuery", it->key) == 0) {
+      IPmoderator.reset();   // force IP params to be sent
+    }
     // MQTT parameters
 		else if(strcmp("MQuery", it->key) == 0) {
       MQTTmoderator.reset();   // force MQTT params to be sent
@@ -395,6 +399,26 @@ bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
   return bSend;
 }
 
+bool makeJSONStringIP(CModerator& moderator, char* opStr, int len)
+{
+  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+	bool bSend = false;  // reset should send flag
+
+  bSend |= moderator.addJson("IP_AP", getWifiAPAddrStr(), root); 
+  bSend |= moderator.addJson("IP_APMAC", getWifiAPMACStr(), root); 
+  bSend |= moderator.addJson("IP_STA", getWifiSTAAddrStr(), root); 
+  bSend |= moderator.addJson("IP_STAMAC", getWifiSTAMACStr(), root); 
+  bSend |= moderator.addJson("IP_STASSID", getSSID().c_str(), root); 
+  bSend |= moderator.addJson("IP_OTA", NVstore.getUserSettings().enableOTA, root); 
+
+  if(bSend) {
+		root.printTo(opStr, len);
+  }
+
+  return bSend;
+}
 
 void updateJSONclients(bool report)
 {
@@ -477,6 +501,19 @@ void updateJSONclients(bool report)
     }
   }
 
+  // report MQTT params
+  {
+    if(makeJSONStringIP(IPmoderator, jsonStr, sizeof(jsonStr))) {
+      if (report) {
+        DebugPort.printf("JSON send: %s\r\n", jsonStr);
+      }
+      sendWebSocketString( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
+    }
+  }
+
   {
     if(makeJSONStringGPIO(GPIOmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
@@ -501,6 +538,7 @@ void resetJSONmoderator()
   initTimerJSONmoderator();
 #endif
   initMQTTJSONmoderator();
+  initIPJSONmoderator();
   GPIOmoderator.reset();
 }
 
@@ -508,6 +546,12 @@ void initMQTTJSONmoderator()
 {
   char jsonStr[800];
   makeJSONStringMQTT(MQTTmoderator, jsonStr, sizeof(jsonStr));
+}
+
+void initIPJSONmoderator()
+{
+  char jsonStr[800];
+  makeJSONStringIP(IPmoderator, jsonStr, sizeof(jsonStr));
 }
 
 void initTimerJSONmoderator()
