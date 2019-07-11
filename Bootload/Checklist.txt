@@ -1,0 +1,20 @@
+Afterburner operation checklist
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Modifications performed:
+  Pullup on Debug Rx line
+  Swapped GPIO In#1 with Analogue input
+  5V via blocking diode to GPIO port
+  
+OLED intact
+Latest firmware uploaded
+SPIFFS uploaded
+Keypad functions OK
+Indicator LEDs function
+Web server functions and serves heater control page
+Bluetooth pairs and streams SPP data
+GPIO functions:
+  Input x2
+  Output x2
+  Analogue
+ 

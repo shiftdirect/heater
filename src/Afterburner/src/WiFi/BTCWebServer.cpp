@@ -57,8 +57,7 @@ bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
 bool bUpdateAccessed = false;  // flag used to ensure web update always starts via /update. direct accesses to /updatenow will FAIL
 bool bFormatAccessed = false;
-uint16_t fileCRC = 0;
-int  nUploadSize = 0;
+bool bFormatPerformed = false;
 long _SuppliedFileSize = 0;
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
@@ -192,20 +191,83 @@ const char* stdHeader = R"=====(
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="-1">
 <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
-</head>
 <style>
-body { font-family: Arial, Helvetica, sans-serif; }
-th { text-align: left; }
-.throb { animation: throbber 1s linear infinite; }
-@keyframes throbber { 50% { opacity: 0; } }
+body { 
+ font-family: Arial, Helvetica, sans-serif; 
+ zoom: 200%;
+}
+button {
+ background-color: #016ABC;
+ color: #fff;
+ border-radius: 25px;
+}
+.del {
+ color: white;
+ font-weight: bold;
+ background-color: red;
+ border-radius: 50%;
+ height: 30px;
+ width: 30px;
+}
+.fmt {
+ color: white;
+ font-weight: bold;
+ background-color: red;
+}
+th {
+ text-align: left;
+}
+.throb { 
+ animation: throbber 1s linear infinite;
+}
+@keyframes throbber { 
+ 50% { 
+  opacity: 0; 
+ }
+}
 </style>
 )=====";
 
 const char* updateIndex = R"=====(
+<style>
+body {
+ background-color: yellowgreen;
+}
+.inputfile {
+ width: 0.1px;
+ height: 0.1px;
+ opacity: 0;
+ overflow: hidden;
+ position: absolute;
+ z-index: -1;
+}
+.inputfile + label {
+ color: #fff;
+ background-color: #016ABC;
+ display: inline-block;
+ border-style: solid;
+ border-radius: 25px;
+ border-width: medium;
+ border-top-color: #E3E3E3;
+ border-left-color: #E3E3E3;
+ border-right-color: #979797;
+ border-bottom-color: #979797;
+}
+#filename {
+  font-weight: bold;
+  font-style: italic;
+}
+#upload {
+  font-weight: bold;
+  font-style: italic;
+}
+</style>
 <script>
 // globals
 var sendSize;
 var ws;
+var timeDown;
+var timeUp;
 
 function _(el) {
  return document.getElementById(el);
@@ -235,8 +297,11 @@ function init() {
 
 function uploadFile() {
  _("cancel").hidden = true;
+ _("upload").hidden = true;
+ _("progressBar").hidden = false;
  var file = _("file1").files[0];
  sendSize = file.size;
+ console.log(file);
  var JSONmsg = {};
  JSONmsg['UploadSize'] = sendSize;
  var str = JSON.stringify(JSONmsg);
@@ -256,6 +321,7 @@ function uploadFile() {
 
 function completeHandler(event) {
  _("status").innerHTML = event.target.responseText;
+ _("progressBar").hidden = true;
  _("progressBar").value = 0;
  _("loaded_n_total").innerHTML = "Uploaded " + sendSize + " bytes of " + sendSize;
  var file = _("file1").files[0];
@@ -287,27 +353,36 @@ function onErase(fn) {
 }
 
 function onBrowseChange() {
+  _("uploaddiv").hidden = false;
   _("upload").hidden = false;
-  _("progressBar").hidden = false;
   _("status").hidden = false;
   _("loaded_n_total").hidden = false;
   _("spacer").hidden = false;
+  var file = _("file1").files[0];
+  document.getElementById('filename').innerHTML = file.name;
 }
+
+function onformatClick() {
+    window.location.assign('/formatspiffs');
+}
+
 </script>
 
 <title>Afterburner update</title>
+</head>
 <body onload="javascript:init()">
  <h1>Afterburner update</h1>
- <form id='upload_form' method="POST" enctype="multipart/form-data" autocomplete="off">
-  <label for='file1'>Select a file to upload:<br></label>
-  <input type="file" name="file1" id="file1" size="50" onchange="onBrowseChange()"><p>
-  <input id="upload" type='button' onclick='uploadFile()' value='Upload' hidden>
-  <progress id='progressBar' value='0' max='100' style='width:300px;' hidden></progress>
-  <p id='spacer' hidden> </p>
-  <input type='button' onclick=window.location.assign('/') id='cancel' value='Cancel'>
-  <h3 id='status' hidden></h3>
-  <div id='loaded_n_total' hidden></div>
+ <form id='upload_form' method='POST' enctype='multipart/form-data' autocomplete='off'>
+  <input type='file' name='file1' id='file1' class='inputfile' onchange='onBrowseChange()'/>
+  <label for='file1'>&nbsp;&nbsp;Select a file to upload&nbsp;&nbsp;</label>
  </form>
+ <p>
+ <div id='uploaddiv' hidden><span id='filename'></span>&nbsp;<button id="upload" class='throb' onclick='uploadFile()' hidden>Upload</button>
+ <progress id='progressBar' value='0' max='100' style='width:300px;' hidden></progress><p></div>
+ <p id='spacer' hidden> </p> 
+ <div><button onclick=window.location.assign('/') id='cancel'>Cancel</button></div>
+ <h3 id='status' hidden></h3>
+ <div id='loaded_n_total' hidden></div>
 )=====";
 
 
@@ -484,7 +559,7 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
       String fn = file.name();
       String ers;
       if(withHTMLanchors == 2)
-        ers = "<input type=\"button\" value=\"X\" onClick=\"onErase('" + fn + "')\">";
+        ers = "<input class='del' type='button' value='X' onClick=onErase('" + fn + "')>";
       if(withHTMLanchors) {
         if(fn.endsWith(".html") || fn.endsWith(".htm")) {
           String fn2(fn);
@@ -581,12 +656,13 @@ void onUploadBegin()
   }
   bUpdateAccessed = true;
   bFormatAccessed = false;
+  bFormatPerformed = false;
 #ifdef USE_EMBEDDED_WEBUPDATECODE    
   String SPIFFSinfo;
   listSPIFFS("/", 2, SPIFFSinfo, 2);
   String content = stdHeader;
   content += updateIndex + SPIFFSinfo;
-  content += "<p><button onclick=window.location.assign('/formatspiffs')>Format SPIFFS</button>";
+  content += "<p><button class='fmt' onclick='onformatClick()'>Format SPIFFS</button>";
   content += "</body></html>";
   server.send(200, "text/html", content );
 #else
@@ -600,8 +676,6 @@ void onUploadProgression()
     HTTPUpload& upload = server.upload();
     if (upload.status == UPLOAD_FILE_START) {
       String filename = upload.filename;
-      // CRC checking
-      nUploadSize = upload.totalSize;
 
       DebugPort.setDebugOutput(true);
       if(filename.endsWith(".bin")) {
@@ -705,7 +779,7 @@ void onFormatSPIFFS()
   DebugPort.println("WEB: GET /formatspiffs");
   bUpdateAccessed = false;
   String content = stdHeader;
-  if(!bFormatAccessed) {
+  if(!bFormatPerformed) {
     sCredentials creds = NVstore.getCredentials();
     if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
       return server.requestAuthentication();
@@ -716,16 +790,24 @@ void onFormatSPIFFS()
   }
   else {
     bFormatAccessed = false;
+    bFormatPerformed = false;
 
     content += formatDoneContent;
   }
   server.send(200, "text/html", content );
 }
 
-const char* formatDoneContent = R"=====(<body>
+const char* formatDoneContent = R"=====(
+<style>
+body {
+ background-color: yellow;
+}
+</style>
+</head>
+<body>
 <h1>SPIFFS partition has been formatted</h1>
 <h3>You must now upload the web content.</h3>
-<p>Latest web content can be downloaded from <a href=\"http://www.mrjones.id.au/afterburner/firmware.html\" target=\"_blank\">http://www.mrjones.id.au/afterburner/firmware.html</a>
+<p>Latest web content can be downloaded from <a href='http://www.mrjones.id.au/afterburner/firmware.html' target='_blank'>http://www.mrjones.id.au/afterburner/firmware.html</a>
 <h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>
 <p><button onclick=window.location.assign('/update')>Upload web content</button> 
 </body>
@@ -733,18 +815,24 @@ const char* formatDoneContent = R"=====(<body>
 )=====";
 
 const char* formatIndex = R"=====(
+<style>
+body {
+ background-color: orangered;
+}
+</style>
 <script>
 function init() {
 }
 function onFormat() {
  var formdata = new FormData();
  if(confirm('Do you really want to reformat the SPIFFS partition ?')) {
-  formdata.append("confirm", "yes");
+  document.getElementById('throb').innerHTML = 'FORMATTING - Please wait';
+  formdata.append('confirm', 'yes');
   setTimeout(function () { location.reload(); }, 200);    
  }
  else {
-  formdata.append("confirm", "no");
-  setTimeout(function () { location.assign('/update'); }, 200);    
+  formdata.append('confirm', 'no');
+  setTimeout(function () { location.assign('/update'); }, 20);    
  }
  var ajax = new XMLHttpRequest();
  ajax.open("POST", "/formatnow");
@@ -752,11 +840,12 @@ function onFormat() {
 }
 </script>
 <title>Afterburner SPIFFS format</title>
+</head>
 <body onload="javascript:init()">
 <h1>Format SPIFFS partition</h1>
-<h3 class="throb">CAUTION!  This will erase all web content</h1>
-<p><button onClick='onFormat()'>Format</button><br>
-<p><a href="/update"><button>Cancel</button></a>
+<h3 class='throb' id='throb'>CAUTION!  This will erase all web content</h1>
+<p><button class='fmt' onClick='onFormat()'>Format</button><br>
+<p><a href='/update'><button>Cancel</button></a>
 </body>
 </html>
 )=====";
@@ -770,9 +859,11 @@ void onFormatNow()
   if(confirm == "yes" && bFormatAccessed) {      // confirm user agrees, and we did pass thru /formatspiffs first
 	  DebugPort.println("Formatting SPIFFS partition");
     SPIFFS.format();                             // re-format the SPIFFS partition
+    bFormatPerformed = true;
   }
   else {
     bFormatAccessed = false;                     // user cancelled upon last confirm popup, or not authenticated access
+    bFormatPerformed = false;
     rootRedirect();
   }
 }
@@ -785,7 +876,8 @@ void onFormatNow()
 void build404Response(String& content, String file)
 {
 content += stdHeader;
-content += R"=====(<body>
+content += R"=====(</head>
+<body>
 <h1>404: File Not Found</h1>
 <p>URI: <b><i>)=====";
 content +=  file;
@@ -817,7 +909,8 @@ content += "</html>";
 void build500Response(String& content, String file)
 {
 content = stdHeader;
-content += R"=====(<body>
+content += R"=====(</head>
+<body>
 <h1>500: Internal Server Error</h1>
 <h3 class="throb">Sorry, cannot open file</h3>
 <p><b><i> ")=====";
@@ -826,7 +919,7 @@ content += R"=====(" </i></b> exists, but cannot be streamed?
 <hr>
 <p>Recommended remedy is to re-format the SPIFFS partition, then reload the web content files.
 <br>Latest web content can be downloaded from <a href="http://www.mrjones.id.au/afterburner/firmware.html" target="_blank">http://www.mrjones.id.au/afterburner/firmware.html</a> <i>(opens in new page)</i>.
-<p>To format the SPIFFS partition, press <button onClick=location.assign('/formatspiffs')>Format SPIFFS</button>
+<p>To format the SPIFFS partition, press <button class='fmt' onClick=location.assign('/formatspiffs')>Format SPIFFS</button>
 <p>You will then need to upload each file of the web content by using the subsequent "<b>Upload</b>" button.
 <hr>
 <h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>

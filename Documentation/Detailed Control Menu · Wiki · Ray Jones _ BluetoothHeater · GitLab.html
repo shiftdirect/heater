@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html class="" lang="en"><head prefix="og: http://ogp.me/ns#">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<link href="https://assets.gitlab-static.net/" rel="dns-prefetch">
+<link crossorigin="" href="https://assets.gitlab-static.net/" rel="preconnnect">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta content="object" property="og:type">
+<meta content="GitLab" property="og:site_name">
+<meta content="Detailed Control Menu · Wiki · Ray Jones / BluetoothHeater" property="og:title">
+<meta content="Bluetooth interface for Chinese Diesel Heaters" property="og:description">
+<meta content="https://gitlab.com/uploads/-/system/project/avatar/8512834/BTCavatar.jpg" property="og:image">
+<meta content="64" property="og:image:width">
+<meta content="64" property="og:image:height">
+<meta content="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Detailed-Control-Menu" property="og:url">
+<meta content="summary" property="twitter:card">
+<meta content="Detailed Control Menu · Wiki · Ray Jones / BluetoothHeater" property="twitter:title">
+<meta content="Bluetooth interface for Chinese Diesel Heaters" property="twitter:description">
+<meta content="https://gitlab.com/uploads/-/system/project/avatar/8512834/BTCavatar.jpg" property="twitter:image">
+
+<title>Detailed Control Menu · Wiki · Ray Jones / BluetoothHeater · GitLab</title>
+<meta content="Bluetooth interface for Chinese Diesel Heaters" name="description">
+<link rel="shortcut icon" type="image/png" href="https://gitlab.com/assets/favicon-7901bd695fb93edb07975966062049829afb56cf11511236e61bcf425070e36e.png" id="favicon" data-original-href="https://gitlab.com/assets/favicon-7901bd695fb93edb07975966062049829afb56cf11511236e61bcf425070e36e.png">
+<link rel="stylesheet" media="all" href="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/application-d2dc5140805b02e90dbb2eef91a5bc6c224c89f6664ba907.css">
+<link rel="stylesheet" media="print" href="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/print-c8ff536271f8974b8a9a5f75c0ca25d2b8c1dceb4cff3c01d16038.css">
+
+
+
+<script async="" src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/sp-438c6d3df8595dcbfe9a252fd3bacb37c189cc43f8c3770910e74c5372.js"></script><script>
+//<![CDATA[
+window.gon={};gon.api_version="v4";gon.default_avatar_url="https://assets.gitlab-static.net/assets/no_avatar-849f9c04a3a0d0cea2424ae97b27447dc64a7dbfae83c036c45b403392f0e8ba.png";gon.max_file_size=10;gon.asset_host="https://assets.gitlab-static.net";gon.webpack_public_path="https://assets.gitlab-static.net/assets/webpack/";gon.relative_url_root="";gon.shortcuts_path="/help/shortcuts";gon.user_color_scheme="dark";gon.sentry_dsn="https://526a2f38a53d44e3a8e69bfa001d1e8b@sentry.gitlab.net/15";gon.gitlab_url="https://gitlab.com";gon.revision="c02f0d4";gon.gitlab_logo="https://assets.gitlab-static.net/assets/gitlab_logo-7ae504fe4f68fdebb3c2034e36621930cd36ea87924c11ff65dbcb8ed50dca58.png";gon.sprite_icons="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg";gon.sprite_file_icons="https://gitlab.com/assets/file_icons-7262fc6897e02f1ceaf8de43dc33afa5e4f9a2067f4f68ef77dcc87946575e9e.svg";gon.emoji_sprites_css_path="https://assets.gitlab-static.net/assets/emoji_sprites-289eccffb1183c188b630297431be837765d9ff4aed6130cf738586fb307c170.css";gon.test_env=false;gon.suggested_label_colors=["#0033CC","#428BCA","#44AD8E","#A8D695","#5CB85C","#69D100","#004E00","#34495E","#7F8C8D","#A295D6","#5843AD","#8E44AD","#FFECDB","#AD4363","#D10069","#CC0033","#FF0000","#D9534F","#D1D100","#F0AD4E","#AD8D43"];gon.current_user_id=2730850;gon.current_username="mrjones.id.au";gon.current_user_fullname="Ray Jones";gon.current_user_avatar_url="https://secure.gravatar.com/avatar/e682029ec27261f07ea426908801cb06?s=80\u0026d=identicon";
+//]]>
+</script>
+
+<script src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/runtime.js" defer="defer"></script>
+<script src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/main.js" defer="defer"></script>
+<script src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/raven.js" defer="defer"></script>
+<script src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/commonspages_002.js" defer="defer"></script>
+<script src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/commonspages.js" defer="defer"></script>
+<script src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/pages.js" defer="defer"></script>
+<script>
+  window.uploads_path = "/mrjones.id.au/bluetoothheater/uploads";
+</script>
+
+<meta name="csrf-param" content="authenticity_token">
+<meta name="csrf-token" content="/WIXzzqUw7spAjtnGJk7/ujfLKrCRYVDdd7RH9ppUVgJfCPQNnPZUSEDnTGdbW49gjRDAmBWrsoh/U5LuDybug==">
+<meta content="origin-when-cross-origin" name="referrer">
+<meta content="width=device-width, initial-scale=1, maximum-scale=1" name="viewport">
+<meta content="#474D57" name="theme-color">
+<link rel="apple-touch-icon" type="image/x-icon" href="https://assets.gitlab-static.net/assets/touch-icon-iphone-5a9cee0e8a51212e70b90c87c12f382c428870c0ff67d1eb034d884b78d2dae7.png">
+<link rel="apple-touch-icon" type="image/x-icon" href="https://assets.gitlab-static.net/assets/touch-icon-ipad-a6eec6aeb9da138e507593b464fdac213047e49d3093fc30e90d9a995df83ba3.png" sizes="76x76">
+<link rel="apple-touch-icon" type="image/x-icon" href="https://assets.gitlab-static.net/assets/touch-icon-iphone-retina-72e2aadf86513a56e050e7f0f2355deaa19cc17ed97bbe5147847f2748e5a3e3.png" sizes="120x120">
+<link rel="apple-touch-icon" type="image/x-icon" href="https://assets.gitlab-static.net/assets/touch-icon-ipad-retina-8ebe416f5313483d9c1bc772b5bbe03ecad52a54eba443e5215a22caed2a16a2.png" sizes="152x152">
+<link color="rgb(226, 67, 41)" href="https://assets.gitlab-static.net/assets/logo-d36b5212042cebc89b96df4bf6ac24e43db316143e89926c0db839ff694d2de4.svg" rel="mask-icon">
+<meta content="https://assets.gitlab-static.net/assets/msapplication-tile-1196ec67452f618d39cdd85e2e3a542f76574c071051ae7effbfde01710eb17d.png" name="msapplication-TileImage">
+<meta content="#30353E" name="msapplication-TileColor">
+
+
+
+<script>
+  ;(function(p,l,o,w,i,n,g){if(!p[i]){p.GlobalSnowplowNamespace=p.GlobalSnowplowNamespace||[];
+  p.GlobalSnowplowNamespace.push(i);p[i]=function(){(p[i].q=p[i].q||[]).push(arguments)
+  };p[i].q=p[i].q||[];n=l.createElement(o);g=l.getElementsByTagName(o)[0];n.async=1;
+  n.src=w;g.parentNode.insertBefore(n,g)}}(window,document,"script","https://assets.gitlab-static.net/assets/shared/snowplow/sp-438c6d3df8595dcbfe9a252fd3bacb37c189cc43f8c3770910e74c53721eb15c.js","snowplow"));
+  
+  window.snowplow('newTracker', 'cf', 'snowplow.trx.gitlab.net', {
+    appId: 'gitlab',
+    cookieDomain: '.gitlab.com',
+    userFingerprint: false,
+    respectDoNotTrack: true,
+    forceSecureTracker: true,
+    post: true,
+    contexts: {
+        webPage: true,
+    }
+    // Uncomment in https://gitlab.com/gitlab-org/gitlab-ee/issues/8432
+    // stateStorageStrategy: "localStorage"
+  });
+  
+  window.snowplow('enableActivityTracking', 30, 30);
+  window.snowplow('trackPageView');
+</script>
+
+</head>
+
+<body class="ui-indigo " data-find-file="/mrjones.id.au/bluetoothheater/find_file/master" data-group="" data-page="projects:wikis:show" data-project="bluetoothheater">
+
+
+
+<header class="navbar navbar-gitlab qa-navbar navbar-expand-sm js-navbar">
+<a class="sr-only gl-accessibility" href="#content-body" tabindex="1">Skip to content</a>
+<div class="container-fluid">
+<div class="header-content">
+<div class="title-container">
+<h1 class="title">
+<a title="Dashboard" id="logo" href="https://gitlab.com/"><svg width="24" height="24" class="tanuki-logo" viewBox="0 0 36 36">
+  <path class="tanuki-shape tanuki-left-ear" fill="#e24329" d="M2 14l9.38 9v-9l-4-12.28c-.205-.632-1.176-.632-1.38 0z"></path>
+  <path class="tanuki-shape tanuki-right-ear" fill="#e24329" d="M34 14l-9.38 9v-9l4-12.28c.205-.632 1.176-.632 1.38 0z"></path>
+  <path class="tanuki-shape tanuki-nose" fill="#e24329" d="M18,34.38 3,14 33,14 Z"></path>
+  <path class="tanuki-shape tanuki-left-eye" fill="#fc6d26" d="M18,34.38 11.38,14 2,14 6,25Z"></path>
+  <path class="tanuki-shape tanuki-right-eye" fill="#fc6d26" d="M18,34.38 24.62,14 34,14 30,25Z"></path>
+  <path class="tanuki-shape tanuki-left-cheek" fill="#fca326" d="M2 14L.1 20.16c-.18.565 0 1.2.5 1.56l17.42 12.66z"></path>
+  <path class="tanuki-shape tanuki-right-cheek" fill="#fca326" d="M34 14l1.9 6.16c.18.565 0 1.2-.5 1.56L18 34.38z"></path>
+</svg>
+
+<span class="logo-text d-none d-lg-block prepend-left-8">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 617 169"><path d="M315.26 2.97h-21.8l.1 162.5h88.3v-20.1h-66.5l-.1-142.4M465.89 136.95c-5.5 5.7-14.6 11.4-27 11.4-16.6 0-23.3-8.2-23.3-18.9 0-16.1 11.2-23.8 35-23.8 4.5 0 11.7.5 15.4 1.2v30.1h-.1m-22.6-98.5c-17.6 0-33.8 6.2-46.4 16.7l7.7 13.4c8.9-5.2 19.8-10.4 35.5-10.4 17.9 0 25.8 9.2 25.8 24.6v7.9c-3.5-.7-10.7-1.2-15.1-1.2-38.2 0-57.6 13.4-57.6 41.4 0 25.1 15.4 37.7 38.7 37.7 15.7 0 30.8-7.2 36-18.9l4 15.9h15.4v-83.2c-.1-26.3-11.5-43.9-44-43.9M557.63 149.1c-8.2 0-15.4-1-20.8-3.5V70.5c7.4-6.2 16.6-10.7 28.3-10.7 21.1 0 29.2 14.9 29.2 39 0 34.2-13.1 50.3-36.7 50.3m9.2-110.6c-19.5 0-30 13.3-30 13.3v-21l-.1-27.8h-21.3l.1 158.5c10.7 4.5 25.3 6.9 41.2 6.9 40.7 0 60.3-26 60.3-70.9-.1-35.5-18.2-59-50.2-59M77.9 20.6c19.3 0 31.8 6.4 39.9 12.9l9.4-16.3C114.5 6 97.3 0 78.9 0 32.5 0 0 28.3 0 85.4c0 59.8 35.1 83.1 75.2 83.1 20.1 0 37.2-4.7 48.4-9.4l-.5-63.9V75.1H63.6v20.1h38l.5 48.5c-5 2.5-13.6 4.5-25.3 4.5-32.2 0-53.8-20.3-53.8-63-.1-43.5 22.2-64.6 54.9-64.6M231.43 2.95h-21.3l.1 27.3v94.3c0 26.3 11.4 43.9 43.9 43.9 4.5 0 8.9-.4 13.1-1.2v-19.1c-3.1.5-6.4.7-9.9.7-17.9 0-25.8-9.2-25.8-24.6v-65h35.7v-17.8h-35.7l-.1-38.5M155.96 165.47h21.3v-124h-21.3v124M155.96 24.37h21.3V3.07h-21.3v21.3"></path></svg>
+
+</span>
+</a></h1>
+<ul class="list-unstyled navbar-sub-nav">
+<li id="nav-projects-dropdown" class="home dropdown header-projects qa-projects-dropdown" data-track-label="projects_dropdown" data-track-event="click_dropdown"><button data-toggle="dropdown" type="button">
+Projects
+<svg class="caret-down"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-down"></use></svg>
+</button>
+<div class="dropdown-menu frequent-items-dropdown-menu">
+<div class="frequent-items-dropdown-container">
+<div class="frequent-items-dropdown-sidebar qa-projects-dropdown-sidebar">
+<ul>
+<li class=""><a class="qa-your-projects-link" href="https://gitlab.com/dashboard/projects">Your projects
+</a></li><li class=""><a href="https://gitlab.com/dashboard/projects/starred">Starred projects
+</a></li><li class=""><a href="https://gitlab.com/explore">Explore projects
+</a></li></ul>
+</div>
+<div class="frequent-items-dropdown-content">
+<div><div class="search-input-container d-none d-sm-block"><input placeholder="Search your projects" type="search" class="form-control"> <svg aria-hidden="true" class="search-icon s16 ic-search"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#search"></use></svg></div> <!----> <div class="section-header">
+    Frequently visited
+  </div> <div class="frequent-items-list-container"><ul class="list-unstyled"><li class="section-empty">
+      Projects you visit often will appear here
+    </li></ul></div></div>
+</div>
+</div>
+
+</div>
+</li><li id="nav-groups-dropdown" class="home dropdown header-groups qa-groups-dropdown" data-track-label="groups_dropdown" data-track-event="click_dropdown"><button data-toggle="dropdown" type="button">
+Groups
+<svg class="caret-down"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-down"></use></svg>
+</button>
+<div class="dropdown-menu frequent-items-dropdown-menu">
+<div class="frequent-items-dropdown-container">
+<div class="frequent-items-dropdown-sidebar qa-groups-dropdown-sidebar">
+<ul>
+<li class=""><a class="qa-your-groups-link" href="https://gitlab.com/dashboard/groups">Your groups
+</a></li><li class=""><a href="https://gitlab.com/explore/groups">Explore groups
+</a></li></ul>
+</div>
+<div class="frequent-items-dropdown-content">
+<div><div class="search-input-container d-none d-sm-block"><input placeholder="Search your groups" type="search" class="form-control"> <svg aria-hidden="true" class="search-icon s16 ic-search"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#search"></use></svg></div> <!----> <div class="section-header">
+    Frequently visited
+  </div> <div class="frequent-items-list-container"><ul class="list-unstyled"><li class="section-empty">
+      Groups you visit often will appear here
+    </li></ul></div></div>
+</div>
+</div>
+
+</div>
+</li><li class="d-none d-xl-block d-lg-block"><a class="dashboard-shortcuts-activity" title="Activity" href="https://gitlab.com/dashboard/activity">Activity
+</a></li><li class="d-none d-xl-block d-lg-block"><a class="dashboard-shortcuts-milestones" title="Milestones" href="https://gitlab.com/dashboard/milestones">Milestones
+</a></li><li class="d-none d-xl-block d-lg-block"><a class="dashboard-shortcuts-snippets" title="Snippets" href="https://gitlab.com/dashboard/snippets">Snippets
+</a></li><li class="d-lg-none d-xl-none dropdown header-more">
+<a data-toggle="dropdown" href="#">
+More
+<svg class="caret-down"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-down"></use></svg>
+</a>
+<div class="dropdown-menu">
+<ul>
+<li class=""><a title="Activity" href="https://gitlab.com/dashboard/activity">Activity
+</a></li><li class=""><a class="dashboard-shortcuts-milestones" title="Milestones" href="https://gitlab.com/dashboard/milestones">Milestones
+</a></li><li class=""><a class="dashboard-shortcuts-snippets" title="Snippets" href="https://gitlab.com/dashboard/snippets">Snippets
+</a></li><li class=""><a title="Operations" aria-label="Operations" href="https://gitlab.com/-/operations"><svg class="s18"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#dashboard"></use></svg>
+</a></li>
+</ul>
+</div>
+</li>
+<li class="hidden">
+<a title="Projects" class="dashboard-shortcuts-projects" href="https://gitlab.com/dashboard/projects">Projects
+</a></li>
+<li class=""><a title="Operations" aria-label="Operations" href="https://gitlab.com/-/operations"><svg class="s18"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#dashboard"></use></svg>
+</a></li>
+</ul>
+
+</div>
+<div class="navbar-collapse collapse">
+<ul class="nav navbar-nav">
+<li class="header-new dropdown" data-track-event="click_dropdown" data-track-label="new_dropdown">
+<a class="header-new-dropdown-toggle has-tooltip qa-new-menu-toggle" title="New..." ref="tooltip" aria-label="New..." data-toggle="dropdown" data-placement="bottom" data-container="body" data-display="static" href="https://gitlab.com/projects/new"><svg class="s16"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#plus-square"></use></svg>
+<svg class="caret-down"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-down"></use></svg>
+</a><div class="dropdown-menu dropdown-menu-right">
+<ul>
+<li class="dropdown-bold-header">
+This project
+</li>
+<li><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/issues/new">New issue</a></li>
+<li><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/merge_requests/new">New merge request</a></li>
+<li><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/snippets/new">New snippet</a></li>
+<li class="divider"></li>
+<li class="dropdown-bold-header">GitLab</li>
+<li><a class="qa-global-new-project-link" href="https://gitlab.com/projects/new">New project</a></li>
+<li><a href="https://gitlab.com/groups/new">New group</a></li>
+<li><a href="https://gitlab.com/snippets/new">New snippet</a></li>
+</ul>
+</div>
+</li>
+
+<li class="nav-item d-none d-sm-none d-md-block m-auto">
+<div class="search search-form" data-track-event="activate_form_input" data-track-label="navbar_search">
+<form class="form-inline" action="/search" accept-charset="UTF-8" method="get"><input name="utf8" type="hidden" value="✓"><div class="search-input-container">
+<div class="search-input-wrap">
+<div class="dropdown" data-url="/search/autocomplete">
+<input type="search" name="search" id="search" placeholder="Search or jump to…" class="search-input dropdown-menu-toggle no-outline js-search-dashboard-options disabled" spellcheck="false" tabindex="1" autocomplete="off" data-issues-path="/dashboard/issues" data-mr-path="/dashboard/merge_requests" aria-label="Search or jump to…">
+<button class="hidden js-dropdown-search-toggle" data-toggle="dropdown" type="button"></button>
+<div class="dropdown-menu dropdown-select">
+<div class="dropdown-content"><ul>
+<li class="dropdown-menu-empty-item">
+<a>
+Loading...
+</a>
+</li>
+</ul>
+</div><div class="dropdown-loading"><i aria-hidden="true" data-hidden="true" class="fa fa-spinner fa-spin"></i></div>
+</div>
+<svg class="s16 search-icon"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#search"></use></svg>
+<svg class="s16 clear-icon js-clear-input"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#close"></use></svg>
+</div>
+</div>
+</div>
+<input type="hidden" name="group_id" id="group_id" class="js-search-group-options">
+<input type="hidden" name="project_id" id="search_project_id" value="8512834" class="js-search-project-options" data-project-path="bluetoothheater" data-name="BluetoothHeater" data-issues-path="/mrjones.id.au/bluetoothheater/issues" data-mr-path="/mrjones.id.au/bluetoothheater/merge_requests" data-issues-disabled="false">
+<input type="hidden" name="scope" id="scope" value="wiki_blobs">
+<input type="hidden" name="repository_ref" id="repository_ref">
+
+<div class="search-autocomplete-opts hide" data-autocomplete-path="/search/autocomplete" data-autocomplete-project-id="8512834"></div>
+</form></div>
+
+</li>
+<li class="nav-item d-inline-block d-sm-none d-md-none">
+<a title="Search" aria-label="Search" data-toggle="tooltip" data-placement="bottom" data-container="body" href="https://gitlab.com/search?project_id=8512834"><svg class="s16"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#search"></use></svg>
+</a></li>
+<li class="user-counter"><a title="Issues" class="dashboard-shortcuts-issues" aria-label="Issues" data-toggle="tooltip" data-placement="bottom" data-container="body" href="https://gitlab.com/dashboard/issues?assignee_username=mrjones.id.au"><svg class="s16"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#issues"></use></svg>
+<span class="badge badge-pill hidden issues-count">
+0
+</span>
+</a></li><li class="user-counter"><a title="Merge requests" class="dashboard-shortcuts-merge_requests" aria-label="Merge requests" data-toggle="tooltip" data-placement="bottom" data-container="body" href="https://gitlab.com/dashboard/merge_requests?assignee_username=mrjones.id.au"><svg class="s16"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#git-merge"></use></svg>
+<span class="badge badge-pill hidden merge-requests-count">
+0
+</span>
+</a></li><li class="user-counter"><a title="" aria-label="Todos" class="shortcuts-todos" data-toggle="tooltip" data-placement="bottom" data-container="body" href="https://gitlab.com/dashboard/todos" data-original-title="Todos"><svg class="s16"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#todo-done"></use></svg>
+<span class="badge badge-pill hidden todos-count">
+0
+</span>
+</a></li><li class="nav-item header-help dropdown">
+<a class="header-help-dropdown-toggle" data-toggle="dropdown" href="https://gitlab.com/help"><svg class="s16"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#question"></use></svg>
+<svg class="caret-down"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-down"></use></svg>
+</a><div class="dropdown-menu dropdown-menu-right">
+<ul>
+<li>
+<a href="https://gitlab.com/help">Help</a>
+</li>
+<li class="divider"></li>
+<li>
+<a href="https://about.gitlab.com/submit-feedback">Submit feedback</a>
+</li>
+<li>
+<a target="_blank" class="text-nowrap" href="https://about.gitlab.com/contributing">Contribute to GitLab
+</a></li>
+
+
+</ul>
+
+</div>
+</li>
+<li class="nav-item header-user dropdown" data-track-event="click_dropdown" data-track-label="profile_dropdown">
+<a class="header-user-dropdown-toggle" data-toggle="dropdown" href="https://gitlab.com/mrjones.id.au"><img class="header-user-avatar qa-user-avatar js-lazy-loaded" src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/e682029ec27261f07ea426908801cb06.png" width="23" height="23">
+<svg class="caret-down"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-down"></use></svg>
+</a><div class="dropdown-menu dropdown-menu-right">
+<ul>
+<li class="current-user">
+<div class="user-name bold">
+Ray Jones
+</div>
+@mrjones.id.au
+</li>
+<li class="divider"></li>
+<li>
+<button type="button" class="btn menu-item">Set status</button>
+</li>
+<li>
+<a class="profile-link" data-user="mrjones.id.au" href="https://gitlab.com/mrjones.id.au">Profile</a>
+</li>
+<li>
+<a href="https://gitlab.com/profile">Settings</a>
+</li>
+<li class="divider"></li>
+<li>
+<a class="sign-out-link" href="https://gitlab.com/users/sign_out">Sign out</a>
+</li>
+</ul>
+
+</div>
+</li>
+</ul>
+</div>
+<button class="navbar-toggler d-block d-sm-none" type="button">
+<span class="sr-only">Toggle navigation</span>
+<svg class="s12 more-icon js-navbar-toggle-right"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#ellipsis_h"></use></svg>
+<svg class="s12 close-icon js-navbar-toggle-left"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#close"></use></svg>
+</button>
+</div>
+</div>
+</header>
+<div class="set-user-status-modal"><!----></div>
+
+<div class="layout-page page-gutter page-with-contextual-sidebar right-sidebar-expanded wiki-sidebar">
+<div class="nav-sidebar">
+<div class="nav-sidebar-inner-scroll">
+<div class="context-header">
+<a title="BluetoothHeater" href="https://gitlab.com/mrjones.id.au/bluetoothheater"><div class="avatar-container s40 project-avatar">
+<img alt="BluetoothHeater" class="avatar s40 avatar-tile js-lazy-loaded" src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/BTCavatar.jpg" width="40" height="40">
+</div>
+<div class="sidebar-context-title">
+BluetoothHeater
+</div>
+</a></div>
+<ul class="sidebar-top-level-items">
+<li class="home"><a class="shortcuts-project" href="https://gitlab.com/mrjones.id.au/bluetoothheater"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#home"></use></svg>
+</div>
+<span class="nav-item-name">
+Project
+</span>
+</a><ul class="sidebar-sub-level-items">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater"><strong class="fly-out-top-item-name">
+Project
+</strong>
+</a></li><li class="divider fly-out-top-item"></li>
+<li class=""><a title="Project details" class="shortcuts-project" href="https://gitlab.com/mrjones.id.au/bluetoothheater"><span>Details</span>
+</a></li><li class=""><a title="Activity" class="shortcuts-project-activity" href="https://gitlab.com/mrjones.id.au/bluetoothheater/activity"><span>Activity</span>
+</a></li><li class=""><a title="Releases" class="shortcuts-project-releases" href="https://gitlab.com/mrjones.id.au/bluetoothheater/releases"><span>Releases</span>
+</a></li>
+<li class=""><a title="Cycle Analytics" class="shortcuts-project-cycle-analytics" href="https://gitlab.com/mrjones.id.au/bluetoothheater/cycle_analytics"><span>Cycle Analytics</span>
+</a></li></ul>
+</li><li class=""><a class="shortcuts-tree" href="https://gitlab.com/mrjones.id.au/bluetoothheater/tree/master"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#doc-text"></use></svg>
+</div>
+<span class="nav-item-name">
+Repository
+</span>
+</a><ul class="sidebar-sub-level-items">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/tree/master"><strong class="fly-out-top-item-name">
+Repository
+</strong>
+</a></li><li class="divider fly-out-top-item"></li>
+<li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/tree/master">Files
+</a></li><li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/commits/master">Commits
+</a></li><li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/branches">Branches
+</a></li><li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/tags">Tags
+</a></li><li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/graphs/master">Contributors
+</a></li><li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/network/master">Graph
+</a></li><li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/compare?from=master&amp;to=master">Compare
+</a></li><li class=""><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/graphs/master/charts">Charts
+</a></li>
+</ul>
+</li><li class=""><a class="shortcuts-issues qa-issues-item" href="https://gitlab.com/mrjones.id.au/bluetoothheater/issues"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#issues"></use></svg>
+</div>
+<span class="nav-item-name">
+Issues
+</span>
+<span class="badge badge-pill count issue_counter">
+4
+</span>
+</a><ul class="sidebar-sub-level-items">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/issues"><strong class="fly-out-top-item-name">
+Issues
+</strong>
+<span class="badge badge-pill count issue_counter fly-out-badge">
+4
+</span>
+</a></li><li class="divider fly-out-top-item"></li>
+<li class=""><a title="Issues" href="https://gitlab.com/mrjones.id.au/bluetoothheater/issues"><span>
+List
+</span>
+</a></li><li class=""><a title="Board" href="https://gitlab.com/mrjones.id.au/bluetoothheater/boards"><span>
+Board
+</span>
+</a></li><li class=""><a title="Labels" class="qa-labels-link" href="https://gitlab.com/mrjones.id.au/bluetoothheater/labels"><span>
+Labels
+</span>
+</a></li>
+<li class=""><a title="Milestones" class="qa-milestones-link" href="https://gitlab.com/mrjones.id.au/bluetoothheater/milestones"><span>
+Milestones
+</span>
+</a></li></ul>
+</li><li class=""><a class="shortcuts-merge_requests" href="https://gitlab.com/mrjones.id.au/bluetoothheater/merge_requests"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#git-merge"></use></svg>
+</div>
+<span class="nav-item-name">
+Merge Requests
+</span>
+<span class="badge badge-pill count merge_counter js-merge-counter">
+0
+</span>
+</a><ul class="sidebar-sub-level-items is-fly-out-only">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/merge_requests"><strong class="fly-out-top-item-name">
+Merge Requests
+</strong>
+<span class="badge badge-pill count merge_counter js-merge-counter fly-out-badge">
+0
+</span>
+</a></li></ul>
+</li><li class=""><a class="shortcuts-pipelines qa-link-pipelines" href="https://gitlab.com/mrjones.id.au/bluetoothheater/pipelines"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#rocket"></use></svg>
+</div>
+<span class="nav-item-name">
+CI / CD
+</span>
+</a><ul class="sidebar-sub-level-items">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/pipelines"><strong class="fly-out-top-item-name">
+CI / CD
+</strong>
+</a></li><li class="divider fly-out-top-item"></li>
+<li class=""><a title="Pipelines" class="shortcuts-pipelines" href="https://gitlab.com/mrjones.id.au/bluetoothheater/pipelines"><span>
+Pipelines
+</span>
+</a></li><li class=""><a title="Jobs" class="shortcuts-builds" href="https://gitlab.com/mrjones.id.au/bluetoothheater/-/jobs"><span>
+Jobs
+</span>
+</a></li><li class=""><a title="Schedules" class="shortcuts-builds" href="https://gitlab.com/mrjones.id.au/bluetoothheater/pipeline_schedules"><span>
+Schedules
+</span>
+</a></li><li class=""><a title="Charts" class="shortcuts-pipelines-charts" href="https://gitlab.com/mrjones.id.au/bluetoothheater/pipelines/charts"><span>
+Charts
+</span>
+</a></li></ul>
+</li><li class=""><a class="shortcuts-operations" href="https://gitlab.com/mrjones.id.au/bluetoothheater/environments/metrics"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#cloud-gear"></use></svg>
+</div>
+<span class="nav-item-name">
+Operations
+</span>
+</a><ul class="sidebar-sub-level-items">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/environments/metrics"><strong class="fly-out-top-item-name">
+Operations
+</strong>
+</a></li><li class="divider fly-out-top-item"></li>
+<li class=""><a title="Metrics" class="shortcuts-metrics" href="https://gitlab.com/mrjones.id.au/bluetoothheater/environments/metrics"><span>
+Metrics
+</span>
+</a></li>
+<li class=""><a title="Environments" class="shortcuts-environments qa-operations-environments-link" href="https://gitlab.com/mrjones.id.au/bluetoothheater/environments"><span>
+Environments
+</span>
+</a></li><li class=""><a title="Error Tracking" class="shortcuts-tracking qa-operations-tracking-link" href="https://gitlab.com/mrjones.id.au/bluetoothheater/error_tracking"><span>
+Error Tracking
+</span>
+</a></li><li class=""><a title="Serverless" href="https://gitlab.com/mrjones.id.au/bluetoothheater/serverless/functions"><span>
+Serverless
+</span>
+</a></li><li class=""><a title="Kubernetes" class="shortcuts-kubernetes" href="https://gitlab.com/mrjones.id.au/bluetoothheater/clusters"><span>
+Kubernetes
+</span>
+<div class="feature-highlight js-feature-highlight" data-container="body" data-dismiss-endpoint="/-/user_callouts" data-highlight="gke_cluster_integration" data-placement="right" data-toggle="popover" data-trigger="manual" data-original-title="" title=""></div>
+</a><div class="feature-highlight-popover-content">
+<img class="feature-highlight-illustration lazy" data-src="https://assets.gitlab-static.net/assets/illustrations/cluster_popover-9830388038d966d8d64d43576808f9d5ba05f639a78a40bae9a5ddc7cbf72f24.svg" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+<div class="feature-highlight-popover-sub-content">
+<p>Allows you to add and manage Kubernetes clusters.</p>
+<p>
+Protip:
+<a href="https://gitlab.com/help/topics/autodevops/index.md">Auto DevOps</a>
+<span>uses Kubernetes clusters to deploy your code!</span>
+</p>
+<hr>
+<button class="btn btn-success btn-sm dismiss-feature-highlight" type="button">
+<span>Got it!</span>
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#thumb-up"></use></svg>
+</button>
+</div>
+</div>
+</li></ul>
+</li><li class=""><a class="shortcuts-container-registry" href="https://gitlab.com/mrjones.id.au/bluetoothheater/container_registry"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#disk"></use></svg>
+</div>
+<span class="nav-item-name">
+Registry
+</span>
+</a><ul class="sidebar-sub-level-items is-fly-out-only">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/container_registry"><strong class="fly-out-top-item-name">
+Registry
+</strong>
+</a></li></ul>
+</li><li class="active"><a class="shortcuts-wiki" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/home"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#book"></use></svg>
+</div>
+<span class="nav-item-name">
+Wiki
+</span>
+</a><ul class="sidebar-sub-level-items is-fly-out-only">
+<li class="fly-out-top-item active"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/home"><strong class="fly-out-top-item-name">
+Wiki
+</strong>
+</a></li></ul>
+</li><li class=""><a class="shortcuts-snippets" href="https://gitlab.com/mrjones.id.au/bluetoothheater/snippets"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#snippet"></use></svg>
+</div>
+<span class="nav-item-name">
+Snippets
+</span>
+</a><ul class="sidebar-sub-level-items is-fly-out-only">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/snippets"><strong class="fly-out-top-item-name">
+Snippets
+</strong>
+</a></li></ul>
+</li><li class=""><a class="shortcuts-tree" href="https://gitlab.com/mrjones.id.au/bluetoothheater/edit"><div class="nav-icon-container">
+<svg><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#settings"></use></svg>
+</div>
+<span class="nav-item-name qa-settings-item">
+Settings
+</span>
+</a><ul class="sidebar-sub-level-items">
+<li class="fly-out-top-item"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/edit"><strong class="fly-out-top-item-name">
+Settings
+</strong>
+</a></li><li class="divider fly-out-top-item"></li>
+<li class=""><a title="General" href="https://gitlab.com/mrjones.id.au/bluetoothheater/edit"><span>
+General
+</span>
+</a></li><li class=""><a title="Members" class="qa-link-members-settings" href="https://gitlab.com/mrjones.id.au/bluetoothheater/project_members"><span>
+Members
+</span>
+</a></li><li class=""><a title="Integrations" href="https://gitlab.com/mrjones.id.au/bluetoothheater/settings/integrations"><span>
+Integrations
+</span>
+</a></li><li class=""><a title="Repository" href="https://gitlab.com/mrjones.id.au/bluetoothheater/settings/repository"><span>
+Repository
+</span>
+</a></li><li class=""><a title="CI / CD" href="https://gitlab.com/mrjones.id.au/bluetoothheater/settings/ci_cd"><span>
+CI / CD
+</span>
+</a></li><li class=""><a title="Operations" href="https://gitlab.com/mrjones.id.au/bluetoothheater/settings/operations">Operations
+</a></li><li class=""><a title="Pages" href="https://gitlab.com/mrjones.id.au/bluetoothheater/pages"><span>
+Pages
+</span>
+</a></li><li class=""><a title="Audit Events" href="https://gitlab.com/mrjones.id.au/bluetoothheater/audit_events">Audit Events
+</a></li>
+</ul>
+</li><a class="toggle-sidebar-button js-toggle-sidebar" role="button" title="Toggle sidebar" type="button">
+<svg class="icon-angle-double-left"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-double-left"></use></svg>
+<svg class="icon-angle-double-right"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-double-right"></use></svg>
+<span class="collapse-text">Collapse sidebar</span>
+</a>
+<button name="button" type="button" class="close-nav-button"><svg class="s16"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#close"></use></svg>
+<span class="collapse-text">Close sidebar</span>
+</button>
+<li class="hidden">
+<a title="Activity" class="shortcuts-project-activity" href="https://gitlab.com/mrjones.id.au/bluetoothheater/activity"><span>
+Activity
+</span>
+</a></li>
+<li class="hidden">
+<a title="Network" class="shortcuts-network" href="https://gitlab.com/mrjones.id.au/bluetoothheater/network/master">Graph
+</a></li>
+<li class="hidden">
+<a title="Charts" class="shortcuts-repository-charts" href="https://gitlab.com/mrjones.id.au/bluetoothheater/graphs/master/charts">Charts
+</a></li>
+<li class="hidden">
+<a class="shortcuts-new-issue" href="https://gitlab.com/mrjones.id.au/bluetoothheater/issues/new">Create a new issue
+</a></li>
+<li class="hidden">
+<a title="Jobs" class="shortcuts-builds" href="https://gitlab.com/mrjones.id.au/bluetoothheater/-/jobs">Jobs
+</a></li>
+<li class="hidden">
+<a title="Commits" class="shortcuts-commits" href="https://gitlab.com/mrjones.id.au/bluetoothheater/commits/master">Commits
+</a></li>
+<li class="hidden">
+<a title="Issue Boards" class="shortcuts-issue-boards" href="https://gitlab.com/mrjones.id.au/bluetoothheater/boards">Issue Boards</a>
+</li>
+</ul>
+</div>
+</div>
+
+<div class="content-wrapper">
+
+<div class="mobile-overlay"></div>
+<div class="alert-wrapper">
+
+
+
+
+
+
+<nav class="breadcrumbs container-fluid container-limited limit-container-width" role="navigation">
+<div class="breadcrumbs-container">
+<button name="button" type="button" class="toggle-mobile-nav"><span class="sr-only">Open sidebar</span>
+<i aria-hidden="true" data-hidden="true" class="fa fa-bars"></i>
+</button><div class="breadcrumbs-links js-title-container">
+<ul class="list-unstyled breadcrumbs-list js-breadcrumbs-list">
+<li><a href="https://gitlab.com/mrjones.id.au">Ray Jones</a><svg class="s8 breadcrumbs-list-angle"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-right"></use></svg></li> <li><a href="https://gitlab.com/mrjones.id.au/bluetoothheater"><img alt="BluetoothHeater" class="avatar-tile js-lazy-loaded" src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/BTCavatar_002.jpg" width="15" height="15"><span class="breadcrumb-item-text js-breadcrumb-item-text">BluetoothHeater</span></a><svg class="s8 breadcrumbs-list-angle"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-right"></use></svg></li>
+<li><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/home">Wiki</a><svg class="s8 breadcrumbs-list-angle"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-right"></use></svg></li>
+<li class="dropdown">
+<button aria-label="Show parent pages" class="text-expander has-tooltip js-breadcrumbs-collapsed-expander" data-container="body" data-toggle="dropdown" title="Show parent pages" type="button">
+<i aria-hidden="true" data-hidden="true" class="fa fa-ellipsis-h"></i>
+</button>
+<svg class="s8 breadcrumbs-list-angle"><use xlink:href="https://gitlab.com/assets/icons-5d6bba47cc3d399a160c22f8283b68e070717b97c9a35c0e3006d998b730b163.svg#angle-right"></use></svg>
+<div class="dropdown-menu">
+<ul>
+<li style="text-indent: 0px;"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/">User manual</a></li>
+<li style="text-indent: 16px;"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/">Menus</a></li>
+</ul>
+</div>
+</li>
+
+<li>
+<h2 class="breadcrumbs-sub-title"><a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Detailed-Control-Menu">Detailed Control Menu</a></h2>
+</li>
+</ul>
+</div>
+
+</div>
+</nav>
+
+<div class="flash-container flash-container-page">
+</div>
+
+<div class="d-flex"></div>
+</div>
+<div class="container-fluid container-limited limit-container-width">
+<div class="content" id="content-body">
+<div class="wiki-page-header has-sidebar-toggle">
+<button class="btn btn-default sidebar-toggle js-sidebar-wiki-toggle" role="button" type="button">
+<i aria-hidden="true" data-hidden="true" class="fa fa-angle-double-left"></i>
+</button>
+<div class="nav-text">
+<h2 class="wiki-page-title">Detailed Control Menu</h2>
+<span class="wiki-last-edit-by">
+Last edited by <strong>Ray Jones</strong>
+<time class="js-timeago js-timeago-render" title="" datetime="2019-01-23T09:13:19Z" data-toggle="tooltip" data-placement="top" data-container="body" data-original-title="Jan 23, 2019 9:13am" data-tid="22">2 minutes ago</time>
+</span>
+</div>
+<div class="nav-controls">
+<a class="add-new-wiki btn btn-success" data-toggle="modal" href="#modal-new-wiki">New page
+</a><a class="btn" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Detailed-Control-Menu/history">Page history
+</a><a class="btn js-wiki-edit" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Detailed-Control-Menu/edit">Edit
+</a>
+</div>
+</div>
+<div class="prepend-top-default append-bottom-default">
+<div class="md wiki">
+<h1 dir="auto">
+<a id="user-content-detailed-control-screen" class="anchor" href="#detailed-control-screen" aria-hidden="true"></a>Detailed Control Screen</h1>
+<p dir="auto">The detailed control menu allows the operation of the heater to be monitored in close detail.<br>
+Here the actual pump speed, fan RPM, heat exchanger temperature and glow plug activity can be observed.</p>
+<p dir="auto">The heater can be turned on or off by holding the Centre keypad button.<br>
+The desired temperature, or fixed heat demand can be altered by pressing the Up / Down keys.</p>
+<p dir="auto">If in thermostat mode, the desired value is placed as a 
+small triangle to the left of the measured "temperature bulb" on the 
+left hand side of the screen.<br>
+The actual temperature is shown below the bulb.</p>
+<p dir="auto">Once started, the desired setting is reported beneath the 
+"target" icon, as degC or Hz, depending upon thermostat or fixed demand 
+modes.</p>
+<p dir="auto">With the heater idle, the menu will look something like below:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/0552ce7581f720104b5e786f549ca14e/ScreenDetailed.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailed.jpg" alt="ScreenDetailed" class="js-lazy-loaded"></a></p>
+<h2 dir="auto">
+<a id="user-content-starting-the-heater" class="anchor" href="#starting-the-heater" aria-hidden="true"></a>Starting the heater</h2>
+<p dir="auto">Hold the Centre key for a second or so, the heater should then start and this is reflected in the status message:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/da0867a16c5ff7e0d1304ffd97cc1e83/ScreenDetailedStarting.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedStarting.jpg" alt="ScreenDetailedStarting" class="js-lazy-loaded"></a></p>
+<p dir="auto">Shortly thereafter, the fan will begin spinning, and the 
+glow plug will be gently raised in temperature as can be observed by the
+ steady rise in power applied to it.<br>
+Note that the fan icon rotates to indicate the fan is running, along with the measured RPM!:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/48a4af091a68fe0cf4e3ddb23e508ea0/ScreenDetailedGlowOn.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedGlowOn.jpg" alt="ScreenDetailedGlowOn" class="js-lazy-loaded"></a></p>
+<p dir="auto">It takes about a minute for the glow plug to receive full power, at which point the pump then starts.<br>
+The Pump being active is indicated by an animated fuel droplet, along with the actual pump rate:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/55de740283cf89c755995ef72fb98e7d/ScreenDetailedPumpOn.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedPumpOn.jpg" alt="ScreenDetailedPumpOn" class="js-lazy-loaded"></a></p>
+<p dir="auto">The pump starts at a slow speed and steadily rises, along with fan speed to get the heater ignited.<br>
+Ignition tends to be sensed once the body temperature of the heat exchanger has risen by about 5-10 degC.<br>
+The heat exchanger temperature being reported in the right hand side "thermometer bulb", and the actual value below:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/646d40e69e4aad7eaf434301110684e1/ScreenDetailedIgnited.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedIgnited.jpg" alt="ScreenDetailedIgnited" class="js-lazy-loaded"></a></p>
+<p dir="auto">Once the body temperature rises over about 65 degrees or 
+so, the glow plug is shut down, all the while the fuel pump and fan 
+speeds are progressively increased until at full speed.<br>
+The heater runs in this state for quite a few minutes getting the internals nice and hot.<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/e3eef473f0547203b173befd5a4b5ca7/ScreenDetailedIgnitedGlowOff.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedIgnitedGlowOff.jpg" alt="ScreenDetailedIgnitedGlowOff" class="js-lazy-loaded"></a></p>
+<p dir="auto">After running at full speed for a while, the heater 
+transitions to the running state, and now obeys the desired setting 
+being either a thermostat setting, or a fixed heat demand.<br>
+This happens about 5 minutes after the initial start was demanded:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/a2c11dbf0a7e39b00feabb583b80102c/ScreenDetailedRunning.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedRunning.jpg" alt="ScreenDetailedRunning" class="js-lazy-loaded"></a></p>
+<p dir="auto">To toggle from Thermostat or Fixed demand modes, hold the down key.<br>
+The changed operating mode is reflected in the units reported below the target icon.<br>
+DegC for thermostat, Hz for fixed demand.<br>
+The set temperature indicator also disappears from the left hand side thermometer when in fixed demand mode:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/14f7975a7e8751fd35313fc5343e5004/ScreenDetailedFixedHz.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedFixedHz.jpg" alt="ScreenDetailedFixedHz" class="js-lazy-loaded"></a></p>
+<h2 dir="auto">
+<a id="user-content-stopping-the-heater" class="anchor" href="#stopping-the-heater" aria-hidden="true"></a>Stopping the heater</h2>
+<p dir="auto">Heater shutdown is initiated by holding the Centre key for a second or so.<br>
+The status will then change to Shutting down...:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/fa175cac45a3f6bf583c4c82844d7e4e/ScreenDetailedShutdown.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedShutdown.jpg" alt="ScreenDetailedShutdown" class="js-lazy-loaded"></a></p>
+<p dir="auto">The pump speed is quickly lowered and eventually shut off,
+ the glow plug is gently re-powered to assist in drying the heat 
+exchanger of unburnt fuel:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/6c7390ad2fdb47585f775406c0a166ba/ScreenDetailedShutdownLowPump.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedShutdownLowPump.jpg" alt="ScreenDetailedShutdownLowPump" class="js-lazy-loaded"></a>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/a811eb45c5fa2dee814cdd65130bff4e/ScreenDetailedShutdownPumpOff.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedShutdownPumpOff.jpg" alt="ScreenDetailedShutdownPumpOff" class="js-lazy-loaded"></a></p>
+<p dir="auto">About a minute later the glow plug is un-powered and the heater then transitions to cooldown mode.<br>
+Only the fan is now running:<br>
+<a class="no-attachment-icon" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/uploads/e191cc96a957d7d33b26b4983609bab4/ScreenDetailedCooling.jpg" target="_blank" rel="noopener noreferrer"><img src="Detailed%20Control%20Menu%20%C2%B7%20Wiki%20%C2%B7%20Ray%20Jones%20_%20BluetoothHeater%20%C2%B7%20GitLab_files/ScreenDetailedCooling.jpg" alt="ScreenDetailedCooling" class="js-lazy-loaded"></a></p>
+<p dir="auto">It stays in cooldown mode until the heat exchanger is 
+observed to have dropped below 55 degC, at which point it then returns 
+to the initial idle state.</p>
+</div>
+</div>
+<aside class="right-sidebar right-sidebar-expanded wiki-sidebar js-wiki-sidebar js-right-sidebar" data-offset-top="50" data-spy="affix">
+<div class="sidebar-container">
+<div class="block wiki-sidebar-header append-bottom-default">
+<a class="gutter-toggle float-right d-block d-sm-block d-md-none js-sidebar-wiki-toggle" href="#">
+<i aria-hidden="true" data-hidden="true" class="fa fa-angle-double-right"></i>
+</a>
+<a class="" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/git_access"><i aria-hidden="true" data-hidden="true" class="fa fa-cloud-download append-right-5"></i>
+<span>Clone repository</span>
+</a></div>
+<div class="blocks-container">
+<div class="block block-first">
+<ul class="wiki-pages">
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/ESP32-Arduino-build-&amp;-required-libaries">ESP32 Arduino build &amp; required libaries
+</a></li>
+
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/Flashing-Production-PCBs-via-USB-serial-port">Flashing Production PCBs via USB serial port
+</a></li>
+
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/Hardware-design-files">Hardware design files
+</a></li>
+
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/JSON-dictionary">JSON dictionary
+</a></li>
+
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/home">Home
+</a></li>
+
+<li>
+User-Manual
+<ul>
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menu-Structure">Menu Structure
+</a></li>
+
+
+</ul>
+</li>
+<li>
+User-Manual/Menus
+<ul>
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Basic-Control-menu">Basic Control menu
+</a></li>
+
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Clock-menu">Clock menu
+</a></li>
+
+<li class="active">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Detailed-Control-Menu">Detailed Control Menu
+</a></li>
+
+<li class="">
+<a href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/User-Manual/Menus/Wifi-Configuration">Wifi Configuration
+</a></li>
+
+
+</ul>
+</li>
+
+</ul>
+</div>
+<div class="block">
+<a class="btn btn-block" href="https://gitlab.com/mrjones.id.au/bluetoothheater/wikis/pages">More Pages
+</a></div>
+</div>
+</div>
+</aside>
+<div class="modal" id="modal-new-wiki">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="page-title">New Wiki Page</h3>
+<button aria-label="Close" class="close" data-dismiss="modal" type="button">
+<span aria-hidden="true">×</span>
+</button>
+</div>
+<div class="modal-body">
+<form class="new-wiki-page">
+<div class="form-group">
+<label for="new_wiki_path"><span>Page slug</span>
+</label><input type="text" name="new_wiki_path" id="new_wiki_path" placeholder="how-to-setup" class="form-control" required="required" data-wikis-path="/mrjones.id.au/bluetoothheater/wikis" autofocus="autofocus">
+<span class="new-wiki-page-slug-tip">
+<i aria-hidden="true" data-hidden="true" class="fa fa-lightbulb-o"></i>
+Tip: You can specify the full path for the new file. We will automatically create any missing directories.
+</span>
+</div>
+<div class="form-actions">
+<button name="button" type="submit" class="build-new-wiki btn btn-success">Create page</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+
+
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+</body></html>
