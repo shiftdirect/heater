@@ -598,16 +598,22 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
       if(withHTMLanchors) {
         String fn2;
         if(fn.endsWith(".html") || fn.endsWith(".htm")) {
+          // can hyperlink .html files
           fn2 = fn;
         }
         else if(fn.endsWith(".html.gz") || fn.endsWith(".htm.gz")) {
-          fn2 = fn.substring(0, fn.length()-3);
+          // can hyperlink .html.gz files but we must strip .gz extension for
+          // the hyperlink otherwise you get asked if you want to download the .gz, not view web page!
+//          fn2 = fn.substring(0, fn.length()-3);  // strip ".gz"
+          fn2 = fn;
+          fn2.remove(fn2.length()-3, 3);  // strip trailing ".gz"
         }
         if(fn2.length() != 0) {
+          // create hyperlink if web page file
           fn = "<a href=\"" + fn2 + "\">" + file.name() + "</a>";
         }
       }
-      String sz; sz += int(file.size());
+      String sz( int(file.size()));
       addTableData(HTMLreport, "");
       addTableData(HTMLreport, fn);
       addTableData(HTMLreport, sz);
@@ -755,7 +761,16 @@ void onUploadProgression()
 
       DebugPort.print(".");
       if(fsUploadFile) {
-        fsUploadFile.write(upload.buf, upload.currentSize); // Write the received bytes to the file
+        if(fsUploadFile.write(upload.buf, upload.currentSize) != upload.currentSize) { // Write the received bytes to the file
+          Update.printError(DebugPort);
+          fsUploadFile.close();            
+          fsUploadFile.flush();
+          DebugPort.println("WEB: SPIFFS WRITE FAIL");
+          server.send(500, "text/plain", "500: couldn't create file");
+          String filename = upload.filename;
+          SPIFFS.remove(filename.c_str());                   // remove the file
+          SPIFFSupload = 2;
+        }
       }
       else {
         if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {

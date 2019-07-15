@@ -41,6 +41,7 @@ CModerator MQTTmoderator;
 CModerator IPmoderator;
 CModerator GPIOmoderator;
 CModerator SysModerator;
+bool bTriggerSysParams = false;
 
 void validateTimer(int ID);
 void Expand(std::string& str);
@@ -195,6 +196,7 @@ void interpretJsonCommand(char* pLine)
     // system info
 		else if(strcmp("SQuery", it->key) == 0) {
       SysModerator.reset();   // force MQTT params to be sent
+      bTriggerSysParams = true;
     }
     // MQTT parameters
 		else if(strcmp("MQuery", it->key) == 0) {
@@ -557,7 +559,8 @@ void updateJSONclients(bool report)
 
   // report System info
   {
-    if(makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr))) {
+    if(bTriggerSysParams &&  makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr))) {
+      bTriggerSysParams = false;
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
