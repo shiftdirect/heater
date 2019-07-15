@@ -106,6 +106,7 @@ void TModerator<T>::reset(const char* name)
 }
 
 class CModerator {
+  TModerator<uint32_t> u32Moderator;
   TModerator<int> iModerator;
   TModerator<float> fModerator;
   TModerator<uint8_t> ucModerator;
@@ -114,6 +115,12 @@ public:
   // integer values
   bool addJson(const char* name, int value, JsonObject& root) { 
     return iModerator.addJson(name, value, root); 
+  };
+  bool addJson(const char* name, uint32_t value, JsonObject& root) { 
+    return u32Moderator.addJson(name, value, root); 
+  };
+  bool addJson(const char* name, unsigned long value, JsonObject& root) { 
+    return u32Moderator.addJson(name, value, root); 
   };
   // float values
   bool addJson(const char* name, float value, JsonObject& root) { 
@@ -133,12 +140,14 @@ public:
     fModerator.reset();
     ucModerator.reset();
     szModerator.reset();
+    u32Moderator.reset();
   };
   void reset(const char* name) {
     iModerator.reset(name);
     fModerator.reset(name);
     ucModerator.reset(name);
     szModerator.reset(name);
+    u32Moderator.reset(name);
   };
 };
 

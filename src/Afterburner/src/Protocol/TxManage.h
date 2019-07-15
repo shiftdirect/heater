@@ -23,9 +23,9 @@
 
 class CTxManage
 {
-  const int m_nStartDelay = 20;
-  const int m_nFrameTime = 14;
-  const int m_nFrontPorch = 2;
+  const int m_nStartDelay = 20; 
+  const int m_nFrameTime = 14;  
+  const int m_nFrontPorch = 2;  
 
 public:
   CTxManage(int TxGatePin, HardwareSerial& serial);

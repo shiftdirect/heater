@@ -46,6 +46,7 @@ extern const char* stdHeader;
 extern const char* formatIndex;
 extern const char* updateIndex;
 extern const char* formatDoneContent;
+extern const char* rebootIndex;
 
 File fsUploadFile;              // a File object to temporarily store the received file
 int SPIFFSupload = 0;
@@ -71,11 +72,14 @@ void onErase();
 void onFormatSPIFFS();
 void onFormatNow();
 void onFormatDone();
+void onReboot();
+void onDoReboot();
 void onWMConfig();
 void onResetWifi();
 void onUploadBegin();
 void onUploadCompletion();
 void onUploadProgression();
+void onRename();
 void build404Response(String& content, String file);
 void build500Response(String& content, String file);
 
@@ -121,7 +125,12 @@ void initWebServer(void) {
   });
 	server.on("/formatnow", HTTP_POST, onFormatNow);  // access via POST is legal, but only if bFormatAccess == true
 
-  // NOTE: this serves the default home page, and favicon.ico
+  server.on("/reboot", HTTP_GET, onReboot);  // access via POST is legal, but only if bFormatAccess == true
+  server.on("/reboot", HTTP_POST, onDoReboot);  // access via POST is legal, but only if bFormatAccess == true
+
+  server.on("/rename", HTTP_POST, onRename);  // access via POST is legal, but only if bFormatAccess == true
+
+// NOTE: this serves the default home page, and favicon.ico
   server.onNotFound([]() 
   {                                                      // If the client requests any URI
     if (!handleFileRead(server.uri())) {                  // send it if it exists
@@ -153,6 +162,8 @@ String getContentType(String filename) { // convert the file extension to the MI
   else if (filename.endsWith(".js")) return "application/javascript";
   else if (filename.endsWith(".ico")) return "image/x-icon";
   else if (filename.endsWith(".bin")) return "application/octet-stream";
+  else if (filename.endsWith(".zip")) return "application/x-zip";
+  else if (filename.endsWith(".gz")) return "application/x-gzip";
   return "text/plain";
 }
 
@@ -160,7 +171,10 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   DebugPort.println("handleFileRead: " + path);
   if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
   String contentType = getContentType(path);            // Get the MIME type
-  if (SPIFFS.exists(path)) {                            // If the file exists
+  String pathWithGz = path + ".gz";
+  if(SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {  // If the file exists as a compressed archive, or normal
+    if (SPIFFS.exists(pathWithGz))                      // If the compressed file exists
+      path += ".gz";
     File file = SPIFFS.open(path, "r");                 // Open it
     if(!checkFile(file)) {                              // check it is readable
       file.close();                                     // if not, close the file
@@ -200,6 +214,7 @@ button {
  background-color: #016ABC;
  color: #fff;
  border-radius: 25px;
+ height: 30px;
 }
 .del {
  color: white;
@@ -209,7 +224,7 @@ button {
  height: 30px;
  width: 30px;
 }
-.fmt {
+.redbutton {
  color: white;
  font-weight: bold;
  background-color: red;
@@ -226,6 +241,12 @@ th {
  }
 }
 </style>
+
+<script>
+function _(el) {
+ return document.getElementById(el);
+}
+</script>
 )=====";
 
 const char* updateIndex = R"=====(
@@ -268,10 +289,6 @@ var sendSize;
 var ws;
 var timeDown;
 var timeUp;
-
-function _(el) {
- return document.getElementById(el);
-}
 
 function onWebSocket(event) {
   var response = JSON.parse(event.data);
@@ -352,6 +369,19 @@ function onErase(fn) {
  }
 }
 
+function onRename(fn) {
+  var newname = prompt("Enter new file name", fn);
+  if(newname != null && newname != "") {
+    var formdata = new FormData();
+    formdata.append("oldname", fn);
+    formdata.append("newname", newname);
+    var ajax = new XMLHttpRequest();
+    ajax.open("POST", "/rename");
+    ajax.send(formdata);
+    setTimeout(function () { location.reload(); }, 500);    
+  }
+}
+
 function onBrowseChange() {
   _("uploaddiv").hidden = false;
   _("upload").hidden = false;
@@ -359,7 +389,7 @@ function onBrowseChange() {
   _("loaded_n_total").hidden = false;
   _("spacer").hidden = false;
   var file = _("file1").files[0];
-  document.getElementById('filename').innerHTML = file.name;
+  _('filename').innerHTML = file.name;
 }
 
 function onformatClick() {
@@ -538,6 +568,7 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
 <th style="width:200px">Name</th>
 <th style="width:60px">Size</th>
 <th></th>
+<th></th>
 </tr>
 )=====";
   File file = root.openNextFile();
@@ -546,6 +577,7 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
     if (file.isDirectory()) {
       addTableData(HTMLreport, "DIR");
       addTableData(HTMLreport, file.name());
+      addTableData(HTMLreport, "");
       addTableData(HTMLreport, "");
       addTableData(HTMLreport, "");
 
@@ -558,18 +590,28 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
     } else {
       String fn = file.name();
       String ers;
-      if(withHTMLanchors == 2)
+      String rename;
+      if(withHTMLanchors == 2) {
+        rename = "<button class='rename' onClick=onRename('" + fn + "')>Rename</button>";
         ers = "<input class='del' type='button' value='X' onClick=onErase('" + fn + "')>";
+      }
       if(withHTMLanchors) {
+        String fn2;
         if(fn.endsWith(".html") || fn.endsWith(".htm")) {
-          String fn2(fn);
-          fn = "<a href=\"" + fn2 + "\">" + fn2 + "</a>";
+          fn2 = fn;
+        }
+        else if(fn.endsWith(".html.gz") || fn.endsWith(".htm.gz")) {
+          fn2 = fn.substring(0, fn.length()-3);
+        }
+        if(fn2.length() != 0) {
+          fn = "<a href=\"" + fn2 + "\">" + file.name() + "</a>";
         }
       }
       String sz; sz += int(file.size());
       addTableData(HTMLreport, "");
       addTableData(HTMLreport, fn);
       addTableData(HTMLreport, sz);
+      addTableData(HTMLreport, rename);
       addTableData(HTMLreport, ers);
 
       sprintf(msg, "  FILE: %s  SIZE: %d", fn.c_str(), file.size());
@@ -662,7 +704,7 @@ void onUploadBegin()
   listSPIFFS("/", 2, SPIFFSinfo, 2);
   String content = stdHeader;
   content += updateIndex + SPIFFSinfo;
-  content += "<p><button class='fmt' onclick='onformatClick()'>Format SPIFFS</button>";
+  content += "<p><button class='redbutton' onclick='onformatClick()'>Format SPIFFS</button>";
   content += "</body></html>";
   server.send(200, "text/html", content );
 #else
@@ -741,7 +783,7 @@ void onUploadProgression()
           Update.printError(DebugPort);
         }
       }
-      DebugPort.setDebugOutput(false);
+//      DebugPort.setDebugOutput(false);
       bUpdateAccessed = false;
     } else {
       DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\r\n", upload.status);
@@ -826,7 +868,7 @@ function init() {
 function onFormat() {
  var formdata = new FormData();
  if(confirm('Do you really want to reformat the SPIFFS partition ?')) {
-  document.getElementById('throb').innerHTML = 'FORMATTING - Please wait';
+  _('throb').innerHTML = 'FORMATTING - Please wait';
   formdata.append('confirm', 'yes');
   setTimeout(function () { location.reload(); }, 200);    
  }
@@ -844,7 +886,7 @@ function onFormat() {
 <body onload="javascript:init()">
 <h1>Format SPIFFS partition</h1>
 <h3 class='throb' id='throb'>CAUTION!  This will erase all web content</h1>
-<p><button class='fmt' onClick='onFormat()'>Format</button><br>
+<p><button class='redbutton' onClick='onFormat()'>Format</button><br>
 <p><a href='/update'><button>Cancel</button></a>
 </body>
 </html>
@@ -868,6 +910,71 @@ void onFormatNow()
   }
 }
 
+void onReboot()
+{
+  DebugPort.println("WEB: GET /reboot");
+  String content = stdHeader;
+  content += rebootIndex;
+  server.send(200, "text/html", content );
+}
+
+void onDoReboot() 
+{
+  // HTTP POST handler, do not need to return a web page!
+  DebugPort.println("WEB: POST /reboot");
+  String confirm = server.arg("reboot");        // get request argument value by name
+  if(confirm == "yes") {      // confirm user agrees, and we did pass thru /formatspiffs first
+	  DebugPort.println("Rebooting via /reboot");
+    ESP.restart();
+  }
+}
+
+const char* rebootIndex = R"=====(
+<style>
+body {
+ background-color: orangered;
+}
+</style>
+<script>
+function onReboot() {
+ if(confirm('Do you really want to reboot the Afterburner ?')) {
+  setTimeout(function () { location.assign('/'); }, 2000);    
+  var formdata = new FormData();
+  formdata.append('reboot', 'yes');
+  var ajax = new XMLHttpRequest();
+  ajax.open("POST", "/reboot");
+  ajax.send(formdata);
+  _('info').hidden = false;
+ }
+ else {
+   location.assign('/');
+ }
+}
+</script>
+<title>Afterburner Reboot</title>
+</head>
+<body>
+<h1>Reboot Afterburner</h1>
+<p>
+<h3 class='throb' id='info' hidden>Rebooting - will re-direct to root index</h3>
+<button class='redbutton' onClick='onReboot()'>Reboot</button>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href='/'><button>Cancel</button></a>
+</body>
+</html>
+)=====";
+
+
+void onRename() 
+{
+  // HTTP POST handler, do not need to return a web page!
+  DebugPort.println("WEB: POST /reboot");
+  String oldname = server.arg("oldname");    // get request argument value by name
+  String newname = server.arg("newname");    // get request argument value by name
+  if(oldname != "" && newname != "") {      
+	  DebugPort.printf("Renaming %s to %s\r\n", oldname.c_str(), newname.c_str());
+    SPIFFS.rename(oldname.c_str(), newname.c_str());
+  }
+}
 
 
 /***************************************************************************************
@@ -919,7 +1026,7 @@ content += R"=====(" </i></b> exists, but cannot be streamed?
 <hr>
 <p>Recommended remedy is to re-format the SPIFFS partition, then reload the web content files.
 <br>Latest web content can be downloaded from <a href="http://www.mrjones.id.au/afterburner/firmware.html" target="_blank">http://www.mrjones.id.au/afterburner/firmware.html</a> <i>(opens in new page)</i>.
-<p>To format the SPIFFS partition, press <button class='fmt' onClick=location.assign('/formatspiffs')>Format SPIFFS</button>
+<p>To format the SPIFFS partition, press <button class='redbutton' onClick=location.assign('/formatspiffs')>Format SPIFFS</button>
 <p>You will then need to upload each file of the web content by using the subsequent "<b>Upload</b>" button.
 <hr>
 <h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>

@@ -82,6 +82,7 @@ extern float getBatteryVoltage();
 extern float getGlowVolts();
 extern float getGlowCurrent();
 extern float getFanSpeed();
+extern int sysUptime();
 
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);

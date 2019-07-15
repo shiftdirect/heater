@@ -200,7 +200,6 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           break;
       }
     }
-//    m_TxFrame.setThermostatMode(NVstore.getThermostatMode());
 
     m_TxFrame.Controller.OperatingVoltage = NVstore.getHeaterTuning().sysVoltage;
     m_TxFrame.Controller.FanSensor = NVstore.getHeaterTuning().fanSensor;

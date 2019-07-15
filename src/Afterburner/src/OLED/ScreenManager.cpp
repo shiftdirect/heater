@@ -520,14 +520,14 @@ CScreenManager::keyHandler(uint8_t event)
     if(event & keyReleased) {
       _dim(false);
       _DimTime_ms = (millis() + abs(dimTime)) | 1;
-      _MenuTimeout = millis() + NVstore.getUserSettings().menuTimeout;
+      _MenuTimeout = (millis() + NVstore.getUserSettings().menuTimeout) | 1;
     }
     return;   // initial press when dimmed is always thrown away
   }
 
 //  _dim(false);
   _DimTime_ms = (millis() + abs(dimTime)) | 1;
-  _MenuTimeout = millis() + NVstore.getUserSettings().menuTimeout;
+  _MenuTimeout = (millis() + NVstore.getUserSettings().menuTimeout) | 1;
 
   // call key handler for active screen
   if(_menu >= 0) 

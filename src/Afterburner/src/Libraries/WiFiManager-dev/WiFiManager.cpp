@@ -427,7 +427,7 @@ void WiFiManager::stopWebPortal() {
 boolean WiFiManager::configPortalHasTimeout(){
 
     if(_configPortalTimeout == 0 || (_apClientCheck && (WiFi_softap_num_stations() > 0))){
-      if(millis() - timer > 30000){
+      if(millis() - timer > 30000){  
         timer = millis();
         DEBUG_WM(DEBUG_VERBOSE,"NUM CLIENTS: " + (String)WiFi_softap_num_stations());
       }
@@ -443,7 +443,7 @@ boolean WiFiManager::configPortalHasTimeout(){
     } else if(_debugLevel > 0) {
       // log timeout
       if(_debug){
-        uint16_t logintvl = 30000; // how often to emit timeing out counter logging
+        uint32_t logintvl = 30000; // how often to emit timing out counter logging
         if((millis() - timer) > logintvl){
           timer = millis();
           DEBUG_WM(DEBUG_VERBOSE,F("Portal Timeout In"),(String)((_configPortalStart + _configPortalTimeout-millis())/1000) + (String)F(" seconds"));
@@ -861,7 +861,7 @@ uint8_t WiFiManager::waitForConnectResult(uint16_t timeout) {
   DEBUG_WM(DEBUG_VERBOSE,timeout,F("ms timeout, waiting for connect..."));
   uint8_t status = WiFi.status();
   
-  while(millis() < timeoutmillis) {
+  while((millis() - timeoutmillis) < 0) {
     status = WiFi.status();
     // @todo detect additional states, connect happens, then dhcp then get ip, there is some delay here, make sure not to timeout if waiting on IP
     if (status == WL_CONNECTED || status == WL_CONNECT_FAILED) {

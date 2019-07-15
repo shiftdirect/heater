@@ -119,7 +119,7 @@
 
 const int FirmwareRevision = 23;
 const int FirmwareSubRevision = 6;
-const char* FirmwareDate = "3 Jul 2019";
+const char* FirmwareDate = "15 Jul 2019";
 
 
 #ifdef ESP32
@@ -197,6 +197,7 @@ unsigned long moderator;
 bool bUpdateDisplay = false;
 bool bHaveWebClient = false;
 bool bBTconnected = false;
+long BootTime;
 
 hw_timer_t *watchdogTimer = NULL;
 
@@ -269,6 +270,35 @@ void interruptReboot()
   esp_restart();
 }
 
+//**************************************************************************************************
+//**                                                                                              **
+//**         WORKAROUND for crap ESP32 millis() standard function                                 **
+//**                                                                                              **
+//**************************************************************************************************
+//
+// Substitute shitfull ESP32 millis() with a true and proper ms counter
+// The standard millis() on ESP32 is actually micros()/1000.
+// This wraps every 71.5 minutes in a **very non linear fashion**.
+//
+// The FreeRTOS Tick Counter however does increment each ms, and rolls naturally past 0 every 49days.
+// With this proper linear behaviour you can use valid timeout calcualtions even through wrap around.
+// This elegance breaks using the standard library function, leading to many weird and obtuse issues.
+//
+// *** IMPORTANT ***
+//
+// You **MUST** use --wrap millis in the linker command, or -Wl,--wrap,millis in the GCC command.
+// platformio.ini file for this project defines the latter as a build_flags entry.
+//
+// The linker will now link to __wrap_millis() instead of millis() for *any* usage of millis().
+// Best of all this includes any library usages of millis() :-D
+// If you really must call the shitty ESP32 Arduino millis(), you must call __real_millis() 
+// from your dubious code ;-) - basically DON'T do this.
+
+extern "C" unsigned long __wrap_millis() {
+  return xTaskGetTickCount();
+}
+
+
 void setup() {
 
   // ensure cyclic mode is disabled after power on
@@ -332,6 +362,7 @@ void setup() {
   initMQTTJSONmoderator();   // prevents JSON for MQTT unless requested
   initIPJSONmoderator();   // prevents JSON for IP unless requested
   initTimerJSONmoderator();  // prevents JSON for timers unless requested
+  initSysModerator();
 
 
   KeyPad.begin(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
@@ -344,6 +375,7 @@ void setup() {
   const BTCDateTime& now = Clock.get();
   if(now.day() != 0xa5)
     bNoClock = false;
+  BootTime = Clock.get().secondstime();
   
   ScreenManager.begin(bNoClock);
 
@@ -452,7 +484,7 @@ void loop()
         CommState.is(CommStates::HeaterRx2) ) {
 
       if(RxTimeElapsed >= moderator) {
-        moderator += 10;
+        moderator += 10;  
         if(bReportRecyleEvents) {
           DebugPort.printf("%ldms - ", RxTimeElapsed);
         }
@@ -496,7 +528,7 @@ void loop()
       doStreaming();   // do wifi, BT tx etc when NOT in midst of handling blue wire
                        // this especially avoids E-07 faults due to larger data transfers
 
-      moderator = 50;
+      moderator = 50;  
 
 #if RX_LED == 1
       digitalWrite(LED_Pin, LOW);
@@ -520,7 +552,7 @@ void loop()
       } 
 
 #if SUPPORT_OEM_CONTROLLER == 1
-      if(BlueWireData.available() && (RxTimeElapsed > RX_DATA_TIMOUT+10)) {  
+      if(BlueWireData.available() && (RxTimeElapsed > (RX_DATA_TIMOUT+10))) {  
 
         if(bReportOEMresync) {
           DebugPort.printf("Re-sync'd with OEM Controller. %ldms Idle time.\r\n", RxTimeElapsed);
@@ -719,7 +751,7 @@ void loop()
       // update temperature reading, 
       // synchronised with serial reception as interrupts do get disabled in the OneWire library
       tDelta = timenow - lastTemperatureTime;
-      if(tDelta > MIN_TEMPERATURE_INTERVAL) {               // maintain a minimum holdoff period
+      if(tDelta > MIN_TEMPERATURE_INTERVAL) {  // maintain a minimum holdoff period
         lastTemperatureTime = millis();    // reset time to observe temeprature        
 
         if(TempSensor.readTemperature(fTemperature)) {
@@ -928,7 +960,7 @@ void checkDisplayUpdate()
 {
   // only update OLED when not processing blue wire
   if(ScreenManager.checkUpdate()) {
-    lastAnimationTime = millis() + 100;
+    lastAnimationTime = millis() + 100; 
     ScreenManager.animate();
     ScreenManager.refresh();   // always refresh post major update
   }
@@ -936,7 +968,7 @@ void checkDisplayUpdate()
 
   long tDelta = millis() - lastAnimationTime;
   if(tDelta >= 100) {
-    lastAnimationTime = millis() + 100;
+    lastAnimationTime = millis() + 100; 
     if(ScreenManager.animate())
       ScreenManager.refresh();
   }
@@ -1436,4 +1468,9 @@ void updateFilteredData()
   FilteredSamples.GlowVolts.update(HeaterFrame2.getGlowPlug_Voltage());
   FilteredSamples.GlowAmps.update(HeaterFrame2.getGlowPlug_Current());
   FilteredSamples.Fan.update(HeaterFrame2.getFan_Actual());
+}
+
+int sysUptime()
+{
+  return Clock.get().secondstime() - BootTime;
 }

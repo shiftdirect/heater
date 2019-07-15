@@ -27,16 +27,11 @@
 
 extern char defaultJSONstr[64];
 
-bool makeJSONString(CModerator& moderator, char* opStr, int len);
-bool makeJSONStringEx(CModerator& moderator, char* opStr, int len);
-bool makeJSONTimerString(int channel, char* opStr, int len);
-bool makeJSONStringGPIO( CModerator& moderator, char* opStr, int len);
 void updateJSONclients(bool report);
-bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len);
-bool makeJSONStringIP(CModerator& moderator, char* opStr, int len);
 void initMQTTJSONmoderator();
 void initIPJSONmoderator();
 void initTimerJSONmoderator();
+void initSysModerator();
 
 template<class T>
 const char* createJSON(const char* name, T value)

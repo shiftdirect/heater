@@ -22,6 +22,7 @@
 #include "BTC_JSON.h"
 #include "DebugPort.h"
 #include "NVStorage.h"
+#include "../RTC/Clock.h"
 #include "../RTC/BTCDateTime.h"
 #include "../RTC/Timers.h"
 #include "../RTC/TimerManager.h"
@@ -39,9 +40,17 @@ int timerConflict = 0;
 CModerator MQTTmoderator;
 CModerator IPmoderator;
 CModerator GPIOmoderator;
+CModerator SysModerator;
 
 void validateTimer(int ID);
 void Expand(std::string& str);
+bool makeJSONString(CModerator& moderator, char* opStr, int len);
+bool makeJSONStringEx(CModerator& moderator, char* opStr, int len);
+bool makeJSONTimerString(int channel, char* opStr, int len);
+bool makeJSONStringGPIO( CModerator& moderator, char* opStr, int len);
+bool makeJSONStringSysInfo(CModerator& moderator, char* opStr, int len);
+bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len);
+bool makeJSONStringIP(CModerator& moderator, char* opStr, int len);
 
 void interpretJsonCommand(char* pLine)
 {
@@ -182,6 +191,10 @@ void interpretJsonCommand(char* pLine)
 		}
 		else if(strcmp("IQuery", it->key) == 0) {
       IPmoderator.reset();   // force IP params to be sent
+    }
+    // system info
+		else if(strcmp("SQuery", it->key) == 0) {
+      SysModerator.reset();   // force MQTT params to be sent
     }
     // MQTT parameters
 		else if(strcmp("MQuery", it->key) == 0) {
@@ -399,6 +412,34 @@ bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
   return bSend;
 }
 
+
+bool makeJSONStringSysInfo(CModerator& moderator, char* opStr, int len)
+{
+  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
+
+	bool bSend = false;  // reset should send flag
+
+  const BTCDateTime& now = Clock.get();
+
+  char str[32];
+  sprintf(str, "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
+  bSend |= moderator.addJson("Time", str, root); 
+  sprintf(str, "%d %s %d", now.day(), now.monthStr(), now.year());
+  bSend |= moderator.addJson("Date", str, root); 
+  bSend |= moderator.addJson("UpTime", sysUptime(), root); 
+  bSend |= moderator.addJson("SysVer", getVersionStr(), root); 
+  bSend |= moderator.addJson("SysDate", getVersionDate(), root); 
+  bSend |= moderator.addJson("SysFreeMem", ESP.getFreeHeap(), root); 
+//  bSend |= moderator.addJson("TickCount", millis(), root);   // ms!
+
+  if(bSend) {
+		root.printTo(opStr, len);
+  }
+
+  return bSend;
+}
+
 bool makeJSONStringIP(CModerator& moderator, char* opStr, int len)
 {
   StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
@@ -501,7 +542,7 @@ void updateJSONclients(bool report)
     }
   }
 
-  // report MQTT params
+  // report IP params
   {
     if(makeJSONStringIP(IPmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
@@ -514,6 +555,19 @@ void updateJSONclients(bool report)
     }
   }
 
+  // report System info
+  {
+    if(makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr))) {
+      if (report) {
+        DebugPort.printf("JSON send: %s\r\n", jsonStr);
+      }
+      sendWebSocketString( jsonStr );
+      std::string expand = jsonStr;
+      Expand(expand);
+      getBluetoothClient().send( expand.c_str() );
+    }
+  }
+  
   {
     if(makeJSONStringGPIO(GPIOmoderator, jsonStr, sizeof(jsonStr))) {
       if (report) {
@@ -539,6 +593,7 @@ void resetJSONmoderator()
 #endif
   initMQTTJSONmoderator();
   initIPJSONmoderator();
+  initSysModerator();
   GPIOmoderator.reset();
 }
 
@@ -552,6 +607,12 @@ void initIPJSONmoderator()
 {
   char jsonStr[800];
   makeJSONStringIP(IPmoderator, jsonStr, sizeof(jsonStr));
+}
+
+void initSysModerator()
+{
+  char jsonStr[800];
+  makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr));
 }
 
 void initTimerJSONmoderator()

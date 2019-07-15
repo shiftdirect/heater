@@ -47,6 +47,7 @@ int TRIG_PIN;                      // pin that triggers the configuration portal
 unsigned restartServer = 0;        // set to time of portal reconfig - will cause reboot a while later
 char MACstr[2][20];                // MACstr[0] STA, MACstr[1] = AP
 int wifiButtonState = 0;
+unsigned long WifiReconnectHoldoff = 0;
 
 extern CScreenManager ScreenManager;
 
@@ -87,8 +88,10 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   DebugPort.println("Attempting to start STA mode (or config portal) via WifiManager...");
 
   wm.setHostname(failedssid);
+  wm.setDebugOutput(true);
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
+  wm.setWiFiAutoReconnect(true);
   wm.setSaveParamsCallback(saveParamsCallback);  // ensure our webserver gets awoken when IP config changes to STA
   wm.setAPCallback(APstartedCallback);
   wm.setEnableConfigPortal(shouldBootIntoConfigPortal());
@@ -142,6 +145,26 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 void doWiFiManager()
 {
   wm.process();
+
+/*  if(WiFi.status() != WL_CONNECTED) {
+    if(WifiReconnectHoldoff) {
+      long tDelta = millis() - WifiReconnectHoldoff;
+      if(tDelta >= 0) {
+        WifiReconnectHoldoff = 0;  
+        WiFi.disconnect();
+        WiFi.mode(WIFI_AP_STA);
+        wifi_config_t conf;
+        esp_wifi_get_config(WIFI_IF_STA, &conf);
+        WiFi.begin((char*)conf.sta.ssid, (char*)conf.sta.password);
+      }
+    }
+    else {
+      WifiReconnectHoldoff = millis() + 10000;
+    }
+  }
+  else {
+    WifiReconnectHoldoff = 0;
+  }*/
 
 #if USE_PORTAL_TRIGGER_PIN == 1
   // manage handling of pin to enter WiFManager config portal
@@ -270,21 +293,17 @@ void APstartedCallback(WiFiManager*)
 
 const char* getWifiAPAddrStr()
 { 
-//  noInterrupts();
   IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
   static char APIPaddr[16];
   sprintf(APIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
-//  interrupts();
   return APIPaddr;
 }
   
 const char* getWifiSTAAddrStr()
 { 
-//  noInterrupts();
   IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
   static char STAIPaddr[16];
   sprintf(STAIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
-//  interrupts();
   return STAIPaddr;
 }
   

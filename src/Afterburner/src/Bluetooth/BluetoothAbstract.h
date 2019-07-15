@@ -23,7 +23,6 @@
 #define __BLUETOOTHABSTRACT_H__
 
 #include "../Utility/UtilClasses.h"
-//#include "../Utility/DebugPort.h"
 #include "../Utility/helpers.h"
 
 class CProtocol;
