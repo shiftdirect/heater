@@ -289,19 +289,34 @@ var sendSize;
 var ws;
 var timeDown;
 var timeUp;
+var ajax;
+var uploadErr;
 
 function onWebSocket(event) {
   var response = JSON.parse(event.data);
   var key;
   for(key in response) {
    switch(key) {
-    case "progress":
+    case 'progress':
      // actual data bytes received as fed back via web socket
      var bytes = response[key];
-     _("loaded_n_total").innerHTML = "Uploaded " + bytes + " bytes of " + sendSize;
-     var percent = Math.round( 100 * (bytes / sendSize));
-     _("progressBar").value = percent;
-     _("status").innerHTML = percent+"% uploaded.. please wait";
+     if(bytes >= 0) {
+      // normal progression
+      _('loaded_n_total').innerHTML = 'Uploaded ' + bytes + ' bytes of ' + sendSize;
+      var percent = Math.round( 100 * (bytes / sendSize));
+      _('progressBar').value = percent;
+      _('status').innerHTML = percent+'% uploaded.. please wait';
+      uploadErr = '';
+     }
+     else {
+      // upload failure
+      _('progressBar').value = 0;
+      if(bytes == -1)
+        uploadErr = 'SPIFFS UPLOAD ABORTED - FILE TOO LARGE';
+      else
+        uploadErr = 'SPIFFS UPLOAD ABORTED - WRITE ERROR';
+      ajax.abort();
+     }
      break;
    }
   }
@@ -313,37 +328,37 @@ function init() {
 }
 
 function uploadFile() {
- _("cancel").hidden = true;
- _("upload").hidden = true;
- _("progressBar").hidden = false;
- var file = _("file1").files[0];
+ _('cancel').hidden = true;
+ _('upload').hidden = true;
+ _('progressBar').hidden = false;
+ var file = _('file1').files[0];
  sendSize = file.size;
  console.log(file);
  var JSONmsg = {};
  JSONmsg['UploadSize'] = sendSize;
  var str = JSON.stringify(JSONmsg);
- console.log("JSON Tx:", str);
+ console.log('JSON Tx:', str);
  ws.send(str);
  var formdata = new FormData();
- formdata.append("update", file);
- var ajax = new XMLHttpRequest();
- // progress is handled via websocket JSON sent from controller
+ formdata.append('update', file);
+ ajax = new XMLHttpRequest();
+ // progress feedback is handled via websocket JSON sent from controller
  // using server side progress only shows the buffer filling, not actual delivery.
- ajax.addEventListener("load", completeHandler, false);
- ajax.addEventListener("error", errorHandler, false);
- ajax.addEventListener("abort", abortHandler, false);
- ajax.open("POST", "/updatenow");
+ ajax.addEventListener('load', completeHandler, false);
+ ajax.addEventListener('error', errorHandler, false);
+ ajax.addEventListener('abort', abortHandler, false);
+ ajax.open('POST', '/updatenow');
  ajax.send(formdata);
 }
 
 function completeHandler(event) {
- _("status").innerHTML = event.target.responseText;
- _("progressBar").hidden = true;
- _("progressBar").value = 0;
- _("loaded_n_total").innerHTML = "Uploaded " + sendSize + " bytes of " + sendSize;
- var file = _("file1").files[0];
- if(file.name.endsWith(".bin")) {
-  setTimeout( function() { window.location.assign('/'); }, 5000);    
+ _('status').innerHTML = event.target.responseText;
+ _('progressBar').hidden = true;
+ _('progressBar').value = 0;
+ _('loaded_n_total').innerHTML = 'Uploaded ' + sendSize + ' bytes of ' + sendSize;
+ var file = _('file1').files[0];
+ if(file.name.endsWith('.bin')) {
+  setTimeout( function() { location.assign('/'); }, 5000);    
  }
  else {
   setTimeout( function() { location.assign('/update'); }, 500);    
@@ -351,66 +366,72 @@ function completeHandler(event) {
 }
 
 function errorHandler(event) {
- _("status").innerHTML = "Upload Failed";
+ console.log('Error Handler');
+ _('status').innerHTML = 'Upload Error?';
+ _('status').style.color = 'red';
+ setTimeout( function() { location.reload(); }, 2000);    
 }
 
 function abortHandler(event) {
- _("status").innerHTML = "Upload Aborted";
+ console.log('Abort Handler' + event);
+ _('status').innerHTML = uploadErr;
+ _('status').style.color = 'red';
+ setTimeout( function() { location.reload(); }, 2000);    
 }
 
 function onErase(fn) {
  if(confirm('Do you really want to erase ' + fn +' ?')) {
   var formdata = new FormData();
-  formdata.append("filename", fn);
+  formdata.append('filename', fn);
   var ajax = new XMLHttpRequest();
-  ajax.open("POST", "/erase");
+  ajax.open('POST', '/erase');
   ajax.send(formdata);
   setTimeout(function () { location.reload(); }, 500);    
  }
 }
 
 function onRename(fn) {
-  var newname = prompt("Enter new file name", fn);
-  if(newname != null && newname != "") {
+  var newname = prompt('Enter new file name', fn);
+  if(newname != null && newname != '') {
     var formdata = new FormData();
-    formdata.append("oldname", fn);
-    formdata.append("newname", newname);
+    formdata.append('oldname', fn);
+    formdata.append('newname', newname);
     var ajax = new XMLHttpRequest();
-    ajax.open("POST", "/rename");
+    ajax.open('POST', '/rename');
     ajax.send(formdata);
     setTimeout(function () { location.reload(); }, 500);    
   }
 }
 
 function onBrowseChange() {
-  _("uploaddiv").hidden = false;
-  _("upload").hidden = false;
-  _("status").hidden = false;
-  _("loaded_n_total").hidden = false;
-  _("spacer").hidden = false;
-  var file = _("file1").files[0];
+  _('uploaddiv').hidden = false;
+  _('upload').hidden = false;
+  _('status').hidden = false;
+  _('loaded_n_total').hidden = false;
+  _('spacer').hidden = false;
+  var file = _('file1').files[0];
   _('filename').innerHTML = file.name;
 }
 
 function onformatClick() {
-    window.location.assign('/formatspiffs');
+    location.assign('/formatspiffs');
 }
 
 </script>
 
 <title>Afterburner update</title>
 </head>
-<body onload="javascript:init()">
+<body onload='javascript:init()'>
  <h1>Afterburner update</h1>
  <form id='upload_form' method='POST' enctype='multipart/form-data' autocomplete='off'>
   <input type='file' name='file1' id='file1' class='inputfile' onchange='onBrowseChange()'/>
   <label for='file1'>&nbsp;&nbsp;Select a file to upload&nbsp;&nbsp;</label>
  </form>
  <p>
- <div id='uploaddiv' hidden><span id='filename'></span>&nbsp;<button id="upload" class='throb' onclick='uploadFile()' hidden>Upload</button>
+ <div id='uploaddiv' hidden><span id='filename'></span>&nbsp;<button id='upload' class='throb' onclick='uploadFile()' hidden>Upload</button>
  <progress id='progressBar' value='0' max='100' style='width:300px;' hidden></progress><p></div>
  <p id='spacer' hidden> </p> 
- <div><button onclick=window.location.assign('/') id='cancel'>Cancel</button></div>
+ <div><button onclick=location.assign('/') id='cancel'>Cancel</button></div>
  <h3 id='status' hidden></h3>
  <div id='loaded_n_total' hidden></div>
 )=====";
@@ -435,9 +456,6 @@ void onResetWifi()
 }
 
 
-//<p><a href="/update"> <button type="button">Add</button></a>
-//<p><a href="/"><button type="button">Home</button></a>
-
 void onNotFound() 
 {
   String path = server.uri();
@@ -457,13 +475,24 @@ void rootRedirect()
 
 bool sendWebSocketString(const char* Str)
 {
-//  CProfile profile;
+#ifdef WEBTIMES
+  CProfile profile;
+#endif
+
 	if(webSocket.connectedClients()) {
-//    unsigned long tCon = profile.elapsed(true);
+
+#ifdef WEBTIMES
+    unsigned long tCon = profile.elapsed(true);
+#endif
+
     bTxWebData = true;              // OLED tx data animation flag
     webSocket.broadcastTXT(Str);
-//    unsigned long tWeb = profile.elapsed(true);
-//    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
+
+#ifdef WEBTIMES
+    unsigned long tWeb = profile.elapsed(true);
+    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
+#endif
+
 		return true;
 	}
   return false;
@@ -597,14 +626,13 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
       }
       if(withHTMLanchors) {
         String fn2;
-        if(fn.endsWith(".html") || fn.endsWith(".htm")) {
+        if(fn.endsWith(".html")) {
           // can hyperlink .html files
           fn2 = fn;
         }
-        else if(fn.endsWith(".html.gz") || fn.endsWith(".htm.gz")) {
-          // can hyperlink .html.gz files but we must strip .gz extension for
+        else if(fn.endsWith(".html.gz")) {
+          // we can hyperlink .html.gz files but we must strip .gz extension for
           // the hyperlink otherwise you get asked if you want to download the .gz, not view web page!
-//          fn2 = fn.substring(0, fn.length()-3);  // strip ".gz"
           fn2 = fn;
           fn2.remove(fn2.length()-3, 3);  // strip trailing ".gz"
         }
@@ -722,12 +750,15 @@ void onUploadProgression()
 {
   if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
     HTTPUpload& upload = server.upload();
-    if (upload.status == UPLOAD_FILE_START) {
-      String filename = upload.filename;
+    String filename = upload.filename;
+    if(!filename.startsWith("/")) filename = "/"+filename;
 
+    if (upload.status == UPLOAD_FILE_START) {
       DebugPort.setDebugOutput(true);
       if(filename.endsWith(".bin")) {
-        DebugPort.printf("Update: %s\r\n", filename.c_str());
+        // FIRMWARE UPLOAD START
+        DebugPort.printf("Firmware update: %s\r\n", filename.c_str());  // name without leading slash
+
         int sizetouse = -1;   //start with max available size
         if(_SuppliedFileSize) {
           sizetouse = _SuppliedFileSize; // adapt to websocket supplied size
@@ -737,58 +768,101 @@ void onUploadProgression()
         }
       }
       else {
-        if(!filename.startsWith("/")) filename = "/"+filename;
-        DebugPort.printf("handleFileUpload Name: %s\r\n", filename.c_str());
-        fsUploadFile = SPIFFS.open(filename, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
-        SPIFFSupload = fsUploadFile ? 1 : 2;
+        // SPIFFS UPLOAD START
+        DebugPort.printf("SPIFFS upload: %s\r\n", filename.c_str());
+
+        // calcualte a *very wild* guess of max size me *may* be able to cope with
+        int freebytes = SPIFFS.totalBytes() - SPIFFS.usedBytes();
+        freebytes -= 8192;  // at least 2 blocks must be kept free, each being 4k
+        int pageestimate = ((_SuppliedFileSize) / 256) + 1 + 1;  // +1 for shortfall, +1 for metadata
+        freebytes -= pageestimate * 256;
+
+        SPIFFSupload = 2;  // assume SPIFFS error for now...
+        if(freebytes > 0) {
+          // *may* have enough space, open a file
+          fsUploadFile = SPIFFS.open(filename, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
+          if(fsUploadFile) {
+            SPIFFSupload = 1;   // opened OK, mark as SPIFFS uplaod in progress
+          }
+        }
+        // not enough space - return error to browser via web socket, javascript will report error
+        if(SPIFFSupload == 2) {
+          sendWebSocketString("{\"progress\":-1}");  // feedback -ve byte count of update to browser via websocket
+        }
+        DebugPort.printf("SPIFFS freespace test = %d\r\n", freebytes);  // report our space estimate
       }
     } 
 
-    // handle file segments
+    // handle file segments of form upload
     else if (upload.status == UPLOAD_FILE_WRITE) {
 #if USE_SW_WATCHDOG == 1
       feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
-      if(upload.totalSize) {
-        char JSON[64];
-        sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-        sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+      // SPIFFS upload in progress?
+      if(SPIFFSupload == 1) {
+        if(upload.totalSize) {
+          // feed back bytes received over web socket for browser javascript progressbar update
+          char JSON[64];
+          sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
+          sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+        }
+        // show percentage on OLED
+        int percent = 0;
+        if(_SuppliedFileSize) 
+          percent = 100 * upload.totalSize / _SuppliedFileSize;
+        ShowOTAScreen(percent, eOTAbrowser);  // browser update 
       }
-      int percent = 0;
-      if(_SuppliedFileSize) 
-        percent = 100 * upload.totalSize / _SuppliedFileSize;
-      ShowOTAScreen(percent, eOTAbrowser);  // browser update 
 
       DebugPort.print(".");
-      if(fsUploadFile) {
-        if(fsUploadFile.write(upload.buf, upload.currentSize) != upload.currentSize) { // Write the received bytes to the file
-          Update.printError(DebugPort);
-          fsUploadFile.close();            
-          fsUploadFile.flush();
-          DebugPort.println("WEB: SPIFFS WRITE FAIL");
-          server.send(500, "text/plain", "500: couldn't create file");
-          String filename = upload.filename;
-          SPIFFS.remove(filename.c_str());                   // remove the file
-          SPIFFSupload = 2;
+
+      if(SPIFFSupload) {
+        // SPIFFS update (may be error state)
+        if(fsUploadFile) {
+          // file is open, add new segment of data to file opened for writing
+          if(fsUploadFile.write(upload.buf, upload.currentSize) != upload.currentSize) { // Write the received bytes to the file
+            // ERROR! write operation failed if length does not match!
+            Update.printError(DebugPort);
+            fsUploadFile.close();         // close the file (fsUploadFile becomes NULL)
+            sendWebSocketString("{\"progress\":-2}");  // feedback -ve byte count of update to browser via websocket - write error
+            SPIFFSupload = 2;  // flag SPIFFS error!
+            DebugPort.printf("UPLOAD_FILE_WRITE error: removing %s\r\n", filename.c_str());
+            SPIFFS.remove(filename.c_str());  // remove the bad file from SPIFFS
+          }
         }
       }
       else {
+        // Firmware update, add new segment to OTA partition
         if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+          // ERROR !
           Update.printError(DebugPort);
+          sendWebSocketString("{\"progress\":-2}");  // feedback -ve byte count of update to browser via websocket - write error
         }
       }
     } 
     
     // handle end of upload
     else if (upload.status == UPLOAD_FILE_END) {
-        delay(2000);
+      if(SPIFFSupload == 1) {
+        // SPIFFS completed OK up until the end - a winner!
+        // ensure 100% is shown on browser
+        char JSON[64];
+        sprintf(JSON, "{\"progress\":%ld}", _SuppliedFileSize);
+        sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+      }
+      delay(2000);
+
       if(SPIFFSupload) {
+        // any form of SPIFFS attempt (may be error)
+        // Close the file if still open (did not encounter write error)
         if(fsUploadFile) {
-          fsUploadFile.close();                               // Close the file again
+          fsUploadFile.close();    
           DebugPort.printf("handleFileUpload Size: %d\r\n", upload.totalSize);
         }
       }
       else {
+        // completion of firmware update
+        // check the added CRC we genertaed matches 
+        // - this guards against malicious, badly formatted bin file attempts.
         if(!CheckFirmwareCRC(_SuppliedFileSize))
           Update.abort();
 
@@ -798,11 +872,10 @@ void onUploadProgression()
           Update.printError(DebugPort);
         }
       }
-//      DebugPort.setDebugOutput(false);
-      bUpdateAccessed = false;
+      bUpdateAccessed = false;  // close gate on POST to /updatenow
     } else {
       DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\r\n", upload.status);
-      bUpdateAccessed = false;
+      bUpdateAccessed = false;  // close gate on POST to /updatenow
     }
   }
   else {
@@ -866,7 +939,7 @@ body {
 <h3>You must now upload the web content.</h3>
 <p>Latest web content can be downloaded from <a href='http://www.mrjones.id.au/afterburner/firmware.html' target='_blank'>http://www.mrjones.id.au/afterburner/firmware.html</a>
 <h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>
-<p><button onclick=window.location.assign('/update')>Upload web content</button> 
+<p><button onclick=location.assign('/update')>Upload web content</button> 
 </body>
 </html>
 )=====";
@@ -892,13 +965,13 @@ function onFormat() {
   setTimeout(function () { location.assign('/update'); }, 20);    
  }
  var ajax = new XMLHttpRequest();
- ajax.open("POST", "/formatnow");
+ ajax.open('POST', '/formatnow');
  ajax.send(formdata);
 }
 </script>
 <title>Afterburner SPIFFS format</title>
 </head>
-<body onload="javascript:init()">
+<body onload='javascript:init()'>
 <h1>Format SPIFFS partition</h1>
 <h3 class='throb' id='throb'>CAUTION!  This will erase all web content</h1>
 <p><button class='redbutton' onClick='onFormat()'>Format</button><br>
@@ -957,7 +1030,7 @@ function onReboot() {
   var formdata = new FormData();
   formdata.append('reboot', 'yes');
   var ajax = new XMLHttpRequest();
-  ajax.open("POST", "/reboot");
+  ajax.open('POST', '/reboot');
   ajax.send(formdata);
   _('info').hidden = false;
  }

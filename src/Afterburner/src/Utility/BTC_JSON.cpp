@@ -42,6 +42,7 @@ CModerator IPmoderator;
 CModerator GPIOmoderator;
 CModerator SysModerator;
 bool bTriggerSysParams = false;
+bool bTriggerDateTime = false;
 
 void validateTimer(int ID);
 void Expand(std::string& str);
@@ -141,12 +142,15 @@ void interpretJsonCommand(char* pLine)
 		}
 		else if(strcmp("DateTime", it->key) == 0) {
       setDateTime(it->value.as<const char*>());
+      bTriggerDateTime = true;
 		}
 		else if(strcmp("Date", it->key) == 0) {
       setDate(it->value.as<const char*>());
+      bTriggerDateTime = true;
 		}
 		else if(strcmp("Time", it->key) == 0) {
       setTime(it->value.as<const char*>());
+      bTriggerDateTime = true;
 		}
 		else if(strcmp("PumpPrime", it->key) == 0) {
       reqPumpPrime(it->value.as<uint8_t>());
@@ -417,27 +421,31 @@ bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
 
 bool makeJSONStringSysInfo(CModerator& moderator, char* opStr, int len)
 {
-  StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
-  JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
-
 	bool bSend = false;  // reset should send flag
 
-  const BTCDateTime& now = Clock.get();
+  if(bTriggerSysParams || bTriggerDateTime) {
 
-  char str[32];
-  sprintf(str, "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
-  bSend |= moderator.addJson("Time", str, root); 
-  sprintf(str, "%d %s %d", now.day(), now.monthStr(), now.year());
-  bSend |= moderator.addJson("Date", str, root); 
-  bSend |= moderator.addJson("UpTime", sysUptime(), root); 
-  bSend |= moderator.addJson("SysVer", getVersionStr(), root); 
-  bSend |= moderator.addJson("SysDate", getVersionDate(), root); 
-  bSend |= moderator.addJson("SysFreeMem", ESP.getFreeHeap(), root); 
-//  bSend |= moderator.addJson("TickCount", millis(), root);   // ms!
+    StaticJsonBuffer<800> jsonBuffer;               // create a JSON buffer on the stack
+    JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
-  if(bSend) {
-		root.printTo(opStr, len);
+    const BTCDateTime& now = Clock.get();
+
+    char str[32];
+    sprintf(str, "%d/%d/%d %02d:%02d:%02d", now.day(), now.month(), now.year(), now.hour(), now.minute(), now.second());
+    bSend |= moderator.addJson("DateTime", str, root); 
+    if(bTriggerSysParams) {
+      bSend |= moderator.addJson("UpTime", sysUptime(), root); 
+      bSend |= moderator.addJson("SysVer", getVersionStr(), root); 
+      bSend |= moderator.addJson("SysDate", getVersionDate(), root); 
+      bSend |= moderator.addJson("SysFreeMem", ESP.getFreeHeap(), root); 
+    }
+    if(bSend) {
+	  	root.printTo(opStr, len);
+    }
   }
+
+  bTriggerSysParams = false;
+  bTriggerDateTime = false;
 
   return bSend;
 }
@@ -559,8 +567,7 @@ void updateJSONclients(bool report)
 
   // report System info
   {
-    if(bTriggerSysParams &&  makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr))) {
-      bTriggerSysParams = false;
+    if(makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr))) {
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }

@@ -119,7 +119,7 @@
 
 const int FirmwareRevision = 23;
 const int FirmwareSubRevision = 6;
-const char* FirmwareDate = "15 Jul 2019";
+const char* FirmwareDate = "17 Jul 2019";
 
 
 #ifdef ESP32
@@ -1359,7 +1359,7 @@ void feedWatchdog()
 {
   uint64_t timeRem = timerRead(watchdogTimer);
   if(timeRem > 500000)  // 500ms
-    DebugPort.printf("\007WD time = %lld\r\n", timeRem);  // print longer WD intervals
+    DebugPort.printf("WD time = %lld\r\n", timeRem);  // print longer WD intervals
 
   timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
 }
