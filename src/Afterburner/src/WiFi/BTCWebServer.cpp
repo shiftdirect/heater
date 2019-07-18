@@ -39,6 +39,7 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include "BrowserUpload.h"
 #include <Update.h>
 
 extern WiFiManager wm;
@@ -48,9 +49,7 @@ extern const char* updateIndex;
 extern const char* formatDoneContent;
 extern const char* rebootIndex;
 
-File fsUploadFile;              // a File object to temporarily store the received file
-int SPIFFSupload = 0;
-
+sBrowserUpload BrowserUpload;
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
@@ -85,15 +84,6 @@ void build500Response(String& content, String file);
 
 void initWebServer(void) {
 
-  Update
-  .onProgress([](unsigned int progress, unsigned int total) {
-    int percent = (progress / (total / 100));
-		DebugPort.printf("Progress: %u%%\r", percent);
-    DebugPort.handle();    // keep telnet spy alive
-    ShowOTAScreen(percent, eOTAWWW);  // WWW update in place
-    DebugPort.print("^");
-	});
-  
 	if (MDNS.begin("Afterburner")) {
 		DebugPort.println("MDNS responder started");
 	}
@@ -299,11 +289,11 @@ function onWebSocket(event) {
    switch(key) {
     case 'progress':
      // actual data bytes received as fed back via web socket
-     var bytes = response[key];
-     if(bytes >= 0) {
+     var progress = response[key];
+     if(progress >= 0) {
       // normal progression
-      _('loaded_n_total').innerHTML = 'Uploaded ' + bytes + ' bytes of ' + sendSize;
-      var percent = Math.round( 100 * (bytes / sendSize));
+      _('loaded_n_total').innerHTML = 'Uploaded ' + progress + ' bytes of ' + sendSize;
+      var percent = Math.round( 100 * (progress / sendSize));
       _('progressBar').value = percent;
       _('status').innerHTML = percent+'% uploaded.. please wait';
       uploadErr = '';
@@ -311,10 +301,12 @@ function onWebSocket(event) {
      else {
       // upload failure
       _('progressBar').value = 0;
-      if(bytes == -1)
-        uploadErr = 'SPIFFS UPLOAD ABORTED - FILE TOO LARGE';
-      else
-        uploadErr = 'SPIFFS UPLOAD ABORTED - WRITE ERROR';
+      switch(progress) {
+        case -1:  uploadErr = 'File too large - SPIFFS upload ABORTED'; break;
+        case -2:  uploadErr = 'Write error - SPIFFS upload ABORTED'; break;
+        case -3:  uploadErr = 'Update error - Firmware upload ABORTED'; break;
+        case -4:  uploadErr = 'Invalid file - Firmware upload ABORTED'; break;
+      }
       ajax.abort();
      }
      break;
@@ -328,6 +320,7 @@ function init() {
 }
 
 function uploadFile() {
+ _('upload_form').hidden = true;
  _('cancel').hidden = true;
  _('upload').hidden = true;
  _('progressBar').hidden = false;
@@ -695,8 +688,8 @@ void onUploadCompletion()
   _SuppliedFileSize = 0;
   DebugPort.println("WEB: POST /updatenow completion");
   // completion functionality
-  if(SPIFFSupload) {
-    if(SPIFFSupload == 1) {
+  if(BrowserUpload.isSPIFFSupload()) {
+    if(BrowserUpload.isOK()) {
       DebugPort.println("WEB: SPIFFS OK");
       server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
       // javascript reselects the /update page!
@@ -705,16 +698,16 @@ void onUploadCompletion()
       DebugPort.println("WEB: SPIFFS FAIL");
       server.send(500, "text/plain", "500: couldn't create file");
     }
-    SPIFFSupload = 0;
+    BrowserUpload.reset();
   }
   else {
-    if(Update.hasError()) {
-      DebugPort.println("WEB: UPDATE FAIL");
-      server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
+    if(BrowserUpload.isOK()) {
+      DebugPort.println("WEB: FIRMWARE UPDATE OK");
+      server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
     }
     else {
-      DebugPort.println("WEB: UPDATE OK");
-      server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
+      DebugPort.println("WEB: FIRMWARE UPDATE FAIL");
+      server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
     }
     delay(1000);
     // javascript redirects to root page so we go there after reboot!
@@ -748,130 +741,54 @@ void onUploadBegin()
 
 void onUploadProgression()
 {
+  char JSON[64];
+
   if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
     HTTPUpload& upload = server.upload();
     String filename = upload.filename;
     if(!filename.startsWith("/")) filename = "/"+filename;
 
     if (upload.status == UPLOAD_FILE_START) {
-      DebugPort.setDebugOutput(true);
-      if(filename.endsWith(".bin")) {
-        // FIRMWARE UPLOAD START
-        DebugPort.printf("Firmware update: %s\r\n", filename.c_str());  // name without leading slash
-
-        int sizetouse = -1;   //start with max available size
-        if(_SuppliedFileSize) {
-          sizetouse = _SuppliedFileSize; // adapt to websocket supplied size
-        }
-        if (!Update.begin(sizetouse)) { 
-          Update.printError(DebugPort);
-        }
-      }
-      else {
-        // SPIFFS UPLOAD START
-        DebugPort.printf("SPIFFS upload: %s\r\n", filename.c_str());
-
-        // calcualte a *very wild* guess of max size me *may* be able to cope with
-        int freebytes = SPIFFS.totalBytes() - SPIFFS.usedBytes();
-        freebytes -= 8192;  // at least 2 blocks must be kept free, each being 4k
-        int pageestimate = ((_SuppliedFileSize) / 256) + 1 + 1;  // +1 for shortfall, +1 for metadata
-        freebytes -= pageestimate * 256;
-
-        SPIFFSupload = 2;  // assume SPIFFS error for now...
-        if(freebytes > 0) {
-          // *may* have enough space, open a file
-          fsUploadFile = SPIFFS.open(filename, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
-          if(fsUploadFile) {
-            SPIFFSupload = 1;   // opened OK, mark as SPIFFS uplaod in progress
-          }
-        }
-        // not enough space - return error to browser via web socket, javascript will report error
-        if(SPIFFSupload == 2) {
-          sendWebSocketString("{\"progress\":-1}");  // feedback -ve byte count of update to browser via websocket
-        }
-        DebugPort.printf("SPIFFS freespace test = %d\r\n", freebytes);  // report our space estimate
-      }
+      int sts = BrowserUpload.begin(filename, _SuppliedFileSize);
+      sprintf(JSON, "{\"progress\":%d}", sts);
+      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
     } 
 
-    // handle file segments of form upload
+    // handle file fragments of form upload
     else if (upload.status == UPLOAD_FILE_WRITE) {
 #if USE_SW_WATCHDOG == 1
       feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
-      // SPIFFS upload in progress?
-      if(SPIFFSupload == 1) {
-        if(upload.totalSize) {
-          // feed back bytes received over web socket for browser javascript progressbar update
-          char JSON[64];
-          sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-          sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-        }
-        // show percentage on OLED
-        int percent = 0;
-        if(_SuppliedFileSize) 
-          percent = 100 * upload.totalSize / _SuppliedFileSize;
-        ShowOTAScreen(percent, eOTAbrowser);  // browser update 
-      }
-
-      DebugPort.print(".");
-
-      if(SPIFFSupload) {
-        // SPIFFS update (may be error state)
-        if(fsUploadFile) {
-          // file is open, add new segment of data to file opened for writing
-          if(fsUploadFile.write(upload.buf, upload.currentSize) != upload.currentSize) { // Write the received bytes to the file
-            // ERROR! write operation failed if length does not match!
-            Update.printError(DebugPort);
-            fsUploadFile.close();         // close the file (fsUploadFile becomes NULL)
-            sendWebSocketString("{\"progress\":-2}");  // feedback -ve byte count of update to browser via websocket - write error
-            SPIFFSupload = 2;  // flag SPIFFS error!
-            DebugPort.printf("UPLOAD_FILE_WRITE error: removing %s\r\n", filename.c_str());
-            SPIFFS.remove(filename.c_str());  // remove the bad file from SPIFFS
-          }
-        }
+      int sts = BrowserUpload.fragment(upload);
+      if(sts < 0) {
+        sprintf(JSON, "{\"progress\":%d}", sts);
+        sendWebSocketString(JSON);  // feedback -ve byte count of update to browser via websocket - write error
       }
       else {
-        // Firmware update, add new segment to OTA partition
-        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-          // ERROR !
-          Update.printError(DebugPort);
-          sendWebSocketString("{\"progress\":-2}");  // feedback -ve byte count of update to browser via websocket - write error
+        // upload still in progress?
+        if(BrowserUpload.bUploadActive) {  // show progress unless a write error has occured
+          DebugPort.print(".");
+          if(upload.totalSize) {
+            // feed back bytes received over web socket for progressbar update on browser (via javascript)
+            sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
+            sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+          }
+          // show percentage on OLED
+          int percent = 0;
+          if(_SuppliedFileSize) 
+            percent = 100 * upload.totalSize / _SuppliedFileSize;
+          ShowOTAScreen(percent, eOTAbrowser);  // browser update 
         }
       }
     } 
     
     // handle end of upload
     else if (upload.status == UPLOAD_FILE_END) {
-      if(SPIFFSupload == 1) {
-        // SPIFFS completed OK up until the end - a winner!
-        // ensure 100% is shown on browser
-        char JSON[64];
-        sprintf(JSON, "{\"progress\":%ld}", _SuppliedFileSize);
-        sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-      }
+      int sts = BrowserUpload.end(upload);
+      sprintf(JSON, "{\"progress\":%d}", sts);
+      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
       delay(2000);
 
-      if(SPIFFSupload) {
-        // any form of SPIFFS attempt (may be error)
-        // Close the file if still open (did not encounter write error)
-        if(fsUploadFile) {
-          fsUploadFile.close();    
-          DebugPort.printf("handleFileUpload Size: %d\r\n", upload.totalSize);
-        }
-      }
-      else {
-        // completion of firmware update
-        // check the added CRC we genertaed matches 
-        // - this guards against malicious, badly formatted bin file attempts.
-        if(!CheckFirmwareCRC(_SuppliedFileSize))
-          Update.abort();
-
-        if (Update.end()) { 
-          DebugPort.printf("Update Success: %u\r\nRebooting...\r\n", upload.totalSize);
-        } else {
-          Update.printError(DebugPort);
-        }
-      }
       bUpdateAccessed = false;  // close gate on POST to /updatenow
     } else {
       DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\r\n", upload.status);

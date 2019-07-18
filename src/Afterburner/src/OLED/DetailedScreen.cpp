@@ -27,19 +27,28 @@
 #include "../Utility/helpers.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/NVStorage.h"
+#include "../Utility/FuelGauge.h"
+
+extern CFuelGauge FuelGauge;
 
 
 #define MINIFONT miniFontInfo
 
-#define X_FAN_ICON     55 
+//#define X_FAN_ICON     55 
+#define X_FAN_ICON     49 
 #define Y_FAN_ICON     39
-#define X_FUEL_ICON    81 
+//#define X_FUEL_ICON    81 
+#define X_FUEL_ICON    74 
 #define Y_FUEL_ICON    39
-#define X_TARGET_ICON  31
+//#define X_TARGET_ICON  31
+#define X_TARGET_ICON  28
 #define Y_TARGET_ICON  39
 #define Y_BASELINE     58
-#define X_GLOW_ICON    97
+//#define X_GLOW_ICON    97
+#define X_GLOW_ICON    92
 #define Y_GLOW_ICON    38
+#define X_BOWSER_ICON   91
+#define Y_BOWSER_ICON   43
 #define X_BODY_BULB   119
 #define X_BULB          1  // >= 1
 #define Y_BULB          4
@@ -106,11 +115,13 @@ CDetailedScreen::show()
   _animateRPM = false;
   _animatePump = false;
   _animateGlow = false;
+  bool bGlowActive = false;
 
   if(runstate != 0 && runstate != 10) {  // not idle modes
     float power = getHeaterInfo().getGlowPlug_Power();
     if(power > 1) {
       showGlowPlug(power);
+      bGlowActive = true;
     }
 
     if(_showTarget)
@@ -123,6 +134,9 @@ CDetailedScreen::show()
     showBodyThermometer(getHeaterInfo().getTemperature_HeatExchg());
   }
 
+  if(!bGlowActive) {
+    showBowser(FuelGauge.Used_mL());
+  }
   showRunState(runstate, errstate);
   return true;
 }
@@ -430,6 +444,20 @@ CDetailedScreen::showFuel(float rate)
     _printMenuText(X_FUEL_ICON + (FuelIconInfo.width/2), Y_BASELINE, msg, false, eCentreJustify);
   }
 }
+
+void 
+CDetailedScreen::showBowser(float used)
+{
+  _display.setTextColor(WHITE);
+  _drawBitmap(X_BOWSER_ICON, Y_BOWSER_ICON, BowserIconInfo);                
+  char msg[16];
+  sprintf(msg, "%.02fL", used * 0.001);
+#ifdef MINI_FANLABEL  
+  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+#endif
+  _printMenuText(X_BOWSER_ICON + (BowserIconInfo.width/2), Y_BASELINE, msg, false, eCentreJustify);
+}
+
 
 void 
 CDetailedScreen::showRunState(int runstate, int errstate) 

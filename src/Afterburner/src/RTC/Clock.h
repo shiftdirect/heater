@@ -22,15 +22,23 @@
 #ifndef __BTC_CLOCK_H__
 #define __BTC_CLOCK_H__
 
+#include "../Libraries/RTClib/RTClib.h"
 #include "BTCDateTime.h"
 #include "../cfg/BTCConfig.h"
+
+class RTC_DS3231Ex : public RTC_DS3231 {
+public:
+  void writeData(uint8_t* pData, int len, int ofs=0);
+  void readData(uint8_t* pData, int len, int ofs=0);
+};
 
 
 class CClock {
   // allow use of ONE of the RTClib supported RTC chips
   // reference to the selected rtc stored here
 #if RTC_USE_DS3231 == 1
-  RTC_DS3231& _rtc;
+//  RTC_DS3231& _rtc;
+  RTC_DS3231Ex& _rtc;
 #elif RTC_USE_DS1307 == 1
   RTC_DS1307& _rtc;
 #elif RTC_USE_PCF8523 == 1
@@ -45,7 +53,8 @@ class CClock {
 public:
   // constructors for ONE of the RTClib supported RTC chips
 #if RTC_USE_DS3231 == 1
-  CClock(RTC_DS3231& rtc) : _rtc(rtc) {};
+//  CClock(RTC_DS3231& rtc) : _rtc(rtc) {};
+  CClock(RTC_DS3231Ex& rtc) : _rtc(rtc) {};
 #elif RTC_USE_DS1307 == 1
   CClock(RTC_1307& rtc) : _rtc(rtc) {};
 #elif RTC_USE_PCF8523 == 1
@@ -57,6 +66,8 @@ public:
   const BTCDateTime& update();
   const BTCDateTime& get() const;
   void set(const DateTime& newTime);
+  void saveData(uint8_t* pData, int len, int ofs);
+  void readData(uint8_t* pData, int len, int ofs);
 };
 
 extern CClock Clock;

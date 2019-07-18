@@ -128,3 +128,5 @@ extern const BITMAP_INFO UpdateIconInfo;
 
 // Bitmap sizes for www
 extern const BITMAP_INFO WWWIconInfo;
+
+extern const BITMAP_INFO BowserIconInfo;

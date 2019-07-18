@@ -26,6 +26,7 @@
 #include <functional>
 
 
+bool finBounds(float tets, float min, float max);
 bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
 bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim);
 bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2);

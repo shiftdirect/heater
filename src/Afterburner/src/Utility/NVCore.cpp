@@ -124,6 +124,11 @@ CESP32_NVStorage::validatedLoad(const char* key, float& val, float defVal, float
   return true;
 }
 
+bool finBounds(float test, float minLim, float maxLim)
+{
+  return INBOUNDS(test, minLim, maxLim);
+}
+
 bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
 {
   return INBOUNDS(test, minLim, maxLim);

@@ -84,6 +84,13 @@ extern float getGlowCurrent();
 extern float getFanSpeed();
 extern int sysUptime();
 
+extern void storeFuelGauge(float val);
+extern void getStoredFuelGauge(float& val);
+extern void storeDesiredTemp(uint8_t val);
+extern void getStoredDesiredTemp(uint8_t& val);
+extern void storeDesiredPump(uint8_t val);
+extern void getStoredDesiredPump(uint8_t& val);
+
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 

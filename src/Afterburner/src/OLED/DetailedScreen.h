@@ -48,6 +48,7 @@ class CDetailedScreen : public CScreenHeader
   void showFanV(float volts);
   void showFuel(float rate);
   void showRunState(int state, int errstate);
+  void showBowser(float used);
 public:
   CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

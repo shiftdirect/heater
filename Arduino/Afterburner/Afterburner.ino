@@ -103,6 +103,7 @@
 #include "src/Utility/BTC_JSON.h"
 #include "src/Utility/BTC_GPIO.h"
 #include "src/Utility/BoardDetect.h"
+#include "src/Utility/FuelGauge.h"
 #include "src/OLED/ScreenManager.h"
 #include "src/OLED/KeyPad.h"
 #include "src/Utility/TempSense.h"
@@ -173,6 +174,7 @@ CGPIOin GPIOin;
 CGPIOout GPIOout;
 CGPIOalg GPIOalg;
 
+
 sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool bHasOEMController = false;
@@ -184,6 +186,7 @@ __NOINIT_ATTR bool bForceInit; // = false;
 __NOINIT_ATTR bool bUserON; // = false;
 __NOINIT_ATTR uint8_t demandDegC;
 __NOINIT_ATTR uint8_t demandPump;
+CFuelGauge FuelGauge; 
 
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
@@ -302,7 +305,9 @@ extern "C" unsigned long __wrap_millis() {
 void setup() {
 
   // ensure cyclic mode is disabled after power on
-  if(rtc_get_reset_reason(0) == 1 || bForceInit) {
+  bool bPowerUpInit = false;
+  if(rtc_get_reset_reason(0) == 1/* || bForceInit*/) {
+    bPowerUpInit = true;
     bForceInit = false;
     bUserON = false;   
     demandPump = demandDegC = 22;
@@ -436,6 +441,10 @@ void setup() {
   FilteredSamples.Fan.setRounding(10);
   FilteredSamples.Fan.setAlpha(0.7);
   FilteredSamples.AmbientTemp.reset(-100.0);
+
+//  if(bPowerUpInit) {
+    FuelGauge.init();
+//  }
 
   delay(1000); // just to hold the splash screeen for while
 }
@@ -775,8 +784,10 @@ void loop()
 
         ScreenManager.reqUpdate();
       }
-      if(bHasHtrData)
+      if(bHasHtrData) {
         updateFilteredData();
+        FuelGauge.Integrate(HeaterFrame2.getPump_Actual());
+      }
       updateJSONclients(bReportJSONData);
       CommState.set(CommStates::Idle);
       NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity

@@ -942,3 +942,26 @@ const uint8_t PROGMEM wwwIcon[]  =
 const BITMAP_INFO WWWIconInfo(10, 9, wwwIcon);
 
 
+// 
+//  Image data for bowser
+// 
+
+const uint8_t PROGMEM bowserIcon[]  =
+{
+	0x7E, 0x80, //  ###### # 
+	0x7E, 0xC0, //  ###### ##
+	0x42, 0xC0, //  #    # ##
+	0x42, 0x40, //  #    #  #
+	0x42, 0x40, //  #    #  #
+	0x7E, 0x40, //  ######  #
+	0x7F, 0x40, //  ####### #
+	0x7F, 0x40, //  ####### #
+	0x7F, 0xC0, //  #########
+	0x7E, 0x00, //  ######   
+	0x7E, 0x00, //  ######   
+	0xFF, 0x00, // ########  
+};
+
+const BITMAP_INFO BowserIconInfo(10, 12, bowserIcon);
+
+

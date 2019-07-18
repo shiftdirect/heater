@@ -235,6 +235,7 @@ sHeaterTuning::load()
   validatedLoad("systemVoltage", sysVoltage, 120, u8Match2, 120, 240);
   validatedLoad("fanSensor", fanSensor, 1, u8inBounds, 1, 2);
   validatedLoad("glowDrive", glowDrive, 5, u8inBounds, 1, 6);
+  validatedLoad("pumpCal", pumpCal, 0.02, 0.001, 1);
   preferences.end();    
 }
 
@@ -251,6 +252,7 @@ sHeaterTuning::save()
   preferences.putUChar("systemVoltage", sysVoltage);
   preferences.putUChar("fanSensor", fanSensor);
   preferences.putUChar("glowDrive", glowDrive);
+  preferences.putFloat("pumpCal", pumpCal);
   preferences.end();    
 }
 

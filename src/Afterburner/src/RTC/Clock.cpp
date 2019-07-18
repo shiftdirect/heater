@@ -24,7 +24,7 @@
 #include "BTCDateTime.h"
 #include "TimerManager.h"
 #include <Wire.h>
-#include "../Libraries/RTClib/RTClib.h"
+//#include "DS3231Ex.h"
 #include "../Utility/helpers.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/DebugPort.h"
@@ -32,7 +32,7 @@
 
 // create ONE of the RTClib supported real time clock classes
 #if RTC_USE_DS3231 == 1
-RTC_DS3231 rtc;
+RTC_DS3231Ex rtc;
 #elif RTC_USE_DS1307 == 1
 RTC_DS1307 rtc;
 #elif RTC_USE_PCF8523 == 1
@@ -105,6 +105,17 @@ CClock::set(const DateTime& newTimeDate)
   _rtc.adjust(newTimeDate);
 }
 
+void 
+CClock::saveData(uint8_t* pData, int len, int ofs)
+{
+  _rtc.writeData(pData, len, ofs);
+}
+
+void 
+CClock::readData(uint8_t* pData, int len, int ofs)
+{
+  _rtc.readData(pData, len, ofs);
+}
 
 
 void setDateTime(const char* newTime)
@@ -139,3 +150,56 @@ void setTime(const char* newTime)
   }
 }
 
+#define _I2C_WRITE write
+#define _I2C_READ  read
+
+void RTC_DS3231Ex::writeData(uint8_t* pData, int len, int ofs) {
+  Wire.beginTransmission(DS3231_ADDRESS);
+  Wire._I2C_WRITE((byte)(7+ofs)); // start at alarm bytes
+  for(int i=0; i<len; i++) {
+    Wire._I2C_WRITE(*pData++);
+  }
+  Wire.endTransmission();
+}
+
+void RTC_DS3231Ex::readData(uint8_t* pData, int len, int ofs) {
+  Wire.beginTransmission(DS3231_ADDRESS);
+  Wire._I2C_WRITE((byte)(7+ofs)); // start at alarm bytes
+  Wire.endTransmission();
+
+  Wire.requestFrom(DS3231_ADDRESS, len);
+  for(int i=0; i<len; i++) {
+    *pData++ = Wire._I2C_READ();
+  }
+  Wire.endTransmission();
+}
+
+void storeFuelGauge(float val)
+{
+  Clock.saveData((uint8_t*)&val, 4, 0);
+}
+
+void getStoredFuelGauge(float& val)
+{
+  Clock.readData((uint8_t*)&val, 4, 0);
+}
+
+void storeDesiredTemp(uint8_t val)
+{
+  Clock.saveData((uint8_t*)&val, 1, 4);
+}
+
+void getStoredDesiredTemp(uint8_t& val)
+{
+  Clock.readData((uint8_t*)&val, 1, 4);
+}
+
+void storeDesiredPump(uint8_t val)
+{
+  Clock.saveData((uint8_t*)&val, 1, 5);
+}
+
+void getStoredDesiredPump(uint8_t& val)
+{
+  Clock.readData((uint8_t*)&val, 1, 5);
+}
