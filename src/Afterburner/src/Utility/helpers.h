@@ -31,8 +31,8 @@ extern void forceBootInit();
 
 extern void  requestOn();
 extern void  requestOff();
-extern bool  reqTempDelta(int delta);
-extern bool  reqTemp(uint8_t newTemp, bool save=true);
+extern bool  reqDemandDelta(int delta);
+extern bool  reqDemand(uint8_t newTemp, bool save=true);
 extern bool  reqThermoToggle();
 extern bool  setThermostatMode(uint8_t);
 extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC: or our NV
@@ -84,12 +84,12 @@ extern float getGlowCurrent();
 extern float getFanSpeed();
 extern int sysUptime();
 
-extern void storeFuelGauge(float val);
-extern void getStoredFuelGauge(float& val);
-extern void storeDesiredTemp(uint8_t val);
-extern void getStoredDesiredTemp(uint8_t& val);
-extern void storeDesiredPump(uint8_t val);
-extern void getStoredDesiredPump(uint8_t& val);
+/* extern void setFuelGauge_RTC(float val);
+extern void getFuelGauge_RTC(float& val);
+extern void setDesiredTemp_RTC(uint8_t val);
+extern void getDesiredTemp_RTC(uint8_t& val);
+extern void setDesiredPump_RTC(uint8_t val);
+extern void getDesiredPump_RTC(uint8_t& val);*/
 
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);

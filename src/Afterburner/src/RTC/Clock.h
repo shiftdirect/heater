@@ -30,6 +30,7 @@ class RTC_DS3231Ex : public RTC_DS3231 {
 public:
   void writeData(uint8_t* pData, int len, int ofs=0);
   void readData(uint8_t* pData, int len, int ofs=0);
+  bool resetLostPower();
 };
 
 
@@ -68,8 +69,35 @@ public:
   void set(const DateTime& newTime);
   void saveData(uint8_t* pData, int len, int ofs);
   void readData(uint8_t* pData, int len, int ofs);
+  bool lostPower();
+  void resetLostPower();
+};
+
+class CRTC_Store {
+  bool _accessed[4];  // [0] - bytes 0..3, [1] byte 4, [2] byte 5, [3] byte 6
+  float _fuelgauge;
+  uint8_t _demandDegC;
+  uint8_t _demandPump;
+  bool    _CyclicEngaged;
+  bool    _bit6;
+  void    _ReadAndUnpackByte4();
+  void    _PackAndSaveByte4();
+  void    _ReadAndUnpackByte5();
+  void    _PackAndSaveByte5();
+public:
+  CRTC_Store();
+  void begin();
+  void setFuelGauge(float val);
+  void setDesiredTemp(uint8_t val);
+  void setDesiredPump(uint8_t val);
+  void setCyclicEngaged(bool _CyclicEngaged);
+  float getFuelGauge();
+  uint8_t getDesiredTemp();
+  uint8_t getDesiredPump();
+  bool getCyclicEngaged();
 };
 
 extern CClock Clock;
+extern CRTC_Store RTC_Store;
 
 #endif // __BTC_TIMERS_H__

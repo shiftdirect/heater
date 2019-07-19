@@ -231,7 +231,7 @@ CBasicScreen::keyHandler(uint8_t event)
     if(!_showModeTime) {
       // release DOWN key to reduce set demand, provided we are not in mode select
       if(event & key_Down) {
-        if(reqTempDelta(-1)) {
+        if(reqDemandDelta(-1)) {
           _showSetModeTime = millis() + 2000;
           _feedbackType = 0;
           _ScreenManager.reqUpdate();
@@ -241,7 +241,7 @@ CBasicScreen::keyHandler(uint8_t event)
       }
       // release UP key to increase set demand, provided we are not in mode select
       if(event & key_Up) {
-        if(reqTempDelta(+1)) {
+        if(reqDemandDelta(+1)) {
           _showSetModeTime = millis() + 2000;
           _feedbackType = 0;
           _ScreenManager.reqUpdate();

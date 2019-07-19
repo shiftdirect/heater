@@ -251,11 +251,11 @@ CDetailedScreen::keyHandler(uint8_t event)
   if(event & keyReleased) {
     if(_keyRepeatCount == 0) {  // short Up press - lower target
       if(event & key_Up) {
-        if(reqTempDelta(+1))  _showTarget = millis() + 3500;
+        if(reqDemandDelta(+1))  _showTarget = millis() + 3500;
         else  _reqOEMWarning();
       }
       if(event & key_Down) {   // short Down press - lower target
-        if(reqTempDelta(-1))  _showTarget = millis() + 3500;
+        if(reqDemandDelta(-1))  _showTarget = millis() + 3500;
         else  _reqOEMWarning();
       }
       if(event & key_Centre) {  // short Centre press - show target

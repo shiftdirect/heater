@@ -183,10 +183,14 @@ bool bHasHtrData = false;
 
 // these variables will persist over a soft reboot.
 __NOINIT_ATTR bool bForceInit; // = false;
-__NOINIT_ATTR bool bUserON; // = false;
-__NOINIT_ATTR uint8_t demandDegC;
-__NOINIT_ATTR uint8_t demandPump;
+//__NOINIT_ATTR bool bUserON; // = false;
+//__NOINIT_ATTR uint8_t demandDegC;
+//__NOINIT_ATTR uint8_t demandPump;
+//uint8_t demandDegC;
+//uint8_t demandPump;
+//bool bCyclicEngaged;
 CFuelGauge FuelGauge; 
+CRTC_Store RTC_Store;
 
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
@@ -305,13 +309,11 @@ extern "C" unsigned long __wrap_millis() {
 void setup() {
 
   // ensure cyclic mode is disabled after power on
-  bool bPowerUpInit = false;
-  if(rtc_get_reset_reason(0) == 1/* || bForceInit*/) {
-    bPowerUpInit = true;
-    bForceInit = false;
-    bUserON = false;   
-    demandPump = demandDegC = 22;
-  }
+//  bool bPowerUpInit = false;
+//  if(rtc_get_reset_reason(0) == 1/* || bForceInit*/) {
+//    bPowerUpInit = true;
+//    bForceInit = false;
+//  }
 
   // initially, ensure the GPIO outputs are not activated during startup
   // (GPIO2 tends to be one with default chip startup)
@@ -334,7 +336,7 @@ void setup() {
   DebugPort.println("_______________________________________________________________");
   
   DebugPort.printf("Reset reason: core0:%d, core1:%d\r\n", rtc_get_reset_reason(0), rtc_get_reset_reason(0));
-  DebugPort.printf("Previous user ON = %d\r\n", bUserON);   // state flag required for cyclic mode to persist properly after a WD reboot :-)
+//  DebugPort.printf("Previous user ON = %d\r\n", bUserON);   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
   // initialise DS18B20 sensor interface
   TempSensor.begin(DS18B20_Pin);
@@ -383,6 +385,9 @@ void setup() {
   BootTime = Clock.get().secondstime();
   
   ScreenManager.begin(bNoClock);
+  if(!bNoClock && Clock.lostPower()) {
+    ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::SetClockUI);
+  }
 
 #if USE_WIFI == 1
 
@@ -442,9 +447,12 @@ void setup() {
   FilteredSamples.Fan.setAlpha(0.7);
   FilteredSamples.AmbientTemp.reset(-100.0);
 
-//  if(bPowerUpInit) {
-    FuelGauge.init();
-//  }
+  RTC_Store.begin();
+  FuelGauge.init(RTC_Store.getFuelGauge());
+//  demandDegC = RTC_Store.getDesiredTemp();
+//  demandPump = RTC_Store.getDesiredPump();
+//  bCyclicEngaged = RTC_Store.getCyclicEngaged();
+  DebugPort.printf("Previous cyclic active = %d\r\n", RTC_Store.getCyclicEngaged());   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
   delay(1000); // just to hold the splash screeen for while
 }
@@ -812,7 +820,7 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
 void manageCyclicMode()
 {
   const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
-  if(cyclic.Stop && bUserON) {   // cyclic mode enabled, and user has started heater
+  if(cyclic.Stop && RTC_Store.getCyclicEngaged()) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
     float deltaT = FilteredSamples.AmbientTemp.getValue() - getDemandDegC();
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
@@ -876,13 +884,13 @@ bool validateFrame(const CProtocol& frame, const char* name)
 void requestOn()
 {
   heaterOn();
-  bUserON = true;    // for cyclic mode
+  RTC_Store.setCyclicEngaged(true);    // for cyclic mode
 }
 
 void requestOff()
 {
   heaterOff();
-  bUserON = false;   // for cyclic mode
+  RTC_Store.setCyclicEngaged(false);   // for cyclic mode
 }
 
 void heaterOn() 
@@ -898,38 +906,42 @@ void heaterOff()
 }
 
 
-bool reqTemp(uint8_t newTemp, bool save)
+bool reqDemand(uint8_t newDemand, bool save)
 {
   if(bHasOEMController)
     return false;
 
   uint8_t max = DefaultBTCParams.getTemperature_Max();
   uint8_t min = DefaultBTCParams.getTemperature_Min();
-  if(newTemp >= max)
-    newTemp = max;
-  if(newTemp <= min)
-    newTemp = min;
+  if(newDemand >= max)
+    newDemand = max;
+  if(newDemand <= min)
+    newDemand = min;
   
   // set and save the demand to NV storage
   // note that we now maintain fixed Hz and Thermostat set points seperately
-  if(getThermostatModeActive())
-    demandDegC = newTemp;
-  else 
-    demandPump = newTemp;
+  if(getThermostatModeActive()) {
+    RTC_Store.setDesiredTemp(newDemand);
+  }
+  else {
+    RTC_Store.setDesiredPump(newDemand);
+  }
 
   ScreenManager.reqUpdate();
   return true;
 }
 
-bool reqTempDelta(int delta)
+bool reqDemandDelta(int delta)
 {
-  uint8_t newTemp;
-  if(getThermostatModeActive()) 
-    newTemp = demandDegC + delta;
-  else
-    newTemp = demandPump + delta;
+  uint8_t newDemand;
+  if(getThermostatModeActive()) {
+    newDemand = RTC_Store.getDesiredTemp() + delta;
+  }
+  else {
+    newDemand = RTC_Store.getDesiredPump() + delta;
+  }
 
-  return reqTemp(newTemp);
+  return reqDemand(newDemand);
 }
 
 bool reqThermoToggle()
@@ -997,7 +1009,7 @@ void forceBootInit()
 
 uint8_t getDemandDegC() 
 {
-  return demandDegC;
+  return RTC_Store.getDesiredTemp();
 }
 
 void  setDemandDegC(uint8_t val) 
@@ -1005,12 +1017,12 @@ void  setDemandDegC(uint8_t val)
   uint8_t max = DefaultBTCParams.getTemperature_Max();
   uint8_t min = DefaultBTCParams.getTemperature_Min();
   BOUNDSLIMIT(val, min, max);
-  demandDegC = val;
+  RTC_Store.setDesiredTemp(val);
 }
 
 uint8_t getDemandPump() 
 {
-  return demandPump;
+  return RTC_Store.getDesiredPump();
 }
 
 
@@ -1021,9 +1033,9 @@ float getTemperatureDesired()
   }
   else {
     if(getThermostatModeActive()) 
-      return demandDegC;
+      return RTC_Store.getDesiredTemp();
     else 
-      return demandPump;
+      return RTC_Store.getDesiredPump();
   }
 }
 
@@ -1273,7 +1285,7 @@ int getSmartError()
 
 bool isCyclicActive()
 {
-  return bUserON && NVstore.getUserSettings().cyclic.isEnabled();
+  return RTC_Store.getCyclicEngaged() && NVstore.getUserSettings().cyclic.isEnabled();
 }
 
 void setupGPIO()

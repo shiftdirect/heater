@@ -25,16 +25,13 @@
 #include <stdint.h>
 
 class CFuelGauge {
-  float _tank_mL;
+  float _pumpStrokes;
   unsigned long _lasttime;
   float _pumpCal;
-  struct {
-    unsigned long lastsave;
-    float storedval;
-  } record;
+  float _lastStoredVal;
 public:
   CFuelGauge();
-  void init();
+  void init(float fuelUsed = 0);
   void Integrate(float Hz);
   float Used_mL();
 };

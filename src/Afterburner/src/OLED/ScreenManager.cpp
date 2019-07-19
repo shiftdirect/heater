@@ -385,7 +385,7 @@ CScreenManager::checkUpdate()
     if(runState > 0 && prevRunState == 0) {
       // heater has started
       uint8_t userStartMenu = NVstore.getUserSettings().HomeMenu.onStart;
-      if(userStartMenu && userStartMenu <= 3) {  // allow user to override defualt screen
+      if(userStartMenu && userStartMenu <= 3) {  // allow user to override default screen
         userStartMenu--;
         DebugPort.print("Screen Manager: Heater start detected, switching to user preferred screen: "); 
         switch(userStartMenu) {
@@ -397,10 +397,10 @@ CScreenManager::checkUpdate()
         _enterScreen();
       }
     }
-    if(runState == 0 && prevRunState != 0) {
+    if(runState == 0 && prevRunState > 0) {
       // heater has stopped
       uint8_t userStopMenu = NVstore.getUserSettings().HomeMenu.onStop;
-      if(userStopMenu && userStopMenu <= 3) {  // allow user to override defualt screen
+      if(userStopMenu && userStopMenu <= 3) {  // allow user to override default screen
         userStopMenu--;
         DebugPort.print("Screen Manager: Heater stop detected, switching to user preferred screen: "); 
         switch(userStopMenu) {
@@ -544,6 +544,7 @@ CScreenManager::selectMenu(eUIMenuSets menuSet, int specific)
       // targetting a specific menu
       _subMenu = specific;
       UPPERLIMIT(_subMenu, _Screens[_menu].size()-1);  // check bounds!
+      DebugPort.printf("selectMenu %d %d\r\n", _menu, _subMenu);
     }
     else {
       // default sub menu behaviour
@@ -574,7 +575,7 @@ CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
   static long prevTime = millis();
 
   long tDelta = millis() - prevTime;
-  if(percent != prevPercent && tDelta > 500) {
+  if(percent != prevPercent/* && tDelta > 500*/) {
     prevTime = millis();
     _pDisplay->clearDisplay();
     _pDisplay->setCursor(64,22);
