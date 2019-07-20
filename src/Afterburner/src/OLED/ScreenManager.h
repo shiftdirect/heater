@@ -49,7 +49,7 @@ public:
   enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, CommsUI, GPIOInfoUI, SettingsUI };
   enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
-  enum eUITuningMenus { MixtureUI, HeaterSettingsUI };
+  enum eUITuningMenus { MixtureUI, HeaterSettingsUI, FuelCalUI };
   enum eUIUserSettingsMenus { GPIOUI, ExThermostatUI, VersionUI, HomeMenuUI, TimeIntervalsUI };
   enum eUIBranchMenus { SetClockUI, InheritSettingsUI, FontDumpUI };
 public:
@@ -66,6 +66,7 @@ public:
   void selectMenu(eUIMenuSets menuset, int specific = -1);   // use to select loop menus, including the root or branches
   void showRebootMsg(const char* content[2], long delayTime);
   void showOTAMessage(int percent, eOTAmodes updateType);
+  void bumpTimeout();
 };
 
 #endif // __SCREEN_MANAGER_H__

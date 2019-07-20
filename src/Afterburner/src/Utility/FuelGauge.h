@@ -32,9 +32,12 @@ class CFuelGauge {
 public:
   CFuelGauge();
   void init(float fuelUsed = 0);
+  void reset();
   void Integrate(float Hz);
-  float Used_mL();
+  float Used_ml();
+  float Used_strokes();
 };
 
+extern CFuelGauge FuelGauge;
 
 #endif

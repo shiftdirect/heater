@@ -43,6 +43,13 @@ CFuelGauge::init(float fuelUsed)
   _lastStoredVal = _pumpStrokes;
 }
 
+void 
+CFuelGauge::reset()
+{
+  _pumpStrokes = 0;
+  _lastStoredVal = _pumpStrokes;
+  RTC_Store.setFuelGauge(_pumpStrokes);      // uses RTC registers to store this
+}
 
 void 
 CFuelGauge::Integrate(float Hz)
@@ -64,7 +71,13 @@ CFuelGauge::Integrate(float Hz)
 }
 
 float 
-CFuelGauge::Used_mL()
+CFuelGauge::Used_ml()
 {
-  return _pumpStrokes * _pumpCal;   // strokes * mL / stroke
+  return _pumpStrokes * _pumpCal;   // strokes * millilitre / stroke
+}
+
+float 
+CFuelGauge::Used_strokes()
+{
+  return _pumpStrokes;   
 }

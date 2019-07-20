@@ -68,8 +68,8 @@ CSettingsScreen::show()
   
   CScreenHeader::show();
 
-  _display.writeFillRect(0, 16, 96, 12, WHITE);
-  _printInverted(3, 18, "Heater Settings", true);
+  _display.writeFillRect(0, 16, 84, 12, WHITE);
+  _printInverted(3, 18, "Heater Tuning", true);
 
   if(!CPasswordScreen::show()) {
 

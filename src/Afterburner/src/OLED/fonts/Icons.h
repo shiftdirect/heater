@@ -77,6 +77,7 @@ extern const BITMAP_INFO LargeTimerIconInfo;
 extern const BITMAP_INFO VerticalRepeatIconInfo;
 
 extern const BITMAP_INFO CrossLgIconInfo;
+extern const BITMAP_INFO CrossIconInfo;
 
 // Bitmap for open
 extern const BITMAP_INFO OpenIconInfo;
@@ -130,3 +131,9 @@ extern const BITMAP_INFO UpdateIconInfo;
 extern const BITMAP_INFO WWWIconInfo;
 
 extern const BITMAP_INFO BowserIconInfo;
+extern const BITMAP_INFO DegCIconInfo;
+extern const BITMAP_INFO DegFIconInfo;
+extern const BITMAP_INFO ThermostatDegCIconInfo;
+extern const BITMAP_INFO ThermostatDegFIconInfo;
+extern const BITMAP_INFO ThermostatHzIconInfo;
+extern const BITMAP_INFO resetIconInfo;

@@ -187,7 +187,7 @@ RTC_DS3231Ex::readData(uint8_t* pData, int len, int ofs) {
   Wire.endTransmission();
 }
 
-bool 
+void 
 RTC_DS3231Ex::resetLostPower() 
 {
   Wire.beginTransmission(DS3231_ADDRESS);

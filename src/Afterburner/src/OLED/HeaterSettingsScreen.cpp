@@ -24,6 +24,7 @@
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../Utility/macros.h"
+#include "../Utility/NVStorage.h"
 #include "../Protocol/Protocol.h"
 
 ///////////////////////////////////////////////////////////////////////////
@@ -243,6 +244,218 @@ CHeaterSettingsScreen::_adjust(int dir)
       break;
     case 3:   // system voltage
       _sysVoltage = (_sysVoltage == 12) ? 24 : 12;
+      break;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+CFuelCalScreen::CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+{
+  _initUI();
+  _mlPerStroke = 0.02;
+}
+
+void 
+CFuelCalScreen::onSelect()
+{
+  CPasswordScreen::onSelect();
+  _initUI();
+  _mlPerStroke = NVstore.getHeaterTuning().pumpCal;
+}
+
+void
+CFuelCalScreen::_initUI()
+{
+  _rowSel = 0;
+  _animateCount = 0;
+}
+
+bool 
+CFuelCalScreen::show()
+{
+  char msg[20];
+  _display.clearDisplay();
+
+  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+
+    if(_rowSel == 4) {
+      _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
+      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+    }
+    else {
+      int col = 80;
+      _printInverted(_display.xCentre(), 0, " Fuel Calibration ", true, eCentreJustify);
+      _printMenuText(col, Line1, "ml / stroke:", false, eRightJustify);
+      sprintf(msg, "%.03f", _mlPerStroke);
+      _printMenuText(col+1, Line1, msg, _rowSel == 1);
+      // navigation line
+      int yPos = 53;
+      int xPos = _display.xCentre();
+
+      switch(_rowSel) {
+        case 0:
+          _printMenuText(xPos, yPos, " \021     Exit     \020 ", true, eCentreJustify);
+          break;
+        default:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          _printMenuText(xPos, 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
+          _printMenuText(xPos, 56, "Save", false, eCentreJustify);
+          break;
+      }
+    }
+  }
+
+  return true;
+}
+
+
+bool 
+CFuelCalScreen::animate()
+{ 
+/*  char msg[16];
+
+  if(isPasswordBusy() || (_rowSel == 4)) {  // Password screen activity
+    _printMenuText(Column, Line2, "    ");
+    _printMenuText(Column, Line1, "    ");
+    if(_rowSel == 4)
+      _printMenuText(_display.xCentre(), 43, "Confirm save", false, eCentreJustify);
+  }
+  else {
+    _animateCount++;
+    WRAPUPPERLIMIT(_animateCount, 9, 0);
+
+    if(_rowSel == 1) {
+      _display.drawRect(Column-border, Line1-border, 34, 8+2*border, BLACK);
+      _display.drawRoundRect(Column-border, Line1-border, 34, 8+2*border, radius, WHITE);
+    }
+    else {
+      _printMenuText(Column, Line1, "     ");
+    }
+
+    if(_animateCount < 4) 
+      sprintf(msg, "PF-%d ", _glowDrive);
+    else
+      sprintf(msg, "(%dW)", plugPowers[_glowDrive-1]);
+    _printMenuText(Column, Line1, msg);
+
+    int xPos = Column;
+    _printMenuText(xPos, Line2, "    ", _rowSel == 2); // erase, but create selection loop
+    if(_animateCount < 4) {
+      sprintf(msg, "SN-%d", _fanSensor);
+      _printMenuText(Column, Line2, msg);
+    }
+    else {
+      sprintf(msg, "(\365%d)", _fanSensor);  // \365 is division character
+      _printMenuText(xPos, Line2, msg);  
+    }
+  }*/
+  return true;
+}
+
+
+bool 
+CFuelCalScreen::keyHandler(uint8_t event)
+{
+  sHeaterTuning tuning;
+
+  if(event & keyPressed) {
+    // press LEFT to select previous screen
+    if(event & key_Left) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.prevMenu();
+          break;
+        case 1:
+        case 2:
+        case 3:
+          _adjust(-1);
+          break;
+        case 4:
+          _rowSel = 0;   // abort save
+          break;
+      }
+    }
+    // press RIGHT to select next screen
+    if(event & key_Right) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.nextMenu();
+          break;
+        case 1:
+        case 2:
+        case 3:
+          _adjust(+1);
+          break;
+        case 4:
+          _rowSel = 0;   // abort save
+          break;
+      }
+    }
+    if(event & key_Down) {
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
+    }
+    // UP press
+    if(event & key_Up) {
+      switch(_rowSel) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          _rowSel++;
+          UPPERLIMIT(_rowSel, 3);
+          break;
+        case 4:    // confirmed save
+          _showStoringMessage();
+          tuning = NVstore.getHeaterTuning();
+          tuning.pumpCal = _mlPerStroke;
+          NVstore.setHeaterTuning(tuning);
+          saveNV();
+          _rowSel = 0;
+          break;
+      }
+    }
+    // CENTRE press
+    if(event & key_Centre) {
+      switch(_rowSel) {
+        case 0:
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
+          break;
+        case 1:
+        case 2:
+        case 3:
+          _rowSel = 4;
+          break;
+      }
+    }
+    _ScreenManager.reqUpdate();
+  }
+
+  return true;
+}
+
+void 
+CFuelCalScreen::_adjust(int dir)
+{
+  switch(_rowSel) {
+    case 1:   
+      _mlPerStroke += dir * 0.001;
+      break;
+    case 2:   
+      break;
+    case 3:   
       break;
   }
 }

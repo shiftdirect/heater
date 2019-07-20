@@ -29,8 +29,6 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/FuelGauge.h"
 
-extern CFuelGauge FuelGauge;
-
 
 #define MINIFONT miniFontInfo
 
@@ -135,7 +133,7 @@ CDetailedScreen::show()
   }
 
   if(!bGlowActive) {
-    showBowser(FuelGauge.Used_mL());
+    showBowser(FuelGauge.Used_ml());
   }
   showRunState(runstate, errstate);
   return true;

@@ -91,9 +91,19 @@ CScreen::_printMenuText(int x, int y, const char* str, bool selected, eJUSTIFY j
 void
 CScreen::_drawMenuSelection(CRect extents, const char* str, int border, int radius)
 {
-  _display.getTextExtents(str, extents);
-  extents.Expand(border);
-  _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
+  CRect resize(extents);
+  _display.getTextExtents(str, resize);
+//  resize.Expand(border);
+//  _display.drawRoundRect(resize.xPos, resize.yPos, resize.width, resize.height, radius, WHITE);
+  _drawMenuSelection(resize, border, radius);
+}
+
+void
+CScreen::_drawMenuSelection(const CRect& extents, int border, int radius)
+{
+  CRect resize(extents);
+  resize.Expand(border);
+  _display.drawRoundRect(resize.xPos, resize.yPos, resize.width, resize.height, radius, WHITE);
 }
 
 void
