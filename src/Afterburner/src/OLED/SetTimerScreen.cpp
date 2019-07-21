@@ -47,6 +47,7 @@ CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int
 void 
 CSetTimerScreen::onSelect()
 {
+  CScreenHeader::onSelect();
   _initUI();
   NVstore.getTimerInfo(_timerID, _timerInfo);
 }
@@ -62,7 +63,7 @@ CSetTimerScreen::_initUI()
 bool 
 CSetTimerScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
 
   char str[20];
   int xPos, yPos;

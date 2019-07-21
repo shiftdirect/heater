@@ -63,6 +63,7 @@ CScreen::show()
 void 
 CScreen::onSelect()
 {
+  _display.clearDisplay();
 }
 
 void

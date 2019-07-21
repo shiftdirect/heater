@@ -44,7 +44,8 @@ class CScreenHeader : public CScreen {
   sScreenholdoff _UpAnnotation;
   sScreenholdoff _DnAnnotation;
   bool _colon;
-  int  _animateCount;
+  uint8_t  _animateCount;
+  uint8_t  _batteryCount;
 protected:
   void showBTicon();
   void showWifiIcon();
@@ -53,7 +54,7 @@ protected:
   virtual void showTime();  // x location depends upon how many timers are active
 public:
   CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
-  bool show();
+  bool show(bool erase);
   bool animate();
 };
 

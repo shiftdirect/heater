@@ -34,7 +34,7 @@ public:
   void init(float fuelUsed = 0);
   void reset();
   void Integrate(float Hz);
-  float Used_ml();
+  float Used_mL();
   float Used_strokes();
 };
 

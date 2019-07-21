@@ -33,12 +33,15 @@ class CFuelMixtureScreen : public CPasswordScreen {
   uint16_t adjFan[2];
   int  _rowSel;
   int  _colSel;
+  int _animateCount;
   void _adjustSetting(int dir);
   void _initUI();
+  void _load();
 
 public:
   CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
   void onSelect();
 };

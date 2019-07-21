@@ -30,6 +30,7 @@
 #include "ClockScreen.h"
 #include "RebootScreen.h"
 #include "HeaterSettingsScreen.h"
+#include "FuelCalScreen.h"
 #include "SettingsScreen.h"
 #include "ThermostatModeScreen.h"
 #include "FontDumpScreen.h"

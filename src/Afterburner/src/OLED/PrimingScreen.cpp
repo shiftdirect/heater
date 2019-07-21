@@ -46,6 +46,7 @@ CPrimingScreen::CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr) : CSc
 void
 CPrimingScreen::onSelect()
 {
+  CScreenHeader::onSelect();
   _stopPump();
   _initUI();
 }
@@ -69,7 +70,7 @@ CPrimingScreen::_initUI()
 bool 
 CPrimingScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
   
   CRect extents;
 
@@ -200,7 +201,7 @@ CPrimingScreen::show()
   }
   else {
     char msg[16];
-    sprintf(msg, "%.02fL", FuelGauge.Used_ml() * 0.001);
+    sprintf(msg, "%.02fL", FuelGauge.Used_mL() * 0.001);
     _printMenuText(loc.xPos+1, midline+3, msg);
   }
 

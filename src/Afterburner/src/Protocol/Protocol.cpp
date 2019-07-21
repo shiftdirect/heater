@@ -368,7 +368,7 @@ const char* Errstates [] PROGMEM = {
   "Flame out",       // [9] E-08
   "Temp sense",      // [10] E-09
   "Ignition fail",   // [11] E-10          SmartError manufactured state - sensing runstate 2 -> >5
-  "Failed 1st ignition attempt",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
+  "Failed 1st ignite",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
   "Unknown error?"   // mystery code!
 };
 
@@ -385,7 +385,7 @@ const char* ErrstatesEx [] PROGMEM = {
   "E-08: Flame out",       // [9] E-08
   "E-09: Temp sense",      // [10] E-09
   "E-10: Ignition fail",   // [11] E-10  SmartError manufactured state - sensing runstate 2 -> >5
-  "E-11: Failed 1st ignition attempt",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
+  "E-11: Failed 1st ignite",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
   "Unknown error?"   // mystery code!
 };
 

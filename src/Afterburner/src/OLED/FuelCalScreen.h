@@ -2,8 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
- * Copyright (C) 2018  James Clark
+ * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +19,30 @@
  * 
  */
 
-#ifndef __MACROS_H__
-#define __MACROS_H__
+#ifndef __FUELCALSCREEN_H__
+#define __FUELCALSCREEN_H__
 
-#define LOWERLIMIT(A, B) { if((A) < (B)) (A) = (B); }
-#define UPPERLIMIT(A, B) { if((A) > (B)) (A) = (B); }
-#define WRAPUPPERLIMIT(A, B, C) { if((A) > (B)) (A) = (C); }
-#define WRAPLOWERLIMIT(A, B, C) { if((A) < (B)) (A) = (C); }    
-#define WRAPLIMITS(A, B, C) { if((A) < (B)) (A) = (C) ; if((A) > (C)) (A) = (B); }              
-#define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((TST) <= (MAX)))
-#define BOUNDSLIMIT(A, B, C) { if((A) < (B)) (A) = (B); if((A) > (C)) (A) = (C); }
+#include <stdint.h>
+#include "PasswordScreen.h"
+
+class C128x64_OLED;
+class CScreenManager;
+
+class CFuelCalScreen : public CPasswordScreen
+{
+  int _rowSel;
+  void _adjust(int dir);
+  float _mlPerStroke;
+  float _tOfs;
+  uint8_t _LVC;
+  int _animateCount;
+  void _initUI();
+public:
+  CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr);
+  bool show();
+  bool animate();
+  bool keyHandler(uint8_t event);
+  void onSelect();
+};
 
 #endif

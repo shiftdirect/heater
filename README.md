@@ -51,15 +51,15 @@ Working so far:
     Web browser upload new binary to controller (AP or STA mode)
     Direct discovery and download of updates from internet server (STA mode)
 * Factory default menu option
+* "Fuel gauge" - Integrates pump frequency, assumes a repeatable dose of fuel per pump stroke.
+* Low voltage cut out, definable threshold - auto adjusts for cable voltage drop during start
+* Temperature probe offset to correct adverse readings.
  
 
 To be implemented 
 --------------------------
 * 433MHz Rx stream, 433MHz Tx stream connections. This would allow external timer units for example, or analogue temperature demand (which is still only 1 degree resolution with standard heater thermostat).
-* Low voltage cut out
-* Temperature probe offset or mapping to correct adverse readings.
 * MQTT pub/sub 
-* "fuel gauge" - Integrate pump frequency, assuming a repeatable dose of fuel per pump cycle...
 * Regular Hot Burn cycle (DPF mode!)
 * Hour meter - run time, glow time
 * list under construction.....

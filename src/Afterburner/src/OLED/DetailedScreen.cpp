@@ -82,7 +82,7 @@ CDetailedScreen::CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 bool 
 CDetailedScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
 
   int runstate = getHeaterInfo().getRunStateEx();
   int errstate = getHeaterInfo().getErrState(); 
@@ -133,7 +133,7 @@ CDetailedScreen::show()
   }
 
   if(!bGlowActive) {
-    showBowser(FuelGauge.Used_ml());
+    showBowser(FuelGauge.Used_mL());
   }
   showRunState(runstate, errstate);
   return true;

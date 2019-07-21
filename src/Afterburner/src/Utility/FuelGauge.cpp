@@ -71,7 +71,7 @@ CFuelGauge::Integrate(float Hz)
 }
 
 float 
-CFuelGauge::Used_ml()
+CFuelGauge::Used_mL()
 {
   return _pumpStrokes * _pumpCal;   // strokes * millilitre / stroke
 }

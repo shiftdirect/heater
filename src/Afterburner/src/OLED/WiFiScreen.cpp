@@ -48,6 +48,7 @@ CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHe
 void
 CWiFiScreen::onSelect()
 {
+  CScreenHeader::onSelect();
   _initUI();
 }
 
@@ -87,7 +88,7 @@ CWiFiScreen::_initUI()
 bool 
 CWiFiScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
   
   int yPos = 18;
     

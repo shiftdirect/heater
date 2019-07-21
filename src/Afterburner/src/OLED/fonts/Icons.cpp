@@ -375,6 +375,25 @@ const uint8_t FuelIcon [] PROGMEM = {
 };
 const BITMAP_INFO FuelIconInfo(7, 12, FuelIcon);
 
+// 
+//  Image data for FuelIconSmall
+// 
+
+const uint8_t PROGMEM FuelIconSmall[]  =
+{
+	0x20, //   #  
+	0x20, //   #  
+	0x70, //  ### 
+	0x70, //  ### 
+	0xF8, // #####
+	0xF8, // #####
+	0xF8, // #####
+	0xF8, // #####
+	0x70, //  ### 
+};
+const BITMAP_INFO FuelIconSmallInfo(5, 9, FuelIconSmall);
+
+
 // 'Target', 13x13px
 const uint8_t TargetIcon [] PROGMEM = {
   0x0f, 0x80, //     #####
@@ -1082,4 +1101,26 @@ const uint8_t PROGMEM resetIcon[]  =
 	0x1E, 0x00, 0x00, //    ####          
 };
 const BITMAP_INFO resetIconInfo(17, 10, resetIcon);
+
+// 
+//  Image data for miniThermo
+// 
+
+const uint8_t PROGMEM miniThermoIcon[]  =
+{
+	0x30, //   ##  
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x78, //  #### 
+	0xFC, // ######
+	0xFC, // ######
+	0xFC, // ######
+	0x78, //  #### 
+};
+const BITMAP_INFO miniThermoIconInfo(6, 13, miniThermoIcon);
 

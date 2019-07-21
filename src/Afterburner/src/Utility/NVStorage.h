@@ -37,10 +37,12 @@ struct sHeaterTuning : public CESP32_NVStorage {
   uint8_t   Pmax;
   uint16_t  Fmin;
   uint16_t  Fmax;
-  uint8_t   sysVoltage;
+  uint8_t   sysVoltage;  // x10 
   uint8_t   fanSensor;
   uint8_t   glowDrive;
+  uint8_t   lowVolts;    // x10
   float     pumpCal;
+  float     tempOfs;
 
   bool valid() {
     bool retval = true;
@@ -52,6 +54,11 @@ struct sHeaterTuning : public CESP32_NVStorage {
     retval &= fanSensor == 1 || fanSensor == 2;
     retval &= INBOUNDS(glowDrive, 1, 6);
     retval &= INBOUNDS(pumpCal, 0.001, 1.0);
+    if(sysVoltage == 120)
+      retval &= INBOUNDS(lowVolts, 100, 125);
+    else 
+      retval &= INBOUNDS(lowVolts, 200, 250);
+    retval &= INBOUNDS(tempOfs, -10, +10);
     return retval;
   };
   void init() {
@@ -63,6 +70,8 @@ struct sHeaterTuning : public CESP32_NVStorage {
     fanSensor = 1;
     glowDrive = 5;
     pumpCal = 0.02;
+    lowVolts = 115;
+    tempOfs = 0;
   };
   void load();
   void save();
@@ -75,6 +84,8 @@ struct sHeaterTuning : public CESP32_NVStorage {
     fanSensor = rhs.fanSensor;
     glowDrive = rhs.glowDrive;
     pumpCal = rhs.pumpCal;
+    lowVolts = rhs.lowVolts;
+    tempOfs = rhs.tempOfs;
     return *this;
   }
   float getPmin() const;
@@ -82,6 +93,7 @@ struct sHeaterTuning : public CESP32_NVStorage {
   void setPmin(float val);
   void setPmax(float val);
   void setSysVoltage(float val);
+  float getLVC() const;
 };
 
 struct sHomeMenuActions {

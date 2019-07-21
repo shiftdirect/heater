@@ -66,7 +66,7 @@ CSettingsScreen::show()
 {
   char str[16];
   
-  CScreenHeader::show();
+  CScreenHeader::show(false);
 
   _display.writeFillRect(0, 16, 84, 12, WHITE);
   _printInverted(3, 18, "Heater Tuning", true);

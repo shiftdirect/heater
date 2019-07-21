@@ -57,7 +57,7 @@ CInheritSettingsScreen::_initUI()
 bool 
 CInheritSettingsScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
 
   _display.writeFillRect(0, 16, 96, 12, WHITE);
   _printInverted(3, 18, "Inherit Settings", true);
