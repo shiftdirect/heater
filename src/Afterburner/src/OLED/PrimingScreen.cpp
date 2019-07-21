@@ -72,6 +72,8 @@ CPrimingScreen::show()
 {
   CScreenHeader::show(false);
   
+  _display.fillRect(0, 15, 100, 3, BLACK);
+
   CRect extents;
 
   int yPos = 53;
@@ -104,7 +106,7 @@ CPrimingScreen::show()
   int topline = 19;
   int midline = 29;
   int botline = 35;
-//  int xPos = border;
+
   CRect loc;
   loc.height = ThermostatDegCIconInfo.height;
   loc.width = ThermostatDegCIconInfo.width;
@@ -143,9 +145,7 @@ CPrimingScreen::show()
   }
 
   // fuel pump priming menu
-  loc.xPos = 67;
-//  yPos = 16;
-//  _printMenuText(border, yPos, "Pump");
+  loc.xPos = 66;
   loc.width = BowserIconInfo.width;
   loc.height = BowserIconInfo.height;
   _drawBitmap(loc.xPos, midline, BowserIconInfo);

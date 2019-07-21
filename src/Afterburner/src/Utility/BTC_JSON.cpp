@@ -290,14 +290,14 @@ void interpretJsonCommand(char* pLine)
     else if(strcmp("LowVoltCutout", it->key) == 0) {
       float fCal = it->value.as<float>();
       if(fCal != 0) {
-        bool bOK = false;
-        if(NVstore.getHeaterTuning().sysVoltage == 120)
-          bOK = INBOUNDS(fCal, 10.0, 12.5);
-        else
-          bOK = INBOUNDS(fCal, 20.0, 25.0);
+         bool bOK = false;
+         if(NVstore.getHeaterTuning().sysVoltage == 120)
+           bOK = INBOUNDS(fCal, 10.0, 12.5);
+         else
+           bOK = INBOUNDS(fCal, 20.0, 25.0);
         if(bOK) {
           sHeaterTuning ht = NVstore.getHeaterTuning();
-          ht.lowVolts = fCal;
+          ht.lowVolts = uint8_t(fCal * 10);
           NVstore.setHeaterTuning(ht);
         }
       }
@@ -380,7 +380,7 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root);               // running count of pump strokes
   bSend |= moderator.addJson("PumpCal", NVstore.getHeaterTuning().pumpCal, root);        // mL/stroke
   bSend |= moderator.addJson("TempOffset", NVstore.getHeaterTuning().tempOfs, root);     // degC offset
-  bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().lowVolts, root); // low volatge cutout
+  bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low volatge cutout
 
   if(bSend) {
 		root.printTo(opStr, len);
