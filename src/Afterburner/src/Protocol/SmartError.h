@@ -31,6 +31,7 @@ public:
   void inhibit();
   void monitor(const CProtocol& heaterFrame);
   void monitor(uint8_t runstate);
+  bool checkVolts(float volts, float plugI);
   uint8_t getError();
 };
 

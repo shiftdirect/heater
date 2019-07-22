@@ -43,6 +43,7 @@ CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 void
 CSetClockScreen::onSelect()
 {
+  CScreenHeader::onSelect();
   _initUI();
 }
 
@@ -67,7 +68,7 @@ CSetClockScreen::show()
   if(deltaT >= 0) {
     _nextT += 1000;
 
-    CScreenHeader::show();
+    CScreenHeader::show(false);
 
     char str[16];
     int xPos, yPos;

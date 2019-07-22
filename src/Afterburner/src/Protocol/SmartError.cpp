@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,10 @@
 
 #include "SmartError.h"
 #include "TxManage.h"
+#include "../Utility/helpers.h"
+#include "../Utility/macros.h"
+#include "../Utility/NVStorage.h"
+#include "../Utility/DataFilter.h"
 
 CSmartError::CSmartError()
 {
@@ -83,12 +87,12 @@ CSmartError::monitor(uint8_t newRunState)
       else if(newRunState > 5) {
         // transitioned from preheat to post glow
         // - second ignition attempt failed, heater is shutting down
-        m_Error = 11;
+        m_Error = 11;   // +1 over displayed error code
       }
       else if(newRunState == 3) {
         // transitioned from preheat to retry 
         // - first ignition attempt failed, heater will retry
-        m_Error = 12;
+        m_Error = 12;   // +1 over displayed error code
       }
     }
   }
@@ -106,7 +110,24 @@ CSmartError::monitor(uint8_t newRunState)
     }
   }
 
-  m_prevRunState = newRunState;
+   m_prevRunState = newRunState;
+}
+
+bool
+CSmartError::checkVolts(float ipVolts, float glowI)
+{
+ // check for low voltage
+ // values here are x10 integers
+ if(NVstore.getHeaterTuning().lowVolts) {   // only if enabled
+    float cableComp = glowI * 0.1;             // allow 1V drop for 10A current (bit naive but better than no compensation)
+    float Thresh = NVstore.getHeaterTuning().getLVC() - cableComp;  // NVstore
+    if(ipVolts < Thresh) {
+      m_Error = 2;     // +1 over displayed error code
+      requestOff();
+      return false;
+    }
+  }
+  return true;
 }
 
 // return our smart error, if it exists, as the registered code

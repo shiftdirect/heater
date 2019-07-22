@@ -375,6 +375,25 @@ const uint8_t FuelIcon [] PROGMEM = {
 };
 const BITMAP_INFO FuelIconInfo(7, 12, FuelIcon);
 
+// 
+//  Image data for FuelIconSmall
+// 
+
+const uint8_t PROGMEM FuelIconSmall[]  =
+{
+	0x20, //   #  
+	0x20, //   #  
+	0x70, //  ### 
+	0x70, //  ### 
+	0xF8, // #####
+	0xF8, // #####
+	0xF8, // #####
+	0xF8, // #####
+	0x70, //  ### 
+};
+const BITMAP_INFO FuelIconSmallInfo(5, 9, FuelIconSmall);
+
+
 // 'Target', 13x13px
 const uint8_t TargetIcon [] PROGMEM = {
   0x0f, 0x80, //     #####
@@ -578,6 +597,7 @@ const uint8_t PROGMEM CrossIcon[]  =
   0x50,   //  # # 
   0x88,   // #   #
 };
+const BITMAP_INFO CrossIconInfo(5, 5, CrossIcon);
 
 const uint8_t PROGMEM TickIcon[]  =
 {
@@ -961,7 +981,146 @@ const uint8_t PROGMEM bowserIcon[]  =
 	0x7E, 0x00, //  ######   
 	0xFF, 0x00, // ########  
 };
-
 const BITMAP_INFO BowserIconInfo(10, 12, bowserIcon);
 
+
+// 
+//  Image data for degC
+// 
+const uint8_t PROGMEM degCIcon[]  =
+{
+	0x07, 0x00, 0x00, //      ###                
+	0x18, 0xC1, 0x8E, //    ##   ##     ##   ### 
+	0x27, 0x22, 0x51, //   #  ###  #   #  # #   #
+	0x4F, 0x92, 0x50, //  #  #####  #  #  # #    
+	0x8F, 0x89, 0x90, // #   #####   #  ##  #    
+	0x4F, 0x90, 0x10, //  #  #####  #       #    
+	0x27, 0x20, 0x11, //   #  ###  #        #   #
+	0x18, 0xC0, 0x0E, //    ##   ##          ### 
+	0x07, 0x00, 0x00, //      ###                
+};
+const BITMAP_INFO DegCIconInfo(23, 9, degCIcon);
+
+const uint8_t PROGMEM degFIcon[] =
+{
+	0x07, 0x00, 0x00, //      ###               
+	0x18, 0xC1, 0x9E, //    ##   ##     ##  ####
+	0x27, 0x22, 0x50, //   #  ###  #   #  # #   
+	0x4F, 0x92, 0x50, //  #  #####  #  #  # #   
+	0x8F, 0x89, 0x9C, // #   #####   #  ##  ### 
+	0x4F, 0x90, 0x10, //  #  #####  #       #   
+	0x27, 0x20, 0x10, //   #  ###  #        #   
+	0x18, 0xC0, 0x10, //    ##   ##         #   
+	0x07, 0x00, 0x00, //      ###               
+};
+const BITMAP_INFO DegFIconInfo(23, 9, degFIcon);
+
+// 
+//  Image data for thermostatC
+// 
+
+const uint8_t PROGMEM thermostatDegCIcon[] =
+{
+	0x7F, 0xFF, 0xFC, //  ##################### 
+	0xFF, 0xFF, 0xFE, // #######################
+	0xE0, 0x07, 0xDE, // ###          ##### ####
+	0xCC, 0x73, 0x8E, // ##  ##   ###  ###   ###
+	0xD2, 0x8B, 0x06, // ## #  # #   # ##     ##
+	0xD2, 0x83, 0xFE, // ## #  # #     #########
+	0xCC, 0x83, 0xFE, // ##  ##  #     #########
+	0xC0, 0x83, 0x06, // ##      #     ##     ##
+	0xC0, 0x8B, 0x8E, // ##      #   # ###   ###
+	0xC0, 0x73, 0xDE, // ##       ###  #### ####
+	0xE0, 0x07, 0xFE, // ###          ##########
+	0xFF, 0xFF, 0xFE, // #######################
+	0x7F, 0xFF, 0xFC, //  ##################### 
+};
+const BITMAP_INFO ThermostatDegCIconInfo(23, 13, thermostatDegCIcon);
+
+
+// 
+//  Image data for thermostatDegF
+// 
+
+const uint8_t PROGMEM thermostatDegFIcon[] =
+{
+	0x7F, 0xFF, 0xFC, //  ##################### 
+	0xFF, 0xFF, 0xFE, // #######################
+	0xE0, 0x07, 0xDE, // ###          ##### ####
+	0xCC, 0xF3, 0x8E, // ##  ##  ####  ###   ###
+	0xD2, 0x83, 0x06, // ## #  # #     ##     ##
+	0xD2, 0x83, 0xFE, // ## #  # #     #########
+	0xCC, 0xE3, 0xFE, // ##  ##  ###   #########
+	0xC0, 0x83, 0x06, // ##      #     ##     ##
+	0xC0, 0x83, 0x8E, // ##      #     ###   ###
+	0xC0, 0x83, 0xDE, // ##      #     #### ####
+	0xE0, 0x07, 0xFE, // ###          ##########
+	0xFF, 0xFF, 0xFE, // #######################
+	0x7F, 0xFF, 0xFC, //  ##################### 
+};
+const BITMAP_INFO ThermostatDegFIconInfo(23, 13, thermostatDegFIcon);
+
+// 
+//  Image data for thermostatHz
+// 
+
+const uint8_t PROGMEM thermostatHzIcon[]  =
+{
+	0x7F, 0xFF, 0xFC, //  ##################### 
+	0xFF, 0xFF, 0xFE, // #######################
+	0xE0, 0x07, 0xDE, // ###          ##### ####
+	0xC9, 0x03, 0x8E, // ##  #  #      ###   ###
+	0xC9, 0x03, 0x06, // ##  #  #      ##     ##
+	0xC9, 0x73, 0xFE, // ##  #  # ###  #########
+	0xCF, 0x13, 0xFE, // ##  ####   #  #########
+	0xC9, 0x23, 0x06, // ##  #  #  #   ##     ##
+	0xC9, 0x43, 0x8E, // ##  #  # #    ###   ###
+	0xC9, 0x73, 0xDE, // ##  #  # ###  #### ####
+	0xE0, 0x07, 0xFE, // ###          ##########
+	0xFF, 0xFF, 0xFE, // #######################
+	0x7F, 0xFF, 0xFC, //  ##################### 
+};
+const BITMAP_INFO ThermostatHzIconInfo(23, 13, thermostatHzIcon);
+
+
+// 
+//  Image data for reset
+// 
+
+const uint8_t PROGMEM resetIcon[]  =
+{
+	0x9E, 0x00, 0x00, // #  ####          
+	0xA1, 0x07, 0x00, // # #    #     ### 
+	0xC0, 0x88, 0x80, // ##      #   #   #
+	0xF0, 0x49, 0x80, // ####     #  #  ##
+	0x00, 0x4A, 0x80, //          #  # # #
+	0x00, 0x4C, 0x80, //          #  ##  #
+	0x00, 0x48, 0x80, //          #  #   #
+	0x40, 0x87, 0x00, //  #      #    ### 
+	0x21, 0x00, 0x00, //   #    #         
+	0x1E, 0x00, 0x00, //    ####          
+};
+const BITMAP_INFO resetIconInfo(17, 10, resetIcon);
+
+// 
+//  Image data for miniThermo
+// 
+
+const uint8_t PROGMEM miniThermoIcon[]  =
+{
+	0x30, //   ##  
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x48, //  #  # 
+	0x78, //  #### 
+	0xFC, // ######
+	0xFC, // ######
+	0xFC, // ######
+	0x78, //  #### 
+};
+const BITMAP_INFO miniThermoIconInfo(6, 13, miniThermoIcon);
 

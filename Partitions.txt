@@ -1,0 +1,10 @@
+
+        PLATFORMIO  MIN_SPIFFS PARTITION                   ARDUINO  MIN_SPIFFS PARTITION
+
+        # Name,   Type, SubType, Offset,  Size, Flags      # Name,   Type, SubType, Offset,  Size, Flags
+Same    nvs,      data, nvs,     0x9000,  0x5000,          nvs,      data, nvs,     0x9000,  0x5000,
+Same    otadata,  data, ota,     0xe000,  0x2000,          otadata,  data, ota,     0xe000,  0x2000, 
+Same    app0,     app,  ota_0,   0x10000, 0x1E0000,        app0,     app,  ota_0,   0x10000, 0x1E0000,
+Same    app1,     app,  ota_1,   0x1F0000,0x1E0000,        app1,     app,  ota_1,   0x1F0000,0x1E0000,
+Diff    eeprom,   data, 0x99,    0x3D0000,0x1000,          spiffs,   data, spiffs,  0x3D0000,0x30000,      
+Diff    spiffs,   data, spiffs,  0x3D1000,0x2F000,

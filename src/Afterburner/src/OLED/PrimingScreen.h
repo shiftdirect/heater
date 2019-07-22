@@ -31,7 +31,7 @@ class CScreenManager;
 class CPrimingScreen : public CScreenHeader {
   unsigned long _PrimeStop;
   unsigned long _PrimeCheck;
-  int _rowSel;
+  int _paramSel;
   int _colSel;
   void _stopPump();
   void _initUI();

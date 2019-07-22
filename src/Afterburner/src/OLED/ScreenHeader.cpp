@@ -31,6 +31,8 @@
 #include "fonts/Icons.h"
 #include "fonts/MiniFont.h"
 #include "../RTC/TimerManager.h"
+#include "../Protocol/SmartError.h"
+#include "../Utility/DataFilter.h"
 
 
 #define MINIFONT miniFontInfo
@@ -65,9 +67,15 @@ CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(
 }
 
 bool 
-CScreenHeader::show()
+CScreenHeader::show(bool erase)
 {
-  _display.clearDisplay();
+  if(erase)
+    _display.clearDisplay();                  // erase everything
+  else {
+    _display.fillRect(0, 17, 128, 47, BLACK); // only erase below the header
+    _display.fillRect(119, 0, 9, 17, BLACK); // erase top of body thermo
+    _display.fillRect(0, 0, 9, 17, BLACK);   // erase top of ambient thermo
+  }
 
   // standard header items
   // Bluetooth
@@ -75,8 +83,7 @@ CScreenHeader::show()
 
   // WiFi icon is updated in animate()
 
-  // battery
-  showBatteryIcon(getBatteryVoltage());
+  // Battery is updated in animate
 
   // clock
   showTime();
@@ -104,7 +111,9 @@ CScreenHeader::animate()
   // animate timer icon, 
   // inserting an update icon if new firmware available from internet web server
   _animateCount++;
-  WRAPUPPERLIMIT(_animateCount, 10, 0);
+  _batteryCount++;
+  WRAPUPPERLIMIT(_animateCount, 9, 0);
+  WRAPUPPERLIMIT(_batteryCount, 5, 0);
   if(isUpdateAvailable(true)) {
     int xPos = X_TIMER_ICON - 3;   
     int yPos = Y_TIMER_ICON;
@@ -122,7 +131,22 @@ CScreenHeader::animate()
     }
   }
   else {
+    int xPos = X_BATT_ICON;   
+    int yPos = Y_BATT_ICON;
     showTimers();
+    switch(_batteryCount) {
+      case 3:
+        if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue())) {
+          showBatteryIcon(getBatteryVoltage(true));
+        }
+        else {
+          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
+        }
+        break;
+      case 0:
+        showBatteryIcon(getBatteryVoltage(true));
+        break;
+    }
   }
 
   showWifiIcon();
@@ -285,6 +309,7 @@ CScreenHeader::showTime()
     int xPos = X_WIFI_ICON + WifiIconInfo.width + WifiInIconInfo.width;  // rhs of wifi conglomeration
     if(isWifiAP())  xPos += 4;                             // add more if an Access Point
     
+    _display.fillRect(xPos - 15, Y_CLOCK, 30, arial_8ptFontInfo.nBitsPerLine, BLACK);
     _printMenuText(X_CLOCK, Y_CLOCK, msg);
   }
 }

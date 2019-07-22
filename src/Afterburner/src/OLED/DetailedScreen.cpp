@@ -29,8 +29,6 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/FuelGauge.h"
 
-extern CFuelGauge FuelGauge;
-
 
 #define MINIFONT miniFontInfo
 
@@ -84,7 +82,7 @@ CDetailedScreen::CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 bool 
 CDetailedScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
 
   int runstate = getHeaterInfo().getRunStateEx();
   int errstate = getHeaterInfo().getErrState(); 

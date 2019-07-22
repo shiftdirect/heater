@@ -23,6 +23,10 @@
 #include "KeyPad.h"
 #include "../Utility/NVStorage.h"
 #include "../Protocol/Protocol.h"
+#include "fonts/Icons.h"
+#include "../RTC/Clock.h"
+#include "../Utility/FuelGauge.h"
+
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -42,6 +46,7 @@ CPrimingScreen::CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr) : CSc
 void
 CPrimingScreen::onSelect()
 {
+  CScreenHeader::onSelect();
   _stopPump();
   _initUI();
 }
@@ -58,92 +63,146 @@ CPrimingScreen::_initUI()
 {
   _PrimeStop = 0;
   _PrimeCheck = 0;
-  _rowSel = 0;
+  _paramSel = 0;
   _colSel = 0;
 }
 
 bool 
 CPrimingScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
   
+  _display.fillRect(0, 15, 100, 3, BLACK);
+
   CRect extents;
 
   int yPos = 53;
   // show next/prev menu navigation line
-  switch(_rowSel) {
+  switch(_paramSel) {
     case 0:
-      _printMenuText(_display.xCentre(), yPos, " \021    \030Edit    \020 ", _rowSel == 0, eCentreJustify);
+      _printMenuText(_display.xCentre(), yPos, " \021    \030Edit    \020 ", _paramSel == 0, eCentreJustify);
       break;
     case 1:
     case 2:
       _display.drawFastHLine(0, 53, 128, WHITE);
-      _printMenuText(_display.xCentre(), 57, "\030\031 Sel       \033\032 Adj", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 57, "\030\031 Sel      \033\032 Param", false, eCentreJustify);
       break;
     case 3:
       _display.drawFastHLine(0, 53, 128, WHITE);
-      if(_colSel == 2) {
-        _printMenuText(_display.xCentre(), 57, "\033\030\031 Stop", false, eCentreJustify);
-      }
-      else {
-        _printMenuText(_display.xCentre(), 57, "\032 Start     \031 Sel", false, eCentreJustify);
+      switch(_colSel) {
+        case 1: 
+          _printMenuText(_display.xCentre(), 57, "\033\030\031\032 Stop", false, eCentreJustify);
+          break;
+        case 0:
+          _printMenuText(_display.xCentre(), 57, "\030 Start     \031 Sel", false, eCentreJustify);
+          break;
+        case -1:
+          _printMenuText(_display.xCentre(), 57, "\030 Sel       Zero", false, eCentreJustify);
+          break;
       }
       break;
   }
 
-  yPos = 40;
-  if(_rowSel == 1) {
+  int topline = 19;
+  int midline = 29;
+  int botline = 35;
+
+  CRect loc;
+  loc.height = ThermostatDegCIconInfo.height;
+  loc.width = ThermostatDegCIconInfo.width;
+  loc.xPos = border;
+  if(_paramSel == 1) {
     // follow user desired setting, heater info is laggy
-    _printMenuText(border, yPos, "Thermostat", _colSel == 0);
-    _printMenuText(_display.width()-border, yPos, "Fixed Hz", _colSel == 1, eRightJustify);
+    if(NVstore.getUserSettings().degF)
+      _drawBitmap(loc.xPos, topline-1, ThermostatDegFIconInfo);
+    else
+      _drawBitmap(loc.xPos, topline-1, ThermostatDegCIconInfo);
+    _drawBitmap(loc.xPos, botline+1, ThermostatHzIconInfo);
+    loc.yPos = (_colSel == 0) ? topline-1 : botline+1;
+    _drawMenuSelection(loc, border, radius);
   }
   else {
     // follow actual heater settings
-    // int col = getHeaterInfo().isThermostat() ? 0 : 1;              
-    int col = getThermostatModeActive() ? 0 : 1;
-    _printInverted(border, yPos, "Thermostat", col == 0);
-    _printInverted(_display.width()-border, yPos, "Fixed Hz", col == 1, eRightJustify);
+    if(getThermostatModeActive()) {
+      _drawBitmap(loc.xPos, midline, NVstore.getUserSettings().degF ? ThermostatDegFIconInfo : ThermostatDegCIconInfo);
+    }
+    else {
+      _drawBitmap(loc.xPos, midline, ThermostatHzIconInfo);
+    }
   }
-  yPos = 28;
-  if(_rowSel == 2) {
-    _printMenuText(border, yPos, "degC", _colSel == 0);
-    _printMenuText(_display.width()-border, yPos, "degF", _colSel == 1, eRightJustify);
+
+  loc.height = DegCIconInfo.height;
+  loc.width = DegCIconInfo.width;
+  loc.xPos = 35;
+  if(_paramSel == 2) {
+    loc.yPos = (_colSel == 0) ? topline : botline;
+    _drawMenuSelection(loc, border, radius);
+    _drawBitmap(loc.xPos, topline, DegCIconInfo);
+    _drawBitmap(loc.xPos, botline, DegFIconInfo);
   }
   else {
-    int col = NVstore.getUserSettings().degF ? 1 : 0;
-    _printInverted(border, yPos, "degC", col == 0);
-    _printInverted(_display.width()-border, yPos, "degF", col == 1, eRightJustify);
+    _drawBitmap(loc.xPos, midline, NVstore.getUserSettings().degF ? DegFIconInfo : DegCIconInfo);
   }
 
   // fuel pump priming menu
-  yPos = 16;
-  _printMenuText(border, yPos, "Pump");
-  if(_rowSel == 3) {
-    _printMenuText(40, yPos, "OFF", _colSel == 1);
-    if(_colSel != 2) {
-      if(!getHeaterInfo().getRunState()) {                    // prevent option if heater is running
-        _printMenuText(70, yPos, "ON");  // becomes Hz when actually priming 
+  loc.xPos = 66;
+  loc.width = BowserIconInfo.width;
+  loc.height = BowserIconInfo.height;
+  _drawBitmap(loc.xPos, midline, BowserIconInfo);
+  loc.xPos = 81;
+  if(_paramSel == 3) {
+    _drawBitmap(loc.xPos, topline, FuelIconInfo);
+    _drawBitmap(loc.xPos, botline, resetIconInfo);
+
+    if(_colSel == -1) {
+      loc.yPos = botline;
+      loc.width = resetIconInfo.width;
+      loc.height = resetIconInfo.height;
+      _drawMenuSelection(loc, border, radius);
+    }
+
+    loc.yPos = _colSel == -1 ? botline : topline;
+    loc.width = FuelIconInfo.width + StartIconInfo.width + 2;
+    loc.height = FuelIconInfo.height;
+    if(_colSel == 0) {
+      _drawMenuSelection(loc, border, radius);
+    }
+    loc.xPos += FuelIconInfo.width + 2;
+    if(_colSel != 1) {                                    // only show start options if not priming already  
+      if(getHeaterInfo().getRunState() == 0) {            // prevent priming option if heater is running
+        _drawBitmap(loc.xPos, topline+2, StartIconInfo);  // becomes Hz when actually priming 
+      }
+      else {
+        _drawBitmap(loc.xPos, topline, CrossIconInfo);
       }
     }
-    else {
+    if(_colSel == 1) {
       float pumpHz = getHeaterInfo().getPump_Actual();
       // recognise if heater has stopped pump, after an initial holdoff upon first starting
       long tDelta = millis() - _PrimeCheck;
       if(_PrimeCheck && tDelta > 0 && pumpHz < 0.1) {
         _stopPump();
+        _paramSel = _colSel = 0;
       }
       // test if time is up, stop priming if so
       tDelta = millis() - _PrimeStop;
       if(_PrimeStop && tDelta > 0) {
         _stopPump();
+        _paramSel = _colSel = 0;
       }
 
       if(_PrimeStop) {
         char msg[16];
         sprintf(msg, "%.1fHz", pumpHz);
-        _printMenuText(70, yPos, msg, true);
+        _printMenuText(loc.xPos+1+border, topline+3, msg, true);
+        _ScreenManager.bumpTimeout();  // don't allow menu timeouts whilst priming is active
       }
     }
+  }
+  else {
+    char msg[16];
+    sprintf(msg, "%.02fL", FuelGauge.Used_mL() * 0.001);
+    _printMenuText(loc.xPos+1, midline+3, msg);
   }
 
   return true;
@@ -157,47 +216,46 @@ CPrimingScreen::keyHandler(uint8_t event)
   if(event & keyPressed) {
     // press LEFT 
     if(event & key_Left) {
-      switch(_rowSel) {
+      switch(_paramSel) {
         case 0: 
           _ScreenManager.prevMenu(); 
           break;
-        case 1: 
-          _colSel = 0; 
-          setThermostatMode(1);
-          saveNV();
+        default:
+          _paramSel--;
+          LOWERLIMIT(_paramSel, 0);
+          _colSel = 0;
+          switch(_paramSel) {
+            case 1:
+              _colSel = getThermostatModeActive() ? 0 : 1;              
+              break;
+            case 2:
+              _colSel = NVstore.getUserSettings().degF ? 1 : 0;
+              break;
+          }
           break;
-        case 2: 
-          _colSel = 0; 
-          setDegFMode(false);
-          saveNV();
-          break;
-        case 3: 
-          _colSel = 1; 
-          break;
-        case 4: break;
       }
     }
     // press RIGHT 
     if(event & key_Right) {
-      switch(_rowSel) {
+      switch(_paramSel) {
         case 0: 
           _ScreenManager.nextMenu(); 
           break;
-        case 1: 
-          _colSel = 1; 
-          setThermostatMode(0);
-          saveNV();
+        default:
+          _paramSel++;
+          UPPERLIMIT(_paramSel, 3);
+          switch(_paramSel) {
+            case 3:
+              _colSel = 0;       // select OFF upon entry to priming menu
+              break;
+            case 2:
+              _colSel = NVstore.getUserSettings().degF ? 1 : 0;
+              break;
+            case 1:
+              _colSel = getThermostatModeActive() ? 0 : 1;              
+              break;
+          }
           break;
-        case 2: 
-          _colSel = 1; 
-          setDegFMode(true);
-          saveNV();
-          break;
-        case 3: 
-          if(!getHeaterInfo().getRunState()) 
-            _colSel = 2; 
-          break;
-        case 4: break;
       }
     }
     // press UP
@@ -205,35 +263,90 @@ CPrimingScreen::keyHandler(uint8_t event)
       if(hasOEMcontroller())
         _reqOEMWarning();
       else {
-        _rowSel++;
-        UPPERLIMIT(_rowSel, 3);
-        if(_rowSel == 3)
-          _colSel = 1;       // select OFF upon entry to priming menu
-        if(_rowSel == 2)
-          _colSel = NVstore.getUserSettings().degF ? 1 : 0;
-        if(_rowSel == 1)
-          _colSel = getThermostatModeActive() ? 0 : 1;              
+        switch(_paramSel) {
+          case 0:
+            _paramSel = 1;
+            _colSel = getThermostatModeActive() ? 0 : 1;              
+            break;
+          case 1: 
+            _colSel++; 
+            WRAPLIMITS(_colSel, 0, 1);
+            setThermostatMode(_colSel == 0);
+            saveNV();
+            break;
+          case 2: 
+            _colSel++; 
+            WRAPLIMITS(_colSel, 0, 1);
+            setDegFMode(_colSel != 0);
+            saveNV();
+            break;
+          case 3: 
+            if(_colSel == 1)
+              _colSel = 0;
+            else {
+              _colSel++; 
+              UPPERLIMIT(_colSel, (getHeaterInfo().getRunState() == 0) ? 1 : 0);  // prevent priming if heater is running
+            }
+            break;
+          case 4: 
+            break;
+        }
       }
     }
     // press DOWN
     if(event & key_Down) {
-      if(_rowSel == 0) {
+      if(_paramSel == 0) {
         _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::VersionUI);  // force return to main menu
       }
       else {
-        _rowSel--;
-        LOWERLIMIT(_rowSel, 0);
-        _colSel = 0;
-        if(_rowSel == 1)
-          // _colSel = getHeaterInfo().isThermostat() ? 0 : 1;              
-          _colSel = getThermostatModeActive() ? 0 : 1;              
-        if(_rowSel == 2)
-          _colSel = NVstore.getUserSettings().degF ? 1 : 0;
+        switch(_paramSel) {
+          case 0: 
+            break;
+          case 1: 
+            _colSel--;
+            WRAPLIMITS(_colSel, 0, 1);
+            setThermostatMode(_colSel == 0);
+            saveNV();
+            break;
+          case 2: 
+            _colSel--;
+            WRAPLIMITS(_colSel, 0, 1);
+            setDegFMode(_colSel != 0);
+            saveNV();
+            break;
+          case 3: 
+            _colSel--; 
+            LOWERLIMIT(_colSel, -1);
+            break;
+          case 4: 
+            break;
+        }
+      }
+    }
+    // press UP
+    if(event & key_Centre) {
+      if(_paramSel == 3) {
+        switch(_colSel) {
+          case 0:
+            if(getHeaterInfo().getRunState() == 0)
+              _colSel = 1;
+            break;
+          case 1:
+            _colSel = 0;
+            break;
+          case -1:
+            FuelGauge.reset();
+            _paramSel = _colSel = 0;
+            break;
+        }
+      }
+      else {
+        _paramSel = _colSel = 0;
       }
     }
 
     // check if fuel priming was selected
-    if(_rowSel == 3 && _colSel == 2) {
+    if(_paramSel == 3 && _colSel == 1 ) {
       reqPumpPrime(true);
       _PrimeStop = millis() + 150000;   // allow 2.5 minutes - much the same as the heater itself cuts out at
       _PrimeCheck = millis() + 3000;    // holdoff upon start before testing for heater shutting off pump
@@ -253,6 +366,7 @@ CPrimingScreen::_stopPump()
   reqPumpPrime(false);
   _PrimeCheck = 0;
   _PrimeStop = 0;
-  if(_colSel == 2)
-    _colSel = 1;
+  if(_paramSel == 3 && _colSel == 1) {
+    _colSel = 0;
+  }
 }

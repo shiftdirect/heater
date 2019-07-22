@@ -52,6 +52,7 @@ protected:
   void _printInverted(int x, int y, const char* str, bool selected, eJUSTIFY justify = eLeftJustify);
   void _adjustExtents(CRect& rect, eJUSTIFY justify, const char* str);
   void _drawMenuSelection(CRect extents, const char* str, int border = 3, int radius = 4);
+  void _drawMenuSelection(const CRect& extents, int border, int radius);
   void _scrollMessage(int y, const char* str, int& charOffset);
   void _reqOEMWarning();
   void _drawBitmap(int x, int y, const BITMAP_INFO& info, uint16_t color = WHITE, uint16_t bg = 0xffff);

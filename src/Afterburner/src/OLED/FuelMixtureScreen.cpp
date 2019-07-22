@@ -34,6 +34,7 @@
 #include "../Utility/DebugPort.h"
 #include "../Utility/macros.h"
 #include "../Protocol/Protocol.h"
+#include "fonts/Icons.h"
 
 
 CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
@@ -47,6 +48,12 @@ CFuelMixtureScreen::onSelect()
   CPasswordScreen::onSelect();
   _initUI();
   
+  _load();
+}
+
+void
+CFuelMixtureScreen::_load()
+{
   adjPump[0] = getHeaterInfo().getPump_Min();
   adjPump[1] = getHeaterInfo().getPump_Max();
   adjFan[0] = getHeaterInfo().getFan_Min();
@@ -58,6 +65,7 @@ CFuelMixtureScreen::_initUI()
 {
   _rowSel = 0;
   _colSel = 0;
+  _animateCount = 0;
 }
 
 bool 
@@ -67,34 +75,40 @@ CFuelMixtureScreen::show()
   int xPos, yPos;
   const int col3 = _display.width() - border;
 
-  _display.clearDisplay();
+  _display.fillRect(70, 0, 58, 64, BLACK);    // scrub variables
+  _display.fillRect(0, 50, 128, 14, BLACK);   // scrub footer
 
   if(!CPasswordScreen::show()) {
+
     switch(_rowSel) {
       case 0:
       case 1:
       case 2:
       case 3:
       case 4:
+        if(_animateCount == -1) {
+          _animateCount = 0;
+          _display.clearDisplay();
+        }
         // Pump Minimum adjustment
         yPos = border + 36;
-        _printMenuText(80, yPos, "Min", false, eRightJustify);
-        sprintf(str, "%.1f", adjPump[0]); 
+        _printMenuText(65, yPos, "Min", false, eRightJustify);
+        sprintf(str, "%.1f Hz", adjPump[0]); 
         _printMenuText(col3, yPos, str, _rowSel == 1, eRightJustify);
         // Pump Maximum adjustment
         yPos = border + 24;
-        _printMenuText(80, yPos, "Pump Hz Max", false, eRightJustify);
-        sprintf(str, "%.1f", adjPump[1]);
+        _printMenuText(65, yPos, "Max", false, eRightJustify);
+        sprintf(str, "%.1f Hz", adjPump[1]);
         _printMenuText(col3, yPos, str, _rowSel == 2, eRightJustify);
         // Fan Minimum adjustment
         yPos = border + 12;
-        _printMenuText(80, yPos, "Min", false, eRightJustify);
-        sprintf(str, "%d", adjFan[0]);
+        _printMenuText(65, yPos, "Min", false, eRightJustify);
+        sprintf(str, "%d RPM", adjFan[0]);
         _printMenuText(col3, yPos, str, _rowSel == 3, eRightJustify);
         // Fan Maximum adjustment
         yPos = border;
-        _printMenuText(80, yPos, "Fan RPM Max", false, eRightJustify);
-        sprintf(str, "%d", adjFan[1]);
+        _printMenuText(65, yPos, "Max", false, eRightJustify);
+        sprintf(str, "%d RPM", adjFan[1]);
         _printMenuText(col3, yPos, str, _rowSel == 4, eRightJustify);
         // navigation line
         yPos = 53;
@@ -128,6 +142,29 @@ CFuelMixtureScreen::show()
   return true;
 }
 
+bool 
+CFuelMixtureScreen::animate()
+{
+  if(_animateCount >= 0) {
+
+    int xPos = 20;
+    int yPos = 5;
+    int yFuel = 30;
+    _display.fillRect(xPos, yPos, FanIcon1Info.width, FanIcon1Info.height, BLACK);
+    _display.fillRect(xPos+5, yFuel, FuelIconInfo.width, FuelIconInfo.height + 4, BLACK);
+    _drawBitmap(xPos+5, yFuel+_animateCount, FuelIconInfo);
+    switch(_animateCount) {
+      case 0: _drawBitmap(xPos, yPos, FanIcon1Info); break;
+      case 1: _drawBitmap(xPos, yPos, FanIcon2Info); break;
+      case 2: _drawBitmap(xPos, yPos, FanIcon3Info); break;
+      case 3: _drawBitmap(xPos, yPos, FanIcon4Info); break;
+    }
+
+    _animateCount++;
+    WRAPUPPERLIMIT(_animateCount, 3, 0);
+  }
+  return true; 
+}
 
 bool 
 CFuelMixtureScreen::keyHandler(uint8_t event)
@@ -143,6 +180,8 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
         case 4:
+          _animateCount = -1;
+          _display.clearDisplay();
           _rowSel = 5;  // enter save confirm mode
           break;
         case 5:
@@ -204,6 +243,8 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
             UPPERLIMIT(_rowSel, 4);
             break;
           case 5:
+            _display.clearDisplay();
+            _animateCount = -1;
             _showStoringMessage();
             setPumpMin(adjPump[0]);
             setPumpMax(adjPump[1]);
@@ -233,7 +274,10 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
     _ScreenManager.reqUpdate();
   }
 
-  
+  if(_rowSel == 0) {
+    _load();  // dispose of any changes, re-obtain current settings 
+  }
+
   if(event & keyRepeat) {
     switch(_rowSel) {
       case 1:

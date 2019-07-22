@@ -99,6 +99,7 @@
 #include "src/Utility/helpers.h"
 #include "src/Utility/NVStorage.h"
 #include "src/Utility/DebugPort.h"
+#include "src/Utility/macros.h"
 #include "src/Utility/UtilClasses.h"
 #include "src/Utility/BTC_JSON.h"
 #include "src/Utility/BTC_GPIO.h"
@@ -446,7 +447,11 @@ void setup() {
   FilteredSamples.Fan.setRounding(10);
   FilteredSamples.Fan.setAlpha(0.7);
   FilteredSamples.AmbientTemp.reset(-100.0);
-
+  FilteredSamples.FastipVolts.setRounding(0.1);
+  FilteredSamples.FastipVolts.setAlpha(0.7);
+  FilteredSamples.FastGlowAmps.setRounding(0.01);
+  FilteredSamples.FastGlowAmps.setAlpha(0.7);
+  
   RTC_Store.begin();
   FuelGauge.init(RTC_Store.getFuelGauge());
 //  demandDegC = RTC_Store.getDesiredTemp();
@@ -792,9 +797,24 @@ void loop()
 
         ScreenManager.reqUpdate();
       }
+
       if(bHasHtrData) {
+        // apply exponential mean to the anlogue readings for some smoothing
         updateFilteredData();
-        FuelGauge.Integrate(HeaterFrame2.getPump_Actual());
+
+        // integrate fuel pump activity for fuel gauge
+        FuelGauge.Integrate(getHeaterInfo().getPump_Actual());
+
+        // test for low volts shutdown during normal run
+        if(INBOUNDS(getHeaterInfo().getRunState(), 1, 5)) {  // check for Low Voltage Cutout
+          SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+        }
+
+        // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
+        if(RTC_Store.getCyclicEngaged() && (getHeaterInfo().getRunState() == 0) && (getHeaterInfo().getErrState() > 1)) {
+          DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+          RTC_Store.setCyclicEngaged(false);
+        }
       }
       updateJSONclients(bReportJSONData);
       CommState.set(CommStates::Idle);
@@ -822,7 +842,7 @@ void manageCyclicMode()
   const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
   if(cyclic.Stop && RTC_Store.getCyclicEngaged()) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
-    float deltaT = FilteredSamples.AmbientTemp.getValue() - getDemandDegC();
+    float deltaT = getTemperatureSensor() - getDemandDegC();
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
 
     // ensure we cancel user ON mode if heater throws an error
@@ -883,8 +903,10 @@ bool validateFrame(const CProtocol& frame, const char* name)
 
 void requestOn()
 {
-  heaterOn();
-  RTC_Store.setCyclicEngaged(true);    // for cyclic mode
+  if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue())) {
+    heaterOn();
+    RTC_Store.setCyclicEngaged(true);    // for cyclic mode
+  }
 }
 
 void requestOff()
@@ -1041,7 +1063,7 @@ float getTemperatureDesired()
 
 float getTemperatureSensor()
 {
-  return FilteredSamples.AmbientTemp.getValue();
+  return FilteredSamples.AmbientTemp.getValue() + NVstore.getHeaterTuning().tempOfs;
 }
 
 void  setPumpMin(float val)
@@ -1449,12 +1471,15 @@ void simulateGPIOin(uint8_t newKey)
   GPIOin.simulateKey(newKey);
 }
 
-float getBatteryVoltage()
+float getBatteryVoltage(bool fast)
 {
 #ifdef RAW_SAMPLES
   return getHeaterInfo().getBattVoltage();
 #else
-  return FilteredSamples.ipVolts.getValue();
+  if(fast)
+    return FilteredSamples.FastipVolts.getValue();
+  else
+    return FilteredSamples.ipVolts.getValue();
 #endif
 }
 
@@ -1487,13 +1512,16 @@ float getFanSpeed()
 
 void updateFilteredData()
 {
-  FilteredSamples.ipVolts.update(HeaterFrame2.getVoltage_Supply());
-  FilteredSamples.GlowVolts.update(HeaterFrame2.getGlowPlug_Voltage());
-  FilteredSamples.GlowAmps.update(HeaterFrame2.getGlowPlug_Current());
-  FilteredSamples.Fan.update(HeaterFrame2.getFan_Actual());
+  FilteredSamples.ipVolts.update(getHeaterInfo().getBattVoltage());
+  FilteredSamples.GlowVolts.update(getHeaterInfo().getGlow_Voltage());
+  FilteredSamples.GlowAmps.update(getHeaterInfo().getGlow_Current());
+  FilteredSamples.Fan.update(getHeaterInfo().getFan_Actual());
+  FilteredSamples.FastipVolts.update(getHeaterInfo().getBattVoltage());
+  FilteredSamples.FastGlowAmps.update(getHeaterInfo().getGlow_Current());
 }
 
 int sysUptime()
 {
   return Clock.get().secondstime() - BootTime;
 }
+

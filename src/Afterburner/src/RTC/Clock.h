@@ -30,7 +30,7 @@ class RTC_DS3231Ex : public RTC_DS3231 {
 public:
   void writeData(uint8_t* pData, int len, int ofs=0);
   void readData(uint8_t* pData, int len, int ofs=0);
-  bool resetLostPower();
+  void resetLostPower();
 };
 
 

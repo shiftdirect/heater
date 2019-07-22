@@ -97,6 +97,11 @@ sHeaterTuning::setSysVoltage(float fVal)
   }
 }
 
+float  
+sHeaterTuning::getLVC() const
+{
+  return lowVolts * 0.1;
+}
 
 void 
 CHeaterStorage::getTimerInfo(int idx, sTimer& timerInfo)
@@ -235,7 +240,12 @@ sHeaterTuning::load()
   validatedLoad("systemVoltage", sysVoltage, 120, u8Match2, 120, 240);
   validatedLoad("fanSensor", fanSensor, 1, u8inBounds, 1, 2);
   validatedLoad("glowDrive", glowDrive, 5, u8inBounds, 1, 6);
+  if(sysVoltage == 120)
+    validatedLoad("lowVolts", lowVolts, 115, u8inBounds, 100, 125);
+  else
+    validatedLoad("lowVolts", lowVolts, 230, u8inBounds, 200, 250);
   validatedLoad("pumpCal", pumpCal, 0.02, 0.001, 1);
+  validatedLoad("tempOfs", tempOfs, 0.0, -10.0, +10.0);
   preferences.end();    
 }
 
@@ -252,7 +262,9 @@ sHeaterTuning::save()
   preferences.putUChar("systemVoltage", sysVoltage);
   preferences.putUChar("fanSensor", fanSensor);
   preferences.putUChar("glowDrive", glowDrive);
+  preferences.putUChar("lowVolts", lowVolts);
   preferences.putFloat("pumpCal", pumpCal);
+  preferences.putFloat("tempOfs", tempOfs);
   preferences.end();    
 }
 

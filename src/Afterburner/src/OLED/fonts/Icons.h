@@ -65,8 +65,8 @@ extern const BITMAP_INFO FanIcon4Info;
 
 // 'FuelIcon', 7x12px
 extern const BITMAP_INFO FuelIconInfo;
+extern const BITMAP_INFO FuelIconSmallInfo;
 
-// 'Target', 13x13px
 extern const BITMAP_INFO TargetIconInfo;
 
 extern const BITMAP_INFO RepeatIconInfo;
@@ -77,6 +77,8 @@ extern const BITMAP_INFO LargeTimerIconInfo;
 extern const BITMAP_INFO VerticalRepeatIconInfo;
 
 extern const BITMAP_INFO CrossLgIconInfo;
+extern const BITMAP_INFO CrossIconInfo
+;
 
 // Bitmap for open
 extern const BITMAP_INFO OpenIconInfo;
@@ -130,3 +132,10 @@ extern const BITMAP_INFO UpdateIconInfo;
 extern const BITMAP_INFO WWWIconInfo;
 
 extern const BITMAP_INFO BowserIconInfo;
+extern const BITMAP_INFO DegCIconInfo;
+extern const BITMAP_INFO DegFIconInfo;
+extern const BITMAP_INFO ThermostatDegCIconInfo;
+extern const BITMAP_INFO ThermostatDegFIconInfo;
+extern const BITMAP_INFO ThermostatHzIconInfo;
+extern const BITMAP_INFO resetIconInfo;
+extern const BITMAP_INFO miniThermoIconInfo;

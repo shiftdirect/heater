@@ -41,6 +41,7 @@ CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 void
 CPasswordScreen::onSelect()
 {
+  CScreenHeader::onSelect();
   _initUI();
 }
 

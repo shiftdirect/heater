@@ -53,7 +53,6 @@ public:
   CGPIOInfoScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool keyHandler(uint8_t event);
-  void onSelect();
 };
 
 #endif

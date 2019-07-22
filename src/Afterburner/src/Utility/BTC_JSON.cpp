@@ -277,7 +277,29 @@ void interpretJsonCommand(char* pLine)
         sHeaterTuning ht = NVstore.getHeaterTuning();
         ht.pumpCal = fCal;
         NVstore.setHeaterTuning(ht);
-        NVstore.save();
+      }
+    }
+    else if(strcmp("TempOffset", it->key) == 0) {
+      float fCal = it->value.as<float>();
+      if(INBOUNDS(fCal, -10.0, +10.0)) {
+        sHeaterTuning ht = NVstore.getHeaterTuning();
+        ht.tempOfs = fCal;
+        NVstore.setHeaterTuning(ht);
+      }
+    }
+    else if(strcmp("LowVoltCutout", it->key) == 0) {
+      float fCal = it->value.as<float>();
+      if(fCal != 0) {
+         bool bOK = false;
+         if(NVstore.getHeaterTuning().sysVoltage == 120)
+           bOK = INBOUNDS(fCal, 10.0, 12.5);
+         else
+           bOK = INBOUNDS(fCal, 20.0, 25.0);
+        if(bOK) {
+          sHeaterTuning ht = NVstore.getHeaterTuning();
+          ht.lowVolts = uint8_t(fCal * 10);
+          NVstore.setHeaterTuning(ht);
+        }
       }
     }
   }
@@ -325,7 +347,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
 	bSend |= moderator.addJson("FanRPM", getFanSpeed(), root );
 	bSend |= moderator.addJson("FanVoltage", getHeaterInfo().getFan_Voltage(), root );
 	bSend |= moderator.addJson("FanSensor", getHeaterInfo().getFan_Sensor(), root );
-	bSend |= moderator.addJson("InputVoltage", getBatteryVoltage(), root );
+	bSend |= moderator.addJson("InputVoltage", getBatteryVoltage(false), root );
 	bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getSystemVoltage(), root );
 	bSend |= moderator.addJson("GlowVoltage", getGlowVolts(), root );
 	bSend |= moderator.addJson("GlowCurrent", getGlowCurrent(), root );
@@ -354,9 +376,11 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("ThermostatUndertemp", NVstore.getUserSettings().cyclic.Start, root); 
   bSend |= moderator.addJson("CyclicTemp", getDemandDegC(), root);             // actual pivot point for cyclic mode
   bSend |= moderator.addJson("CyclicOff", stop, root);                         // threshold of over temp for cyclic mode
-  bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root); // threshold of under temp for cyclic mode
-  bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root);     // running count of pump strokes
-  bSend |= moderator.addJson("PumpCal", NVstore.getHeaterTuning().pumpCal, root);     // ml/stroke
+  bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root);  // threshold of under temp for cyclic mode
+  bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root);               // running count of pump strokes
+  bSend |= moderator.addJson("PumpCal", NVstore.getHeaterTuning().pumpCal, root);        // mL/stroke
+  bSend |= moderator.addJson("TempOffset", NVstore.getHeaterTuning().tempOfs, root);     // degC offset
+  bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low volatge cutout
 
   if(bSend) {
 		root.printTo(opStr, len);

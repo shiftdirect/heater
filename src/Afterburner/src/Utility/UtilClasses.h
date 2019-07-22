@@ -152,6 +152,12 @@ struct CRect {
   CRect() {
     xPos = yPos = width = height = 0;
   }
+  CRect(const CRect& a) {
+    xPos = a.xPos;
+    yPos = a.yPos;
+    width = a.width;
+    height = a.height;
+  }
   void Expand(int val) {
     xPos -= val;
     yPos -= val;

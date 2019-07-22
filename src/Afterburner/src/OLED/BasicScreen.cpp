@@ -50,7 +50,7 @@ CBasicScreen::CBasicScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen
 bool 
 CBasicScreen::show()
 {
-  CScreenHeader::show();
+  CScreenHeader::show(false);
 
   char msg[20];
   int xPos, yPos;

@@ -30,6 +30,7 @@
 #include "ClockScreen.h"
 #include "RebootScreen.h"
 #include "HeaterSettingsScreen.h"
+#include "FuelCalScreen.h"
 #include "SettingsScreen.h"
 #include "ThermostatModeScreen.h"
 #include "FontDumpScreen.h"
@@ -290,8 +291,9 @@ CScreenManager::begin(bool bNoClock)
 
   // create heater tuning screens loop - password protected
   menuloop.clear();
-  menuloop.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  tuning
-  menuloop.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // tuning
+  menuloop.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  mixture tuning
+  menuloop.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // heater system tuning
+  menuloop.push_back(new CFuelCalScreen(*_pDisplay, *this));          // fuel pump calibration
   _Screens.push_back(menuloop);
 
   // create User Settings screens loop 
@@ -514,25 +516,29 @@ CScreenManager::prevMenu()
 void 
 CScreenManager::keyHandler(uint8_t event)
 {
-  long dimTime = NVstore.getUserSettings().dimTime;
-
   if(_bDimmed) {
     if(event & keyReleased) {
       _dim(false);
-      _DimTime_ms = (millis() + abs(dimTime)) | 1;
-      _MenuTimeout = (millis() + NVstore.getUserSettings().menuTimeout) | 1;
+      bumpTimeout();
     }
     return;   // initial press when dimmed is always thrown away
   }
 
-//  _dim(false);
-  _DimTime_ms = (millis() + abs(dimTime)) | 1;
-  _MenuTimeout = (millis() + NVstore.getUserSettings().menuTimeout) | 1;
+  bumpTimeout();
 
   // call key handler for active screen
   if(_menu >= 0) 
     _Screens[_menu][_subMenu]->keyHandler(event);
 }
+
+void
+CScreenManager::bumpTimeout()
+{
+  long dimTime = NVstore.getUserSettings().dimTime;
+  _DimTime_ms = (millis() + abs(dimTime)) | 1;
+  _MenuTimeout = (millis() + NVstore.getUserSettings().menuTimeout) | 1;
+}
+
 
 void
 CScreenManager::selectMenu(eUIMenuSets menuSet, int specific)
@@ -572,11 +578,8 @@ void
 CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
 {
   static int prevPercent = -1;
-  static long prevTime = millis();
 
-  long tDelta = millis() - prevTime;
   if(percent != prevPercent/* && tDelta > 500*/) {
-    prevTime = millis();
     _pDisplay->clearDisplay();
     _pDisplay->setCursor(64,22);
     switch(updateType) {
