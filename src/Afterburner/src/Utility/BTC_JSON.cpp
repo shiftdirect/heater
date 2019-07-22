@@ -32,6 +32,7 @@
 #include "../cfg/BTCConfig.h"
 #include "macros.h"
 #include "../Protocol/Protocol.h"
+#include <string.h>
 
 char defaultJSONstr[64];
 CModerator JSONmoderator;
@@ -289,17 +290,15 @@ void interpretJsonCommand(char* pLine)
     }
     else if(strcmp("LowVoltCutout", it->key) == 0) {
       float fCal = it->value.as<float>();
-      if(fCal != 0) {
-         bool bOK = false;
-         if(NVstore.getHeaterTuning().sysVoltage == 120)
-           bOK = INBOUNDS(fCal, 10.0, 12.5);
-         else
-           bOK = INBOUNDS(fCal, 20.0, 25.0);
-        if(bOK) {
-          sHeaterTuning ht = NVstore.getHeaterTuning();
-          ht.lowVolts = uint8_t(fCal * 10);
-          NVstore.setHeaterTuning(ht);
-        }
+      bool bOK = false;
+      if(NVstore.getHeaterTuning().sysVoltage == 120)
+        bOK |= (fCal == 0) || INBOUNDS(fCal, 10.0, 12.5);
+      else
+        bOK |= (fCal == 0) || INBOUNDS(fCal, 20.0, 25.0);
+      if(bOK) {
+        sHeaterTuning ht = NVstore.getHeaterTuning();
+        ht.lowVolts = uint8_t(fCal * 10);
+        NVstore.setHeaterTuning(ht);
       }
     }
   }

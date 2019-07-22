@@ -28,6 +28,7 @@
 
 bool finBounds(float tets, float min, float max);
 bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim);
+bool u8inBoundsOrZero(uint8_t test, uint8_t minLim, uint8_t maxLim);
 bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim);
 bool u8Match2(uint8_t test, uint8_t test1, uint8_t test2);
 bool u16inBounds(uint16_t test, uint16_t minLim, uint16_t maxLim);
@@ -47,9 +48,9 @@ class CESP32_NVStorage {
 protected:
   Preferences preferences;
 protected:
-  bool validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max);
-  bool validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask=0xff);
-  bool validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max);
+  bool validatedLoad(const char* key, int8_t& val, int8_t defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int8_t min, int8_t max);
+  bool validatedLoad(const char* key, uint8_t& val, uint8_t defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, uint8_t min, uint8_t max, uint8_t mask=0xff);
+  bool validatedLoad(const char* key, uint16_t& val, uint16_t defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, uint16_t min, uint16_t max);
   bool validatedLoad(const char* key, long& val, long defVal, long min, long max);
   bool validatedLoad(const char* key, char* val, int maxlen, const char* defVal);
   bool validatedLoad(const char* key, float& val, float defVal, float min, float max);

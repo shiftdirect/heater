@@ -23,6 +23,7 @@
 #include "NVCore.h"
 #include "DebugPort.h"
 #include <functional>
+#include <string.h>
 
 #define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((TST) <= (MAX)))
 
@@ -45,7 +46,7 @@ CESP32_NVStorage::validatedLoad(const char* key, char* val, int maxlen, const ch
 }
 
 bool
-CESP32_NVStorage::validatedLoad(const char* key, uint8_t& val, int defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, int min, int max, uint8_t mask)
+CESP32_NVStorage::validatedLoad(const char* key, uint8_t& val, uint8_t defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, uint8_t min, uint8_t max, uint8_t mask)
 {
   val = preferences.getUChar(key, defVal);
   if(!validator(val & mask, min, max)) {
@@ -61,7 +62,7 @@ CESP32_NVStorage::validatedLoad(const char* key, uint8_t& val, int defVal, std::
 }
 
 bool
-CESP32_NVStorage::validatedLoad(const char* key, int8_t& val, int defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int min, int max)
+CESP32_NVStorage::validatedLoad(const char* key, int8_t& val, int8_t defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int8_t min, int8_t max)
 {
   val = preferences.getChar(key, defVal);
   if(!validator(val, min, max)) {
@@ -77,7 +78,7 @@ CESP32_NVStorage::validatedLoad(const char* key, int8_t& val, int defVal, std::f
 }
 
 bool
-CESP32_NVStorage::validatedLoad(const char* key, uint16_t& val, int defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, int min, int max)
+CESP32_NVStorage::validatedLoad(const char* key, uint16_t& val, uint16_t defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, uint16_t min, uint16_t max)
 {
   val = preferences.getUShort(key, defVal);
   if(!validator(val, min, max)) {
@@ -133,6 +134,12 @@ bool u8inBounds(uint8_t test, uint8_t minLim, uint8_t maxLim)
 {
   return INBOUNDS(test, minLim, maxLim);
 }
+
+bool u8inBoundsOrZero(uint8_t test, uint8_t minLim, uint8_t maxLim)
+{
+  return INBOUNDS(test, minLim, maxLim) || (test == 0);
+}
+
 
 bool s8inBounds(int8_t test, int8_t minLim, int8_t maxLim)
 {
