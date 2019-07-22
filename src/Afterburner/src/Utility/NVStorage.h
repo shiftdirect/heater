@@ -120,6 +120,11 @@ struct sHomeMenuActions {
   }
 };
 
+struct sHourMeter {
+  unsigned long RunTime;
+  unsigned long GlowTime;
+};
+
 struct sCyclicThermostat {
   int8_t Stop;
   int8_t Start;

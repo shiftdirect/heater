@@ -797,12 +797,24 @@ void loop()
 
         ScreenManager.reqUpdate();
       }
+
       if(bHasHtrData) {
+        // apply exponential mean to the anlogue readings for some smoothing
         updateFilteredData();
-        FuelGauge.Integrate(HeaterFrame2.getPump_Actual());
-      }
-      if(INBOUNDS(HeaterFrame2.getRunState(), 1, 5)) {  // check for Low Voltage Cutout
-        SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+
+        // integrate fuel pump activity for fuel gauge
+        FuelGauge.Integrate(getHeaterInfo().getPump_Actual());
+
+        // test for low volts shutdown during normal run
+        if(INBOUNDS(getHeaterInfo().getRunState(), 1, 5)) {  // check for Low Voltage Cutout
+          SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+        }
+
+        // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
+        if(RTC_Store.getCyclicEngaged() && (getHeaterInfo().getRunState() == 0) && (getHeaterInfo().getErrState() > 1)) {
+          DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+          RTC_Store.setCyclicEngaged(false);
+        }
       }
       updateJSONclients(bReportJSONData);
       CommState.set(CommStates::Idle);
@@ -1500,15 +1512,16 @@ float getFanSpeed()
 
 void updateFilteredData()
 {
-  FilteredSamples.ipVolts.update(HeaterFrame2.getVoltage_Supply());
-  FilteredSamples.GlowVolts.update(HeaterFrame2.getGlowPlug_Voltage());
-  FilteredSamples.GlowAmps.update(HeaterFrame2.getGlowPlug_Current());
-  FilteredSamples.Fan.update(HeaterFrame2.getFan_Actual());
-  FilteredSamples.FastipVolts.update(HeaterFrame2.getVoltage_Supply());
-  FilteredSamples.FastGlowAmps.update(HeaterFrame2.getGlowPlug_Current());
+  FilteredSamples.ipVolts.update(getHeaterInfo().getBattVoltage());
+  FilteredSamples.GlowVolts.update(getHeaterInfo().getGlow_Voltage());
+  FilteredSamples.GlowAmps.update(getHeaterInfo().getGlow_Current());
+  FilteredSamples.Fan.update(getHeaterInfo().getFan_Actual());
+  FilteredSamples.FastipVolts.update(getHeaterInfo().getBattVoltage());
+  FilteredSamples.FastGlowAmps.update(getHeaterInfo().getGlow_Current());
 }
 
 int sysUptime()
 {
   return Clock.get().secondstime() - BootTime;
 }
+
