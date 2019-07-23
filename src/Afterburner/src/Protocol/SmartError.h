@@ -22,16 +22,16 @@
 #include "Protocol.h"
 
 class CSmartError {
-  uint8_t m_prevRunState;
-  uint8_t m_Error;
-  bool m_bInhibit;
+  uint8_t _prevRunState;
+  uint8_t _Error;
+  bool _bInhibit;
 public: 
   CSmartError();
   void reset();
   void inhibit();
   void monitor(const CProtocol& heaterFrame);
   void monitor(uint8_t runstate);
-  bool checkVolts(float volts, float plugI);
+  bool checkVolts(float volts, float plugI, bool throwfault=true);
   uint8_t getError();
 };
 

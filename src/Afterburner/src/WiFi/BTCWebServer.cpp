@@ -351,7 +351,11 @@ function completeHandler(event) {
  _('loaded_n_total').innerHTML = 'Uploaded ' + sendSize + ' bytes of ' + sendSize;
  var file = _('file1').files[0];
  if(file.name.endsWith('.bin')) {
-  setTimeout( function() { location.assign('/'); }, 5000);    
+  _('status').innerHTML='Rebooting NOW';
+  setTimeout(function () { _('status').innerHTML='Rebooted'; }, 2000);    
+  setTimeout(function () { _('status').innerHTML='Initialising...'; }, 4000);    
+  setTimeout(function () { _('status').innerHTML='Loading /Index.html...'; }, 6000);    
+  setTimeout(function () { location.assign('/'); }, 6500);    
  }
  else {
   setTimeout( function() { location.assign('/update'); }, 500);    
@@ -943,7 +947,11 @@ body {
 <script>
 function onReboot() {
  if(confirm('Do you really want to reboot the Afterburner ?')) {
-  setTimeout(function () { location.assign('/'); }, 2000);    
+   _('info').innerHTML='Rebooting NOW';
+  setTimeout(function () { _('info').innerHTML='Rebooted'; }, 2000);    
+  setTimeout(function () { _('info').innerHTML='Initialising...'; }, 4000);    
+  setTimeout(function () { _('info').innerHTML='Loading /Index.html...'; }, 6000);    
+  setTimeout(function () { location.assign('/'); }, 6500);    
   var formdata = new FormData();
   formdata.append('reboot', 'yes');
   var ajax = new XMLHttpRequest();

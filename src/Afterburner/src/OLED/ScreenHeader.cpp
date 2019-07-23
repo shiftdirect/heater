@@ -136,7 +136,7 @@ CScreenHeader::animate()
     showTimers();
     switch(_batteryCount) {
       case 3:
-        if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue())) {
+        if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false)) { // check but do not fault
           showBatteryIcon(getBatteryVoltage(true));
         }
         else {

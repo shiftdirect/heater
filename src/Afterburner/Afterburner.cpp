@@ -903,7 +903,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
 
 void requestOn()
 {
-  if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue())) {
+  if(bHasHtrData && SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue())) {
     heaterOn();
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
   }

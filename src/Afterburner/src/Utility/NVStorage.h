@@ -55,9 +55,9 @@ struct sHeaterTuning : public CESP32_NVStorage {
     retval &= INBOUNDS(glowDrive, 1, 6);
     retval &= INBOUNDS(pumpCal, 0.001, 1.0);
     if(sysVoltage == 120)
-      retval &= INBOUNDS(lowVolts, 100, 125);
+      retval &= INBOUNDS(lowVolts, 100, 125) || (lowVolts == 0);
     else 
-      retval &= INBOUNDS(lowVolts, 200, 250);
+      retval &= INBOUNDS(lowVolts, 200, 250 || (lowVolts == 0));
     retval &= INBOUNDS(tempOfs, -10, +10);
     return retval;
   };

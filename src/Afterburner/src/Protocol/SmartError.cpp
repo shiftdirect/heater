@@ -34,9 +34,9 @@ CSmartError::CSmartError()
 void 
 CSmartError::reset()
 {
-  m_prevRunState = 0;
-  m_Error = 0;
-  m_bInhibit = false;
+  _prevRunState = 0;
+  _Error = 0;
+  _bInhibit = false;
 }
 
 // we use inhibit when we manually command the heater off during preheat
@@ -44,7 +44,7 @@ CSmartError::reset()
 void
 CSmartError::inhibit()
 {
-  m_bInhibit = true;
+  _bInhibit = true;
 //  m_Error = 0;
 }
 
@@ -71,33 +71,33 @@ CSmartError::monitor(uint8_t newRunState)
 {
   // check if moving away from heater Idle state (S0)
   // especially useful if an OEM controller exists
-  if((m_prevRunState == 0) && newRunState) {
+  if((_prevRunState == 0) && newRunState) {
     // reset the smart error
-    m_Error = 0;
-    m_bInhibit = false;
+    _Error = 0;
+    _bInhibit = false;
   }
 
-  if(!m_bInhibit) {
-    if(m_prevRunState == 2) {   // preheat state (S2)
+  if(!_bInhibit) {
+    if(_prevRunState == 2) {   // preheat state (S2)
       if(newRunState == 4) {
         // transitioned from preheat to ignited
         // - all good!
-        m_Error = 0;
+        _Error = 0;
       }
       else if(newRunState > 5) {
         // transitioned from preheat to post glow
         // - second ignition attempt failed, heater is shutting down
-        m_Error = 11;   // +1 over displayed error code
+        _Error = 11;   // +1 over displayed error code
       }
       else if(newRunState == 3) {
         // transitioned from preheat to retry 
         // - first ignition attempt failed, heater will retry
-        m_Error = 12;   // +1 over displayed error code
+        _Error = 12;   // +1 over displayed error code
       }
     }
   }
 
-  if(m_prevRunState != newRunState) {
+  if(_prevRunState != newRunState) {
     // check for transition to startup 
     // - force cancellation of an on request if we generated it
     if(newRunState >= 2) {
@@ -110,11 +110,11 @@ CSmartError::monitor(uint8_t newRunState)
     }
   }
 
-   m_prevRunState = newRunState;
+  _prevRunState = newRunState;
 }
 
 bool
-CSmartError::checkVolts(float ipVolts, float glowI)
+CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
 {
  // check for low voltage
  // values here are x10 integers
@@ -122,20 +122,23 @@ CSmartError::checkVolts(float ipVolts, float glowI)
     float cableComp = glowI * 0.1;             // allow 1V drop for 10A current (bit naive but better than no compensation)
     float Thresh = NVstore.getHeaterTuning().getLVC() - cableComp;  // NVstore
     if(ipVolts < Thresh) {
-      m_Error = 2;     // +1 over displayed error code
-      requestOff();
+      if(throwfault) {
+        _Error = 2;     // +1 over displayed error code
+        requestOff();
+      }
       return false;
     }
   }
   return true;
 }
 
+
 // return our smart error, if it exists, as the registered code
 uint8_t 
 CSmartError::getError()
 {
-  if(m_Error) {
-    return m_Error;
+  if(_Error) {
+    return _Error;
   }
   return 0;
 }
