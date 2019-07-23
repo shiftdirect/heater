@@ -86,29 +86,29 @@
 */
 
 //#include "src/WiFi/ABMqtt.h"
-#include "src/cfg/BTCConfig.h"
-#include "src/cfg/pins.h"
-#include "src/RTC/Timers.h"
-#include "src/RTC/Clock.h"
-#include "src/WiFi/BTCWifi.h"
-#include "src/WiFi/BTCWebServer.h"
-#include "src/WiFi/BTCota.h"
-#include "src/Protocol/Protocol.h"
-#include "src/Protocol/TxManage.h"
-#include "src/Protocol/SmartError.h"
-#include "src/Utility/helpers.h"
-#include "src/Utility/NVStorage.h"
-#include "src/Utility/DebugPort.h"
-#include "src/Utility/macros.h"
-#include "src/Utility/UtilClasses.h"
-#include "src/Utility/BTC_JSON.h"
-#include "src/Utility/BTC_GPIO.h"
-#include "src/Utility/BoardDetect.h"
-#include "src/Utility/FuelGauge.h"
-#include "src/OLED/ScreenManager.h"
-#include "src/OLED/KeyPad.h"
-#include "src/Utility/TempSense.h"
-#include "src/Utility/DataFilter.h"
+#include "cfg/BTCConfig.h"
+#include "cfg/pins.h"
+#include "RTC/Timers.h"
+#include "RTC/Clock.h"
+#include "WiFi/BTCWifi.h"
+#include "WiFi/BTCWebServer.h"
+#include "WiFi/BTCota.h"
+#include "Protocol/Protocol.h"
+#include "Protocol/TxManage.h"
+#include "Protocol/SmartError.h"
+#include "Utility/helpers.h"
+#include "Utility/NVStorage.h"
+#include "Utility/DebugPort.h"
+#include "Utility/macros.h"
+#include "Utility/UtilClasses.h"
+#include "Utility/BTC_JSON.h"
+#include "Utility/BTC_GPIO.h"
+#include "Utility/BoardDetect.h"
+#include "Utility/FuelGauge.h"
+#include "OLED/ScreenManager.h"
+#include "OLED/KeyPad.h"
+#include "Utility/TempSense.h"
+#include "Utility/DataFilter.h"
 #include <rom/rtc.h>
 #include <esp_spiffs.h>
 #include <SPIFFS.h>
@@ -121,13 +121,13 @@
 
 const int FirmwareRevision = 23;
 const int FirmwareSubRevision = 6;
-const char* FirmwareDate = "17 Jul 2019";
+const char* FirmwareDate = "23 Jul 2019";
 
 
 #ifdef ESP32
-#include "src/Bluetooth/BluetoothESP32.h"
+#include "Bluetooth/BluetoothESP32.h"
 #else
-#include "src/Bluetooth/BluetoothHC05.h"
+#include "Bluetooth/BluetoothHC05.h"
 #endif
 
 // Setup Serial Port Definitions
