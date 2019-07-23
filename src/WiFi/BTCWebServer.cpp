@@ -354,8 +354,7 @@ function completeHandler(event) {
   _('status').innerHTML='Rebooting NOW';
   setTimeout(function () { _('status').innerHTML='Rebooted'; }, 2000);    
   setTimeout(function () { _('status').innerHTML='Initialising...'; }, 4000);    
-  setTimeout(function () { _('status').innerHTML='Loading /Index.html...'; }, 6000);    
-  setTimeout(function () { location.assign('/'); }, 6500);    
+  setTimeout(function () { _('status').innerHTML='Loading /index.html...'; location.assign('/'); }, 7500);    
  }
  else {
   setTimeout( function() { location.assign('/update'); }, 500);    
@@ -950,8 +949,7 @@ function onReboot() {
    _('info').innerHTML='Rebooting NOW';
   setTimeout(function () { _('info').innerHTML='Rebooted'; }, 2000);    
   setTimeout(function () { _('info').innerHTML='Initialising...'; }, 4000);    
-  setTimeout(function () { _('info').innerHTML='Loading /Index.html...'; }, 6000);    
-  setTimeout(function () { location.assign('/'); }, 6500);    
+  setTimeout(function () { _('info').innerHTML='Loading /index.html...'; location.assign('/'); }, 7500);    
   var formdata = new FormData();
   formdata.append('reboot', 'yes');
   var ajax = new XMLHttpRequest();
