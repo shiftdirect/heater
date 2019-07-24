@@ -120,9 +120,25 @@ struct sHomeMenuActions {
   }
 };
 
-struct sHourMeter {
-  unsigned long RunTime;
-  unsigned long GlowTime;
+struct sHourMeter : public CESP32_NVStorage {
+  uint32_t RunTime;
+  uint32_t GlowTime;
+  void init() {
+    load();
+  }
+  void load();
+  void save();
+  sHourMeter& operator=(const sHourMeter& rhs) {
+    RunTime = rhs.RunTime;
+    GlowTime = rhs.GlowTime;
+    return *this;
+  }
+  bool operator!=(const sHourMeter& rhs) const {
+    bool retval = false;
+    retval |= RunTime != rhs.RunTime;
+    retval |= GlowTime != rhs.GlowTime;
+    return retval;
+  }
 };
 
 struct sCyclicThermostat {
@@ -305,6 +321,7 @@ struct sNVStore {
   sTimer timer[14];
   sMQTTparams MQTT;
   sCredentials Credentials;
+  sHourMeter hourMeter;
   bool valid();
   void init();
   sNVStore& operator=(const sNVStore& rhs) {
@@ -314,6 +331,7 @@ struct sNVStore {
       timer[i] = rhs.timer[i];
     MQTT = rhs.MQTT;
     Credentials = rhs.Credentials;
+    hourMeter = rhs.hourMeter;
     return *this;
   }
 };
@@ -339,6 +357,7 @@ public:
   const sCredentials& getCredentials() const;
   const sUserSettings& getUserSettings() const;
   const sHeaterTuning& getHeaterTuning() const;
+  const sHourMeter& getHourMeter() const;
 
   void getTimerInfo(int idx, sTimer& timerInfo);
   void setTimerInfo(int idx, const sTimer& timerInfo);
@@ -350,6 +369,7 @@ public:
   }
   void setUserSettings(const sUserSettings& info);
   void setHeaterTuning(const sHeaterTuning& info);
+  bool setHourMeter(const sHourMeter& info);
 };
 
 

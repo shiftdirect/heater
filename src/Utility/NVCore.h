@@ -54,6 +54,7 @@ protected:
   bool validatedLoad(const char* key, long& val, long defVal, long min, long max);
   bool validatedLoad(const char* key, char* val, int maxlen, const char* defVal);
   bool validatedLoad(const char* key, float& val, float defVal, float min, float max);
+  bool validatedLoad(const char* key, uint32_t& val, uint32_t defVal, uint32_t min, uint32_t max);
 };
 
 

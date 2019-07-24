@@ -51,6 +51,7 @@ sNVStore::init()
 
   MQTT.init();
   Credentials.init();
+  hourMeter.init();
 }
 
 CHeaterStorage::CHeaterStorage()
@@ -169,6 +170,21 @@ CHeaterStorage::setHeaterTuning(const sHeaterTuning& info)
   _calValues.heaterTuning = info;
 }
 
+const sHourMeter&
+CHeaterStorage::getHourMeter() const
+{
+  return _calValues.hourMeter;
+}
+
+bool
+CHeaterStorage::setHourMeter(const sHourMeter& newVals)
+{
+//  if(_calValues.hourMeter != newVals) {
+  if(newVals != _calValues.hourMeter) {
+    _calValues.hourMeter = newVals;
+    _calValues.hourMeter.save();
+  };
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -436,4 +452,24 @@ void toggle(bool& ref)
 void toggle(uint8_t& ref)
 {
   ref = ref ? 0 : 1;
+}
+
+void
+sHourMeter::save()
+{
+  // **** MAX LENGTH is 15 for names ****
+  preferences.begin("hourmeter", false);
+  preferences.putULong("RunTime", RunTime);
+  preferences.putULong("GlowTime", GlowTime);
+  preferences.end();    
+}
+
+void 
+sHourMeter::load()
+{
+  // **** MAX LENGTH is 15 for names ****
+  preferences.begin("hourmeter", false);
+  validatedLoad("RunTime", RunTime, 0, 0, 0xffffffffL);
+  validatedLoad("GlowTime", GlowTime, 0, 0, 0xffffffffL);
+  preferences.end();    
 }

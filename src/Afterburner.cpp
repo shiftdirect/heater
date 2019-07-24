@@ -185,9 +185,8 @@ bool bHasOEMLCDController = false;
 bool bHasHtrData = false;
 
 // these variables will persist over a soft reboot.
-__NOINIT_ATTR int persistentRunTime;
-__NOINIT_ATTR int persistentGlowTime;
-CHourMeter* pHourMeter = NULL;
+__NOINIT_ATTR float persistentRunTime;
+__NOINIT_ATTR float persistentGlowTime;
 
 __NOINIT_ATTR bool bForceInit; // = false;
 //__NOINIT_ATTR bool bUserON; // = false;
@@ -198,6 +197,7 @@ __NOINIT_ATTR bool bForceInit; // = false;
 //bool bCyclicEngaged;
 CFuelGauge FuelGauge; 
 CRTC_Store RTC_Store;
+CHourMeter* pHourMeter = NULL;
 
 bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
@@ -826,6 +826,8 @@ void loop()
           DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
           RTC_Store.setCyclicEngaged(false);
         }
+        
+        pHourMeter->monitor(HeaterFrame2);
       }
       updateJSONclients(bReportJSONData);
       CommState.set(CommStates::Idle);

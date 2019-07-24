@@ -26,21 +26,27 @@
 class CProtocol;
 
 class CHourMeter {
-  int& _RunTime;
-  int& _GlowTime;
+  float& _RunTime;
+  float& _GlowTime;
+  unsigned long _lastRunTime;
+  unsigned long _lastGlowTime;
 public:
-  CHourMeter(int &runtime, int& glowtime) : 
+  CHourMeter(float &runtime, float& glowtime) : 
     _RunTime(runtime), 
     _GlowTime(glowtime) 
-  {};
-  void associate(int &runtime, int& glowtime) {
+  {
+    _lastRunTime = 0;
+    _lastGlowTime = 0;
+    DebugPort.printf("CHourMeter %f %f\r\n", _RunTime, _GlowTime);
+  };
+  void associate(float &runtime, float& glowtime) {
     _RunTime = runtime; 
     _GlowTime = glowtime; 
   };
   void powerOnInit();
   void monitor(const CProtocol& frame);
-  unsigned long getRunTime();
-  unsigned long getGlowTime();
+  uint32_t getRunTime();
+  uint32_t getGlowTime();
 };
 
 extern CHourMeter* pHourMeter;

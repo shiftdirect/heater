@@ -55,6 +55,8 @@ public:
   bool    getCyclicEngaged();
   int getRunTime();
   int getGlowTime();
+  int getMaxGlowTime() const { return 8; };
+  int getMaxRunTime() const { return 32; };
 };
 
 extern CRTC_Store RTC_Store;

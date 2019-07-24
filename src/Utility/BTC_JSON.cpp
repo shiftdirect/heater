@@ -34,6 +34,7 @@
 #include "macros.h"
 #include "../Protocol/Protocol.h"
 #include <string.h>
+#include "HourMeter.h"
 
 char defaultJSONstr[64];
 CModerator JSONmoderator;
@@ -479,6 +480,8 @@ bool makeJSONStringSysInfo(CModerator& moderator, char* opStr, int len)
       bSend |= moderator.addJson("SysVer", getVersionStr(), root); 
       bSend |= moderator.addJson("SysDate", getVersionDate(), root); 
       bSend |= moderator.addJson("SysFreeMem", ESP.getFreeHeap(), root); 
+      bSend |= moderator.addJson("SysRunTime", pHourMeter->getRunTime(), root); 
+      bSend |= moderator.addJson("SysGlowTime", pHourMeter->getGlowTime(), root); 
     }
     if(bSend) {
 	  	root.printTo(opStr, len);

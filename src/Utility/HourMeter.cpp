@@ -24,6 +24,9 @@
 #include "../RTC/RTCStore.h"
 #include "../RTC/Clock.h"
 #include "../Protocol/Protocol.h"
+#include "../Utility/NVStorage.h"
+
+const int baseSeconds = 60 * 15;  // 15 minutes
 
 
 void 
@@ -36,18 +39,56 @@ CHourMeter::powerOnInit()
 void 
 CHourMeter::monitor(const CProtocol& frame)
 {
-  Clock.get().secondstime();
+//  long now = Clock.get().secondstime();
+  unsigned long now = millis();
+  if(frame.getRunState() != 0) {
+    if(_lastRunTime != 0) {
+      float tDelta = float(now - _lastRunTime) * 0.001;
+      _RunTime += tDelta;
+      if(frame.getGlowPlug_Voltage() != 0) {
+        if(_lastGlowTime != 0) {
+          _GlowTime += tDelta;
+        }    
+        _lastGlowTime = now;
+      }
+      else {
+        _lastGlowTime = 0;
+      }
+    }
+    _lastRunTime = now;
+    sHourMeter FLASHmem = NVstore.getHourMeter();
+    if(_RunTime > baseSeconds) {
+      if(RTC_Store.incRunTime())
+        FLASHmem.RunTime++;
+      _RunTime -= baseSeconds;
+    }
+    if(_GlowTime > baseSeconds) {
+      if(RTC_Store.incGlowTime())
+        FLASHmem.GlowTime++;
+      _GlowTime -= baseSeconds;
+    }
+    NVstore.setHourMeter(FLASHmem);
+  }
+  else {
+    _lastRunTime = 0;
+    _lastGlowTime = 0;
+  }
+    DebugPort.printf("CHourMeter %f %f\r\n", _RunTime, _GlowTime);
 }
 
-unsigned long 
+uint32_t 
 CHourMeter::getRunTime()
 {
-  return 0;
+  uint32_t rt = (uint32_t)_RunTime;
+  DebugPort.printf("HrMtr: %d %d %d\r\n", rt, RTC_Store.getRunTime(), NVstore.getHourMeter().RunTime);
+
+  return  rt + baseSeconds * RTC_Store.getRunTime() + baseSeconds * RTC_Store.getMaxRunTime() * NVstore.getHourMeter().RunTime;
 }
 
-unsigned long 
+uint32_t 
 CHourMeter::getGlowTime()
 {
-  return 0;
+  uint32_t gt = (uint32_t)_GlowTime;
+  return gt +  baseSeconds * RTC_Store.getGlowTime()  +  baseSeconds * RTC_Store.getMaxGlowTime() * NVstore.getHourMeter().GlowTime;
 }
 

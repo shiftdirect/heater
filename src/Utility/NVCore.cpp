@@ -110,6 +110,23 @@ CESP32_NVStorage::validatedLoad(const char* key, long& val, long defVal, long mi
 }
 
 bool
+CESP32_NVStorage::validatedLoad(const char* key, uint32_t& val, uint32_t defVal, uint32_t min, uint32_t max)
+{
+  val = preferences.getULong(key, defVal);
+  if(!INBOUNDS(val, min, max)) {
+
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<unsigned long> invalid read %s=%ld", key, val);
+    DebugPort.printf(" validator(%ld,%ld) reset to %ld\r\n", min, max, defVal);
+
+    val = defVal;
+    preferences.putULong(key, val);
+    return false;
+  }
+  return true;
+}
+
+
+bool
 CESP32_NVStorage::validatedLoad(const char* key, float& val, float defVal, float min, float max)
 {
   val = preferences.getFloat(key, defVal);
