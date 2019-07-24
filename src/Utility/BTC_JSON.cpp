@@ -23,6 +23,7 @@
 #include "DebugPort.h"
 #include "NVStorage.h"
 #include "../RTC/Clock.h"
+#include "../RTC/RTCStore.h"
 #include "../RTC/BTCDateTime.h"
 #include "../RTC/Timers.h"
 #include "../RTC/TimerManager.h"

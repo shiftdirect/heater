@@ -23,7 +23,7 @@
 #include "FuelGauge.h"
 #include "NVStorage.h"
 #include "DebugPort.h"
-#include "../RTC/Clock.h"
+#include "../RTC/RTCStore.h"
 
 CFuelGauge::CFuelGauge()
 {

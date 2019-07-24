@@ -90,6 +90,7 @@
 #include "cfg/pins.h"
 #include "RTC/Timers.h"
 #include "RTC/Clock.h"
+#include "RTC/RTCStore.h"
 #include "WiFi/BTCWifi.h"
 #include "WiFi/BTCWebServer.h"
 #include "WiFi/BTCota.h"
@@ -109,6 +110,7 @@
 #include "OLED/KeyPad.h"
 #include "Utility/TempSense.h"
 #include "Utility/DataFilter.h"
+#include "Utility/HourMeter.h"
 #include <rom/rtc.h>
 #include <esp_spiffs.h>
 #include <SPIFFS.h>
@@ -183,6 +185,10 @@ bool bHasOEMLCDController = false;
 bool bHasHtrData = false;
 
 // these variables will persist over a soft reboot.
+__NOINIT_ATTR int persistentRunTime;
+__NOINIT_ATTR int persistentGlowTime;
+CHourMeter* pHourMeter = NULL;
+
 __NOINIT_ATTR bool bForceInit; // = false;
 //__NOINIT_ATTR bool bUserON; // = false;
 //__NOINIT_ATTR uint8_t demandDegC;
@@ -310,11 +316,11 @@ extern "C" unsigned long __wrap_millis() {
 void setup() {
 
   // ensure cyclic mode is disabled after power on
-//  bool bPowerUpInit = false;
-//  if(rtc_get_reset_reason(0) == 1/* || bForceInit*/) {
-//    bPowerUpInit = true;
+  bool bESP32PowerUpInit = false;
+  if(rtc_get_reset_reason(0) == 1/* || bForceInit*/) {
+    bESP32PowerUpInit = true;
 //    bForceInit = false;
-//  }
+  }
 
   // initially, ensure the GPIO outputs are not activated during startup
   // (GPIO2 tends to be one with default chip startup)
@@ -458,6 +464,11 @@ void setup() {
 //  demandPump = RTC_Store.getDesiredPump();
 //  bCyclicEngaged = RTC_Store.getCyclicEngaged();
   DebugPort.printf("Previous cyclic active = %d\r\n", RTC_Store.getCyclicEngaged());   // state flag required for cyclic mode to persist properly after a WD reboot :-)
+
+  pHourMeter = new CHourMeter(persistentRunTime, persistentGlowTime);
+  if(bESP32PowerUpInit) {
+    pHourMeter->powerOnInit();  // ensure persistent memory variable are reset after powerup
+  }
 
   delay(1000); // just to hold the splash screeen for while
 }
