@@ -1,5 +1,7 @@
 rem mklink /H Afterburner.ino ..\..\src\AfterBurner\Afterburner.cpp
-mklink /J src ..\..\src
+mkdir src
+mklink /J src\lib ..\..\lib
+mklink /J src\src ..\..\src
 mklink /J data ..\..\data
 
 

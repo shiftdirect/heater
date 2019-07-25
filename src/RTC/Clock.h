@@ -22,7 +22,7 @@
 #ifndef __BTC_CLOCK_H__
 #define __BTC_CLOCK_H__
 
-#include "../Libraries/RTClib/RTClib.h"
+#include "../../lib/RTClib/RTClib.h"
 #include "BTCDateTime.h"
 #include "../cfg/BTCConfig.h"
 

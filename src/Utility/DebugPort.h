@@ -20,7 +20,7 @@
  * 
  */
 
-#include "../Libraries/TelnetSpy/TelnetSpy.h"
+#include "../../lib/TelnetSpy/TelnetSpy.h"
 
 #ifndef __DEBUGPORT_H__
 #define __DEBUGPORT_H__

@@ -25,7 +25,7 @@
 #include "../cfg/BTCConfig.h"
 
 #if USE_ADAFRUIT_SH1106 == 1
-#include "../Libraries/esp32-sh1106-oled/Adafruit_SH1106.h"
+#include "../../lib/esp32-sh1106-oled/Adafruit_SH1106.h"
 #define OLED_BASE_CLASS Adafruit_SH1106
 #endif
 #if USE_ADAFRUIT_SSD1306 == 1

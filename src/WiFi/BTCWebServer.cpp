@@ -33,7 +33,7 @@
 #include "../cfg/BTCConfig.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/Moderator.h"
-#include "../Libraries/WiFiManager-dev/WiFiManager.h"
+#include "../../lib/WiFiManager-dev/WiFiManager.h"
 #include <SPIFFS.h>
 #include "../Utility/NVStorage.h"
 #include <WiFiClient.h>

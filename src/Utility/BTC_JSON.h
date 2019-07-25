@@ -22,7 +22,7 @@
 #ifndef __BTC_JSON_H__
 #define __BTC_JSON_H__
 
-#include "../Libraries/ArduinoJson/ArduinoJson.h"
+#include "../../lib/ArduinoJson/ArduinoJson.h"
 #include "Moderator.h"
 
 extern char defaultJSONstr[64];

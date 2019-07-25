@@ -31,7 +31,7 @@
 #include "SetTimerScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
-#include "../Libraries/RTClib/RTClib.h"
+#include "../../lib/RTClib/RTClib.h"
 #include "../RTC/TimerManager.h"
 
 const char* briefDOW[] = { "S", "M", "T", "W", "T", "F", "S" };

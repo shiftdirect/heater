@@ -23,7 +23,7 @@
 #define __BTC_MODERATOR_H__
 
 #include <map>
-#include "../Libraries/ArduinoJson/ArduinoJson.h"
+#include "../../lib/ArduinoJson/ArduinoJson.h"
 #include "../RTC/Timers.h"
 #include "DebugPort.h"
 #include "BTC_GPIO.h"

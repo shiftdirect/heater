@@ -22,7 +22,7 @@
 #ifndef __BTC_TEMPSENSE_H__
 #define __BTC_TEMPSENSE_H__
 
-#include "../Libraries/esp32-ds18b20/ds18b20.h"
+#include "../../lib/esp32-ds18b20/ds18b20.h"
 
 class CTempSense {
 

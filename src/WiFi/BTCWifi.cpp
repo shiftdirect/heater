@@ -28,7 +28,7 @@
 #include "esp_system.h"
 #include <Preferences.h>
 #include "../Utility/NVStorage.h"
-#include "../Libraries/WiFiManager-dev/WiFiManager.h"
+#include "../../lib/WiFiManager-dev/WiFiManager.h"
 
 #define USE_AP  
 

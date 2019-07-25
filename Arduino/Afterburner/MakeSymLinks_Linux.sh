@@ -1,3 +1,5 @@
 #!/bin/sh
-ln -s ../../src src
+mkdir src
+ln -s ../../src src/src
+ln -s ../../lib src/lib
 ln -s ../../data data

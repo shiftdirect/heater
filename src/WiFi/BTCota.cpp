@@ -23,7 +23,7 @@
 #include "BTCWifi.h"
 #include "BTCota.h"
 #include "../cfg/BTCConfig.h"
-#include "../Libraries/esp32FOTA/src/esp32fota.h" // local copy used due to a couple of issues
+#include "../../lib/esp32FOTA/src/esp32fota.h" // local copy used due to a couple of issues
 #include "../Utility/helpers.h"
 #include <SPIFFS.h>
 #include <Update.h>
