@@ -181,8 +181,8 @@ CHeaterStorage::setHourMeter(const sHourMeter& newVals)
 {
 //  if(_calValues.hourMeter != newVals) {
   if(newVals != _calValues.hourMeter) {
-    _calValues.hourMeter = newVals;
-    _calValues.hourMeter.save();
+    _calValues.hourMeter = newVals;  // stage changes
+    save();                       // request save to NV
     return true;
   };
   return false;
@@ -221,6 +221,7 @@ CESP32HeaterStorage::load()
   _calValues.userSettings.load();
   _calValues.MQTT.load();
   _calValues.Credentials.load();
+  _calValues.hourMeter.load();
 }
 
 void 
@@ -228,15 +229,16 @@ CESP32HeaterStorage::doSave()
 {
   if(_bShouldSave) {
     _bShouldSave = false;
-  DebugPort.println("Saving to NV storage");
-  _calValues.heaterTuning.save();
-  for(int i=0; i<14; i++) {
-    _calValues.timer[i].save();
+    DebugPort.println("Saving to NV storage");
+    _calValues.heaterTuning.save();
+    for(int i=0; i<14; i++) {
+      _calValues.timer[i].save();
+    }
+    _calValues.userSettings.save();
+    _calValues.MQTT.save();
+    _calValues.Credentials.save();
+    _calValues.hourMeter.save();
   }
-  _calValues.userSettings.save();
-  _calValues.MQTT.save();
-  _calValues.Credentials.save();
-}
 }
 
 void 

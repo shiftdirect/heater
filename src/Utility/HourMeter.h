@@ -26,10 +26,14 @@
 class CProtocol;
 
 class CHourMeter {
+  const int baseSeconds = 60 * 15;  // 15 minutes
+
   float& _RunTime;
   float& _GlowTime;
   unsigned long _lastRunTime;
   unsigned long _lastGlowTime;
+  uint32_t _getLclRunTime();    // volatile persistent variable + RTC stored rollovers
+  uint32_t _getLclGlowTime();   // volatile persistent variable + RTC stored rollovers
 public:
   CHourMeter(float &runtime, float& glowtime) : 
     _RunTime(runtime), 
@@ -44,9 +48,11 @@ public:
     _GlowTime = glowtime; 
   };
   void init(bool poweron);
+  void reset();
+  void store();                // transfer current state to permanent NV storage
   void monitor(const CProtocol& frame);
-  uint32_t getRunTime();
-  uint32_t getGlowTime();
+  uint32_t getRunTime();       // total time, local tracked + last NV stored value
+  uint32_t getGlowTime();      // total time, local tracked + last NV stored value
 };
 
 extern CHourMeter* pHourMeter;
