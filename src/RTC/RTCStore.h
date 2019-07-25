@@ -46,6 +46,8 @@ public:
   void setFuelGauge(float val);
   void setDesiredTemp(uint8_t val);
   void setDesiredPump(uint8_t val);
+  void resetRunTime();
+  void resetGlowTime();
   bool incRunTime();
   bool incGlowTime();
   void setCyclicEngaged(bool _CyclicEngaged);

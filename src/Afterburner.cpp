@@ -458,11 +458,9 @@ void setup() {
 //  bCyclicEngaged = RTC_Store.getCyclicEngaged();
   DebugPort.printf("Previous cyclic active = %d\r\n", RTC_Store.getCyclicEngaged());   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
-  pHourMeter = new CHourMeter(persistentRunTime, persistentGlowTime);
-  if(bESP32PowerUpInit || RTC_Store.getBootInit()) {   // ensure we reset out persistent vars on power up, or OTA update
-    RTC_Store.setBootInit(false);
-    pHourMeter->powerOnInit();  // ensure persistent memory variable are reset after powerup
-  }
+  pHourMeter = new CHourMeter(persistentRunTime, persistentGlowTime); // persistent vars are only trustworthy with SW reboots
+  pHourMeter->init(bESP32PowerUpInit || RTC_Store.getBootInit());  // ensure persistent memory variable are reset after powerup, or OTA update
+  RTC_Store.setBootInit(false);
 
   delay(1000); // just to hold the splash screeen for while
 }
@@ -1249,6 +1247,16 @@ void checkDebugCommands()
       }
       else if(rxVal == 'r') {
         ESP.restart();            // reset the esp
+      }
+      else if(rxVal == ('h' & 0x1f)) {   // CTRL-H hourmeter reset
+        sHourMeter FLASHmem = NVstore.getHourMeter();
+        FLASHmem.RunTime = 0;
+        FLASHmem.GlowTime = 0;
+        NVstore.setHourMeter(FLASHmem);
+        RTC_Store.resetRunTime();
+        RTC_Store.resetGlowTime();
+        persistentRunTime = 0;
+        persistentGlowTime = 0;
       }
     }
 #ifdef PROTOCOL_INVESTIGATION    

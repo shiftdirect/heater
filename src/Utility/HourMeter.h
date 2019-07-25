@@ -43,7 +43,7 @@ public:
     _RunTime = runtime; 
     _GlowTime = glowtime; 
   };
-  void powerOnInit();
+  void init(bool poweron);
   void monitor(const CProtocol& frame);
   uint32_t getRunTime();
   uint32_t getGlowTime();

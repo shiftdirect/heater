@@ -154,6 +154,19 @@ CRTC_Store::getDesiredPump()
   return _demandPump;
 }
 
+void
+CRTC_Store::resetRunTime()
+{
+  _RunTime = 0;
+  _PackAndSaveByte6();
+}
+
+void
+CRTC_Store::resetGlowTime()
+{
+  _GlowTime = 0;
+  _PackAndSaveByte6();
+}
 
 bool
 CRTC_Store::incRunTime()

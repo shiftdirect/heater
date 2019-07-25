@@ -464,6 +464,7 @@ sHourMeter::save()
   preferences.putULong("RunTime", RunTime);
   preferences.putULong("GlowTime", GlowTime);
   preferences.end();    
+  DebugPort.printf("Hourmeter NV save: Run=%d, Glow=%d\r\n", RunTime, GlowTime);
 }
 
 void 
@@ -474,4 +475,5 @@ sHourMeter::load()
   validatedLoad("RunTime", RunTime, 0, 0, 0xffffffffL);
   validatedLoad("GlowTime", GlowTime, 0, 0, 0xffffffffL);
   preferences.end();    
+  DebugPort.printf("Hourmeter NV read: Run=%d, Glow=%d\r\n", RunTime, GlowTime);
 }
