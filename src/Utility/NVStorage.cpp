@@ -183,7 +183,9 @@ CHeaterStorage::setHourMeter(const sHourMeter& newVals)
   if(newVals != _calValues.hourMeter) {
     _calValues.hourMeter = newVals;
     _calValues.hourMeter.save();
+    return true;
   };
+  return false;
 }
 
 

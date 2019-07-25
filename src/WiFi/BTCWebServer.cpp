@@ -712,9 +712,9 @@ void onUploadCompletion()
       DebugPort.println("WEB: FIRMWARE UPDATE FAIL");
       server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
     }
+    forceBootInit();
     delay(1000);
     // javascript redirects to root page so we go there after reboot!
-    forceBootInit();
     ESP.restart();                             // reboot
   }
 }

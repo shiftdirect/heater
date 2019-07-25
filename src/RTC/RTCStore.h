@@ -26,14 +26,14 @@
 
 
 class CRTC_Store {
-  bool _accessed[4];  // [0] - bytes 0..3, [1] byte 4, [2] byte 5, [3] byte 6
-  float _fuelgauge;
-  uint8_t _demandDegC;
-  uint8_t _demandPump;
-  bool    _CyclicEngaged;
-  bool    _bit6;
-  uint8_t _RunTime;
-  uint8_t _GlowTime;
+  bool _accessed[4];       // [0] - bytes 0..3, [1] byte 4, [2] byte 5, [3] byte 6
+  float _fuelgauge;        // Byte0..Byte3 
+  uint8_t _demandDegC;     // Byte4[0..5]
+  bool    _BootInit;       // Byte4[6]
+  bool    _CyclicEngaged;  // Byte4[7]
+  uint8_t _demandPump;     // Byte5[0..5]
+  uint8_t _RunTime;        // Byte6[0..4] 
+  uint8_t _GlowTime;       // Byte6[5..7]
   void    _ReadAndUnpackByte4();
   void    _PackAndSaveByte4();
   void    _ReadAndUnpackByte5();
@@ -49,10 +49,12 @@ public:
   bool incRunTime();
   bool incGlowTime();
   void setCyclicEngaged(bool _CyclicEngaged);
+  void setBootInit(bool val = true);
   float getFuelGauge();
   uint8_t getDesiredTemp();
   uint8_t getDesiredPump();
   bool    getCyclicEngaged();
+  bool    getBootInit();
   int getRunTime();
   int getGlowTime();
   int getMaxGlowTime() const { return 8; };

@@ -53,6 +53,7 @@ CRTC_Store::CRTC_Store()
   _demandDegC = 22;
   _demandPump = 22;
   _CyclicEngaged = false;
+  _BootInit = true;
   _RunTime = 0;
   _GlowTime = 0;
 }
@@ -109,6 +110,20 @@ CRTC_Store::getDesiredTemp()
 {
   _ReadAndUnpackByte4();
   return _demandDegC;
+}
+
+bool 
+CRTC_Store::getBootInit()
+{
+  _ReadAndUnpackByte4();
+  return _BootInit;
+}
+
+void 
+CRTC_Store::setBootInit(bool val)
+{
+  _BootInit = val;
+  _PackAndSaveByte4();
 }
 
 bool  
@@ -180,9 +195,9 @@ CRTC_Store::_ReadAndUnpackByte4()
     Clock.readData((uint8_t*)&NVval, 1, 4);
     _demandDegC = NVval & 0x3f;
     _CyclicEngaged = (NVval & 0x80) != 0;
-    _bit6 = (NVval & 0x40) != 0;
+    _BootInit = (NVval & 0x40) != 0;
     _accessed[1] = true;
-    DebugPort.printf("RTC_Store - read byte4: degC=%d, CyclicOn=%d, bit6=%d\r\n", _demandDegC, _CyclicEngaged, _bit6);
+    DebugPort.printf("RTC_Store - read byte4: degC=%d, CyclicOn=%d, BootInit=%d\r\n", _demandDegC, _CyclicEngaged, _BootInit);
   }
 }
 
@@ -190,7 +205,7 @@ void
 CRTC_Store::_PackAndSaveByte4()
 {
   uint8_t NVval = (_CyclicEngaged ? 0x80 : 0x00) 
-                | (_bit6 ? 0x40 : 0x00)
+                | (_BootInit ? 0x40 : 0x00)
                 | (_demandDegC & 0x3f);
   Clock.saveData((uint8_t*)&NVval, 1, 4);
 }

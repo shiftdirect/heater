@@ -132,20 +132,20 @@ const char* getTimerJSONStr(int timer, int param)
       sprintf(StopStr, "%d %02d:%02d", timer+1, timerInfo.stop.hour, timerInfo.stop.min);
       return StopStr;
     case 2:
-      if(timerInfo.enabled == 0) {
+      if(timerInfo.enabled == 0) {                   // timer disabled
         sprintf(DayStr, "%d None", timer+1);
       }
-      else if(timerInfo.enabled & 0x80) {
+      else if(timerInfo.enabled & 0x80) {            // only for next occurrence
         sprintf(DayStr, "%d Next", timer+1);
       }
       else {
         comma = 0;
-        sprintf(DayStr, "%d ", timer+1);
+        sprintf(DayStr, "%d ", timer+1); 
         for(i=0; i<7; i++) {
           if(timerInfo.enabled & (0x01<<i)) {
             if(comma)
               strcat(DayStr, ",");
-            strcat(DayStr, daysOfTheWeek[i]);
+            strcat(DayStr, daysOfTheWeek[i]);        // show active days
             comma = 1;
           }
         }

@@ -13,7 +13,8 @@ All the REAL source code lives via the src symbolic link.
 The real core exists as a .cpp file: repo\src\Afterburner.cpp
 
 Arduino\Afterburner\Afterburner.ino is EMPTY
-Arduino\Afterburner\src links to repo\src\  
+Arduino\Afterburner\src\src links to repo\src\  
+Arduino\Afterburner\src\lib links to repo\lib\  
 Arduino\Afterburner\data links to repo\data
 
 Ugggh. I hate Arduino IDE (and it's build environment!)

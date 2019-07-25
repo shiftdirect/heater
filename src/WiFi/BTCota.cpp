@@ -31,6 +31,8 @@
 #include "../Utility/MODBUS-CRC16.h"
 #include "esp_ota_ops.h"
 
+bool CheckFirmwareCRC(int filesize);
+void onSuccess();
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));
 unsigned long FOTAtime = millis() + 60000;  // initial check in a minutes time 
@@ -68,6 +70,7 @@ void initOTA(){
 		.onEnd([]() {
 		DebugPort.println("\nEnd");
     DebugPort.handle();    // keep telnet spy alive
+    forceBootInit();
     delay(100);
 //    DebugPort.end();       // force graceful close of telnetspy - ensures a client will reconnect cleanly
 	})
@@ -109,6 +112,8 @@ void DoOTA()
 //    FOTAtime = millis() + 600000;  // 10 minutes
     FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
+      FOTA.onComplete(CheckFirmwareCRC);     // upload complete, but not yet verified
+      FOTA.onSuccess(onSuccess);
       FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
       DebugPort.println("Checking for new firmware...");
       if(FOTA.execHTTPcheck()) {
@@ -182,4 +187,9 @@ bool CheckFirmwareCRC(int filesize)
   DebugPort.printf("Upload CRC TEST: calcCRC= %04X, fileCRC = %08X\r\n", CRCengine.get(), fileCRC);
 
   return fileCRC == CRCengine.get();
+}
+
+void onSuccess() 
+{
+  forceBootInit();
 }

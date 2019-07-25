@@ -188,13 +188,6 @@ bool bHasHtrData = false;
 __NOINIT_ATTR float persistentRunTime;
 __NOINIT_ATTR float persistentGlowTime;
 
-__NOINIT_ATTR bool bForceInit; // = false;
-//__NOINIT_ATTR bool bUserON; // = false;
-//__NOINIT_ATTR uint8_t demandDegC;
-//__NOINIT_ATTR uint8_t demandPump;
-//uint8_t demandDegC;
-//uint8_t demandPump;
-//bool bCyclicEngaged;
 CFuelGauge FuelGauge; 
 CRTC_Store RTC_Store;
 CHourMeter* pHourMeter = NULL;
@@ -466,7 +459,8 @@ void setup() {
   DebugPort.printf("Previous cyclic active = %d\r\n", RTC_Store.getCyclicEngaged());   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
   pHourMeter = new CHourMeter(persistentRunTime, persistentGlowTime);
-  if(bESP32PowerUpInit) {
+  if(bESP32PowerUpInit || RTC_Store.getBootInit()) {   // ensure we reset out persistent vars on power up, or OTA update
+    RTC_Store.setBootInit(false);
     pHourMeter->powerOnInit();  // ensure persistent memory variable are reset after powerup
   }
 
@@ -826,7 +820,7 @@ void loop()
           DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
           RTC_Store.setCyclicEngaged(false);
         }
-        
+
         pHourMeter->monitor(HeaterFrame2);
       }
       updateJSONclients(bReportJSONData);
@@ -1039,7 +1033,7 @@ void reqPumpPrime(bool on)
 
 void forceBootInit()
 {
-  bForceInit = true;
+  RTC_Store.setBootInit();
 }
 
 uint8_t getDemandDegC() 
