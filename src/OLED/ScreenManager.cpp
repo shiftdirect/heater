@@ -40,6 +40,7 @@
 #include "VersionInfoScreen.h"
 #include "HomeMenuSelScreen.h"
 #include "OtherOptionsScreen.h"
+#include "HourMeterScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -299,8 +300,9 @@ CScreenManager::begin(bool bNoClock)
   // create User Settings screens loop 
   menuloop.clear();
   menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
-  menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // experimental settings screen
+  menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
   menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
+  menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
   menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
   menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
   _Screens.push_back(menuloop);

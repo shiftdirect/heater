@@ -44,7 +44,7 @@ Working so far:
 * Two new experimental thermostat modes (No practical testing - presently too hot in .au!):  
     Tighten or loosen the thermostat temperature range by specifying a hysteresis value. eg tell the heater it is 23 degrees when it really is only 22.25 degrees (only 0.25 above set point).  
     Request a linear change in Hz according to the deviation from the setpoint
-* 2 external digital inputs, 2 digital outputs, analogue input 
+* 2 external digital inputs, 2 digital outputs, analogue input .This would allow external timer units for example, or analogue temperature demand (which is still only 1 degree resolution with standard heater thermostat). 
 * New Mk2 "Red PCB" that properly fits into an off the shelf case (requires machining)
 * Software updates over WiFi: 
     Native OTA via espota.exe or espota.py (AP or STA mode)
@@ -54,14 +54,14 @@ Working so far:
 * "Fuel gauge" - Integrates pump frequency, assumes a repeatable dose of fuel per pump stroke.
 * Low voltage cut out, definable threshold - auto adjusts for cable voltage drop during start
 * Temperature probe offset to correct adverse readings.
+* Hour meter - run time, glow time
  
 
 To be implemented 
 --------------------------
-* 433MHz Rx stream, 433MHz Tx stream connections. This would allow external timer units for example, or analogue temperature demand (which is still only 1 degree resolution with standard heater thermostat).
+* 433MHz Rx stream, 433MHz Tx stream connections. 
 * MQTT pub/sub 
 * Regular Hot Burn cycle (DPF mode!)
-* Hour meter - run time, glow time
 * list under construction.....
 
 Suggestions

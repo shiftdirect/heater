@@ -476,7 +476,7 @@ bool makeJSONStringSysInfo(CModerator& moderator, char* opStr, int len)
     sprintf(str, "%d/%d/%d %02d:%02d:%02d", now.day(), now.month(), now.year(), now.hour(), now.minute(), now.second());
     bSend |= moderator.addJson("DateTime", str, root); 
     if(bTriggerSysParams) {
-      bSend |= moderator.addJson("UpTime", sysUptime(), root); 
+      bSend |= moderator.addJson("SysUpTime", sysUptime(), root); 
       bSend |= moderator.addJson("SysVer", getVersionStr(), root); 
       bSend |= moderator.addJson("SysDate", getVersionDate(), root); 
       bSend |= moderator.addJson("SysFreeMem", ESP.getFreeHeap(), root); 
