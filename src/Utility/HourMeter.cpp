@@ -31,11 +31,13 @@
 void 
 CHourMeter::init(bool poweron)
 {
-  if(poweron) {
-    _RunTime = 0;  // definitely untrustworthy after power on or OTA updates
-    _GlowTime = 0;
+  // power on reset or OTA update - cannot trust persistent values - they are likely un-initialised
+  if(poweron) {       
+    RunTime.reset();  
+    GlowTime.reset();
   }
-  if(_RunTime || _GlowTime || RTC_Store.getRunTime() || RTC_Store.getGlowTime()) {
+  // if there is a remnant time held, add it to the real NV stored value
+  if(RunTime.get() || GlowTime.get() || RTC_Store.getRunTime() || RTC_Store.getGlowTime()) {
     store();
   }
 }
@@ -45,101 +47,110 @@ CHourMeter::reset()
 {
   RTC_Store.resetRunTime();
   RTC_Store.resetGlowTime();
-  _RunTime = 0;
-  _GlowTime = 0;
+  RunTime.reset();
+  GlowTime.reset();
+}
+
+void
+CHourMeter::resetHard()
+{
+  reset();
+  sHourMeter NV = NVstore.getHourMeter();
+  NV.RunTime = 0;
+  NV.GlowTime = 0;
+  NVstore.setHourMeter(NV);
 }
 
 void
 CHourMeter::store()
 {
   sHourMeter NV = NVstore.getHourMeter();
-  NV.RunTime += _RunTime + baseSeconds * RTC_Store.getRunTime();    // add any residual to the real NV stored value
-  NV.GlowTime += _GlowTime + baseSeconds * RTC_Store.getGlowTime();
-  NVstore.setHourMeter(NV);
-  reset();
+  NV.RunTime += RunTime.get() + RTC_storageInterval * RTC_Store.getRunTime();    // add any residual to the real NV stored value
+  NV.GlowTime += GlowTime.get() + RTC_storageInterval * RTC_Store.getGlowTime();
+  NVstore.setHourMeter(NV);  // stage new values, and setup for save (if changed)
+  reset();                   // zero time tracked in this class
 }
 
 void 
 CHourMeter::monitor(const CProtocol& frame)
 {
-//  long now = Clock.get().secondstime();
-  unsigned long now = millis();
   if(frame.getRunState() == 0) {
-    // heater is stopped - save remnant times to flash
-    if(_lastRunTime) {
-      store();   // heater hass stopped - save remnant times to flash
+    // heater is stopped 
+    if(RunTime.active()) {
+      store();   // initial stop of heater - save residual times to NV
     }
-    _lastRunTime = 0;
-    _lastGlowTime = 0;
+    RunTime.stop();   // cancel time tracking
+    GlowTime.stop();
   }
   else {
     // heater is running
-    if(_lastRunTime != 0) {
-      // first sample after start is ignored
-      float tDelta = float(now - _lastRunTime) * 0.001;
-      _RunTime += tDelta;
-      if(frame.getGlowPlug_Voltage() != 0) {
-        if(_lastGlowTime != 0) {
-          _GlowTime += tDelta;
-        }    
-        _lastGlowTime = now;
-      }
-      else {
-        _lastGlowTime = 0;
-      }
+    unsigned long now = millis();
+    RunTime.recordTime(now);   // track run time of heater
+    if(frame.getGlowPlug_Voltage() != 0) {
+      GlowTime.recordTime(now);  // track on time of glow plug
     }
-    _lastRunTime = now;
+    else {
+      GlowTime.stop();
+    }
+    // check for RAM counters time interval rollover
     sHourMeter NV = NVstore.getHourMeter();
-    // test for rollover of our local run time tracking
-    if(_RunTime > baseSeconds) {
-      _RunTime -= baseSeconds;
-      if(RTC_Store.incRunTime()) {       // returns true if rolled back to zero
+    // rollover run time tracking?
+    if(RunTime.get() > RTC_storageInterval) {
+      RunTime.offset(-RTC_storageInterval);
+      if(RTC_Store.incRunTime()) {       // returns true if RTC counter rolled back to zero
         // rolled RTC intermediate store - push into FLASH
-        NV.RunTime += baseSeconds * RTC_Store.getMaxRunTime();   // bump by our maximum storable time
+        NV.RunTime += RTC_storageInterval * RTC_Store.getMaxRunTime();   // bump NV by our maximum storable time
       }
     }
-    // test for rollover of our local glow time tracking
-    if(_GlowTime > baseSeconds) {
-      _GlowTime -= baseSeconds;
+    // rollover glow time tracking?
+    if(GlowTime.get() > RTC_storageInterval) {
+      GlowTime.offset(-RTC_storageInterval);
       if(RTC_Store.incGlowTime()) {       // returns true if rolled back to zero
         // rolled RTC intermediate store - push into FLASH
-        NV.GlowTime += baseSeconds * RTC_Store.getMaxGlowTime();  // bump by our maximum storable time
+        NV.GlowTime += RTC_storageInterval * RTC_Store.getMaxGlowTime();  // bump NV by our maximum storable time
       }
     }
-    NVstore.setHourMeter(NV);  // internally moderated, only actually saves if values have changed
+    NVstore.setHourMeter(NV);  // internally moderated, will only actually save if a value has changed
   }
-//    DebugPort.printf("CHourMeter %f %f\r\n", _RunTime, _GlowTime);
 }
 
 uint32_t
 CHourMeter::_getLclRunTime()
 {
-  uint32_t rt = (uint32_t)_RunTime;
+  uint32_t rt = RunTime.get();
+#ifdef DEBUG_HOURMETER
   DebugPort.printf("HrMtr _GetLclRunTime(): %d %d\r\n", rt, RTC_Store.getRunTime());
-  return  rt + baseSeconds * RTC_Store.getRunTime();
-}
-
-uint32_t
-CHourMeter::_getLclGlowTime()
-{
-  uint32_t gt = (uint32_t)_GlowTime;
-  DebugPort.printf("HrMtr _GetLclGlowTime(): %d %d\r\n", gt, RTC_Store.getGlowTime());
-  return  gt + baseSeconds * RTC_Store.getGlowTime();
+#endif
+  return  rt + RTC_storageInterval * RTC_Store.getRunTime();
 }
 
 uint32_t 
 CHourMeter::getRunTime()
 {
   uint32_t rt = _getLclRunTime();
+#ifdef DEBUG_HOURMETER
   DebugPort.printf("HrMtr GetRunTime(): %d %d\r\n", rt, NVstore.getHourMeter().RunTime);
+#endif
   return  rt + NVstore.getHourMeter().RunTime;
+}
+
+uint32_t
+CHourMeter::_getLclGlowTime()
+{
+  uint32_t gt = GlowTime.get();
+#ifdef DEBUG_HOURMETER
+  DebugPort.printf("HrMtr _GetLclGlowTime(): %d %d\r\n", gt, RTC_Store.getGlowTime());
+#endif
+  return  gt + RTC_storageInterval * RTC_Store.getGlowTime();
 }
 
 uint32_t 
 CHourMeter::getGlowTime()
 {
   uint32_t gt = _getLclGlowTime();
-  DebugPort.printf("HrMtr GetGlowTime(): %d %d\r\n", gt, NVstore.getHourMeter().RunTime);
+#ifdef DEBUG_HOURMETER
+  DebugPort.printf("HrMtr GetGlowTime(): %d %d\r\n", gt, NVstore.getHourMeter().GlowTime);
+#endif
   return gt + NVstore.getHourMeter().GlowTime;
 }
 

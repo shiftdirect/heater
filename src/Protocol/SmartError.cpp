@@ -113,7 +113,12 @@ CSmartError::monitor(uint8_t newRunState)
   _prevRunState = newRunState;
 }
 
-bool
+//
+// retval:
+// 0 - OK
+// 1 - Warning less than 12/24 (or .5V over LVC for higher LVC levels)
+// 2 - Warning less than LVC
+int
 CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
 {
  // check for low voltage
@@ -126,10 +131,22 @@ CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
         _Error = 2;     // +1 over displayed error code
         requestOff();
       }
-      return false;
+      return 2;
+    }
+    int alert = Thresh + 0.5;
+    if(NVstore.getHeaterTuning().sysVoltage == 120) {
+      if(alert < 12)
+        alert = 12;
+    }
+    else {
+      if(alert < 24)
+        alert = 24;
+    }
+    if(ipVolts < alert) {
+      return 1;
     }
   }
-  return true;
+  return 0;
 }
 
 

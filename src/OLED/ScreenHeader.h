@@ -46,6 +46,7 @@ class CScreenHeader : public CScreen {
   bool _colon;
   uint8_t  _animateCount;
   uint8_t  _batteryCount;
+  uint8_t  _batteryWarn;
 protected:
   void showBTicon();
   void showWifiIcon();

@@ -31,7 +31,7 @@ public:
   void inhibit();
   void monitor(const CProtocol& heaterFrame);
   void monitor(uint8_t runstate);
-  bool checkVolts(float volts, float plugI, bool throwfault=true);
+  int checkVolts(float volts, float plugI, bool throwfault=true);  // 0 = OK, 1 = within 0.5V of LVC, 2 = under LVC
   uint8_t getError();
 };
 

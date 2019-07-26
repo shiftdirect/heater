@@ -245,6 +245,7 @@ CRTC_Store::_PackAndSaveByte5()
 void
 CRTC_Store::_PackAndSaveByte6()
 {
+  DebugPort.printf("RTC_Store - save byte 6: Run=%d, Glow=%d\r\n", _RunTime, _GlowTime);
   uint8_t NVval = ((_GlowTime & 0x07)<<5) | (_RunTime & 0x1f);
   Clock.saveData((uint8_t*)&NVval, 1, 6);
 }
@@ -258,7 +259,7 @@ CRTC_Store::_ReadAndUnpackByte6()
     _GlowTime = (NVval >> 5) & 0x07;
     _RunTime = NVval & 0x1f;
     _accessed[3] = true;
-    DebugPort.printf("RTC_Store - read byte6: glow=%d, run=%d\r\n", _GlowTime, _RunTime);
+    DebugPort.printf("RTC_Store - read byte6: Run=%d, Glow=%d\r\n", _RunTime, _GlowTime);
   }
 }
 

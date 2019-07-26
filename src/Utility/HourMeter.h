@@ -23,29 +23,59 @@
 #include "../RTC/RTCStore.h"
 #include "NVStorage.h"
 
+#define DEBUG_HOURMETER
+
+
 class CProtocol;
 
-class CHourMeter {
-  const int baseSeconds = 60 * 15;  // 15 minutes
+class sRunTime {
+  float& persistentVal;
+  unsigned long lastSampleTime;
+public:
+  sRunTime(float& refVal) : persistentVal(refVal) { 
+    lastSampleTime = 0; 
+  };
+  void reset() {
+    persistentVal = 0;
+  };
+  uint32_t get() const {
+    return (uint32_t)persistentVal;
+  }
+  bool active() const {
+    return lastSampleTime != 0;
+  }
+  void stop() {
+    lastSampleTime = 0;
+  }
+  float recordTime(unsigned long now) {
+    float rVal = 0;
+    if(lastSampleTime)
+      rVal = float((unsigned long)(now - lastSampleTime)) * 0.001;
+    lastSampleTime = now;
+    persistentVal += rVal;
+    return rVal;
+  } 
+  void offset(float ofs) {
+    persistentVal += ofs;
+  }
 
-  float& _RunTime;
-  float& _GlowTime;
-  unsigned long _lastRunTime;
-  unsigned long _lastGlowTime;
+};
+
+class CHourMeter {
+  const int RTC_storageInterval = 60 * 10;  // 10 minutes
+
+  sRunTime RunTime;
+  sRunTime GlowTime;
   uint32_t _getLclRunTime();    // volatile persistent variable + RTC stored rollovers
   uint32_t _getLclGlowTime();   // volatile persistent variable + RTC stored rollovers
 public:
   CHourMeter(float &runtime, float& glowtime) : 
-    _RunTime(runtime), 
-    _GlowTime(glowtime) 
+    RunTime(runtime),
+    GlowTime(glowtime) 
   {
-    _lastRunTime = 0;
-    _lastGlowTime = 0;
-    DebugPort.printf("CHourMeter %f %f\r\n", _RunTime, _GlowTime);
-  };
-  void associate(float &runtime, float& glowtime) {
-    _RunTime = runtime; 
-    _GlowTime = glowtime; 
+#ifdef DEBUG_HOURMETER
+    DebugPort.printf("CHourMeter %d %d\r\n", RunTime.get(), GlowTime.get());
+#endif
   };
   void init(bool poweron);
   void reset();
@@ -53,6 +83,7 @@ public:
   void monitor(const CProtocol& frame);
   uint32_t getRunTime();       // total time, local tracked + last NV stored value
   uint32_t getGlowTime();      // total time, local tracked + last NV stored value
+  void resetHard();
 };
 
 extern CHourMeter* pHourMeter;

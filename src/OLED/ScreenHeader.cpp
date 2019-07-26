@@ -134,9 +134,43 @@ CScreenHeader::animate()
     int xPos = X_BATT_ICON;   
     int yPos = Y_BATT_ICON;
     showTimers();
+
+    switch(_batteryCount) {
+      case 0:
+        // establish  battery icon flash pattern
+        // > 0.5 over LVC - solid
+        // < 0.5 over LVC - slow flash
+        // < LVC - fast flash
+        _batteryWarn = SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false);
+        
+        showBatteryIcon(getBatteryVoltage(true));
+        break;
+      case 1:
+        if(_batteryWarn == 2)
+          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
+        break;
+      case 2:
+        if(_batteryWarn == 2)
+          showBatteryIcon(getBatteryVoltage(true));
+        break;
+      case 3:
+        if(_batteryWarn)   // works for either < LVC, or < LVC+0.5
+          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
+        break;
+      case 4:
+        if(_batteryWarn == 2)
+          showBatteryIcon(getBatteryVoltage(true));
+        break;
+      case 5:
+        if(_batteryWarn == 2)
+          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
+        break;
+
+    }
+/*    
     switch(_batteryCount) {
       case 3:
-        if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false)) { // check but do not fault
+        if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false) == 0) { // check but do not fault
           showBatteryIcon(getBatteryVoltage(true));
         }
         else {
@@ -147,6 +181,7 @@ CScreenHeader::animate()
         showBatteryIcon(getBatteryVoltage(true));
         break;
     }
+*/
   }
 
   showWifiIcon();
