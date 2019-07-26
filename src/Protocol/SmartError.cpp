@@ -113,40 +113,53 @@ CSmartError::monitor(uint8_t newRunState)
   _prevRunState = newRunState;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// checkVolts(float ipVolts, float glowI, bool throwfault)
 //
-// retval:
-// 0 - OK
-// 1 - Warning less than 12/24 (or .5V over LVC for higher LVC levels)
-// 2 - Warning less than LVC
+// Performs low voltage cutout function / testing
+// Input voltage drop is compensated here by using the glow plug current, 0.1V/A
+//
+// returns:
+//    0 - OK
+//    1 - Warning: Above LVC, but less than 12/24 (or .5V over LVC for higher LVC levels)
+//    2 - Error:   LVC tripped
 int
 CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
 {
- // check for low voltage
- // values here are x10 integers
- if(NVstore.getHeaterTuning().lowVolts) {   // only if enabled
-    float cableComp = glowI * 0.1;             // allow 1V drop for 10A current (bit naive but better than no compensation)
-    float Thresh = NVstore.getHeaterTuning().getLVC() - cableComp;  // NVstore
-    if(ipVolts < Thresh) {
-      if(throwfault) {
-        _Error = 2;     // +1 over displayed error code
-        requestOff();
-      }
-      return 2;
+  // check for low voltage
+  // Native NV values here are x10 integers
+
+  // loom compenstaion, allow 1V drop for 10A current (bit naive but better than no compensation)
+  float cableComp = glowI * 0.1;             
+  float threshLVC = NVstore.getHeaterTuning().getLVC() - cableComp;  // NVstore
+  
+  // test low voltage cutout
+  if(ipVolts < threshLVC) {
+    if(throwfault) {     // only throw faults if directed to do so
+      _Error = 2;        // internals error codes are +1 over displayed error code
+      requestOff();      // shut heater down
     }
-    int alert = Thresh + 0.5;
-    if(NVstore.getHeaterTuning().sysVoltage == 120) {
-      if(alert < 12)
-        alert = 12;
-    }
-    else {
-      if(alert < 24)
-        alert = 24;
-    }
-    if(ipVolts < alert) {
-      return 1;
-    }
+    return 2;            // Low voltage return value = 2
   }
-  return 0;
+
+  // warning threshold
+  float threshWarn = threshLVC + 0.5;   // nominally create a warning threshold, 0.5V over LVC threhsold
+  float alertlimit;                     // but always introduce it if below system voltage
+  if(NVstore.getHeaterTuning().sysVoltage == 120) {
+    alertlimit = 12.0 - cableComp;
+  }
+  else {
+    alertlimit = 24.0 - cableComp;
+  }
+  if(threshWarn < alertlimit) {
+    threshWarn = alertlimit;
+  }
+
+  if(ipVolts < threshWarn) {
+    return 1;  // LVC OK, but below warning threshold, return code = 1
+  }
+
+  return 0;  // all good, return code = 0
 }
 
 
@@ -154,8 +167,5 @@ CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
 uint8_t 
 CSmartError::getError()
 {
-  if(_Error) {
-    return _Error;
-  }
-  return 0;
+  return _Error;
 }
