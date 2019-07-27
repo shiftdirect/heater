@@ -365,8 +365,8 @@ CBluetoothHC05::decodeMACresponse(char* pResponse, int len)
 		char* pDest = _MAC;        
 		char* pSrc = MACdecode;
 		for (int i = 0; i < 6; i++) {
-			*pDest++ = *pSrc++;
-			*pDest++ = *pSrc++;
+			*pDest++ = toupper(*pSrc++);
+			*pDest++ = toupper(*pSrc++);
 			*pDest++ = ':';
 		}
 		*--pDest = 0;  // step back and replace last colon with the null terminator!

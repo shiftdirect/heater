@@ -80,7 +80,8 @@ CPrimingScreen::show()
   // show next/prev menu navigation line
   switch(_paramSel) {
     case 0:
-      _printMenuText(_display.xCentre(), yPos, " \021    \030Edit    \020 ", _paramSel == 0, eCentreJustify);
+      _printMenuText(_display.xCentre(), 53, " \021                \020 ", _paramSel == 0, eCentreJustify);
+      _printMenuText(_display.xCentre(), yPos, "\030Edit", false, eCentreJustify);
       break;
     case 1:
     case 2:
@@ -296,7 +297,7 @@ CPrimingScreen::keyHandler(uint8_t event)
     // press DOWN
     if(event & key_Down) {
       if(_paramSel == 0) {
-        _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::VersionUI);  // force return to main menu
+        _ScreenManager.selectMenu(CScreenManager::SystemSettingsLoop, CScreenManager::SysVerUI);  // force return to main menu
       }
       else {
         switch(_paramSel) {

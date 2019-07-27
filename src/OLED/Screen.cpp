@@ -21,6 +21,7 @@
 
 #include <Arduino.h>
 #include "Screen.h"
+#include "fonts/Arial.h"
 
 // base class functionality for screens
 
@@ -175,6 +176,15 @@ CScreen::_drawBitmap(int x, int y, const BITMAP_INFO& info, uint16_t colour, uin
      // overwrite mode - erases background
     _display.drawBitmap(x, y, info.pBitmap, info.width, info.height, colour, bg);
   }
+}
+
+
+void
+CScreen::_showTitle(const char* title)
+{
+  CTransientFont AF(_display, &arial_8ptBoldFontInfo);
+  _printMenuText(_display.xCentre(), -2, title, false, eCentreJustify);
+  _display.drawFastHLine(0, 10, 128, WHITE);
 }
 
 

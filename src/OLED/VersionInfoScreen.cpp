@@ -80,11 +80,11 @@ CVersionInfoScreen::show()
     if(_rowSel < 2) {
       // standard version information screens,
       // animation of update available via animate() if firmware update is available on web server
-      _printInverted(_display.xCentre(), 0, " Version Information ", true, eCentreJustify);
+      _showTitle("Version Information");
       
-      _drawBitmap(13, 11, FirmwareIconInfo);
-      _printMenuText(46, 14, getVersionStr());
-      _printMenuText(46, 25, getVersionDate());
+      _drawBitmap(13, 12, FirmwareIconInfo);
+      _printMenuText(46, 15, getVersionStr());
+      _printMenuText(46, 26, getVersionDate());
 
       _drawBitmap(23, 34, HardwareIconInfo);
       int PCB = getBoardRevision();
@@ -95,12 +95,13 @@ CVersionInfoScreen::show()
         _display.drawLine(88, 42, 127, 42, WHITE);
       }
 
+      _printMenuText(_display.xCentre(), 53, " \021                \020 ", true, eCentreJustify);
       if(_rowSel == 1 && isUpdateAvailable()) {
         // prompt 'Get Update' for new firmware available and first UP press from home
-        _printMenuText(_display.xCentre(), 53, " \021  Get Update  \020 ", true, eCentreJustify);
+        _printMenuText(_display.xCentre(), 53, "Get Update", false, eCentreJustify);
       }
       else {
-        _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);
+        _printMenuText(_display.xCentre(), 53, "Exit", false, eCentreJustify);
       }
     }
     else {

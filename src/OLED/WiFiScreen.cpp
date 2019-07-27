@@ -24,6 +24,7 @@
 #include "../Utility/helpers.h"
 #include "../WiFi/BTCWifi.h"
 #include "../Utility/NVStorage.h"
+#include "fonts/Arial.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -40,7 +41,7 @@ static const int LIMIT_AWAY = 0;
 static const int LIMIT_LEFT = 1;
 static const int LIMIT_RIGHT = 2;
 
-CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
 {
   _initUI();
 }
@@ -48,7 +49,7 @@ CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHe
 void
 CWiFiScreen::onSelect()
 {
-  CScreenHeader::onSelect();
+  CScreen::onSelect();
   _initUI();
 }
 
@@ -58,28 +59,23 @@ CWiFiScreen::_initUI()
   _rowSel = 0;
   _colSel = 0;
   _OTAsel = NVstore.getUserSettings().enableOTA;
-  _colLimit = LIMIT_LEFT;   // left most selection
   _bShowMAC = false;
 
   if(NVstore.getUserSettings().enableWifi) {
     if(isWifiAP()) {
       if(isWifiConfigPortal()) {
         _colSel = 1;  // " WiFi: CFG AP only "
-        _colLimit = LIMIT_AWAY;   // inner selection
       }
       else {
         _colSel = 2;  //  " WiFi: AP only ";
-        _colLimit = LIMIT_RIGHT;   // right most selection
       }
     }
     else {
       if(isWifiConfigPortal()) {
         _colSel = 3;  // " WiFi: CFG STA+AP "
-        _colLimit = LIMIT_AWAY;   // away from menu limits
       }
       else {
         _colSel = 4;  //  " WiFi: STA+AP ";
-        _colLimit = LIMIT_RIGHT;   // right most selection
       }
     }
   }
@@ -88,39 +84,38 @@ CWiFiScreen::_initUI()
 bool 
 CWiFiScreen::show()
 {
-  CScreenHeader::show(false);
+//  CScreenHeader::show(false);
+  CScreen::show();
   
+  _display.clearDisplay();
+  _showTitle("WiFi settings");
+
   int yPos = 18;
     
   const char* pTitle = NULL;
   switch(_colSel) {
     case 0:
-      pTitle = " WiFi: DISABLED ";
+      pTitle = "DISABLED";
       break;
     case 1:
-      pTitle = " WiFi: CFG AP only ";
+      pTitle = "CFG AP only";
       break;
     case 2:
-      pTitle = " WiFi: AP only ";
+      pTitle = "AP only";
       break;
     case 3:
-      pTitle = " WiFi: CFG STA+AP ";
+      pTitle = "CFG STA+AP";
       break;
     case 4:
-      pTitle = " WiFi: STA+AP ";
+      pTitle = "STA+AP";
       break;
   }
     
-  if(_rowSel == 0) 
-    _printInverted(3, yPos, pTitle, true);   // inverted title bar
-  if(_rowSel == 1) 
-    _printMenuText(3, yPos, pTitle, true);   // selection box
-  if(_rowSel == 2) {
-    if(_OTAsel == 0)
-      _printMenuText(3, yPos, " OTA: DISABLED ", true);   // selection box
-    else
-      _printMenuText(3, yPos, " OTA: ENABLED ", true);   // selection box
-  }
+  _printMenuText(border, yPos, pTitle, _rowSel==1);   // selection box
+  if(_OTAsel == 0)
+    _printMenuText(128-border, yPos, "OTA: OFF", _rowSel==2, eRightJustify);   // selection box
+  else
+    _printMenuText(128-border, yPos, "OTA: ON ", _rowSel==2, eRightJustify);   // selection box
   yPos += 3;
 
   if(_colSel) {
@@ -150,44 +145,30 @@ CWiFiScreen::animate()
 {
   // show next/prev menu navigation line
   if(_rowSel == 0) {
-    _printMenuText(_display.xCentre(), 53, " \021               \020 ", true, eCentreJustify);
-    if(_bShowMAC)
-      _printMenuText(_display.xCentre(), 53, "\030Sel  \031IP", false, eCentreJustify);
-    else
-      _printMenuText(_display.xCentre(), 53, "\030Sel  \031MAC", false, eCentreJustify);
+//    _printMenuText(_display.xCentre(), 53, "                    ", true, eCentreJustify);
+    _printMenuText(_display.xCentre(), 53, "\021                  \020", true, eCentreJustify);
+    if(_bShowMAC) {
+      _printMenuText(_display.xCentre(), 53, "\030Mode        \031IP", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 53, "  Exit", false, eCentreJustify);
+    }
+    else {
+      _printMenuText(_display.xCentre(), 53, "\030Mode       \031MAC", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 53, " Exit", false, eCentreJustify);
+    }
   }
   if(_rowSel == 1) {
     _display.drawFastHLine(0, 52, 128, WHITE);
     const char* pMsg = NULL;
-    switch(_colLimit) {
-      case LIMIT_AWAY:
-        pMsg = "\031 ESC   Set   \033\032 Sel";  // both Sel arrows
-        break;
-      case LIMIT_LEFT:
-        pMsg = "\031 ESC   Set    \032 Sel";  // only right Sel arrow
-        break;
-      case LIMIT_RIGHT:
-        pMsg = "\031 ESC   Set    \033 Sel";  // only left Sel arrow
-        break;
-    }
-    if(pMsg)
-      _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
+    pMsg = "\031ESC \030OTA  Set  \033\032Adj";  // both Sel arrows
+    _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
   }
   if(_rowSel == 2) {
     _display.drawFastHLine(0, 52, 128, WHITE);
     const char* pMsg = NULL;
-    switch(_OTAsel) {
-      case 0:
-        pMsg = "\031 ESC  Set  \032 Enable";  // only right Sel arrow
-        break;
-      case 1:
-        pMsg = "\031 ESC  Set  \033 Disable";  // only left Sel arrow
-        break;
-    }
-    if(pMsg)
-      _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
+    pMsg = "\031Mode   Set   \033\032Adj";  
+    _printMenuText(_display.xCentre(), 56, pMsg, false, eCentreJustify);
   }
-  CScreenHeader::animate();
+  CScreen::animate();
   return true;
 }
 
@@ -196,9 +177,6 @@ CWiFiScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
     _repeatCount = 0;
-    // press CENTRE
-    if(event & key_Centre) {
-    }
     // press LEFT 
     if(event & key_Left) {
       switch(_rowSel) {
@@ -207,20 +185,17 @@ CWiFiScreen::keyHandler(uint8_t event)
           break;
         case 1:
           if(isWifiAP()) {
-            // _colSel = 0;
-            // _colLimit = LIMIT_LEFT;
             _colSel--;
-            LOWERLIMIT(_colSel, 0);
-            _colLimit = (_colSel == 0) ? LIMIT_LEFT : LIMIT_AWAY;
+            WRAPLOWERLIMIT(_colSel, 0, 2);
           }
           else {
             _colSel--;
-            LOWERLIMIT(_colSel, 0);
-            _colLimit = (_colSel == 0) ? LIMIT_LEFT : LIMIT_AWAY;
+            WRAPLOWERLIMIT(_colSel, 0, 4);
           }
           break;
         case 2:
-          _OTAsel = 0;
+          _OTAsel--;
+          WRAPLOWERLIMIT(_OTAsel, 0, 1);
           break;
       }
     }
@@ -232,22 +207,17 @@ CWiFiScreen::keyHandler(uint8_t event)
           break;
         case 1:
           if(isWifiAP()) {
-            // _colSel = 1;
-            // _colLimit = LIMIT_RIGHT;
             _colSel++;
-            UPPERLIMIT(_colSel, 2);
-            _colLimit = (_colSel == 3) ? LIMIT_RIGHT : LIMIT_AWAY;
+            WRAPUPPERLIMIT(_colSel, 2, 0);
           }
           else {
             _colSel++;
-            UPPERLIMIT(_colSel, 4);
-            _colLimit = (_colSel == 4) ? LIMIT_RIGHT : LIMIT_AWAY;
-            // UPPERLIMIT(_colSel, 3);
-            // _colLimit = (_colSel == 3) ? LIMIT_RIGHT : LIMIT_AWAY;
+            WRAPUPPERLIMIT(_colSel, 4, 0);
           }
           break;
         case 2:
-          _OTAsel = 1;
+          _OTAsel++;
+          WRAPUPPERLIMIT(_OTAsel, 1, 0);
           break;
       }
     }
@@ -275,6 +245,9 @@ CWiFiScreen::keyHandler(uint8_t event)
 
   if(event & keyReleased) {
     if(event & key_Centre) {
+      if(_rowSel == 0) {
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+      }
       if(_rowSel == 1) {
 
         switch(_colSel) {

@@ -57,12 +57,10 @@ COtherOptionsScreen::show()
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
     if(_rowSel == 4) {
-      _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
-      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+      _showConfirmMessage();
     }
     else {
-      _printInverted(_display.xCentre(), 0, " Time Intervals ", true, eCentreJustify);
+      _showTitle("Time Intervals");
       
       // data frame refresh rate
       _drawBitmap(15, 13, RefreshIconInfo);
@@ -104,31 +102,33 @@ COtherOptionsScreen::show()
 bool 
 COtherOptionsScreen::animate()
 {
-  if(_rowSel != 4) {
-    int yPos = 53;
-    int xPos = _display.xCentre();
-    const char* pMsg = NULL;
-    switch(_rowSel) {
-      case 0:
-        _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-        break;
-      case 1:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    No keypad activity returns to the home menu.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
-      case 2:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
-      case 3:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    Define the polling rate of the bluewire communications.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
+  if(!CPasswordScreen::_busy()) {
+    if(_rowSel != 4) {
+      int yPos = 53;
+      int xPos = _display.xCentre();
+      const char* pMsg = NULL;
+      switch(_rowSel) {
+        case 0:
+          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          break;
+        case 1:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    No keypad activity returns to the home menu.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 2:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 3:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    Define the polling rate of the bluewire communications.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }

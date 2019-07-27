@@ -74,7 +74,7 @@ public:
     GlowTime(glowtime) 
   {
 #ifdef DEBUG_HOURMETER
-    DebugPort.printf("CHourMeter %d %d\r\n", RunTime.get(), GlowTime.get());
+    DebugPort.printf("CHourMeter::CHourMeter %d %d\r\n", RunTime.get(), GlowTime.get());
 #endif
   };
   void init(bool poweron);

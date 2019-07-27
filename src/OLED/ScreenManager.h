@@ -45,13 +45,14 @@ class CScreenManager {
   void _changeSubMenu(int dir);
   void _dim(bool state);
 public:
-  enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, TuningMenuLoop, UserSettingsLoop, BranchMenu };
-  enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, CommsUI, GPIOInfoUI, SettingsUI };
+  enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, TuningMenuLoop, UserSettingsLoop, SystemSettingsLoop, BranchMenu };
+  enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, /* CommsUI,*/ GPIOInfoUI, TrunkUI };
   enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
   enum eUITuningMenus { MixtureUI, HeaterSettingsUI, FuelCalUI };
-  enum eUIUserSettingsMenus { GPIOUI, ExThermostatUI, VersionUI, HomeMenuUI, TimeIntervalsUI };
-  enum eUIBranchMenus { SetClockUI, InheritSettingsUI, FontDumpUI };
+  enum eUIUserSettingsMenus { ExThermostatUI, HomeMenuUI, TimeIntervalsUI, GPIOUI };
+  enum eUIBranchMenus { SetClockUI, InheritSettingsUI, FontDumpUI, HtrSettingsUI };
+  enum eUISystemSettingsMenus { SysVerUI, SysHoursUI, SysWifiUI, SysBTUI };
 public:
   CScreenManager();
   ~CScreenManager();

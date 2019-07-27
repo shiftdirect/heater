@@ -33,6 +33,7 @@
 #include "../Utility/helpers.h"
 #include "../Utility/macros.h"
 #include "../Protocol/Protocol.h"
+#include "fonts/Arial.h"
 
 static const int Line3 = 20;       // system voltage
 static const int Line2 = 30;       // fan sensor
@@ -66,10 +67,14 @@ CSettingsScreen::show()
 {
   char str[16];
   
-  CScreenHeader::show(false);
+//  CScreenHeader::show(false);
+//
+//  _display.writeFillRect(0, 16, 84, 12, WHITE);
+//  _printInverted(3, 18, "Heater Tuning", true);
+  CScreen::show();
+  _display.clearDisplay();
 
-  _display.writeFillRect(0, 16, 84, 12, WHITE);
-  _printInverted(3, 18, "Heater Tuning", true);
+  _showTitle("Heater Tuning");
 
   if(!CPasswordScreen::show()) {
 
@@ -77,14 +82,15 @@ CSettingsScreen::show()
     _printMenuText(_display.width(), Line3, str, false, eRightJustify);
 
     sprintf(str, "Min: %.1f/%d", getHeaterInfo().getPump_Min(), getHeaterInfo().getFan_Min());
-    _printMenuText(0, Line2, str);
+    _printMenuText(0, Line3, str);
 
     sprintf(str, "Max: %.1f/%d", getHeaterInfo().getPump_Max(), getHeaterInfo().getFan_Max());
-    _printMenuText(0, Line1, str);
+    _printMenuText(0, Line2, str);
 
     int yPos = 53;
     int xPos = _display.xCentre();
-    _printMenuText(xPos, yPos, " \021  \030Edit   \031\352T   \020 ", true, eCentreJustify);
+    _printMenuText(_display.xCentre(), 53, "                    ", true, eCentreJustify);
+    _printMenuText(xPos, yPos, "\030Edit    Exit", false, eCentreJustify);
   }
   
   return true;
@@ -147,14 +153,14 @@ CSettingsScreen::keyHandler(uint8_t event)
     if(event & keyPressed) {
       // press LEFT 
       if(event & key_Left) {
-        _ScreenManager.prevMenu(); 
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
       }
       // press RIGHT 
       if(event & key_Right) {
-        _ScreenManager.nextMenu(); 
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
       }
       // press UP 
-      if(event & (key_Up | key_Centre)) {
+      if(event & key_Up) {
         if(hasOEMcontroller()) {
           if(event & key_Centre)
             _reqOEMWarning();
@@ -166,10 +172,14 @@ CSettingsScreen::keyHandler(uint8_t event)
           _getPassword();
         }
       }
+      if(event & key_Centre) {
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
+      }
       // press DOWN
       if(event & key_Down) {
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
 //        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);
-        _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::ExThermostatUI);
+//        _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::ExThermostatUI);
       }
       // THREE FINGER SALUTE!
       if((event & (key_Left|key_Right|key_Centre)) == (key_Left|key_Right|key_Centre)) {

@@ -24,6 +24,7 @@
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../Utility/HourMeter.h"
+#include "fonts/Arial.h"
 
 
 CHourMeterScreen::CHourMeterScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
@@ -58,7 +59,7 @@ CHourMeterScreen::show()
 
   // standard version information screens,
   // animation of update available via animate() if firmware update is available on web server
-  _printInverted(_display.xCentre(), 0, " Hour Meters ", true, eCentreJustify);
+  _showTitle("Hour Meters");
   
   makeHourMeter(hrs, msg, pHourMeter->getRunTime());
   _printMenuText(38, 14, "Run", false, eRightJustify);
@@ -73,7 +74,8 @@ CHourMeterScreen::show()
   _printMenuText(colon, 38, hrs, false, eRightJustify);
   _printMenuText(colon, 38, msg);
 
-  _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", true, eCentreJustify);     // " <     Exit     > "
+  _printMenuText(_display.xCentre(), 53, " \021                \020 ", true, eCentreJustify);     // " <              > "
+  _printMenuText(_display.xCentre(), 53, "Exit", false, eCentreJustify);     // " <     Exit     > "
   return true;
 }
 

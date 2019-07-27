@@ -26,17 +26,28 @@
 #include "../Protocol/Protocol.h"
 #include "../Utility/NVStorage.h"
 
+#define DEBUG_HOURMETER
 
 
 void 
 CHourMeter::init(bool poweron)
 {
+  if(!INBOUNDS(RunTime.get(), 0, RTC_storageInterval)) {
+    DebugPort.printf("CHourMeter::Init - resetting rogue run value %d\r\n", RunTime.get());
+    RunTime.reset();
+  }
+  if(!INBOUNDS(GlowTime.get(), 0, RTC_storageInterval)) {
+    DebugPort.printf("CHourMeter::Init - resetting rogue glow value %d\r\n", GlowTime.get());
+    GlowTime.reset();
+  }
+
   // power on reset or OTA update - cannot trust persistent values - they are likely un-initialised
   if(poweron) {       
     RunTime.reset();  
     GlowTime.reset();
   }
-  // if there is a remnant time held, add it to the real NV stored value
+
+  // after all that, if there is a remnant time held, add it to the real NV stored value
   if(RunTime.get() || GlowTime.get() || RTC_Store.getRunTime() || RTC_Store.getGlowTime()) {
     store();
   }

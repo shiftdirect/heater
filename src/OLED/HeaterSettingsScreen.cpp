@@ -77,12 +77,11 @@ CHeaterSettingsScreen::show()
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
     if(_rowSel == 4) {
-      _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
-      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+      _showConfirmMessage();
     }
     else {
-      _printInverted(_display.xCentre(), 0, " Heater Settings ", true, eCentreJustify);
+//      _printInverted(_display.xCentre(), 0, " Heater Settings ", true, eCentreJustify);
+      _showTitle("Heater Settings");
       _printMenuText(97, Line3, "System voltage:", false, eRightJustify);
       _printMenuText(97, Line2, "Fan sensor:", false, eRightJustify);
       _printMenuText(97, Line1, "Glowplug power:", false, eRightJustify);

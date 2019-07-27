@@ -31,6 +31,7 @@
 #include "PasswordScreen.h"
 #include "KeyPad.h"
 #include "../Utility/macros.h"
+#include "fonts/Arial.h"
 
 
 CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
@@ -62,13 +63,20 @@ CPasswordScreen::show()
   CPasswordScreen::animate();  // precautionary, in case derived class forgets to call
   
   if(_SaveTime) {
-    _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
-    _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
-    _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
+    _display.clearDisplay();
+//    _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
+//    _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
+    _display.writeFillRect(34, 26, 60, 26, WHITE);
+    CTransientFont AF(_display, &arial_8ptBoldFontInfo);
+    _printInverted(_display.xCentre(), 32, " STORING ", true, eCentreJustify);
     return true;
   }
   else if(_bGetPassword) {
-    _printMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
+    _display.clearDisplay();
+/*    {
+      CTransientFont AF(_display, &arial_8ptBoldFontInfo);
+      _printMenuText(_display.xCentre(), 32, "Enter password...", false, eCentreJustify);
+    }*/
     _showPassword();
     return true;
   }
@@ -88,6 +96,12 @@ CPasswordScreen::animate()
     }
   }
   return false;
+}
+
+bool
+CPasswordScreen::_busy()
+{
+  return _SaveTime != 0;
 }
 
 bool 
@@ -147,18 +161,20 @@ bool
 CPasswordScreen::_showPassword()
 {
   if(_bGetPassword) {
-    _printMenuText(_display.xCentre(), 34, "Enter password...", false, eCentreJustify);
+    _showTitle("Enter password");
 
     // determine metrics of character sizing
+    CTransientFont AF(_display, &arialBlack_12ptFontInfo);
+
     CRect extents;
-    _display.getTextExtents("X", extents);
+    _display.getTextExtents("8", extents);
     int charWidth = extents.width;
     _display.getTextExtents(" ", extents);
 
     for(int idx =0 ; idx < 4; idx++) {
 
       extents.xPos = _display.xCentre() - (2 - idx) * (charWidth * 1.5); 
-      extents.yPos = 50;
+      extents.yPos = 30;
 
       char str[8];
 
@@ -192,4 +208,12 @@ CPasswordScreen::_showStoringMessage()
 {
   _SaveTime = millis() + 1500;
   _ScreenManager.reqUpdate();
+}
+
+void
+CPasswordScreen::_showConfirmMessage()
+{
+  _showTitle("Saving Settings");
+  _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+  _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
 }

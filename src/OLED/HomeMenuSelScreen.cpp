@@ -53,12 +53,10 @@ CHomeMenuSelScreen::show()
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
     if(_rowSel == 4) {
-      _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
-      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+      _showConfirmMessage();
     }
     else {
-      _printInverted(_display.xCentre(), 0, " Home Menu Actions ", true, eCentreJustify);
+      _showTitle("Home Menu Actions");
       
       _drawBitmap(30, 14, TimeoutIconInfo);
       switch(_action.onTimeout) {
@@ -95,31 +93,33 @@ CHomeMenuSelScreen::show()
 bool 
 CHomeMenuSelScreen::animate()
 {
-  if(_rowSel != 4) {
-    int yPos = 53;
-    int xPos = _display.xCentre();
-    const char* pMsg = NULL;
-    switch(_rowSel) {
-      case 0:
-        _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-        break;
-      case 1:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    Menu to switch to when the heater stops.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
-      case 2:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    Menu to switch to when the heater starts.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
-      case 3:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    Menu to return to after no keypad activity.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
+  if(!CPasswordScreen::_busy()) {
+    if(_rowSel != 4) {
+      int yPos = 53;
+      int xPos = _display.xCentre();
+      const char* pMsg = NULL;
+      switch(_rowSel) {
+        case 0:
+          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          break;
+        case 1:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    Menu to switch to when the heater stops.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 2:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    Menu to switch to when the heater starts.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 3:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    Menu to return to after no keypad activity.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }

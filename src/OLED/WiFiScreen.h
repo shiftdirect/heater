@@ -28,7 +28,7 @@
 class C128x64_OLED;
 class CScreenManager;
 
-class CWiFiScreen : public CScreenHeader {
+class CWiFiScreen : public CScreen {
 public:
   CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr);
   void onSelect();
@@ -36,7 +36,6 @@ public:
   bool animate();
   bool keyHandler(uint8_t event);
 private:
-  int  _colLimit;
   int  _rowSel, _colSel, _OTAsel;
   int  _repeatCount;
   bool _bShowMAC;

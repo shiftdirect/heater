@@ -315,7 +315,7 @@ void setup() {
     bESP32PowerUpInit = true;
 //    bForceInit = false;
   }
-
+  
   // initially, ensure the GPIO outputs are not activated during startup
   // (GPIO2 tends to be one with default chip startup)
   pinMode(GPIOout1_pin, OUTPUT);  

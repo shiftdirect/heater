@@ -41,6 +41,8 @@
 #include "HomeMenuSelScreen.h"
 #include "OtherOptionsScreen.h"
 #include "HourMeterScreen.h"
+#include "BTScreen.h"
+#include "MenuTrunkScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -266,9 +268,9 @@ CScreenManager::begin(bool bNoClock)
   if(!bNoClock)
     menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
   menuloop.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
-  menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
+//  menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
   menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
-  menuloop.push_back(new CSettingsScreen(*_pDisplay, *this));         //  Tuning info
+  menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
   _Screens.push_back(menuloop);
 
   // create timer screens loop
@@ -299,12 +301,18 @@ CScreenManager::begin(bool bNoClock)
 
   // create User Settings screens loop 
   menuloop.clear();
-  menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
   menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
-  menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
-  menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
   menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
   menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
+  menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
+  _Screens.push_back(menuloop);
+
+  // create System Settings screens loop 
+  menuloop.clear();
+  menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
+  menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
+  menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
+  menuloop.push_back(new CBTScreen(*_pDisplay, *this));
   _Screens.push_back(menuloop);
 
   // create branch screens
@@ -312,6 +320,7 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CSetClockScreen(*_pDisplay, *this));         // clock set branch screen
   menuloop.push_back(new CInheritSettingsScreen(*_pDisplay, *this));  // inherit OEM settings branch screen
   menuloop.push_back(new CFontDumpScreen(*_pDisplay, *this)); // font dump branch screen
+  menuloop.push_back(new CSettingsScreen(*_pDisplay, *this));         //  Tuning info
   _Screens.push_back(menuloop);
 
   _menu = 0;

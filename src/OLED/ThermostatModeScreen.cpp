@@ -75,12 +75,11 @@ CThermostatModeScreen::show()
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
     if(_rowSel == 10) {
-      _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
-      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+      _showConfirmMessage();
     }
     else {
-      _printInverted(_display.xCentre(), 0, " Thermostat Mode ", true, eCentreJustify);
+      _showTitle("Thermostat Mode");
+//      _printInverted(_display.xCentre(), 0, " Thermostat Mode ", true, eCentreJustify);
       _drawBitmap(3, 14, ThermostatIconInfo);
       float fTemp = _window;
       if(NVstore.getUserSettings().degF) {
@@ -140,47 +139,49 @@ CThermostatModeScreen::show()
 bool 
 CThermostatModeScreen::animate()
 {
-  if(_rowSel != 10) {
-    int yPos = 53;
-    int xPos = _display.xCentre();
-    const char* pMsg = NULL;
-    switch(_rowSel) {
-      case 0:
-        _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-        break;
-      case 1:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    Heater shuts down over set point.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
-      case 2:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    Heater restarts below setpoint.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
-      case 3:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        pMsg = "                    User defined window for custom thermostat modes.                    ";
-        _scrollMessage(56, pMsg, _scrollChar);
-        break;
-      case 4:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        switch(_thermoMode) {
-          case 1:
-            pMsg = "                   The user defined window sets the thermostat's hysteresis.                    ";
-            break;
-          case 2:
-            pMsg = "                   The pump rate is adjusted linearly across the set point window.                    ";
-            break;
-          default:
-            pMsg = "                   Use heater's standard thermostat control.                    ";
-            break;
-        }
-        if(pMsg)
+  if(!CPasswordScreen::_busy()) {
+    if(_rowSel != 10) {
+      int yPos = 53;
+      int xPos = _display.xCentre();
+      const char* pMsg = NULL;
+      switch(_rowSel) {
+        case 0:
+          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          break;
+        case 1:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    Heater shuts down over set point.                    ";
           _scrollMessage(56, pMsg, _scrollChar);
-        break;
+          break;
+        case 2:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    Heater restarts below setpoint.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 3:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    User defined window for custom thermostat modes.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 4:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          switch(_thermoMode) {
+            case 1:
+              pMsg = "                   The user defined window sets the thermostat's hysteresis.                    ";
+              break;
+            case 2:
+              pMsg = "                   The pump rate is adjusted linearly across the set point window.                    ";
+              break;
+            default:
+              pMsg = "                   Use heater's standard thermostat control.                    ";
+              break;
+          }
+          if(pMsg)
+            _scrollMessage(56, pMsg, _scrollChar);
+          break;
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }
@@ -235,6 +236,9 @@ CThermostatModeScreen::keyHandler(uint8_t event)
           _rowSel--;
         LOWERLIMIT(_rowSel, 0);
       }
+      else {
+        _ScreenManager.selectMenu(CScreenManager::SystemSettingsLoop, CScreenManager::SysVerUI);
+      }
     }
     // UP press
     if(event & key_Up) {
@@ -265,7 +269,8 @@ CThermostatModeScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop, CScreenManager::SettingsUI);  // force return to main menu
+//          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop, CScreenManager::SettingsUI);  // force return to main menu
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
           break;
         case 1:
         case 2:

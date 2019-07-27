@@ -76,6 +76,10 @@ CTimerManager::createMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pTimerIDs
 {
   int timerBit = 0x0001 << timer.timerID;
 
+  const BTCDateTime tNow = Clock.get();
+  int todayDoW = 1 << tNow.dayOfTheWeek();
+  int todayTime = tNow.hour() * 60 + tNow.minute();
+
   if(timer.enabled) {
     // create linear minute of day values for start & stop
     // note that if stop < start, that is treated as a timer that rolls over midnight
@@ -91,6 +95,11 @@ CTimerManager::createMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pTimerIDs
             // flag timers that should get cancelled
             activeday |= (activeday << 8);  // combine one shot status in MS byte
           }
+          if(timer.enabled == 0x80 && !timer.repeat) {  // on-shot next occurrence timer
+            if(todayTime > timestart) {
+            }
+          }
+
           if(timestop > timestart) {
             // treat normal start < stop times (within same day)
             if((dayMinute >= timestart) && (dayMinute < timestop)) {

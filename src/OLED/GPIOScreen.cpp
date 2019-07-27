@@ -75,12 +75,10 @@ CGPIOScreen::show()
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
     if(_rowSel == 4) {
-      _printInverted(_display.xCentre(), 0, " Saving Settings ", true, eCentreJustify);
-      _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-      _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+      _showConfirmMessage();
     }
     else {
-      _printInverted(_display.xCentre(), 0, " GPIO Settings ", true, eCentreJustify);
+      _showTitle("GPIO Settings");
       _drawBitmap(10, 14, GPIOIconInfo);
       {
         const char* msgText = NULL;
@@ -125,48 +123,50 @@ CGPIOScreen::animate()
 {
   CPasswordScreen::animate();
   
-  if(_rowSel != 4) {
-    int yPos = 53;
-    int xPos = _display.xCentre();
-    const char* pMsg = NULL;
-    switch(_rowSel) {
-      case 0:
-        _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-        break;
-      case 1:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        switch(_GPIOparams.algMode) {
-          case GPIOalgNone:       pMsg = "                   Analogue input is ignored.                    "; break;
-          case GPIOalgHeatDemand: pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    "; break;
-        }
-        if(pMsg)
-          _scrollMessage(56, pMsg, _scrollChar);
-        break;
+  if(!CPasswordScreen::_busy()) {
+    if(_rowSel != 4) {
+      int yPos = 53;
+      int xPos = _display.xCentre();
+      const char* pMsg = NULL;
+      switch(_rowSel) {
+        case 0:
+          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          break;
+        case 1:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          switch(_GPIOparams.algMode) {
+            case GPIOalgNone:       pMsg = "                   Analogue input is ignored.                    "; break;
+            case GPIOalgHeatDemand: pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    "; break;
+          }
+          if(pMsg)
+            _scrollMessage(56, pMsg, _scrollChar);
+          break;
 
-      case 2:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        switch(_GPIOparams.outMode) {
-          case GPIOoutNone:   pMsg = "                   Digital outputs are disabled.                    "; break;
-          case GPIOoutStatus: pMsg = "                   Output1: LED status indicator.                    "; break;
-          case GPIOoutUser:   pMsg = "                   Output 1&2: User controlled.                    "; break;
-        }
-        if(pMsg)
-          _scrollMessage(56, pMsg, _scrollChar);
-        break;
+        case 2:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          switch(_GPIOparams.outMode) {
+            case GPIOoutNone:   pMsg = "                   Digital outputs are disabled.                    "; break;
+            case GPIOoutStatus: pMsg = "                   Output1: LED status indicator.                    "; break;
+            case GPIOoutUser:   pMsg = "                   Output 1&2: User controlled.                    "; break;
+          }
+          if(pMsg)
+            _scrollMessage(56, pMsg, _scrollChar);
+          break;
 
-      case 3:
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        switch(_GPIOparams.inMode) {
-          case GPIOinNone:    pMsg = "                   Digital inputs are disabled.                    "; break;
-          case GPIOinOn1Off2: pMsg = "                   Input 1: Starts upon closure. Input 2: Stops upon closure.                    "; break;
-          case GPIOinOnHold1: pMsg = "                   Input 1: Starts when held closed, stops when opened. Input2: Max fuel when closed, min fuel when open.                    "; break;
-          case GPIOinOn1Off1: pMsg = "                   Input 1: Starts or Stops upon closure.                    "; break;
-        }
-        if(pMsg)
-          _scrollMessage(56, pMsg, _scrollChar);
-        break;
+        case 3:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          switch(_GPIOparams.inMode) {
+            case GPIOinNone:    pMsg = "                   Digital inputs are disabled.                    "; break;
+            case GPIOinOn1Off2: pMsg = "                   Input 1: Starts upon closure. Input 2: Stops upon closure.                    "; break;
+            case GPIOinOnHold1: pMsg = "                   Input 1: Starts when held closed, stops when opened. Input2: Max fuel when closed, min fuel when open.                    "; break;
+            case GPIOinOn1Off1: pMsg = "                   Input 1: Starts or Stops upon closure.                    "; break;
+          }
+          if(pMsg)
+            _scrollMessage(56, pMsg, _scrollChar);
+          break;
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }
@@ -243,7 +243,8 @@ CGPIOScreen::keyHandler(uint8_t event)
     if(event & key_Centre) {
       switch(_rowSel) {
         case 0:
-          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop, CScreenManager::GPIOInfoUI);  // force return to main menu GPIO view
+//          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop, CScreenManager::GPIOInfoUI);  // force return to main menu GPIO view
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
           break;
         case 1:
         case 2:
@@ -346,7 +347,7 @@ CGPIOInfoScreen::show()
     _printMenuText(58, Line1, msg);
   }
 
-  _printMenuText(_display.xCentre(), 53, " \021              \020 ", true, eCentreJustify);
+  _printMenuText(_display.xCentre(), 53, " \021                \020 ", true, eCentreJustify);
   return true;
 }
 
