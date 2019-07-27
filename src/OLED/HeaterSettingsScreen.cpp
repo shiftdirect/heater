@@ -203,7 +203,7 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
           UPPERLIMIT(_rowSel, 3);
           break;
         case 4:    // confirmed save
-          _showStoringMessage();
+          _enableStoringMessage();
           setSystemVoltage(float(_sysVoltage));
           setFanSensor(_fanSensor);
           setGlowDrive(_glowDrive);

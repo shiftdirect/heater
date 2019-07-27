@@ -37,10 +37,9 @@ protected:
   bool _showPassword();
   void _getPassword();
   bool _isPasswordOK() { return _bPasswordOK; };
-  void _showStoringMessage();
+  void _enableStoringMessage();
   void _initUI();
   bool _busy();
-  void _showConfirmMessage();
 public:
   CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr);
   void onSelect();

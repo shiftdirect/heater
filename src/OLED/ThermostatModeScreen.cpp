@@ -254,7 +254,7 @@ CThermostatModeScreen::keyHandler(uint8_t event)
           UPPERLIMIT(_rowSel, 4);
           break;
         case 10:    // confirmed save
-          _showStoringMessage();
+          _enableStoringMessage();
           settings = NVstore.getUserSettings();
           settings.ThermostatMethod = _thermoMode;
           settings.ThermostatWindow = _window;

@@ -33,10 +33,11 @@
 #include "../Utility/helpers.h"
 #include "../../lib/RTClib/RTClib.h"
 #include "../RTC/TimerManager.h"
+#include "fonts/Arial.h"
 
 const char* briefDOW[] = { "S", "M", "T", "W", "T", "F", "S" };
 
-CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreenHeader(display, mgr) 
+CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreen(display, mgr) 
 {
   _initUI();
   _ConflictTime = 0;
@@ -47,7 +48,7 @@ CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int
 void 
 CSetTimerScreen::onSelect()
 {
-  CScreenHeader::onSelect();
+  CScreen::onSelect();
   _initUI();
   NVstore.getTimerInfo(_timerID, _timerInfo);
 }
@@ -63,7 +64,9 @@ CSetTimerScreen::_initUI()
 bool 
 CSetTimerScreen::show()
 {
-  CScreenHeader::show(false);
+  CScreen::show();
+
+  _display.clearDisplay();
 
   char str[20];
   int xPos, yPos;
@@ -71,35 +74,22 @@ CSetTimerScreen::show()
   if(_rowSel == 0) {
     NVstore.getTimerInfo(_timerID, _timerInfo);
   }
-  sprintf(str, " Set Timer %d ", _timerID + 1);
-  _printInverted(0, 15, str, true);
+  sprintf(str, "Set Timer #%d", _timerID + 1);
+  _showTitle(str);
 
   if(_SaveTime) {
+    _showStoringMessage();
     long tDelta = millis() - _SaveTime;
-    if(tDelta > 0) 
+    if(tDelta > 0) {
       _SaveTime = 0;
-    _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
-    _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
-    _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
+    }
   }
   else if(_ConflictTime) {
     long tDelta = millis() - _ConflictTime;
     if(tDelta > 0) 
       _ConflictTime = 0;
     sprintf(str, " with Timer %d ", _conflictID);
-    if(_conflictID >= 10) {
-      // extra space
-      _printInverted(_display.xCentre(), 26, "               ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 45, "               ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 30, " Conflicts     ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 38, str, true, eCentreJustify);
-    }
-    else {
-      _printInverted(_display.xCentre(), 26, "              ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 45, "              ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 30, " Conflicts    ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 38, str, true, eCentreJustify);
-    }
+    _showConflict(str);
   }
   else {
     // start
@@ -140,22 +130,23 @@ CSetTimerScreen::show()
       _printMenuText(xPos, yPos, msg, _colSel==5, eRightJustify);
     else
       _printInverted(xPos, yPos, msg, _timerInfo.repeat, eRightJustify);
-  }
-  // navigation line
-  yPos = 53;
-  xPos = _display.xCentre();
-  if(_rowSel == 2) {
-    _display.drawFastHLine(0, 53, 128, WHITE);
-    _printMenuText(_display.xCentre(), 57, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
-    _printMenuText(_display.xCentre(), 57, "Done", false, eCentreJustify);
-  }
-  else if(_rowSel == 1) {
-    _display.drawFastHLine(0, 53, 128, WHITE);
-    _printMenuText(_display.xCentre(), 57, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
-    _printMenuText(_display.xCentre(), 57, "Save", false, eCentreJustify);
-  }
-  else {
-    _printMenuText(xPos, yPos, " \021     Exit     \020 ", _rowSel==0, eCentreJustify);
+
+    // navigation line
+    yPos = 53;
+    xPos = _display.xCentre();
+    if(_rowSel == 2) {
+      _display.drawFastHLine(0, 53, 128, WHITE);
+      _printMenuText(_display.xCentre(), 57, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 57, "Done", false, eCentreJustify);
+    }
+    else if(_rowSel == 1) {
+      _display.drawFastHLine(0, 53, 128, WHITE);
+      _printMenuText(_display.xCentre(), 57, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
+      _printMenuText(_display.xCentre(), 57, "Save", false, eCentreJustify);
+    }
+    else {
+      _printMenuText(xPos, yPos, " \021     Exit     \020 ", _rowSel==0, eCentreJustify);
+    }
   }
 
   return true;
@@ -394,4 +385,13 @@ CSetTimerScreen::_printEnabledTimers()
     }
   }
 }
-      
+
+void
+CSetTimerScreen::_showConflict(const char* str)      
+{
+  CTransientFont AF(_display, &arial_8ptBoldFontInfo);
+  _display.fillRect(19, 22, 90, 36, WHITE);
+  _printInverted(_display.xCentre(), 39, str, true, eCentreJustify);
+  _printInverted(_display.xCentre(), 28, "Conflicts", true, eCentreJustify);
+}  
+ 

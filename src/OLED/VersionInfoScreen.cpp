@@ -174,7 +174,7 @@ CVersionInfoScreen::keyHandler(uint8_t event)
         BoardRevisionReset();
         NVstore.init();
         NVstore.save();
-        _showStoringMessage();
+        _enableStoringMessage();
         _rowSel = 11;
       }
       else {

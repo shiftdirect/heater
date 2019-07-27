@@ -227,7 +227,7 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 4:    // confirmed save
           _display.clearDisplay();
           _animateCount = -1;
-          _showStoringMessage();
+          _enableStoringMessage();
           tuning = NVstore.getHeaterTuning();
           tuning.pumpCal = _mlPerStroke;
           tuning.lowVolts = _LVC;

@@ -133,7 +133,7 @@ CHomeMenuSelScreen::keyHandler(uint8_t event)
     // UP press
     if(event & key_Up) {
       if(_rowSel == 4) {
-        _showStoringMessage();
+        _enableStoringMessage();
         us = NVstore.getUserSettings();
         us.HomeMenu = _action;
         NVstore.setUserSettings(us);

@@ -183,8 +183,24 @@ void
 CScreen::_showTitle(const char* title)
 {
   CTransientFont AF(_display, &arial_8ptBoldFontInfo);
-  _printMenuText(_display.xCentre(), -2, title, false, eCentreJustify);
+  _printMenuText(_display.xCentre(), -1, title, false, eCentreJustify);
   _display.drawFastHLine(0, 10, 128, WHITE);
+}
+
+void
+CScreen::_showConfirmMessage()
+{
+  _showTitle("Saving Settings");
+  _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
+  _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
+}
+
+void
+CScreen::_showStoringMessage()
+{
+  _display.writeFillRect(34, 19, 60, 26, WHITE);
+  CTransientFont AF(_display, &arial_8ptBoldFontInfo);
+  _printInverted(_display.xCentre(), 25, " STORING ", true, eCentreJustify);
 }
 
 

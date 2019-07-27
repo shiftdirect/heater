@@ -245,7 +245,7 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
           case 5:
             _display.clearDisplay();
             _animateCount = -1;
-            _showStoringMessage();
+            _enableStoringMessage();
             setPumpMin(adjPump[0]);
             setPumpMax(adjPump[1]);
             setFanMin(adjFan[0]);

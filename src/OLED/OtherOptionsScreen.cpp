@@ -147,7 +147,7 @@ COtherOptionsScreen::keyHandler(uint8_t event)
         settings.FrameRate = _frameRate;
         NVstore.setUserSettings(settings);
         NVstore.save();
-        _showStoringMessage();
+        _enableStoringMessage();
         _rowSel = 0;
       }
       else {

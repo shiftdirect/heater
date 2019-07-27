@@ -19,34 +19,24 @@
  * 
  */
 
-#ifndef __SETTIMERSCREEN_H__
-#define __SETTIMERSCREEN_H__
+#ifndef __MENUTRUNKSCREEN_H__
+#define __MENUTRUNKSCREEN_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
-#include "../Utility/NVStorage.h"
+#include "Screen.h"
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocol;
 
-class CSetTimerScreen : public CScreen {
-  int  _rowSel;
-  int  _colSel;
-  int  _timerID;
-  unsigned long _SaveTime;
-  unsigned long _ConflictTime;
-  int _conflictID;
-  sTimer _timerInfo;
-  void _adjust(int dir);
-  void _printEnabledTimers();
-  void _initUI();
-  void _showConflict(const char* str);
+class CMenuTrunkScreen : public CScreen {
 public:
-  CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
+  CMenuTrunkScreen(C128x64_OLED& display, CScreenManager& mgr);
   void onSelect();
   bool show();
   bool keyHandler(uint8_t event);
+private:
+  int  _rowSel, _colSel;
+  void _initUI();
 };
 
 #endif

@@ -64,11 +64,7 @@ CPasswordScreen::show()
   
   if(_SaveTime) {
     _display.clearDisplay();
-//    _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
-//    _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
-    _display.writeFillRect(34, 26, 60, 26, WHITE);
-    CTransientFont AF(_display, &arial_8ptBoldFontInfo);
-    _printInverted(_display.xCentre(), 32, " STORING ", true, eCentreJustify);
+    _showStoringMessage();
     return true;
   }
   else if(_bGetPassword) {
@@ -204,16 +200,10 @@ CPasswordScreen::_getPassword()
 }
 
 void 
-CPasswordScreen::_showStoringMessage()
+CPasswordScreen::_enableStoringMessage()
 {
   _SaveTime = millis() + 1500;
   _ScreenManager.reqUpdate();
 }
 
-void
-CPasswordScreen::_showConfirmMessage()
-{
-  _showTitle("Saving Settings");
-  _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
-  _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
-}
+

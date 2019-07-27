@@ -105,7 +105,7 @@ CInheritSettingsScreen::keyHandler(uint8_t event)
       setFanSensor(getHeaterInfo().getFan_Sensor());
       setSystemVoltage(getHeaterInfo().getSystemVoltage());
       saveNV();
-      _showStoringMessage();
+      _enableStoringMessage();
       _nAdoptSettings = 0;  // will cause return to main menu after storing message expires
     }
   }

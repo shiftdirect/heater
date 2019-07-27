@@ -83,12 +83,11 @@ CSetClockScreen::show()
     }
 
     if(_SaveTime) {
+      _showStoringMessage();
       long tDelta = millis() - _SaveTime;
-      if(tDelta > 0) 
+      if(tDelta > 0) {
         _SaveTime = 0;
-      _printInverted(_display.xCentre(), 28, "         ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 39, "         ", true, eCentreJustify);
-      _printInverted(_display.xCentre(), 34, " STORING ", true, eCentreJustify);
+      }
     }
     else {
       yPos = 28;
