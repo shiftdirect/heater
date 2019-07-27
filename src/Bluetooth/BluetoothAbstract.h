@@ -45,6 +45,8 @@ public:
     }
   };
   virtual bool isConnected() { return false; };
+  virtual const char* getMAC() const { return "unknown"; };
+  virtual bool test(char) { return false; };  // returns true whilst test mode is active
 };
 
 extern CBluetoothAbstract& getBluetoothClient();

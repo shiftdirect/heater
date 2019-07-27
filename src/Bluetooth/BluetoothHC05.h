@@ -38,16 +38,22 @@ static HardwareSerial& HC05_SerialPort(Serial2);
 
 class CBluetoothHC05 : public CBluetoothAbstract {
   bool ATCommand(const char* str);
+  bool ATResponse(const char* str, const char* respHdr, char* response, int& len);
   int _sensePin, _keyPin;
   CModerator foldbackModerator;
+  char _MAC[32];
+  bool _bTest;
 public:
   CBluetoothHC05(int keyPin, int sensePin);
   void begin();
   void send(const char* Str);
   void check();
   virtual bool isConnected();
+  const char* getMAC() const { return _MAC; };
+  virtual bool test(char);   // returns true whilst test mode is active
 protected:
   virtual void openSerial(int baudrate);
   virtual void foldbackDesiredTemp();
   void flush();
+  void decodeMACresponse(char* pResponse, int len);
 };

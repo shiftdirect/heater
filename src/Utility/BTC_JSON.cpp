@@ -507,6 +507,7 @@ bool makeJSONStringIP(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("IP_STAMAC", getWifiSTAMACStr(), root); 
   bSend |= moderator.addJson("IP_STASSID", getSSID().c_str(), root); 
   bSend |= moderator.addJson("IP_OTA", NVstore.getUserSettings().enableOTA, root); 
+  bSend |= moderator.addJson("BT_MAC", getBluetoothClient().getMAC(), root); 
 
   if(bSend) {
 		root.printTo(opStr, len);

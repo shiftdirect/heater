@@ -40,6 +40,8 @@ CBluetoothHC05::CBluetoothHC05(int keyPin, int sensePin)
   // attach to the SENSE line from the HC-05 module
   // this line goes high when a BT client is connected :-)
   pinMode(_sensePin, INPUT);              
+  _bTest = false;
+  strcpy(_MAC, "unknown");
 }
 
 
@@ -127,6 +129,17 @@ CBluetoothHC05::begin()
     else {
       DebugPort.println("OK");
     }
+    DebugPort.print("  Getting MAC address...");
+    int len = 32;
+    char response[32];
+    if(!ATResponse("AT+ADDR?\r\n", "+ADDR:", response, len)) {
+      DebugPort.println("FAILED");
+    }
+    else {
+      DebugPort.println("OK");
+      decodeMACresponse(response, len);
+      DebugPort.print("    "); DebugPort.println(_MAC);
+    }
 /*
     DebugPort.print("  Lowering power consumption...");
     if(!ATCommand("AT+SNIFF=40,20,1,8\r\n")) {
@@ -165,7 +178,12 @@ CBluetoothHC05::check()
   // check for data coming back over Bluetooth
   if(HC05_SerialPort.available()) {           // serial rx data is available
     char rxVal = HC05_SerialPort.read();
-    collectRxData(rxVal);
+    if(_bTest) {   
+      DebugPort.print(rxVal);
+    }
+    else {
+      collectRxData(rxVal);
+    }
   }
 }
 
@@ -178,7 +196,7 @@ CBluetoothHC05::isConnected()
 void
 CBluetoothHC05::send(const char* Str)
 {
-  if(isConnected()) {
+  if(isConnected() && !_bTest) {
     HC05_SerialPort.print(Str);
   }
   else {
@@ -197,13 +215,34 @@ CBluetoothHC05::openSerial(int baudrate)
 bool 
 CBluetoothHC05::ATCommand(const char* cmd)
 {
-  flush();   // ensure response is for *this* command!
-  HC05_SerialPort.print(cmd);
-  char RxBuffer[16];
-  memset(RxBuffer, 0, 16);
-  int read = HC05_SerialPort.readBytesUntil('\n', RxBuffer, 16);  // \n is not included in returned string!
-  if((read == 3) && (0 == strcmp(RxBuffer, "OK\r")) ) {
-    return true;
+  if(!_bTest) {
+    flush();   // ensure response is for *this* command!
+    HC05_SerialPort.print(cmd);
+    char RxBuffer[16];
+    memset(RxBuffer, 0, 16);
+    int read = HC05_SerialPort.readBytesUntil('\n', RxBuffer, 32);  // \n is not included in returned string!
+    if((read == 3) && (0 == strcmp(RxBuffer, "OK\r")) ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// protected function, to perform Hayes commands with HC-05
+bool 
+CBluetoothHC05::ATResponse(const char* cmd, const char* respHdr, char* response, int& len)
+{
+  if(!_bTest) {
+    flush();   // ensure response is for *this* command!
+    HC05_SerialPort.print(cmd);
+    memset(response, 0, len);
+    int read = HC05_SerialPort.readBytesUntil('\n', response, len);  // \n is not included in returned string!
+//    DebugPort.print(response); DebugPort.print(" ? "); DebugPort.println(respHdr);
+    if(0 == strncmp(response, respHdr, strlen(respHdr))) {
+      len = read;
+      return true;
+    }
+    len = 0;
   }
   return false;
 }
@@ -226,4 +265,110 @@ CBluetoothHC05::flush()
 {
   while(HC05_SerialPort.available())  
     HC05_SerialPort.read();
+}
+
+bool
+CBluetoothHC05::test(char val) 
+{
+  if(!val) {
+    _bTest = false;
+  }
+  else {
+    _bTest = true;
+    if(val == 0xff) {  // special entry command
+      DebugPort.println("ENTERING Test Bluetooth mode");
+      return true;
+    }
+    if(val == ('b' & 0x1f)) {   // CTRL-B - leave bluetooth test mode
+      DebugPort.println("LEAVING Test Bluetooth mode");
+      digitalWrite(_keyPin, LOW);              // request HC-05 module to enter command mode
+      openSerial(9600); 
+      return false;
+    }
+    if(val == ('c' & 0x1f)) {   // CTRL-C - data mode
+      DebugPort.println("Test Bluetooth COMMAND mode");
+      digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
+      openSerial(9600); 
+      return true;
+    }
+    if(val == ('d' & 0x1f)) {   // CTRL-D - data mode
+      DebugPort.println("Test Bluetooth DATA mode");
+      digitalWrite(_keyPin, LOW);              // request HC-05 module to enter command mode
+      openSerial(9600); 
+      return true;
+    }
+    HC05_SerialPort.write(val);
+  }
+  return _bTest;
+}
+
+void 
+CBluetoothHC05::decodeMACresponse(char* pResponse, int len)
+{
+  // decode ADDR response from a HC-05 
+  // NOTE:
+  //   the full complement of digits may not be sent!
+  //   leading zeroes are suppressed, digits are grouped by colons.
+  //
+  // eg, HC-05 response: +ADDR:18:e5:449a7
+  //
+  // 00:18:e5:04:49:a7 is how we'd normally expect to present it!
+
+	char stage[16];
+	char MACdecode[16];
+	memset(MACdecode, 0, 16);
+	char* pDecode = MACdecode;   // extract and build digits into MACdecode using this ptr 
+	char* pStage = stage;
+	int hexCount = 0;
+
+	for (int i = 6; i <= len; i++) {   // skip initial response header
+		if (pResponse[i] == ':' || i == len) {
+			if (hexCount & 0x01) {         // leading zeros are suppressed in response, replace them!
+				*pDecode++ = '0';
+			}
+			pStage = stage;
+			while (hexCount) {
+				*pDecode++ = *pStage++;
+				hexCount--;
+			}
+			pStage = stage;
+		}
+		if (isxdigit(pResponse[i])) {
+			*pStage++ = pResponse[i];;
+			hexCount++;
+		}
+	}
+
+	// ideally 12 characters in MAC digit sequence..
+	int deficit = 12 - strlen(MACdecode);
+	if (deficit > 0) {
+    // not enough, shuffle to rear
+		char* pSrc = &MACdecode[strlen(MACdecode) - 1];
+		char* pDest = &MACdecode[11];
+		int loop = strlen(MACdecode);
+		// move from back forward
+		while (loop--) {
+			*pDest-- = *pSrc--;
+		}
+    // now insert 0's at start
+		pDest = MACdecode;
+		while (deficit--) {
+			*pDest++ = '0';
+		}
+    deficit = 0;
+	}
+	if (deficit < 0) {  // more than 12 digits! - WHOA!
+		strcpy(_MAC, "unknown");
+	}
+	else {
+    // build final colon separated MAC address
+		char* pDest = _MAC;        
+		char* pSrc = MACdecode;
+		for (int i = 0; i < 6; i++) {
+			*pDest++ = *pSrc++;
+			*pDest++ = *pSrc++;
+			*pDest++ = ':';
+		}
+		*--pDest = 0;  // step back and replace last colon with the null terminator!
+	}
 }

@@ -159,6 +159,7 @@ long lastTemperatureTime;            // used to moderate DS18B20 access
 int DS18B20holdoff = 2;
 
 int BoardRevision = 0;
+bool bTestBTModule = false;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
@@ -1149,6 +1150,11 @@ void checkDebugCommands()
 
     char rxVal = DebugPort.read();
 
+    if(bTestBTModule) {
+      bTestBTModule = Bluetooth.test(rxVal);
+      return;
+    }
+
     rxVal = toLowerCase(rxVal);
 
 #ifdef PROTOCOL_INVESTIGATION    
@@ -1250,6 +1256,10 @@ void checkDebugCommands()
       }
       else if(rxVal == ('h' & 0x1f)) {   // CTRL-H hourmeter reset
         pHourMeter->resetHard();
+      }
+      else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mdoe: bluetooth module route
+        bTestBTModule = !bTestBTModule;
+        Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
       }
     }
 #ifdef PROTOCOL_INVESTIGATION    
