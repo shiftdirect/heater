@@ -51,6 +51,7 @@
 #include "fonts/MiniFont.h"
 #include "fonts/MidiFont.h"
 #include "../Protocol/Protocol.h"
+#include "fonts/Arial.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -590,18 +591,25 @@ CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
 {
   static int prevPercent = -1;
 
-  if(percent != prevPercent/* && tDelta > 500*/) {
+  if(percent != prevPercent) {
     _pDisplay->clearDisplay();
+    _pDisplay->setFontInfo(&arial_8ptBoldFontInfo);
+    _pDisplay->setCursor(64, -1);
+    _pDisplay->printCentreJustified("Firmware update");
+    _pDisplay->setFontInfo(NULL);
+    _pDisplay->drawFastHLine(0, 10, 128, WHITE);
     _pDisplay->setCursor(64,22);
     switch(updateType) {
-      case eOTAnormal:  _pDisplay->printCentreJustified("OTA update active");     break;
-      case eOTAbrowser: _pDisplay->printCentreJustified("Browser update active"); break;
-      case eOTAWWW:     _pDisplay->printCentreJustified("WWW update active");     break;
+      case eOTAnormal:  _pDisplay->printCentreJustified("OTA upload");     break;
+      case eOTAbrowser: _pDisplay->printCentreJustified("Browser upload"); break;
+      case eOTAWWW:     _pDisplay->printCentreJustified("Web download");     break;
     }
     if(percent) {
+      _pDisplay->drawRect(14, 32, 100, 8, WHITE);
+      _pDisplay->fillRect(14, 32, percent, 8, WHITE);
       char msg[16];
       sprintf(msg, "%d%%", percent);
-      _pDisplay->setCursor(64,32);
+      _pDisplay->setCursor(64,42);
       _pDisplay->printCentreJustified(msg);
     }
     prevPercent = percent;

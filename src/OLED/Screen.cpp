@@ -200,7 +200,7 @@ CScreen::_showStoringMessage()
 {
   _display.writeFillRect(34, 19, 60, 26, WHITE);
   CTransientFont AF(_display, &arial_8ptBoldFontInfo);
-  _printInverted(_display.xCentre(), 25, " STORING ", true, eCentreJustify);
+  _printInverted(_display.xCentre(), 27, " STORING ", true, eCentreJustify);
 }
 
 

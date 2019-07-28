@@ -94,9 +94,9 @@ CSetTimerScreen::show()
   else {
     // start
     xPos = 18;
-    yPos = 28;
+    yPos = 18;
     _printMenuText(xPos, yPos, "On", false, eRightJustify);
-    _printMenuText(xPos+18, yPos, ":");
+    _printMenuText(xPos+17, yPos, ":");
     xPos += 6;
     sprintf(str, "%02d", _timerInfo.start.hour);
     _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==0);
@@ -105,10 +105,10 @@ CSetTimerScreen::show()
     _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==1);
 
     // stop
-    xPos = 18;
-    yPos = 41;
+    xPos = 82;
+    yPos = 18;
     _printMenuText(xPos, yPos, "Off", false, eRightJustify);
-    _printMenuText(xPos+18, yPos, ":");
+    _printMenuText(xPos+17, yPos, ":");
     xPos += 6;
     sprintf(str, "%02d", _timerInfo.stop.hour);
     _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==2);
@@ -118,18 +118,15 @@ CSetTimerScreen::show()
     
     // control
     const char* msg;
-    xPos = _display.width() - border;
     _printEnabledTimers();
     
-    yPos = 41;
+    xPos = _display.width() - border;
+    yPos = 35;
     if(_timerInfo.repeat)
       msg = "Repeat";
     else
       msg = "Once";
-    if(_rowSel == 1) 
-      _printMenuText(xPos, yPos, msg, _colSel==5, eRightJustify);
-    else
-      _printInverted(xPos, yPos, msg, _timerInfo.repeat, eRightJustify);
+    _printMenuText(xPos, yPos, msg, _rowSel==1 && _colSel==5, eRightJustify);
 
     // navigation line
     yPos = 53;
@@ -345,43 +342,52 @@ CSetTimerScreen::_adjust(int dir)
 void
 CSetTimerScreen::_printEnabledTimers()
 {
-  const int dayWidth = 8;
-  int xPos = _display.width() - border;
-  int yPos = 28;
+  const int dayWidth = 10;
+  int xPos = border;
+  int yPos = 35;
 
   if(_timerInfo.enabled == 0x00 && _rowSel != 2) {
-    _printMenuText(xPos, yPos, "Disabled", _colSel==4, eRightJustify);
+    _printMenuText(xPos, yPos, "Disabled", _colSel==4);
   }
   else if(_timerInfo.enabled & 0x80) {
     if(_rowSel==1 && _colSel==4)
-      _printMenuText(xPos, yPos, "Enabled", true, eRightJustify);
+      _printMenuText(xPos, yPos, "Enabled", true);
     else 
-      _printInverted(xPos, yPos, "Enabled", true, eRightJustify);
+      _printInverted(xPos, yPos, "Enabled", true);
   }
   else {
     if(_rowSel==1 && _colSel==4) {
       CRect extents;
       extents.width = 7 * dayWidth + 2;
-      extents.height = 8;
-      extents.xPos = xPos - extents.width;
-      extents.yPos = yPos;
+      extents.height = 11;
+      extents.xPos = border;
+      extents.yPos = yPos-2;
       extents.Expand(border);
       _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, radius, WHITE);
     }
-    xPos -= 7 * dayWidth;  // back step 7 day entries
+    xPos = border+3;  // back step 7 day entries
     int xSel = xPos + _colSel * dayWidth;  // note location of selection now (xPos gets changed)
     // print days, inverse if enabled
     for(int i=0; i<7; i++) {
       int dayMask = 0x01 << i;
+      if(_timerInfo.enabled & dayMask) {
+        _display.fillRect(xPos-2, yPos-2, 9, 11, WHITE);
+      }
       _printInverted(xPos, yPos, briefDOW[i], _timerInfo.enabled & dayMask);
+      _display.drawPixel(xPos-2, yPos-2, BLACK);
+      _display.drawPixel(xPos-2, yPos+8, BLACK);
+      _display.drawPixel(xPos+6, yPos-2, BLACK);
+      _display.drawPixel(xPos+6, yPos+8, BLACK);
       xPos += dayWidth;
     }
     // draw selection loop afterwards - writing text otherwise obliterates it
     if(_rowSel==2) {
       CRect extents;
-      extents.xPos = xSel;
-      extents.yPos = yPos;
-      _drawMenuSelection(extents, briefDOW[_colSel]);
+      extents.xPos = xSel-1-border;
+      extents.yPos = yPos-1-border;
+      extents.width = 13;
+      extents.height = 15;
+      _display.drawRoundRect(extents.xPos, extents.yPos, extents.width, extents.height, 3, WHITE);
     }
   }
 }
