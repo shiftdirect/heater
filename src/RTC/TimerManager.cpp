@@ -34,13 +34,24 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/helpers.h"
 
-uint8_t CTimerManager::weekTimerIDs[7][CTimerManager::_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
+uint8_t CTimerManager::weekMap[7][CTimerManager::_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
 
 int  CTimerManager::activeTimer = 0;
 int  CTimerManager::activeDow = 0;
 int  CTimerManager::nextTimer = 0;
 int  CTimerManager::nextStart = 0;
 bool CTimerManager::timerChanged = false;
+
+#define SET_MAPS() {                         \
+  if(pTimerMap) {                            \
+    pTimerMap[dayMinute] |= activeday;       \
+    if(pTimerIDs)                            \
+      pTimerIDs[dayMinute] |= timerBit;      \
+  }                                          \
+  else {                                     \
+    weekMap[dow][dayMinute] = recordTimer;   \
+  }                                          \
+}
 
 // create a bitmap that describes the pattern of on/off times
 void 
@@ -52,7 +63,8 @@ CTimerManager::createMap(int timerMask, uint16_t* pTimerMap, uint16_t* pTimerIDs
       memset(pTimerIDs, 0, _dayMinutes*sizeof(uint16_t));
   }
   else {
-    memset(weekTimerIDs, 0, _dayMinutes*7*sizeof(uint8_t));
+    DebugPort.println("Erasing weekMap");
+    memset(weekMap, 0, _dayMinutes*7*sizeof(uint8_t));
   }
   
   for(int timerID=0; timerID < 14; timerID++) {
@@ -74,15 +86,14 @@ CTimerManager::createMap(int timerMask, uint16_t* pTimerMap, uint16_t* pTimerIDs
 void 
 CTimerManager::createMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pTimerIDs)
 {
-  int timerBit = 0x0001 << timer.timerID;
-
-  const BTCDateTime tNow = Clock.get();
-  int todayDoW = 1 << tNow.dayOfTheWeek();
-  int todayTime = tNow.hour() * 60 + tNow.minute();
+  if(createOneShotMap(timer, pTimerMap, pTimerIDs)) {
+    return;
+  }
 
   if(timer.enabled) {
-    // create linear minute of day values for start & stop
-    // note that if stop < start, that is treated as a timer that rolls over midnight
+    // create linear minutes of day values for start & stop
+    // note that if stop < start, the timer rolls over midnight
+    int timerBit = 0x0001 << timer.timerID;                   // bit required for timer ID map
     int timestart = timer.start.hour * 60 + timer.start.min;  // linear minute of day
     int timestop = timer.stop.hour * 60 + timer.stop.min;
     for(int dayMinute = 0; dayMinute < _dayMinutes; dayMinute++) {
@@ -90,62 +101,43 @@ CTimerManager::createMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pTimerIDs
         int dayBit = 0x01 << dow;
         if(timer.enabled & dayBit || timer.enabled & 0x80) {  // specific or everyday
           uint16_t activeday = dayBit;  // may also hold non repeat flag later
-          uint8_t recordTimer = (timer.timerID + 1) | (timer.repeat ? 0x80 : 0x00);
+          uint8_t recordTimer = (timer.timerID + 1) | (timer.repeat ? 0x80 : 0x00);  // full week timer ID map
           if(!timer.repeat) {
             // flag timers that should get cancelled
             activeday |= (activeday << 8);  // combine one shot status in MS byte
           }
-          if(timer.enabled == 0x80 && !timer.repeat) {  // on-shot next occurrence timer
-            if(todayTime > timestart) {
-            }
-          }
 
+          // SET_MAPS() macro saves values as below:
+          //
+          //   activeday -> pTimerMap[dayMinute]           (if pTimerMap != NULL)
+          //   timerBit -> pTimerID[dayMinute]             (if pTimerMap != NULL AND pTimerID != NULL)
+          //   recordTimer -> weekMap[dow][dayMinute]      (if pTimerMap == NULL)
+          //
           if(timestop > timestart) {
             // treat normal start < stop times (within same day)
             if((dayMinute >= timestart) && (dayMinute < timestop)) {
-              if(pTimerMap) {
-                pTimerMap[dayMinute] |= activeday;
-                if(pTimerIDs) 
-                  pTimerIDs[dayMinute] |= timerBit;
-              }
-              else {
-                weekTimerIDs[dow][dayMinute] = recordTimer;
-              }
+              SET_MAPS();
             }
           }
           else {  
             // time straddles a day, start > stop, special treatment required
             if(dayMinute >= timestart) {  
               // true from start until midnight
-              if(pTimerMap) {
-                pTimerMap[dayMinute] |= activeday;
-                if(pTimerIDs) 
-                  pTimerIDs[dayMinute] |= timerBit;
-              }
-              else {
-                weekTimerIDs[dow][dayMinute] = recordTimer;
-              }
+              SET_MAPS();
             }
             if(dayMinute < timestop) {
               // after midnight, before stop time, i.e. next day
               // adjust for next day, taking care to wrap week
               if(dow == 6) {     // last day of week?
-                activeday >>= 6;  // roll back to start of week
-                if(pTimerMap == NULL) {
-                  weekTimerIDs[0][dayMinute] = recordTimer;
-                }
+                dow = 0;
+                // because activeday holds both cancel and day info, shift it 
+                activeday >>= 6;  // roll back to start of week - 
               }
               else {
+                dow++;
                 activeday <<= 1;  // next day
-                if(pTimerMap == NULL) {
-                  weekTimerIDs[dow+1][dayMinute] = recordTimer;
-                }
               }
-              if(pTimerMap) {
-                pTimerMap[dayMinute] |= activeday; 
-                if(pTimerIDs)
-                  pTimerIDs[dayMinute] |= timerBit;
-              }
+              SET_MAPS();
             } 
           }
         }
@@ -210,7 +202,7 @@ CTimerManager::condenseMap(uint8_t timerMap[7][120])
       uint8_t condense = 0;
       for(int subInterval = 0; subInterval < 12; subInterval++, dayMinute++) {
         if(!condense)
-          condense = weekTimerIDs[dow][dayMinute];
+          condense = weekMap[dow][dayMinute];
       }
       timerMap[dow][opIndex++] = condense;
     }
@@ -228,7 +220,7 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
 
   int retval = 0;
   int dayMinute = (hour * 60) + minute;
-  int newID = weekTimerIDs[dow][dayMinute];
+  int newID = weekMap[dow][dayMinute];
   if(activeTimer != newID) {
     
     DebugPort.printf("Timer ID change detected: %d", activeTimer & 0x0f); 
@@ -292,8 +284,8 @@ CTimerManager::findNextTimer(int hour, int minute, int dow)
 
   int limit = 24*60*7;  
   while(limit--) {
-    if(weekTimerIDs[dow][dayMinute] & 0x0f) {
-      nextTimer = weekTimerIDs[dow][dayMinute];
+    if(weekMap[dow][dayMinute] & 0x0f) {
+      nextTimer = weekMap[dow][dayMinute];
       nextStart = dow*_dayMinutes + dayMinute;
       return nextTimer;
     }
@@ -352,3 +344,60 @@ CTimerManager::conflictTest(int ID)
   timerChanged = true;
   return conflictID;
 }
+
+// special handling for next occurence of one-shot, non-repeating timers 
+bool
+CTimerManager::createOneShotMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pTimerIDs)
+{
+  if((timer.enabled == 0x80) && !timer.repeat) {  // on-shot next occurrence timer
+    DebugPort.printf("One shot, next occurence timer #%d\r\n", timer.timerID+1);
+    int timerBit = 0x0001 << timer.timerID;                   // value required for full week map
+    int timestart = timer.start.hour * 60 + timer.start.min;  // linear minute of day
+    int timestop = timer.stop.hour * 60 + timer.stop.min;
+    // create masking based upon TODAY
+    const BTCDateTime tNow = Clock.get();
+    int dow = tNow.dayOfTheWeek();
+    int todayTime = tNow.hour() * 60 + tNow.minute();
+    // wrap to next day if start time falls behind current time
+    if(todayTime >= timestart) {
+      dow++;
+      WRAPUPPERLIMIT(dow, 6, 0);
+    }
+    // create masks and record values for the assorted target arrays
+    uint16_t activeday = 1 << dow;  // set day bit
+    activeday |= activeday << 8;    // and set non repeat flag in MSB
+    uint8_t recordTimer = (timer.timerID + 1);
+
+    // SET_MAPS() macro saves values as below:
+    //
+    //   activeday -> pTimerMap[dayMinute]          (if pTimerMap != NULL)
+    //   timerBit -> pTimerID[dayMinute]            (if pTimerMap != NULL AND pTimerID != NULL)
+    //   recordTimer -> weekMap[dow][dayMinute]     (if pTimerMap == NULL)
+    //
+    if(timestart < timestop) {  
+      // timer does not wrap midnight - easy linear workout :-)
+      for(int dayMinute = timestart; dayMinute < timestop; dayMinute++) {
+        SET_MAPS();
+      }
+    }
+    else {  
+      // timer rolls over midnight
+      // fill map up from start time till end of day
+      for(int dayMinute = timestart; dayMinute < _dayMinutes; dayMinute++) {
+        SET_MAPS();
+      }
+      // advance to next day, wrapping if required
+      dow++;
+      WRAPUPPERLIMIT(dow, 6, 0);
+      activeday = 1 << dow;           // set day bit
+      activeday |= activeday << 8;    // and set non repeat flag in MSB
+      // complete map from midnight till stop time
+      for(int dayMinute = 0; dayMinute < timestop; dayMinute++) {
+        SET_MAPS();
+      }
+    }
+    return true;
+  }
+  return false;
+}
+

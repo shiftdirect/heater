@@ -68,9 +68,9 @@ DebugPort.println("Using millis() based psuedo \"Real Time Clock\"");
 
   _nextRTCfetch = millis();
 
-  CTimerManager::createMap();
-  
   update();
+
+  CTimerManager::createMap();
 }
 
 const BTCDateTime& 

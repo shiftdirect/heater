@@ -63,7 +63,7 @@ CFuelGauge::Integrate(float Hz)
   float fuelDelta = _pumpStrokes - _lastStoredVal;
   bool bStoppedSave = (Hz == 0) && (_pumpStrokes != _lastStoredVal);
   if(fuelDelta > 10 || bStoppedSave) {         // record fuel usage every 10 minutes, or every 10 strokes
-    DebugPort.printf("Storing fuel gauge: %.2f strokes\r\n", _pumpStrokes);
+//    DebugPort.printf("Storing fuel gauge: %.2f strokes\r\n", _pumpStrokes);
     RTC_Store.setFuelGauge(_pumpStrokes);            // uses RTC registers to store this
     _lastStoredVal = _pumpStrokes;
   }

@@ -72,7 +72,7 @@ CSetTimerScreen::show()
   int xPos, yPos;
 
   if(_rowSel == 0) {
-    NVstore.getTimerInfo(_timerID, _timerInfo);
+    NVstore.getTimerInfo(_timerID, _timerInfo);   // ensure actual data when on base menu bar
   }
   sprintf(str, "Set Timer #%d", _timerID + 1);
   _showTitle(str);
@@ -156,34 +156,11 @@ CSetTimerScreen::keyHandler(uint8_t event)
   static bool bHeld = false;
   // handle initial key press
   if(event & keyPressed) {
+    _repeatCount = 0;
     bHeld = false;
     // press CENTRE
     if(event & key_Centre) {
-      if(_rowSel == 0) {
-        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // exit: return to clock screen
-      }
-      else if(_rowSel == 2) {   // exit from per day settings
-        _rowSel = 1;
-        _colSel = 4;
-      }
-      else {  // in config fields, save new settings
-        // test if the setting conflict with an already defined timer
-        _conflictID = CTimerManager::conflictTest(_timerInfo);  
-        if(_conflictID) {
-          _timerInfo.enabled = 0;   // cancel enabled status
-          _ConflictTime = millis() + 1500;
-          _ScreenManager.reqUpdate();
-          _rowSel = 1;
-          _colSel = 4;   // select enable/disable 
-        }
-        else {
-          _SaveTime = millis() + 1500;
-          _ScreenManager.reqUpdate();
-          _rowSel = 0;
-          _colSel = 0;
-        }
-        CTimerManager::setTimer(_timerInfo);
-      }
+      // ON KEY RELEASE
     }
     // press LEFT - navigate fields, or screens
     if(event & key_Left) {
@@ -225,8 +202,14 @@ CSetTimerScreen::keyHandler(uint8_t event)
 
   // handle held down keys
   if(event & keyRepeat) {
+    _repeatCount++;
     bHeld = true;
     if(_rowSel == 1) {
+      if(event & key_Centre) {
+        _ScreenManager.reqUpdate();
+        _rowSel = 0;
+        _colSel = 0;
+      }
       if(_colSel < 4) {
         // fast repeat of hour/minute adjustments by holding up or down keys
         if(event & key_Down) _adjust(-1);
@@ -244,9 +227,37 @@ CSetTimerScreen::keyHandler(uint8_t event)
   }
 
   if(event & keyReleased) {
-    if(!bHeld) {
-      int maskDOW = 0x01 << _colSel;
 
+    if(!bHeld) {
+      if(event & key_Centre) {
+        if(_rowSel == 0) {
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // exit: return to clock screen
+        }
+        else if(_rowSel == 2) {   // exit from per day settings
+          _rowSel = 1;
+          _colSel = 4;
+        }
+        else {  // in config fields, save new settings
+          // test if the setting conflict with an already defined timer
+          _conflictID = CTimerManager::conflictTest(_timerInfo);  
+          if(_conflictID) {
+            _timerInfo.enabled = 0;   // cancel enabled status
+            _ConflictTime = millis() + 1500;
+            _ScreenManager.reqUpdate();
+            _rowSel = 1;
+            _colSel = 4;   // select enable/disable 
+          }
+          else {
+            _SaveTime = millis() + 1500;
+            _ScreenManager.reqUpdate();
+            _rowSel = 0;
+            _colSel = 0;
+          }
+          CTimerManager::setTimer(_timerInfo);
+        }
+      }
+  
+      int maskDOW = 0x01 << _colSel;
       // released DOWN - can only leave adjustment by using OK (centre button)
       if(event & key_Down) {
         // adjust selected item

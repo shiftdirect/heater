@@ -35,7 +35,7 @@
 #include "../Utility/macros.h"
 
 
-CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
 {
   _initUI();
 }
@@ -43,7 +43,7 @@ CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 void
 CSetClockScreen::onSelect()
 {
-  CScreenHeader::onSelect();
+  CScreen::onSelect();
   _initUI();
 }
 
@@ -68,18 +68,18 @@ CSetClockScreen::show()
   if(deltaT >= 0) {
     _nextT += 1000;
 
-    CScreenHeader::show(false);
+    CScreen::show();
+    _display.clearDisplay();
 
     char str[16];
     int xPos, yPos;
 
-    _printInverted(0, 15, " Set Clock ", true);
+    _showTitle("Set Clock");
 
     const BTCDateTime& now = Clock.get();
     if(_rowSel == 0) {
       // update printable values
       working = now;
-      // DELIBERATE DROP THROUGH HERE
     }
 
     if(_SaveTime) {
@@ -90,12 +90,13 @@ CSetClockScreen::show()
       }
     }
     else {
-      yPos = 28;
+      yPos = 20;
       xPos = 6;
       // date
       if(_rowSel==0) {
-        xPos = 20;
+        xPos = 18;
         _printMenuText(xPos, yPos, working.dowStr());
+        xPos = 20;
       }          
 
       sprintf(str, "%d", working.day());
@@ -107,7 +108,7 @@ CSetClockScreen::show()
       sprintf(str, "%d", working.year());
       _printMenuText(xPos, yPos, str, _rowSel==3);
       // time
-      yPos = 40;
+      yPos = 32;
       xPos = 26;
       sprintf(str, "%02d", working.hour());
       _printMenuText(xPos, yPos, str, _rowSel==4);
@@ -123,22 +124,23 @@ CSetClockScreen::show()
       _printMenuText(xPos, yPos, str, _rowSel==6);
       if(_rowSel>=1)
         _printMenuText(_display.width()-border, yPos, "SET", _rowSel==7, eRightJustify);
-    }
-    // navigation line
-    xPos = _display.xCentre();
-    if(_rowSel == 0) {
-      yPos = 53;
-      _printMenuText(_display.width(), yPos, "\030Edit", false, eRightJustify);
-      _printMenuText(xPos, yPos, " Exit ", true, eCentreJustify);
-    }
-    else {
-      _display.drawFastHLine(0, 52, 128, WHITE);
-      _printMenuText(xPos, 56, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
-      if(_rowSel == 7) {
-        _printMenuText(xPos, 56, "Save", false, eCentreJustify);
+
+      // navigation line
+      xPos = _display.xCentre();
+      if(_rowSel == 0) {
+        yPos = 53;
+        _printMenuText(_display.width(), yPos, "\030Edit", false, eRightJustify);
+        _printMenuText(xPos, yPos, " Exit ", true, eCentreJustify);
       }
       else {
-        _printMenuText(xPos, 56, "Abort", false, eCentreJustify);
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        _printMenuText(xPos, 56, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
+        if(_rowSel == 7) {
+          _printMenuText(xPos, 56, "Save", false, eCentreJustify);
+        }
+        else {
+          _printMenuText(xPos, 56, "Abort", false, eCentreJustify);
+        }
       }
     }
   }    

@@ -30,7 +30,7 @@ class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CSetClockScreen : public CScreenHeader {
+class CSetClockScreen : public CScreen {
   int  _rowSel;
   unsigned long _nextT;
   BTCDateTime working;

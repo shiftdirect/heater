@@ -33,6 +33,7 @@ class CProtocol;
 class CSetTimerScreen : public CScreen {
   int  _rowSel;
   int  _colSel;
+  int  _repeatCount;
   int  _timerID;
   unsigned long _SaveTime;
   unsigned long _ConflictTime;

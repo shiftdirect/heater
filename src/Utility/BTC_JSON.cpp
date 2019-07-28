@@ -562,7 +562,7 @@ void updateJSONclients(bool report)
       getBluetoothClient().send( expand.c_str() );
       unsigned long tBT = millis() - tStart;
       bNewTimerInfo = true;
-      DebugPort.printf("JSON times : %ld,%ld,%ld\r\n", tJSON, tBT, tWF); 
+//      DebugPort.printf("JSON times : %ld,%ld,%ld\r\n", tJSON, tBT, tWF); 
     }
   }
   // request timer refesh upon clients
@@ -577,7 +577,9 @@ void updateJSONclients(bool report)
     root.set("TimerRefresh", 1);
     root.printTo(jsonStr, 800);
 
-    DebugPort.printf("JSON send: %s\r\n", jsonStr);
+    if (report) {
+      DebugPort.printf("JSON send: %s\r\n", jsonStr);
+    }
     sendWebSocketString( jsonStr );
     std::string expand = jsonStr;
     Expand(expand);

@@ -34,6 +34,7 @@ class CTimerChartScreen : public CScreen {
   int  _colSel;
   int  _instance;
   unsigned long _SaveTime;
+  void cursor();
 
 public:
   CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);

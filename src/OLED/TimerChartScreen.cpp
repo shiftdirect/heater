@@ -35,6 +35,7 @@
 #include "../../lib/RTClib/RTClib.h"
 #include "fonts/MiniFont.h"
 #include "../RTC/TimerManager.h"
+#include "../RTC/Clock.h"
 
 
 static uint8_t condensed[7][120];
@@ -50,7 +51,6 @@ CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr,
 void 
 CTimerChartScreen::onSelect()
 {
-  CTimerManager::createMap();
   CTimerManager::condenseMap(condensed);
 }
 
@@ -145,10 +145,27 @@ CTimerChartScreen::show()
       }
     }
   }
+  cursor();
 
   return true;
 }
 
+void
+CTimerChartScreen::cursor()
+{
+  static bool bShowWhite = true;
+  // create masking based upon TODAY
+  const BTCDateTime tNow = Clock.get();
+  int dow = tNow.dayOfTheWeek();
+  int todayTime = tNow.hour() * 60 + tNow.minute();
+
+  int yPos = 6 + 7*dow;
+  int xPos = 9 + int(todayTime * 0.0833333);   // 1/12
+
+  _display.drawFastVLine(xPos, yPos, 8, bShowWhite ? WHITE : BLACK);
+
+  bShowWhite = !bShowWhite;
+}
 
 bool 
 CTimerChartScreen::keyHandler(uint8_t event)

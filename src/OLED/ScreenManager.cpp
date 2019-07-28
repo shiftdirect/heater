@@ -269,7 +269,6 @@ CScreenManager::begin(bool bNoClock)
   if(!bNoClock)
     menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
   menuloop.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
-//  menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));             //  comms info
   menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
   menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
   _Screens.push_back(menuloop);

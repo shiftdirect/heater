@@ -38,6 +38,7 @@ struct sTimer;
 class CTimerManager {
 public:
   static const int _dayMinutes = 24*60;
+  static bool createOneShotMap(sTimer& timer, uint16_t* timerMap = NULL, uint16_t* timerIDs = NULL);
   static void createMap(int timermask = 0x3fff, uint16_t* timerMap = NULL, uint16_t* timerIDs = NULL);
   static void createMap(sTimer& timer, uint16_t* timerMap = NULL, uint16_t* timerIDs = NULL);
   static void condenseMap(uint16_t timerMap[_dayMinutes], int factor);
@@ -56,7 +57,7 @@ private:
   static int prevState;
   static int nextTimer;
   static int nextStart;
-  static uint8_t weekTimerIDs[7][_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
+  static uint8_t weekMap[7][_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
   static bool timerChanged;
 };
 
