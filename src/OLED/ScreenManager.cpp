@@ -586,12 +586,22 @@ CScreenManager::showRebootMsg(const char* content[2], long delayTime)
 }
 
 void 
+CScreenManager::clearDisplay()
+{
+  _pDisplay->clearDisplay();
+}
+  
+void 
 CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
 {
   static int prevPercent = -1;
 
   if(percent != prevPercent) {
+    prevPercent = percent;
     _pDisplay->clearDisplay();
+    if(percent < 0)
+      return;
+      
     _pDisplay->setFontInfo(&arial_8ptBoldFontInfo);
     _pDisplay->setCursor(64, -1);
     _pDisplay->printCentreJustified("Firmware update");
@@ -611,7 +621,6 @@ CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
       _pDisplay->setCursor(64,42);
       _pDisplay->printCentreJustified(msg);
     }
-    prevPercent = percent;
     _pDisplay->display();
   }
 }

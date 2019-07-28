@@ -702,6 +702,7 @@ void onUploadCompletion()
       server.send(500, "text/plain", "500: couldn't create file");
     }
     BrowserUpload.reset();
+    ShowOTAScreen(-1, eOTAbrowser);  // browser update 
   }
   else {
     if(BrowserUpload.isOK()) {
