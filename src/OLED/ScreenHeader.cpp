@@ -37,9 +37,9 @@
 
 #define MINIFONT miniFontInfo
 
-#define X_BT_ICON      10
+#define X_BT_ICON      12
 #define Y_BT_ICON       0
-#define X_WIFI_ICON    19
+#define X_WIFI_ICON    22
 #define Y_WIFI_ICON     0
 #define X_CLOCK        50  
 #define Y_CLOCK         0
@@ -48,18 +48,27 @@
 #define X_BATT_ICON   103
 #define Y_BATT_ICON     0
 
-/*#define X_BT_ICON      20
-#define Y_BT_ICON       0
-#define X_WIFI_ICON    29
-#define Y_WIFI_ICON     0
-#define X_GPIO_ICON     9
-#define X_CLOCK        56  
-#define Y_CLOCK         0
-#define X_TIMER_ICON   84
-#define Y_TIMER_ICON    0
-#define X_BATT_ICON   103
-#define Y_BATT_ICON     0*/
-
+// |0        |10       |20       |30       |40       |50       |60       |70       |80       |90       |100      |110      |120    
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWOOOOOOOOOOOO                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWOOOOOOOOOOOO                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWOOOOOOOOOOOO                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWOOOOOOOOOOOO                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWOOOOOOOOOOOO                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWW                                                                                    xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWAAAAAAAAAAAA                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWAAAAAAAAAAAA                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWAAAAAAAAAAAA                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB    WWWWWWWWWWWWAAAAAAAAAAAA                                                                         xxxxxxxxx
+// xxxxxxxxxxxxBBBBBB                AAAAAAAAAAAA                                                                         xxxxxxxxx
+// xxxxxxxxxxxx                                                                                                           xxxxxxxxx
+// xxxxxxxxxxxx                                                                                                           xxxxxxxxx
+// xxxxxxxxxxxx                                                                                                           xxxxxxxxx
+// xxxxxxxxxxxx                                                                                                           xxxxxxxxx
+// xxxxxxxxxxxx                                                                                                           xxxxxxxxx
+// xxxxxxxxxxxx                                                                                                           xxxxxxxxx
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
 {
@@ -74,7 +83,7 @@ CScreenHeader::show(bool erase)
   else {
     _display.fillRect(0, 17, 128, 47, BLACK); // only erase below the header
     _display.fillRect(119, 0, 9, 17, BLACK); // erase top of body thermo
-    _display.fillRect(0, 0, 9, 17, BLACK);   // erase top of ambient thermo
+    _display.fillRect(0, 0, X_BT_ICON, 17, BLACK);   // erase top of ambient thermo
   }
 
   // standard header items
@@ -167,21 +176,6 @@ CScreenHeader::animate()
         break;
 
     }
-/*    
-    switch(_batteryCount) {
-      case 3:
-        if(SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false) == 0) { // check but do not fault
-          showBatteryIcon(getBatteryVoltage(true));
-        }
-        else {
-          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
-        }
-        break;
-      case 0:
-        showBatteryIcon(getBatteryVoltage(true));
-        break;
-    }
-*/
   }
 
   showWifiIcon();

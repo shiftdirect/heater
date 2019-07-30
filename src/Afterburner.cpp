@@ -122,8 +122,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 30;
-const int FirmwareSubRevision = 0;
-const char* FirmwareDate = "28 Jul 2019";
+const int FirmwareSubRevision = 1;
+const char* FirmwareDate = "30 Jul 2019";
 
 
 #ifdef ESP32
