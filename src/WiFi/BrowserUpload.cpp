@@ -149,7 +149,7 @@ sBrowserUpload::end(HTTPUpload& upload)
     // completion of firmware update
     // check the added CRC we genertaed matches 
     // - this guards against malicious, badly formatted bin file attempts.
-    if(!CheckFirmwareCRC(SrcFile.size)) {
+    if(!CheckFirmwareCRC0(SrcFile.size)) {
       Update.abort();
       retval = -4;
     }

@@ -32,6 +32,7 @@
 #include "esp_ota_ops.h"
 
 bool CheckFirmwareCRC(int filesize);
+bool CheckFirmwareCRC0(int filesize);
 void onSuccess();
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));
@@ -112,7 +113,7 @@ void DoOTA()
 //    FOTAtime = millis() + 600000;  // 10 minutes
     FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
-      FOTA.onComplete(CheckFirmwareCRC);     // upload complete, but not yet verified
+      FOTA.onComplete(CheckFirmwareCRC0);     // upload complete, but not yet verified
       FOTA.onSuccess(onSuccess);
       FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
       DebugPort.println("Checking for new firmware...");
@@ -153,7 +154,7 @@ void checkFOTA()
 
 const int CRCbufsize = 1024;
 uint8_t CRCReadBuff[CRCbufsize];   
-
+/*
 bool CheckFirmwareCRC(int filesize)
 {
   const esp_partition_t* pUsePartition = esp_ota_get_next_update_partition(NULL);
@@ -187,6 +188,40 @@ bool CheckFirmwareCRC(int filesize)
   DebugPort.printf("Upload CRC TEST: calcCRC= %04X, fileCRC = %08X\r\n", CRCengine.get(), fileCRC);
 
   return fileCRC == CRCengine.get();
+}*/
+
+// CRC of everything, including our extra CRC bytes should return ZERO :-)
+bool CheckFirmwareCRC0(int filesize)
+{
+  const esp_partition_t* pUsePartition = esp_ota_get_next_update_partition(NULL);
+  if(NULL == pUsePartition) {
+    DebugPort.println("CheckCRC: FAILED - bad partition?");
+    return false;
+  }
+  if((filesize & 0x3) != 2) {   // mod 4 == 2?
+    // we expect 2 extra bytes where the custom CRC is added
+    // all normal applications without CRC are multiples of 4
+    DebugPort.println("CheckCRC: FAILED - bad source file size");
+    return false;
+  }
+
+  CModBusCRC16 CRCengine;
+
+  int processed = 0;
+  while(processed < filesize) {
+    int toRead = filesize - processed;
+    if(toRead > CRCbufsize)
+      toRead = CRCbufsize;
+
+    ESP.flashRead(pUsePartition->address + processed, (uint32_t*)CRCReadBuff, toRead);
+    CRCengine.process(toRead, CRCReadBuff); 
+    processed += toRead;
+  }
+
+  bool retval = CRCengine.get() == 0;
+  DebugPort.printf("CheckCRC: %s\r\n", retval ? "OK" : "FAILED");
+  
+  return retval;
 }
 
 void onSuccess() 

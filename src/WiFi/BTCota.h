@@ -24,6 +24,7 @@
 
 void initOTA();
 void DoOTA();
-bool CheckFirmwareCRC(int size);
+//bool CheckFirmwareCRC(int size);
+bool CheckFirmwareCRC0(int size);
 
 #endif
