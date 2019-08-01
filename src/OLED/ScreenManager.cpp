@@ -52,7 +52,29 @@
 #include "fonts/MidiFont.h"
 #include "../Protocol/Protocol.h"
 #include "fonts/Arial.h"
+#include <SPIFFS.h>
 
+#pragma pack ( push, 1)
+struct sBMPhdr {
+  char b0;
+  char b1;
+  uint32_t filesize;
+  uint16_t resv1;
+  uint16_t resv2;
+  uint32_t startofs;
+  uint32_t hdrsize;
+  uint32_t width;
+  uint32_t height;
+  uint16_t numcolorplanes;
+  uint16_t bitsperpixel;
+  uint32_t compmethod;
+  uint32_t imagesize;
+  uint32_t hRes;
+  uint32_t vRes;
+  uint32_t numColorsPalette;
+  uint32_t numImportantColors;
+};
+#pragma pack (pop)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // splash creen created using image2cpp http://javl.github.io/image2cpp/
@@ -202,6 +224,114 @@ const uint8_t DieselSplash [] PROGMEM =
 };
 
 
+void storeSplashScreen(const uint8_t* image)
+{
+  Preferences preferences;
+
+  DebugPort.println("Storing new splash screen");
+  preferences.begin("splashscreen", false);
+  preferences.putBytes("image", image, 1024);
+  preferences.end();    
+}
+
+void loadSplashScreen(uint8_t* image)
+{
+  Preferences preferences;
+
+  preferences.begin("splashscreen", false);
+  int size = preferences.getBytes("image", image, 1024);
+  preferences.end();    
+
+  if(size == 0) {
+    storeSplashScreen(DieselSplash);
+    memcpy(image, DieselSplash, 1024);
+  }
+}
+
+void storeSplashScreenFile()
+{
+  if(SPIFFS.exists("/splash.bmp")) {  // If a splash.bmp file was uploaded
+    File file = SPIFFS.open("/splash.bmp", "rb");          // Open it
+    sBMPhdr header;
+    file.readBytes((char*)&header, 0x3e);
+    do {
+      if(header.b0 != 'B' || header.b1 != 'M') {
+        DebugPort.println("Bad BMP header");
+        break;
+      }
+      if(header.width != 128 || header.height != 64) {
+        DebugPort.println("Bad BMP size");
+        break;
+      }
+      file.seek(header.startofs);
+      bool bOK = true;
+      uint8_t image[1024];
+      uint8_t line[128];
+      switch(header.bitsperpixel) {
+        case 1:
+          DebugPort.println("Reading monochrome bitmap file for splash screen");
+          memset(image, 0, 1024);
+          for(int i=0; i<64; i++) {
+            file.readBytes((char*)line, 16);
+            for(int j=0; j < 16; j++)
+              line[j] ^= 0xff;    // invert black/white
+            memcpy(&image[(63-i)*16], line, 16);
+          }
+          break;
+        case 4:
+          DebugPort.println("Reading 16 color bitmap file for splash screen");
+          memset(image, 0, 1024);
+          for(int i=0; i<64; i++) {
+            file.readBytes((char*)line, 64);
+            for(int j=0; j < 16; j++) {
+              uint8_t packed = 0;
+              for(int k=0; k<4; k++) {
+                packed <<= 2;
+                uint8_t hold = line[k+j*4];
+                if((hold & 0xf0) == 0)
+                  packed |= 0x02;
+                if((hold & 0x0f) == 0)
+                  packed |= 0x01;
+              }
+              line[j] = packed;    
+            }
+            memcpy(&image[(63-i)*16], line, 16);
+          }
+          break;
+        case 8:
+          DebugPort.println("Reading 256 color bitmap file for splash screen");
+          memset(image, 0, 1024);
+          for(int i=0; i<64; i++) {
+            file.readBytes((char*)line, 128);
+            for(int j=0; j < 16; j++) {
+              uint8_t packed = 0;
+              for(int k=0; k<8; k++) {
+                packed <<= 1;
+                if(line[k+j*8] == 0)
+                  packed |= 0x01;
+              }
+              line[j] = packed;    
+            }
+            memcpy(&image[(63-i)*16], line, 16);
+          }
+          break;
+        default:
+          DebugPort.println("Bad BMP bpp");
+          bOK = false;
+          break;
+      }  
+
+      if(bOK)
+        storeSplashScreen(image);
+
+    } while(0);
+    
+    file.close();
+
+    SPIFFS.remove("/splash.bmp");
+  }
+}
+
 
 CScreenManager::CScreenManager() 
 {
@@ -249,7 +379,10 @@ CScreenManager::begin(bool bNoClock)
 
   // replace adafruit splash screen
   _pDisplay->clearDisplay();
-  _pDisplay->drawBitmap(0, 0, DieselSplash, 128, 64, WHITE);
+  uint8_t splash[1024];
+  loadSplashScreen(splash);
+  _pDisplay->drawBitmap(0, 0, splash, 128, 64, WHITE);
+//  _pDisplay->drawBitmap(0, 0, DieselSplash, 128, 64, WHITE);
   _pDisplay->setCursor(90, 56);
   CTransientFont AF(*_pDisplay, &segoeUI_Italic_7ptFontInfo);  // temporarily use a midi font
   _pDisplay->setTextColor(WHITE);
@@ -269,7 +402,8 @@ CScreenManager::begin(bool bNoClock)
   if(!bNoClock)
     menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
   menuloop.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
-  menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
+  if(getBoardRevision() != 0 && getBoardRevision() != 22)
+    menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
   menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
   _Screens.push_back(menuloop);
 
@@ -304,7 +438,8 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
   menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
   menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
-  menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
+  if(getBoardRevision() != 0 && getBoardRevision() != 22)
+    menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
   _Screens.push_back(menuloop);
 
   // create System Settings screens loop 
@@ -631,3 +766,4 @@ CScreenManager::_dim(bool state)
   _bDimmed = state;
   _pDisplay->dim(state);
 }
+

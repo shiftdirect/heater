@@ -114,6 +114,7 @@
 #include <rom/rtc.h>
 #include <esp_spiffs.h>
 #include <SPIFFS.h>
+#include <nvs.h>
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
@@ -323,6 +324,9 @@ void setup() {
   digitalWrite(GPIOout1_pin, LOW);
   digitalWrite(GPIOout2_pin, LOW);
 
+  nvs_stats_t nvs_stats;
+  esp_err_t err = nvs_get_stats(NULL, &nvs_stats);
+
   // initialise TelnetSpy (port 23) as well as Serial to 115200 
   // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
@@ -351,6 +355,7 @@ void setup() {
   DebugPort.printf("Board revision: V%.1f\r\n", float(BoardRevision) * 0.1);
 
   DebugPort.printf("ESP32 IDF Version: %s\r\n", esp_get_idf_version());
+  DebugPort.printf("NVS:  entries- free=%d used=%d total=%d namespace count=%d\r\n", nvs_stats.free_entries, nvs_stats.used_entries, nvs_stats.total_entries, nvs_stats.namespace_count);
 
  // Initialize SPIFFS
   if(!SPIFFS.begin(true)){
@@ -1330,7 +1335,7 @@ bool isCyclicActive()
 
 void setupGPIO()
 {
-  if(BoardRevision) {
+  if(BoardRevision == 10 || BoardRevision == 20 || BoardRevision == 21) {
     // some special considerations for GPIO inputs, depending upon PCB hardware
     // V1.0 PCBs only expose bare inputs, which are pulled high. Active state into ESP32 is LOW. 
     // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
@@ -1363,7 +1368,7 @@ void setupGPIO()
     GPIOalg.begin(GPIOalg_pin, algMode);
   }
   else {
-    // unknown board - deny all GPIO operation (unlikely)
+    // unknown board or forced no GPIO by grounding pin26 - deny all GPIO operation 
     GPIOin.begin(0, 0, GPIOinNone, LOW);
     GPIOout.begin(0, 0, GPIOoutNone);
     GPIOalg.begin(ADC1_CHANNEL_5, GPIOalgNone);
@@ -1379,10 +1384,14 @@ bool toggleGPIOout(int channel)
   return false;
 }
 
-void setGPIOout(int channel, bool state)
+bool setGPIOout(int channel, bool state)
 {
-  DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
-  GPIOout.setState(channel, state);
+  if(GPIOout.getMode() != GPIOoutNone) {
+    DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
+    GPIOout.setState(channel, state);
+    return true;
+  }
+  return false;
 }
 
 bool getGPIOout(int channel)

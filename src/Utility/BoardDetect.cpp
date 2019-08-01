@@ -50,12 +50,13 @@
 //    a reliable read.
 //
 //  Input state truth table
-//                        GPIO26    GPIO33
-//                        ------    ------
-//                 V1.0    HIGH      HIGH
-//      unmodified V2.0    HIGH      LOW
-//      modified   V2.0    LOW       HIGH    
-//                 V2.1    LOW       HIGH
+//                        GPIO25    GPIO26    GPIO33
+//                        ------    ------    ------
+//                 V1.0    HIGH      HIGH      HIGH
+//      unmodified V2.0    LOW       HIGH      LOW
+//      modified   V2.0    LOW       LOW       HIGH    
+//                 V2.1    LOW       LOW       HIGH
+//         No GPIO V2.0    HIGH      LOW       HIGH
 //
 //
 //  ****************************************************************************************
@@ -94,24 +95,30 @@ int BoardDetect()
   }
   
   DebugPort.println("Board detect: Virgin system - attempting to detect revision");
+  pinMode(25, INPUT_PULLUP);
   pinMode(33, INPUT_PULLUP);
   pinMode(26, INPUT_PULLUP);
   // there is a 100nF capacitor across the analogue input, allow that to charge before testing
   delay(100);   
+  int pin25 = digitalRead(25);
   int pin33 = digitalRead(33);   
   int pin26 = digitalRead(26);
 
-  if(pin33 == HIGH && pin26 == HIGH) {
+  if((pin33 == HIGH) && (pin26 == HIGH) && (pin25 == HIGH)) {
     revision = 10;
     DebugPort.println("Board detect: digital input test reveals V1.x PCB");
   }
-  else if(pin33 == LOW && pin26 == HIGH) {
+  else if((pin33 == LOW) && (pin26 == HIGH) && (pin25 == LOW)) {
     revision = 20;
     DebugPort.println("Board detect: digital input test reveals V2.0 PCB");
   }
-  else if(pin33 == HIGH && pin26 == LOW) {
+  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == LOW)) {
     revision = 21;
     DebugPort.println("Board detect: digital input test reveals V2.1 PCB");
+  }
+  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == HIGH)) {
+    revision = 22;
+    DebugPort.println("Board detect: digital input test reveals V2.0 PCB - no GPIO");
   }
   else {
     DebugPort.println("Board detect: digital input test failed to detect a valid combination!!!");
@@ -119,6 +126,7 @@ int BoardDetect()
 
   pinMode(33, INPUT);  // revert to normal inputs (remove pull ups)
   pinMode(26, INPUT);
+  pinMode(25, INPUT);  // revert to normal inputs (remove pull ups)
 
   //store the detected revision
   if(revision) {

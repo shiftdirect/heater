@@ -49,6 +49,8 @@ extern const char* updateIndex;
 extern const char* formatDoneContent;
 extern const char* rebootIndex;
 
+extern void storeSplashScreenFile();
+
 sBrowserUpload BrowserUpload;
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -693,6 +695,7 @@ void onUploadCompletion()
   // completion functionality
   if(BrowserUpload.isSPIFFSupload()) {
     if(BrowserUpload.isOK()) {
+      storeSplashScreenFile();
       DebugPort.println("WEB: SPIFFS OK");
       server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
       // javascript reselects the /update page!

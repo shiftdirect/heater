@@ -68,7 +68,7 @@ const char* getVersionStr();
 extern const char* getVersionDate();
 extern int   getBoardRevision();
 extern void  setupGPIO();
-extern void  setGPIOout(int channel, bool state);
+extern bool  setGPIOout(int channel, bool state);
 extern bool  getGPIOout(int channel);
 extern bool  toggleGPIOout(int channel);
 extern void  feedWatchdog();
