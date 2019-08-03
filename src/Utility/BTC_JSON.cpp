@@ -325,9 +325,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
 	bool bSend = false;  // reset should send flag
 
   float tidyTemp = getTemperatureSensor();
-  DebugPort.printf("tidyTemp=%.1f ", tidyTemp);
   tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
-  DebugPort.printf("tidyTemp(rounded)=%.1f\r\n", tidyTemp);
   if(tidyTemp > -80) {
 	  bSend |= moderator.addJson("TempCurrent", tidyTemp, root); 
   }
