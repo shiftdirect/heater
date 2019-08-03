@@ -69,6 +69,7 @@ public:
   void showOTAMessage(int percent, eOTAmodes updateType);
   void clearDisplay();
   void bumpTimeout();
+  void showSplash();
 };
 
 #endif // __SCREEN_MANAGER_H__

@@ -44,6 +44,7 @@ class CScreenHeader : public CScreen {
   sScreenholdoff _UpAnnotation;
   sScreenholdoff _DnAnnotation;
   bool _colon;
+  bool _hdrDetail;
   uint8_t  _animateCount;
   uint8_t  _batteryCount;
   uint8_t  _batteryWarn;
@@ -53,6 +54,7 @@ protected:
   void showBatteryIcon(float voltage);
   int  showTimers();
   virtual void showTime();  // x location depends upon how many timers are active
+  void showHeaderDetail(bool state) { _hdrDetail = state; };
 public:
   CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
   bool show(bool erase);

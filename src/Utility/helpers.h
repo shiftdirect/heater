@@ -72,7 +72,7 @@ extern bool  setGPIOout(int channel, bool state);
 extern bool  getGPIOout(int channel);
 extern bool  toggleGPIOout(int channel);
 extern void  feedWatchdog();
-extern bool  isUpdateAvailable(bool test=true);
+extern int   isUpdateAvailable(bool test=true);
 extern void  checkFOTA();
 extern void  setUploadSize(long val);
 extern void getGPIOinfo(sGPIO& info);

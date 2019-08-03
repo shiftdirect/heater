@@ -31,9 +31,13 @@
 #include "../Utility/MODBUS-CRC16.h"
 #include "esp_ota_ops.h"
 
+#define TESTFOTA
+
+
 bool CheckFirmwareCRC(int filesize);
 bool CheckFirmwareCRC0(int filesize);
 void onSuccess();
+void onWebProgress(size_t progress, size_t total);
 
 esp32FOTA FOTA("afterburner-fota-http", int(getVersion()*1000));
 unsigned long FOTAtime = millis() + 60000;  // initial check in a minutes time 
@@ -113,9 +117,14 @@ void DoOTA()
 //    FOTAtime = millis() + 600000;  // 10 minutes
     FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
+      FOTA.onProgress(onWebProgress);        // important - keeps watchdog fed
       FOTA.onComplete(CheckFirmwareCRC0);     // upload complete, but not yet verified
       FOTA.onSuccess(onSuccess);
+#ifdef TESTFOTA
+      FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fotatest.json";
+#else
       FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
+#endif
       DebugPort.println("Checking for new firmware...");
       if(FOTA.execHTTPcheck()) {
         DebugPort.println("New firmware available on web server!");
@@ -133,10 +142,16 @@ void DoOTA()
   }
 };
 
-bool isUpdateAvailable(bool test)
+int isUpdateAvailable(bool test)
 {
   if(test) {
-    return FOTAauth == 1;
+//    return FOTAauth == 1;
+    if(FOTAauth == 1) {
+      return FOTA.getNewVersion();
+    }
+    else {
+      return 0;
+    }
   }
   else
   {
@@ -227,4 +242,17 @@ bool CheckFirmwareCRC0(int filesize)
 void onSuccess() 
 {
   forceBootInit();
+}
+
+void onWebProgress(size_t progress, size_t total)
+{
+  feedWatchdog();
+  int percent = (progress / (total / 100));
+  static int prevPC = 0;
+  if(percent != prevPC) {
+    prevPC = percent;
+		DebugPort.printf("Progress: %u%%\r", percent);
+    DebugPort.handle();    // keep telnet spy alive
+    ShowOTAScreen(percent, eOTAWWW);
+  }
 }

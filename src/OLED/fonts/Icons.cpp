@@ -420,8 +420,6 @@ const uint8_t repeatIcon [] PROGMEM = {
   0x00, 0x00, 
   0x00, 0x00, 
   0x00, 0x00, 
-  0x00, 0x00, 
-  0x00, 0x00, 
   0x00, 0x02, //               #
   0x00, 0x02, //               #
   0xf0, 0x04, // ####         #
@@ -430,12 +428,27 @@ const uint8_t repeatIcon [] PROGMEM = {
   0x98, 0x30, // #  #      ##
   0x07, 0xc0  //      #####
 };
-const BITMAP_INFO RepeatIconInfo(15, 15, repeatIcon);
+const BITMAP_INFO RepeatIconInfo(15, 13, repeatIcon);
+
+// 'repeat', 5x11px
+const uint8_t verticalRepeatIcon [] PROGMEM = {
+  0x78,  //  ####
+  0x38,  //   ###
+  0x38,  //   ###
+  0x48,  //  #  #
+  0x80,  // #
+  0x80,  // #
+  0x80,  // #
+  0x80,  // #
+  0x80,  // #
+  0x40,  //  #
+  0x40,  //  #
+  0x20,  //   #
+};
+const BITMAP_INFO verticalRepeatIconInfo(5, 11, verticalRepeatIcon);
 
 // 'timerID1', 15x15px
 const uint8_t timerID1Icon [] PROGMEM = {
-  0x00, 0x00, //
-  0x00, 0x00, //
   0x07, 0xc0, //      #####
   0x09, 0x20, //     #  #  #
   0x11, 0x10, //    #   #   #
@@ -450,7 +463,7 @@ const uint8_t timerID1Icon [] PROGMEM = {
   0x00, 0x00, //
   0x00, 0x00  //
 };
-const BITMAP_INFO TimerId1IconInfo(15, 15, timerID1Icon);
+const BITMAP_INFO TimerId1IconInfo(15, 13, timerID1Icon);
 
 // 'timerID2', 15x15px
 const uint8_t timerID2Icon [] PROGMEM = {
@@ -474,23 +487,19 @@ const BITMAP_INFO TimerId2IconInfo(15, 15, timerID2Icon);
 
 // 'timer', 15x15px
 const uint8_t timerIcon [] PROGMEM = {
-  0x00, 0x00, //
-  0x00, 0x00, //
   0x07, 0xc0, //      #####
   0x09, 0x20, //     #  #  #
   0x11, 0x10, //    #   #   #
   0x21, 0x08, //   #    #    #
   0x21, 0x08, //   #    #    #
-  0x21, 0x08, //   #    #### #
+  0x21, 0xE8, //   #    #### #
   0x20, 0x08, //   #         #
   0x20, 0x08, //   #         #
   0x10, 0x10, //    #       #
   0x08, 0x20, //     #     #
   0x07, 0xc0, //      #####
-  0x00, 0x00, //
-  0x00, 0x00  //
 };
-const BITMAP_INFO TimerIconInfo(15, 15, timerIcon);
+const BITMAP_INFO TimerIconInfo(15, 11, timerIcon);
 
 // 'large timer', 15x15px
 const uint8_t largeTimerIcon[] PROGMEM  =
@@ -513,7 +522,7 @@ const uint8_t largeTimerIcon[] PROGMEM  =
 };
 const BITMAP_INFO LargeTimerIconInfo(15, 15, largeTimerIcon);
 
-const uint8_t PROGMEM verticalRepeatIcon [] =
+const uint8_t PROGMEM verticalLargeRepeatIcon [] =
 {
   0x78, //  #### 
   0x38, //   ### 
@@ -531,7 +540,7 @@ const uint8_t PROGMEM verticalRepeatIcon [] =
   0x20, //   #  
   0x20, //   #    
 };
-const BITMAP_INFO VerticalRepeatIconInfo(5, 15, verticalRepeatIcon);
+const BITMAP_INFO VerticalRepeatLargeIconInfo(5, 15, verticalLargeRepeatIcon);
 
 const uint8_t PROGMEM GPIO1OFFIcon[]  =
 {
@@ -687,6 +696,16 @@ const uint8_t PROGMEM startIcon[]  =
 };
 const BITMAP_INFO StartIconInfo(5, 9, startIcon);
 
+const uint8_t PROGMEM miniStartIcon[]  =
+{
+	0x80, // #    
+	0xC0, // ##   
+	0xE0, // ###  
+	0xC0, // ## 
+	0x80, // #
+};
+const BITMAP_INFO miniStartIconInfo(3, 5, miniStartIcon);
+
 
 const uint8_t PROGMEM stopIcon[]  =
 {
@@ -700,6 +719,16 @@ const uint8_t PROGMEM stopIcon[]  =
 	0x00, //       
 };
 const BITMAP_INFO StopIconInfo(6, 8, stopIcon);
+
+const uint8_t PROGMEM miniStopIcon[]  =
+{
+	0x00, //       
+	0xE0, // ###
+	0xE0, // ###
+	0xE0, // ###
+	0x00, //       
+};
+const BITMAP_INFO miniStopIconInfo(3, 5, miniStopIcon);
 
 const uint8_t PROGMEM displayTimeoutIcon[]  =
 {

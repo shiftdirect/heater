@@ -19,14 +19,17 @@ public:
   bool execHTTPcheck();
   bool useDeviceID;
   String checkURL;
+  void onProgress( std::function<void(size_t, size_t)> func );
   void onComplete( std::function<bool(int)> func );
   void onSuccess( std::function<void()> func );
   void onFail( std::function<void()> func );
+  int  getNewVersion() { return _newVersion; };
 private:
   String getHeaderValue(String header, String headerName);
   String getDeviceID();
   String _firwmareType;
   int _firwmareVersion;
+  int _newVersion;
   String _host;
   String _bin;
   int _port;

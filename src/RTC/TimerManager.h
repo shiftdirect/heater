@@ -48,17 +48,18 @@ public:
   static int  manageTime(int hour, int minute, int dow);
   static int  findNextTimer(int hour, int minute, int dow);
   static int  getNextTimer();
+  static int  getActiveTimer();
   static void getTimer(int idx, sTimer& timerInfo);
   static int  setTimer(sTimer& timerInfo);
-  static bool hasTimerChanged() { return timerChanged; };
+  static bool hasTimerChanged() { return _timerChanged; };
 private:
-  static int activeTimer;
-  static int activeDow;
-  static int prevState;
-  static int nextTimer;
-  static int nextStart;
-  static uint8_t weekMap[7][_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
-  static bool timerChanged;
+  static int _activeTimer;
+  static int _activeDow;
+  static int _prevState;
+  static int _nextTimer;
+  static int _nextStart;
+  static uint8_t _weekMap[7][_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
+  static bool _timerChanged;
 };
 
 #endif //__TIMERMANAGER_H__

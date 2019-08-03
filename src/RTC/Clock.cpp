@@ -71,6 +71,7 @@ DebugPort.println("Using millis() based psuedo \"Real Time Clock\"");
   update();
 
   CTimerManager::createMap();
+  CTimerManager::findNextTimer(_currentTime.hour(), _currentTime.minute(), _currentTime.dayOfTheWeek());
 }
 
 const BTCDateTime& 

@@ -47,6 +47,8 @@ CClockScreen::CClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen
 bool 
 CClockScreen::show()
 {
+  showHeaderDetail(true);
+
   CScreenHeader::show(false);
   
   const BTCDateTime& now = Clock.get();

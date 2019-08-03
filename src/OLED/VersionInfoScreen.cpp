@@ -82,25 +82,43 @@ CVersionInfoScreen::show()
       // animation of update available via animate() if firmware update is available on web server
       _showTitle("Version Information");
       
-      _drawBitmap(13, 12, FirmwareIconInfo);
-      _printMenuText(46, 15, getVersionStr());
-      _printMenuText(46, 26, getVersionDate());
-
-      _drawBitmap(23, 34, HardwareIconInfo);
+      _drawBitmap(8, 12, FirmwareIconInfo);
+      _printMenuText(41, 15, getVersionStr());
+      _printMenuText(41, 26, getVersionDate());
+       int newVer = isUpdateAvailable();
+      // if(newVer) {
+      //   char msg[32];
+      //   int major = (int)(newVer * 0.01);
+      //   int minor = newVer - major*100;
+      //   float prtMajor = major * 0.1;
+      //   sprintf(msg, "V%.1f.%d", prtMajor, minor);
+      //   _printMenuText(128, 15, msg, false, eRightJustify);
+      // }
+      _drawBitmap(18, 34, HardwareIconInfo);
       int PCB = getBoardRevision();
       sprintf(msg, "V%.1f", float(PCB)*0.1f);
-      _printMenuText(46, 38, msg);
+      _printMenuText(41, 38, msg);
       if(PCB == 20) {
         _printMenuText(108, 38, "Analog", false, eCentreJustify);
         _display.drawLine(88, 42, 127, 42, WHITE);
       }
+      if(PCB == 22) {
+        _printMenuText(114, 38, "GPIO", false, eCentreJustify);
+        _display.drawLine(94, 42, 121, 42, WHITE);
+      }
 
-      _printMenuText(_display.xCentre(), 53, " \021                \020 ", true, eCentreJustify);
-      if(_rowSel == 1 && isUpdateAvailable()) {
+      if(_rowSel == 1 && newVer) {
         // prompt 'Get Update' for new firmware available and first UP press from home
-        _printMenuText(_display.xCentre(), 53, "Get Update", false, eCentreJustify);
+        char msg[32];
+        int major = (int)(newVer * 0.01);
+        int minor = newVer - major*100;
+        float prtMajor = major * 0.1;
+        sprintf(msg, "Get V%.1f.%d update", prtMajor, minor);
+        _printMenuText(_display.xCentre(), 53, "                    ", true, eCentreJustify);
+        _printMenuText(_display.xCentre(), 53, msg, false, eCentreJustify);
       }
       else {
+        _printMenuText(_display.xCentre(), 53, " \021                \020 ", true, eCentreJustify);
         _printMenuText(_display.xCentre(), 53, "Exit", false, eCentreJustify);
       }
     }
@@ -114,12 +132,12 @@ CVersionInfoScreen::show()
       }
       else if(_rowSel == 20) {
         // firmware update confirmation screen
-        _printInverted(_display.xCentre(), 0, " Firmware update ", true, eCentreJustify);
+        _showTitle("Firmware update");
         _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
         _printMenuText(_display.xCentre(), 43, "confirm download", false, eCentreJustify);
       }
       else {
-        _printInverted(_display.xCentre(), 0, " Factory Default ", true, eCentreJustify);
+        _showTitle("Factory Default");
         if(_rowSel == 10) {
           // factory default confirmation screen
           _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
@@ -149,12 +167,27 @@ CVersionInfoScreen::animate()
   if(_rowSel <= 1 && isUpdateAvailable()) {
     // show ascending up arrow if firmware update is available on web server
     _animateCount++;
-    WRAPUPPERLIMIT(_animateCount, 5, 0);
-    int ypos = 11 + 15 - 7 - _animateCount;
+    WRAPUPPERLIMIT(_animateCount, 3, 0);
+/*    int ypos = 11 + 16 - 7 - _animateCount;
     _display.fillRect(0, 11, 10, 21, BLACK);
     _display.drawBitmap(2, ypos, WifiOutIconInfo.pBitmap, WifiOutIconInfo.width, 7, WHITE);    // upload arrow - from web to afterburner
-    _display.fillRect(1, 11, 7, 2, WHITE);   // top bar
-    _drawBitmap(0, 11+16, WWWIconInfo);   // www icon
+    _display.fillRect(1, 12, 7, 2, WHITE);   // top bar
+    _drawBitmap(0, 11+17, WWWIconInfo);   // www icon*/
+
+    int newVer = isUpdateAvailable();
+    if((_animateCount & 0x02) && newVer) {
+      char msg[32];
+      int major = (int)(newVer * 0.01);
+      int minor = newVer - major*100;
+      float prtMajor = major * 0.1;
+      sprintf(msg, "V%.1f.%d", prtMajor, minor);
+      _printMenuText(128, 15, msg, false, eRightJustify);
+      _drawBitmap(118, 24, UpdateIconInfo);
+    }
+    else {
+      _display.fillRect(82, 15, 46, 7, BLACK);
+      _display.fillRect(118, 24, 9, 10, BLACK);
+    }
   }
   return true;
 }

@@ -123,8 +123,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 30;
-const int FirmwareSubRevision = 1;
-const char* FirmwareDate = "30 Jul 2019";
+const int FirmwareSubRevision = 2;
+const char* FirmwareDate = "3 Aug 2019";
 
 
 #ifdef ESP32
@@ -1434,6 +1434,7 @@ void feedWatchdog()
     DebugPort.printf("WD time = %lld\r\n", timeRem);  // print longer WD intervals
 
   timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
+  timerAlarmWrite(watchdogTimer, 15000000, false); //set time in uS must be fed within this time or reboot     
 }
 
 

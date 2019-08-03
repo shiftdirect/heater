@@ -73,8 +73,9 @@ extern const BITMAP_INFO RepeatIconInfo;
 extern const BITMAP_INFO TimerId1IconInfo;
 extern const BITMAP_INFO TimerId2IconInfo;
 extern const BITMAP_INFO TimerIconInfo;
+extern const BITMAP_INFO verticalRepeatIconInfo;
 extern const BITMAP_INFO LargeTimerIconInfo;
-extern const BITMAP_INFO VerticalRepeatIconInfo;
+extern const BITMAP_INFO VerticalLargeRepeatIconInfo;
 
 extern const BITMAP_INFO CrossLgIconInfo;
 extern const BITMAP_INFO CrossIconInfo
@@ -94,9 +95,11 @@ extern const BITMAP_INFO BulbOffIconInfo;
 
 // Bitmap for start
 extern const BITMAP_INFO StartIconInfo;
+extern const BITMAP_INFO miniStartIconInfo;
 
 // Bitmap sizes for stop
 extern const BITMAP_INFO StopIconInfo;
+extern const BITMAP_INFO miniStopIconInfo;
 
 // Bitmap for displayTimeout
 extern const BITMAP_INFO DisplayTimeoutIconInfo;

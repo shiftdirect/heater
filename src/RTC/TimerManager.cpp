@@ -34,22 +34,25 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/helpers.h"
 
-uint8_t CTimerManager::weekMap[7][CTimerManager::_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
+// main array to hold information of which timer is active at any particular minute of the week
+// LSBs are used for the timerID + 1
+// MSB is set if the timer repeats
+uint8_t CTimerManager::_weekMap[7][CTimerManager::_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
 
-int  CTimerManager::activeTimer = 0;
-int  CTimerManager::activeDow = 0;
-int  CTimerManager::nextTimer = 0;
-int  CTimerManager::nextStart = 0;
-bool CTimerManager::timerChanged = false;
+int  CTimerManager::_activeTimer = 0;
+int  CTimerManager::_activeDow = 0;
+int  CTimerManager::_nextTimer = 0;
+int  CTimerManager::_nextStart = 0;
+bool CTimerManager::_timerChanged = false;
 
 #define SET_MAPS() {                         \
   if(pTimerMap) {                            \
-    pTimerMap[dayMinute] |= activeday;       \
+    pTimerMap[dayMinute] |= activeday;      \
     if(pTimerIDs)                            \
       pTimerIDs[dayMinute] |= timerBit;      \
   }                                          \
   else {                                     \
-    weekMap[dow][dayMinute] = recordTimer;   \
+    _weekMap[dow][dayMinute] = recordTimer;  \
   }                                          \
 }
 
@@ -64,7 +67,7 @@ CTimerManager::createMap(int timerMask, uint16_t* pTimerMap, uint16_t* pTimerIDs
   }
   else {
     DebugPort.println("Erasing weekMap");
-    memset(weekMap, 0, _dayMinutes*7*sizeof(uint8_t));
+    memset(_weekMap, 0, _dayMinutes*7*sizeof(uint8_t));
   }
   
   for(int timerID=0; timerID < 14; timerID++) {
@@ -202,12 +205,12 @@ CTimerManager::condenseMap(uint8_t timerMap[7][120])
       uint8_t condense = 0;
       for(int subInterval = 0; subInterval < 12; subInterval++, dayMinute++) {
         if(!condense)
-          condense = weekMap[dow][dayMinute];
+          condense = _weekMap[dow][dayMinute];
       }
       timerMap[dow][opIndex++] = condense;
     }
   }
-  timerChanged = false;
+  _timerChanged = false;
 }
 
 int  
@@ -220,26 +223,26 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
 
   int retval = 0;
   int dayMinute = (hour * 60) + minute;
-  int newID = weekMap[dow][dayMinute];
-  if(activeTimer != newID) {
+  int newID = _weekMap[dow][dayMinute];
+  if(_activeTimer != newID) {
     
-    DebugPort.printf("Timer ID change detected: %d", activeTimer & 0x0f); 
-    if(activeTimer & 0x80) DebugPort.print("(repeating)");
+    DebugPort.printf("Timer ID change detected: %d", _activeTimer & 0x0f); 
+    if(_activeTimer & 0x80) DebugPort.print("(repeating)");
     DebugPort.printf(" -> %d", newID & 0x0f);
     if(newID & 0x80) DebugPort.print("(repeating)");
     DebugPort.println("");
 
-    if(activeTimer) {  
+    if(_activeTimer) {  
       // deal with expired timer
       DebugPort.println("Handling expired timer cleanup");
 
-      if(activeTimer & 0x80) {
+      if(_activeTimer & 0x80) {
         DebugPort.println("Expired timer repeats, leaving definition alone");
       }
       else {  // non repeating timer
         // delete one shot timer - note that this may require ticking off each day as they appear
-        DebugPort.printf("Expired timer does not repeat - Cancelling %d\r\n", activeTimer);
-        int ID = activeTimer & 0x0f;
+        DebugPort.printf("Expired timer does not repeat - Cancelling %d\r\n", _activeTimer);
+        int ID = _activeTimer & 0x0f;
         if(ID) {
           ID--;
           sTimer timer;
@@ -250,8 +253,8 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
             timer.enabled = 0;   // ouright cancel anyday timer
           }
           else {
-            DebugPort.printf("Cancelling specific day idx %d\r\n", activeDow);
-            timer.enabled &= ~(0x01 << activeDow);  // cancel specific day that started the timer
+            DebugPort.printf("Cancelling specific day idx %d\r\n", _activeDow);
+            timer.enabled &= ~(0x01 << _activeDow);  // cancel specific day that started the timer
           }
           NVstore.setTimerInfo(ID, timer);
           NVstore.save();
@@ -263,7 +266,7 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
     if(newID) {
       DebugPort.println("Start of timer interval, starting heater");
       requestOn();
-      activeDow = dow;   // dow when timer interval start was detected
+      _activeDow = dow;   // dow when timer interval start was detected
       retval = 1;
     }
     else {
@@ -271,7 +274,7 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
       requestOff();
       retval = 2;
     }
-    activeTimer = newID;
+    _activeTimer = newID;
   }
   findNextTimer(hour, minute, dow);
   return retval;
@@ -284,10 +287,10 @@ CTimerManager::findNextTimer(int hour, int minute, int dow)
 
   int limit = 24*60*7;  
   while(limit--) {
-    if(weekMap[dow][dayMinute] & 0x0f) {
-      nextTimer = weekMap[dow][dayMinute];
-      nextStart = dow*_dayMinutes + dayMinute;
-      return nextTimer;
+    if(_weekMap[dow][dayMinute] & 0x0f) {
+      _nextTimer = _weekMap[dow][dayMinute];
+      _nextStart = dow*_dayMinutes + dayMinute;
+      return _nextTimer;
     }
     dayMinute++;
     if(dayMinute == _dayMinutes) {
@@ -296,15 +299,22 @@ CTimerManager::findNextTimer(int hour, int minute, int dow)
       WRAPUPPERLIMIT(dow, 6, 0);
     }
   }
-  nextTimer = 0;
+  _nextTimer = 0;
   return 0;
 }
 
 int 
 CTimerManager::getNextTimer()
 {
-  return nextTimer;
+  return _nextTimer;
 }
+
+int  
+CTimerManager::getActiveTimer()
+{
+  return _activeTimer;
+}
+
 
 void
 CTimerManager::getTimer(int idx, sTimer& timerInfo)
@@ -320,7 +330,7 @@ CTimerManager::setTimer(sTimer& timerInfo)
     NVstore.save();
     createMap();
     manageTime(0,0,0);
-    timerChanged = true;
+    _timerChanged = true;
     return 1;
   }
   return 0;
@@ -341,7 +351,7 @@ CTimerManager::conflictTest(int ID)
   }
   createMap();
   manageTime(0,0,0);
-  timerChanged = true;
+  _timerChanged = true;
   return conflictID;
 }
 

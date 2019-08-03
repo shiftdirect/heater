@@ -82,6 +82,8 @@ CDetailedScreen::CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 bool 
 CDetailedScreen::show()
 {
+  showHeaderDetail(_showTarget != 0);
+  
   CScreenHeader::show(false);
 
   int runstate = getHeaterInfo().getRunStateEx();

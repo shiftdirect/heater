@@ -109,6 +109,7 @@ CBasicScreen::show()
     }
   }
   if((_showModeTime == 0) && _showSetModeTime) {
+    showHeaderDetail(true);
     long tDelta = millis() - _showSetModeTime;  
     if(tDelta < 0) {
       switch(_feedbackType) {
@@ -143,6 +144,7 @@ CBasicScreen::show()
   }
   if((_showModeTime == 0) && (_showSetModeTime == 0)) {
     showRunState();
+    showHeaderDetail(false);
   }
   return true;
 }

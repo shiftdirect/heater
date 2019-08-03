@@ -73,6 +73,7 @@
 CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(disp, mgr)
 {
   _colon = false;
+  _hdrDetail = false;
 }
 
 bool 
@@ -100,6 +101,14 @@ CScreenHeader::show(bool erase)
   return true;
 }
 
+void crackVer(char* msg, int newVer)
+{
+  int major = (int)(newVer * 0.01);
+  int minor = newVer - major*100;
+  float prtMajor = major * 0.1;
+  sprintf(msg, "V%.1f.%d", prtMajor, minor);
+}
+
 // Animate IN/OUT arrows against the WiFi icon, according to actual web server traffic:
 //   an IN (down) arrow is drawn if incoming data has been detected.
 //   an OUT (up) arrow is drawn if outgoing data has been sent.
@@ -120,62 +129,72 @@ CScreenHeader::animate()
   // animate timer icon, 
   // inserting an update icon if new firmware available from internet web server
   _animateCount++;
-  _batteryCount++;
-  WRAPUPPERLIMIT(_animateCount, 9, 0);
-  WRAPUPPERLIMIT(_batteryCount, 5, 0);
-  if(isUpdateAvailable(true)) {
+  WRAPUPPERLIMIT(_animateCount, 11, 0);
+  int newVer = isUpdateAvailable(true);
+  if(newVer) {
     int xPos = X_TIMER_ICON - 3;   
     int yPos = Y_TIMER_ICON;
+    char msg[16];
+    CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
     switch(_animateCount) {
       case 0:
-      case 2:
         _display.fillRect(xPos, yPos, TimerIconInfo.width+3, TimerIconInfo.height, BLACK);
+        _display.fillRect(xPos-2, yPos+12, 21, 5, BLACK);  // erase annotation
         break;        
       case 1:
         _drawBitmap(xPos+6, yPos, UpdateIconInfo);
+        crackVer(msg, newVer);
+        _printMenuText(xPos+19, yPos+12, msg, false, eRightJustify);
         break;
+      case 2:
+        _display.fillRect(xPos, yPos, TimerIconInfo.width+3, TimerIconInfo.height, BLACK);
+        break;        
+      case 3:
+        _display.fillRect(xPos-8, yPos+12, 30, 5, BLACK);  // erase version annotation
       default:
         showTimers();
         break;
     }
   }
   else {
-    int xPos = X_BATT_ICON;   
-    int yPos = Y_BATT_ICON;
     showTimers();
+  }
 
-    switch(_batteryCount) {
-      case 0:
-        // establish  battery icon flash pattern
-        // > 0.5 over LVC - solid
-        // < 0.5 over LVC - slow flash
-        // < LVC - fast flash
-        _batteryWarn = SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false);
-        
+  _batteryCount++;
+  WRAPUPPERLIMIT(_batteryCount, 5, 0);
+  int xPos = X_BATT_ICON;   
+  int yPos = Y_BATT_ICON;
+  switch(_batteryCount) {
+    case 0:
+      // establish  battery icon flash pattern
+      // > 0.5 over LVC - solid
+      // < 0.5 over LVC - slow flash
+      // < LVC - fast flash
+      _batteryWarn = SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false);
+      
+      showBatteryIcon(getBatteryVoltage(true));
+      break;
+    case 1:
+      if(_batteryWarn == 2)
+        _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
+      break;
+    case 2:
+      if(_batteryWarn == 2)
         showBatteryIcon(getBatteryVoltage(true));
-        break;
-      case 1:
-        if(_batteryWarn == 2)
-          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
-        break;
-      case 2:
-        if(_batteryWarn == 2)
-          showBatteryIcon(getBatteryVoltage(true));
-        break;
-      case 3:
-        if(_batteryWarn)   // works for either < LVC, or < LVC+0.5
-          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
-        break;
-      case 4:
-        if(_batteryWarn == 2)
-          showBatteryIcon(getBatteryVoltage(true));
-        break;
-      case 5:
-        if(_batteryWarn == 2)
-          _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
-        break;
+      break;
+    case 3:
+      if(_batteryWarn)   // works for either < LVC, or < LVC+0.5
+        _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
+      break;
+    case 4:
+      if(_batteryWarn == 2)
+        showBatteryIcon(getBatteryVoltage(true));
+      break;
+    case 5:
+      if(_batteryWarn == 2)
+        _display.fillRect(xPos, yPos, BatteryIconInfo.width, BatteryIconInfo.height, BLACK);
+      break;
 
-    }
   }
 
   showWifiIcon();
@@ -295,21 +314,36 @@ CScreenHeader::showBatteryIcon(float voltage)
 int
 CScreenHeader::showTimers()
 {
-  int nextTimer = CTimerManager::getNextTimer();
+  int nextTimer = CTimerManager::getNextTimer();   // timer ID and repeat flag info of next scheduled timer
   if(nextTimer) {
     int xPos = X_TIMER_ICON;   
-    _drawBitmap(xPos, Y_TIMER_ICON, LargeTimerIconInfo);
-    if(nextTimer & 0x80) 
-      _drawBitmap(xPos-3, Y_TIMER_ICON, VerticalRepeatIconInfo);
-
-    CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
-    if((nextTimer & 0x0f) >= 10) 
-      _display.setCursor(xPos+4, Y_TIMER_ICON+8);
-    else
-      _display.setCursor(xPos+6, Y_TIMER_ICON+8);
-    _display.print(nextTimer & 0x0f);
+    _drawBitmap(xPos, Y_TIMER_ICON, TimerIconInfo);
+    if(nextTimer & 0x80)
+      _drawBitmap(xPos-3, Y_TIMER_ICON, verticalRepeatIconInfo);
+    if(_hdrDetail) {
+      sTimer timerInfo;
+      char msg[8];
+      int activeTimer = CTimerManager::getActiveTimer();
+      if(activeTimer) {
+        CTimerManager::getTimer((activeTimer - 1) & 0xf, timerInfo);
+        sprintf(msg, "%02d:%02d", timerInfo.stop.hour, timerInfo.stop.min);
+        _drawBitmap(xPos-5, Y_TIMER_ICON+12, miniStopIconInfo, WHITE, BLACK);
+      }
+      else {
+        CTimerManager::getTimer((nextTimer - 1) & 0xf, timerInfo);
+        sprintf(msg, "%02d:%02d", timerInfo.start.hour, timerInfo.start.min);
+        _drawBitmap(xPos-5, Y_TIMER_ICON+12, miniStartIconInfo, WHITE, BLACK);
+      }
+      CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
+      _printMenuText(xPos-1, Y_TIMER_ICON+12, msg);
+    }
+    else {
+      _display.fillRect(X_TIMER_ICON-5, Y_TIMER_ICON+12, 21, 5, BLACK);  // erase annotation
+    }
     return 1;
   }
+  _display.fillRect(X_TIMER_ICON-3, Y_TIMER_ICON, TimerIconInfo.width+3, TimerIconInfo.height, BLACK); // erase icon
+  _display.fillRect(X_TIMER_ICON-5, Y_TIMER_ICON+12, 21, 5, BLACK);  // erase annotation
   return 0;
 }
 

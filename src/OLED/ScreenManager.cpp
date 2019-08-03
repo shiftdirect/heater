@@ -76,6 +76,8 @@ struct sBMPhdr {
 };
 #pragma pack (pop)
 
+extern CScreenManager ScreenManager;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // splash creen created using image2cpp http://javl.github.io/image2cpp/
 //   Settings: 
@@ -248,7 +250,7 @@ void loadSplashScreen(uint8_t* image)
   }
 }
 
-void storeSplashScreenFile()
+void checkSplashScreenUpdate()
 {
   if(SPIFFS.exists("/splash.bmp")) {  // If a splash.bmp file was uploaded
     File file = SPIFFS.open("/splash.bmp", "rb");          // Open it
@@ -327,8 +329,10 @@ void storeSplashScreenFile()
     } while(0);
     
     file.close();
-
     SPIFFS.remove("/splash.bmp");
+
+    ScreenManager.showSplash();
+    delay(2000);
   }
 }
 
@@ -378,18 +382,7 @@ CScreenManager::begin(bool bNoClock)
 #endif
 
   // replace adafruit splash screen
-  _pDisplay->clearDisplay();
-  uint8_t splash[1024];
-  loadSplashScreen(splash);
-  _pDisplay->drawBitmap(0, 0, splash, 128, 64, WHITE);
-//  _pDisplay->drawBitmap(0, 0, DieselSplash, 128, 64, WHITE);
-  _pDisplay->setCursor(90, 56);
-  CTransientFont AF(*_pDisplay, &segoeUI_Italic_7ptFontInfo);  // temporarily use a midi font
-  _pDisplay->setTextColor(WHITE);
-  _pDisplay->print(getVersionStr());
-
-  // Show initial display buffer contents on the screen --
-  _pDisplay->display();
+  showSplash();
 
   delay(2000);
 
@@ -767,3 +760,19 @@ CScreenManager::_dim(bool state)
   _pDisplay->dim(state);
 }
 
+void
+CScreenManager::showSplash()
+{
+  _pDisplay->clearDisplay();
+  uint8_t splash[1024];
+  loadSplashScreen(splash);
+  _pDisplay->drawBitmap(0, 0, splash, 128, 64, WHITE);
+//  _pDisplay->drawBitmap(0, 0, DieselSplash, 128, 64, WHITE);
+  _pDisplay->setCursor(90, 56);
+  CTransientFont AF(*_pDisplay, &segoeUI_Italic_7ptFontInfo);  // temporarily use a midi font
+  _pDisplay->setTextColor(WHITE);
+  _pDisplay->print(getVersionStr());
+
+  // Show initial display buffer contents on the screen --
+  _pDisplay->display();
+}

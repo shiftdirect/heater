@@ -7,7 +7,6 @@
 
 #include <Arduino.h>
 #include "esp32fota.h"
-#include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Update.h>
@@ -146,6 +145,7 @@ void esp32FOTA::execOTA()
 
             if ( _onComplete != NULL) {
               if(!_onComplete(contentLength)) {
+                Serial.println("ESP32FOTA: OnComplete handler returned false");
                 Update.abort();
               }
             }
@@ -259,10 +259,12 @@ bool esp32FOTA::execHTTPcheck()
 
             if (plversion > _firwmareVersion && fwtype == _firwmareType)
             {
+                _newVersion = plversion;
                 return true;
             }
             else
             {
+                _newVersion = 0;
                 return false;
             }
             
@@ -288,6 +290,16 @@ String esp32FOTA::getDeviceID()
     String thisID(deviceid);
     return thisID;
 }
+
+/**
+ * onProgress, set a callback called during upload, passed directly thru to OTA Updater class
+ * @access public 
+ * @param {[type]} void (*func)(size_t, size_t)
+ */
+void esp32FOTA::onProgress( std::function<void(size_t, size_t)> func ) {
+  Update.onProgress(func);
+}
+
 
 /**
  * onComplete, set a callback after upload is completed, but not yet verified

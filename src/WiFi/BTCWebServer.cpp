@@ -49,7 +49,7 @@ extern const char* updateIndex;
 extern const char* formatDoneContent;
 extern const char* rebootIndex;
 
-extern void storeSplashScreenFile();
+extern void checkSplashScreenUpdate();
 
 sBrowserUpload BrowserUpload;
 WebServer server(80);
@@ -695,7 +695,7 @@ void onUploadCompletion()
   // completion functionality
   if(BrowserUpload.isSPIFFSupload()) {
     if(BrowserUpload.isOK()) {
-      storeSplashScreenFile();
+      checkSplashScreenUpdate();
       DebugPort.println("WEB: SPIFFS OK");
       server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
       // javascript reselects the /update page!
@@ -988,6 +988,7 @@ void onRename()
   if(oldname != "" && newname != "") {      
 	  DebugPort.printf("Renaming %s to %s\r\n", oldname.c_str(), newname.c_str());
     SPIFFS.rename(oldname.c_str(), newname.c_str());
+    checkSplashScreenUpdate();
   }
 }
 
