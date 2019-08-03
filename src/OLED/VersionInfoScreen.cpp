@@ -99,12 +99,12 @@ CVersionInfoScreen::show()
       sprintf(msg, "V%.1f", float(PCB)*0.1f);
       _printMenuText(41, 38, msg);
       if(PCB == 20) {
-        _printMenuText(108, 38, "Analog", false, eCentreJustify);
-        _display.drawLine(88, 42, 127, 42, WHITE);
+        _display.fillRect(70, 36, 57, 11, WHITE);
+        _printInverted(99, 38, "No Analog", true, eCentreJustify);
       }
       if(PCB == 22) {
-        _printMenuText(114, 38, "GPIO", false, eCentreJustify);
-        _display.drawLine(94, 42, 121, 42, WHITE);
+        _display.fillRect(82, 36, 45, 11, WHITE);
+        _printInverted(105, 38, "No GPIO", true, eCentreJustify);
       }
 
       if(_rowSel == 1 && newVer) {
