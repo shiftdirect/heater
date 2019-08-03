@@ -31,7 +31,7 @@
 #include "../Utility/MODBUS-CRC16.h"
 #include "esp_ota_ops.h"
 
-#define TESTFOTA
+//#define TESTFOTA
 
 
 bool CheckFirmwareCRC(int filesize);
