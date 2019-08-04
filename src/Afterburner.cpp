@@ -148,6 +148,7 @@ bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
 void manageCyclicMode();
+bool preemptCyclicMode();
 void doStreaming();
 void heaterOn();
 void heaterOff();
@@ -882,6 +883,24 @@ void manageCyclicMode()
   }
 }
 
+bool preemptCyclicMode()
+{
+  const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
+  if(cyclic.Stop) {   // cyclic mode enabled, and user has started heater
+    int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
+    float deltaT = getTemperatureSensor() - getDemandDegC();
+
+    // check if over temp, skip straight to suspend
+    if(deltaT > stopDeltaT) {
+      DebugPort.printf("CYCLIC MODE: Skipping directly to suspend, deltaT > +%d\r\n", stopDeltaT);
+      heaterOff();    // over temp - request heater stop
+      return true;
+    }
+  }
+  return false;
+}
+
+
 void initBlueWireSerial()
 {
   // initialize serial port to interact with the "blue wire"
@@ -915,8 +934,10 @@ bool validateFrame(const CProtocol& frame, const char* name)
 void requestOn()
 {
   if(bHasHtrData && (0 == SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue()))) {
-    heaterOn();
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
+    if(!preemptCyclicMode()) {    // only start if below cyclic threshold when enabled
+      heaterOn();
+    }
   }
 }
 
