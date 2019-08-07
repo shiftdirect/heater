@@ -123,7 +123,7 @@ void interpretJsonCommand(char* pLine)
 		else if(strcmp("ThermostatMethod", it->key) == 0) {
       sUserSettings settings = NVstore.getUserSettings();
       uint8_t val = it->value.as<uint8_t>();
-      if(INBOUNDS(val, 0, 2))
+      if(INBOUNDS(val, 0, 3))
         settings.ThermostatMethod = val;
 			NVstore.setUserSettings(settings);
 		}

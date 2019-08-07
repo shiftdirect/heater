@@ -27,15 +27,16 @@
 #include "Debounce.h"
 #include <list>
 
-extern const char* GPIOinNames[4];
-extern const char* GPIOoutNames[3];
-extern const char* GPIOalgNames[2];
+extern const char* GPIOinNames[];
+extern const char* GPIOoutNames[];
+extern const char* GPIOalgNames[];
 
 enum GPIOinModes { 
   GPIOinNone, 
   GPIOinOn1Off2,   // input 1 closure, heater starts; input2 closure, heater stops
   GPIOinOnHold1,   // hold input 1 closure, heater runs; input 1 open, heater stops
-  GPIOinOn1Off1    // alternate input 1 closures start or stop the heater 
+  GPIOinOn1Off1,    // alternate input 1 closures start or stop the heater 
+  GPIOinExtThermostat2 // input 2 used to max/min heater if closed/open
 };
 
 
@@ -75,6 +76,9 @@ public:
   uint8_t getState(int channel);
   GPIOinModes getMode() const;
   void simulateKey(uint8_t newKey);
+  bool usesExternalThermostat() const { 
+    return (_Mode == GPIOinOnHold1) || (_Mode == GPIOinExtThermostat2); 
+  };
 };
 
 class CGPIOout {

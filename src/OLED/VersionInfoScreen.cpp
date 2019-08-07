@@ -96,13 +96,12 @@ CVersionInfoScreen::show()
       // }
       _drawBitmap(18, 34, HardwareIconInfo);
       int PCB = getBoardRevision();
-      sprintf(msg, "V%.1f", float(PCB)*0.1f);
-      _printMenuText(41, 38, msg);
-      if(PCB == 20) {
+      _printMenuText(41, 38, getBoardRevisionString(PCB));
+      if(PCB == BRD_V2_GPIO_NOALG) {
         _display.fillRect(70, 36, 57, 11, WHITE);
         _printInverted(99, 38, "No Analog", true, eCentreJustify);
       }
-      if(PCB == 22) {
+      if(PCB == BRD_V2_NOGPIO) {
         _display.fillRect(82, 36, 45, 11, WHITE);
         _printInverted(105, 38, "No GPIO", true, eCentreJustify);
       }

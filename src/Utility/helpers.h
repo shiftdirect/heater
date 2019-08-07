@@ -36,6 +36,8 @@ extern bool  reqDemand(uint8_t newTemp, bool save=true);
 extern bool  reqThermoToggle();
 extern bool  setThermostatMode(uint8_t);
 extern bool  getThermostatModeActive();  // OEM: actual mode from blue wire, BTC: or our NV
+extern bool  getExternalThermostatModeActive();  
+extern bool getExternalThermostatOn();
 extern void  reqPumpPrime(bool on);
 extern float getTemperatureDesired();    // OEM: the advertised value, BTC our setpoint
 extern uint8_t getDemandDegC();

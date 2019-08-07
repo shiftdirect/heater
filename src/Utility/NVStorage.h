@@ -262,7 +262,7 @@ struct sUserSettings : public CESP32_NVStorage {
     retval &= INBOUNDS(dimTime, -600000, 600000);  // +/- 10 mins
     retval &= INBOUNDS(menuTimeout, 0, 300000);  // 5 mins
     retval &= (degF == 0) || (degF == 1);
-    retval &= (ThermostatMethod & 0x03) < 3;  // only modes 0, 1 or 2
+    retval &= ThermostatMethod <= 3;  // only modes 0, 1 or 2, 3
     retval &= INBOUNDS(ThermostatWindow, 0.2f, 10.f);
     retval &= useThermostat < 2;
     retval &= (enableWifi == 0) || (enableWifi == 1);

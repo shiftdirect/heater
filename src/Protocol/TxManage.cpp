@@ -148,8 +148,23 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
       Window /= 2;
       switch(ThermoMode) {
 
+        case 3:  // GPIO controlled thermostat mode
+          if(getExternalThermostatModeActive()) {
+            if(getExternalThermostatOn()) { 
+              u8Temp = m_TxFrame.getTemperature_Max();  // input active (contact closure) - max burn
+            }
+            else {
+              u8Temp = m_TxFrame.getTemperature_Min();  // input not active (contact open) - min burn
+            }
+            m_TxFrame.setHeaterDemand(u8Temp);
+            m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
+            m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
+            break;
+          }
+          // deliberately fall through if not enabled for GPIO control to standard thermostat
+          // |
+          // V
         case 0:  // conventional heater controlled thermostat mode
-        case 3:  // conventional heater controlled thermostat mode
           m_TxFrame.setThermostatModeProtocol(1);  // using heater thermostat control
           u8Temp = (uint8_t)(tActual + 0.5);
           m_TxFrame.setTemperature_Actual(u8Temp);

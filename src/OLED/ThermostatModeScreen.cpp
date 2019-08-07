@@ -79,7 +79,6 @@ CThermostatModeScreen::show()
     }
     else {
       _showTitle("Thermostat Mode");
-//      _printInverted(_display.xCentre(), 0, " Thermostat Mode ", true, eCentreJustify);
       _drawBitmap(3, 14, ThermostatIconInfo);
       float fTemp = _window;
       if(NVstore.getUserSettings().degF) {
@@ -90,17 +89,15 @@ CThermostatModeScreen::show()
         sprintf(msg, "%.1f\367C", fTemp);
       }
       _printMenuText(Column, Line2, msg, _rowSel == 3);
+      const char* modeStr = NULL;
       switch(_thermoMode) {
-        case 1: 
-          _printMenuText(Column, Line3, "Deadband", _rowSel == 4);
-          break;
-        case 2: 
-          _printMenuText(Column, Line3, "Linear Hz", _rowSel == 4);
-          break;
-        default: 
-          _printMenuText(Column, Line3, "Standard", _rowSel == 4);
-          break;
+        case 0: modeStr = "Standard"; break;
+        case 1: modeStr = "Deadband"; break;
+        case 2: modeStr = "Linear Hz"; break;
+        case 3: modeStr = "Ext thermostat"; break;
       }
+      if(modeStr)
+        _printMenuText(Column, Line3, modeStr, _rowSel == 4);
       if(_cyclicMode.isEnabled()) {
         float fTemp = _cyclicMode.Stop+1;
         if(NVstore.getUserSettings().degF) {
@@ -117,7 +114,6 @@ CThermostatModeScreen::show()
       _printMenuText(Column, Line1, msg, _rowSel == 1);
       if(_cyclicMode.isEnabled()) {
         float fTemp = _cyclicMode.Start;
-  //    if(NVstore.getDegFMode()) {
         if(NVstore.getUserSettings().degF) {
           fTemp = fTemp * 9 / 5;
           sprintf(msg, "\352<%.0f\367F", fTemp);
@@ -166,14 +162,17 @@ CThermostatModeScreen::animate()
         case 4:
           _display.drawFastHLine(0, 52, 128, WHITE);
           switch(_thermoMode) {
+            case 0:
+              pMsg = "                   Use heater's standard thermostat control.                    ";
+              break;
             case 1:
               pMsg = "                   The user defined window sets the thermostat's hysteresis.                    ";
               break;
             case 2:
               pMsg = "                   The pump rate is adjusted linearly across the set point window.                    ";
               break;
-            default:
-              pMsg = "                   Use heater's standard thermostat control.                    ";
+            case 3:
+              pMsg = "                   The heater runs according to GPIO input #2: Open:minimum, Closed:maximum.                    ";
               break;
           }
           if(pMsg)
@@ -311,6 +310,7 @@ CThermostatModeScreen::keyHandler(uint8_t event)
 void 
 CThermostatModeScreen::_adjust(int dir)
 {
+  int wrap;
   switch(_rowSel) {
     case 1:
       _cyclicMode.Stop += dir;
@@ -326,7 +326,8 @@ CThermostatModeScreen::_adjust(int dir)
       break;
     case 4:   // thermostat mode
       _thermoMode += dir;
-      WRAPLIMITS(_thermoMode, 0, 2);
+      wrap = getExternalThermostatModeActive() ? 3 : 2;
+      WRAPLIMITS(_thermoMode, 0, wrap);
       break;
   }
 }

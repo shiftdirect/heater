@@ -53,6 +53,7 @@
 #include "../Protocol/Protocol.h"
 #include "fonts/Arial.h"
 #include <SPIFFS.h>
+#include "../Utility/BoardDetect.h"
 
 #pragma pack ( push, 1)
 struct sBMPhdr {
@@ -395,7 +396,7 @@ CScreenManager::begin(bool bNoClock)
   if(!bNoClock)
     menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
   menuloop.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
-  if(getBoardRevision() != 0 && getBoardRevision() != 22)
+  if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
     menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
   menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
   _Screens.push_back(menuloop);
@@ -431,7 +432,7 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
   menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
   menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
-  if(getBoardRevision() != 0 && getBoardRevision() != 22)
+  if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
     menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
   _Screens.push_back(menuloop);
 

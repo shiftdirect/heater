@@ -21,5 +21,19 @@
 
 #include <stdint.h>
 
+// **** NOTE: internal codes do not match user codes ****
+// internal codes follow the evoloution of discovering that the intial analog input
+// could not be used and had to be swapped with GPIOin1 :-(
+// the the easier to build PCB with no GPIO!
+// The User IDs make more logical sense:
+//   V2.0 base no GPIO
+//   V2.1 only digital IO 
+//   V2.2 full GPIO
+#define BRD_V1_FULLGPIO    10
+#define BRD_V2_GPIO_NOALG  20   // original V20 board - no cut traces - analog on wrong pin :-(
+#define BRD_V2_FULLGPIO    21   // V2 board cut traces tranposed GPIO1 & Analog
+#define BRD_V2_NOGPIO      22   // V2 board forced short on analog input - NO GPIO mode
+
 int BoardDetect();
 void BoardRevisionReset();
+const char* getBoardRevisionString(int ID);

@@ -116,7 +116,7 @@ CBasicScreen::show()
         case 0:
           // Show current heat demand setting
 
-          if(getThermostatModeActive()) {
+          if(getThermostatModeActive() && !getExternalThermostatModeActive()) {
             float fTemp = getTemperatureDesired();
             if(NVstore.getUserSettings().degF) {
               fTemp = fTemp * 9 / 5 + 32;

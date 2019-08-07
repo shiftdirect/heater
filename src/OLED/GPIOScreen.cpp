@@ -25,6 +25,7 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/BTC_GPIO.h"
 #include "fonts/Icons.h"
+#include "../Utility/BoardDetect.h"
 
 extern CGPIOout GPIOout;
 extern CGPIOin GPIOin;
@@ -79,14 +80,15 @@ CGPIOScreen::show()
     }
     else {
       _showTitle("GPIO Settings");
-      _drawBitmap(10, 14, GPIOIconInfo);
+      _drawBitmap(10, 14, (getBoardRevision() != BRD_V2_GPIO_NOALG) ? GPIOIconInfo : GPIOIconNoAlgInfo);
       {
         const char* msgText = NULL;
         switch(_GPIOparams.inMode) {
           case GPIOinNone: msgText = "Disabled"; break;
-          case GPIOinOn1Off2: msgText = "1-On 2-Off"; break;
-          case GPIOinOnHold1: msgText = "1-On 2-\352T"; break;
-          case GPIOinOn1Off1: msgText = "1-On/Off"; break;
+          case GPIOinOn1Off2: msgText = "1:On 2:Off"; break;
+          case GPIOinOnHold1: msgText = "1:On 2:\352T"; break;
+          case GPIOinOn1Off1: msgText = "1:On/Off"; break;
+          case GPIOinExtThermostat2: msgText = "2:\352T"; break;
         }
         if(msgText)
           _printMenuText(Column, Line3, msgText, _rowSel == 3);
@@ -103,7 +105,7 @@ CGPIOScreen::show()
           _printMenuText(Column, Line2, msgText, _rowSel == 2);
       }
 
-      {
+      if(getBoardRevision() != BRD_V2_GPIO_NOALG) {  // Not No Analog support
         const char* msgText = NULL;
         switch(_GPIOparams.algMode) {
           case GPIOalgNone: msgText = "Disabled"; break;
@@ -157,9 +159,10 @@ CGPIOScreen::animate()
           _display.drawFastHLine(0, 52, 128, WHITE);
           switch(_GPIOparams.inMode) {
             case GPIOinNone:    pMsg = "                   Digital inputs are disabled.                    "; break;
-            case GPIOinOn1Off2: pMsg = "                   Input 1: Starts upon closure. Input 2: Stops upon closure.                    "; break;
-            case GPIOinOnHold1: pMsg = "                   Input 1: Starts when held closed, stops when opened. Input2: Max fuel when closed, min fuel when open.                    "; break;
+            case GPIOinOn1Off2: pMsg = "                   Input 1: Starts upon closure.  Input 2: Stops upon closure.                    "; break;
+            case GPIOinOnHold1: pMsg = "                   Input 1: Starts when held closed, stops when opened.  Input2: Max fuel when closed, min fuel when open.                    "; break;
             case GPIOinOn1Off1: pMsg = "                   Input 1: Starts or Stops upon closure.                    "; break;
+            case GPIOinExtThermostat2: pMsg = "                   Input 1: not used.  Input 2: Max fuel when closed, min fuel when open.                    "; break;
           }
           if(pMsg)
             _scrollMessage(56, pMsg, _scrollChar);
@@ -213,12 +216,16 @@ CGPIOScreen::keyHandler(uint8_t event)
     if(event & key_Down) {
         _scrollChar = 0;
         _rowSel--;
+        if((_rowSel == 1) && (getBoardRevision() == BRD_V2_GPIO_NOALG))  // GPIO but NO analog support
+          _rowSel--;   // force skip if analog input is not supported by PCB
         LOWERLIMIT(_rowSel, 0);
     }
     // UP press
     if(event & key_Up) {
       switch(_rowSel) {
         case 0:
+          if(getBoardRevision() == BRD_V2_GPIO_NOALG)   // GPIO but NO Analog support
+            _rowSel++;   // force skip if analog input is not supported by PCB
         case 1:
         case 2:
         case 3:
@@ -279,7 +286,7 @@ CGPIOScreen::_adjust(int dir)
     case 3:
       tVal = _GPIOparams.inMode;
       tVal += dir;
-      WRAPLIMITS(tVal, 0, 3);
+      WRAPLIMITS(tVal, 0, 4);
       _GPIOparams.inMode = (GPIOinModes)tVal;
       break;
   }

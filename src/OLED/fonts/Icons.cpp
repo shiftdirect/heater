@@ -868,6 +868,7 @@ const uint8_t PROGMEM GPIOIcon[]  =
 	0x01, 0x80, 0x00, //        ##           
 };
 const BITMAP_INFO GPIOIconInfo(20, 33, GPIOIcon);
+const BITMAP_INFO GPIOIconNoAlgInfo(20, 20, GPIOIcon);
 
 
 const uint8_t PROGMEM firmwareIcon[]  =
@@ -1153,3 +1154,18 @@ const uint8_t PROGMEM miniThermoIcon[]  =
 };
 const BITMAP_INFO miniThermoIconInfo(6, 13, miniThermoIcon);
 
+// 
+//  Image data for externalThermostat
+// 
+
+const uint8_t PROGMEM ExtThermoIcon[]  =
+{
+	0x00, 0x80,  //         #         
+	0x04, 0x80,  //      #  #         
+	0x02, 0x9c,  //       # #  ###
+	0xFF, 0x84,  // #########    #
+	0x02, 0x9c,  //       # #  ###
+	0x04, 0x90,  //      #  #  #  
+	0x00, 0x9c,  //         #  ###
+};
+const BITMAP_INFO ExtThermoIconInfo(14, 7, ExtThermoIcon);

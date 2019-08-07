@@ -123,8 +123,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 30;
-const int FirmwareSubRevision = 2;
-const char* FirmwareDate = "3 Aug 2019";
+const int FirmwareSubRevision = 3;
+const char* FirmwareDate = "7 Aug 2019";
 
 
 #ifdef ESP32
@@ -326,7 +326,7 @@ void setup() {
   digitalWrite(GPIOout2_pin, LOW);
 
   nvs_stats_t nvs_stats;
-  esp_err_t err = nvs_get_stats(NULL, &nvs_stats);
+  nvs_get_stats(NULL, &nvs_stats);
 
   // initialise TelnetSpy (port 23) as well as Serial to 115200 
   // Serial is the usual USB connection to a PC
@@ -1033,6 +1033,17 @@ bool getThermostatModeActive()
   }
 }
 
+bool getExternalThermostatModeActive()
+{
+  return GPIOin.usesExternalThermostat();
+}
+
+bool getExternalThermostatOn()
+{
+  return GPIOin.getState(1);
+}
+
+
 void checkDisplayUpdate()
 {
   // only update OLED when not processing blue wire
@@ -1086,10 +1097,10 @@ float getTemperatureDesired()
     return getHeaterInfo().getHeaterDemand();
   }
   else {
-    if(getThermostatModeActive()) 
+//    if(getThermostatModeActive()) 
       return RTC_Store.getDesiredTemp();
-    else 
-      return RTC_Store.getDesiredPump();
+//    else 
+//      return RTC_Store.getDesiredPump();
   }
 }
 
@@ -1390,7 +1401,13 @@ void setupGPIO()
   }
   else {
     // unknown board or forced no GPIO by grounding pin26 - deny all GPIO operation 
-    GPIOin.begin(0, 0, GPIOinNone, LOW);
+    // set all pins as inputs with pull ups
+    pinMode(GPIOin2_pin, INPUT_PULLUP);
+    pinMode(GPIOin1_pinV21V10, INPUT_PULLUP);
+    pinMode(GPIOin1_pinV20, INPUT_PULLUP);
+    pinMode(GPIOout1_pin, INPUT_PULLUP);
+    pinMode(GPIOout2_pin, INPUT_PULLUP);
+    GPIOin.begin(0, 0, GPIOinNone, LOW);            // ensure modes disabled (should already be by constructors)
     GPIOout.begin(0, 0, GPIOoutNone);
     GPIOalg.begin(ADC1_CHANNEL_5, GPIOalgNone);
   }

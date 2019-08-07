@@ -30,20 +30,21 @@ const int FADEAMOUNT = 3;
 const int FLASHPERIOD = 2000;
 const int ONFLASHINTERVAL = 50;
 
-const char* GPIOinNames[4] = {
+const char* GPIOinNames[] = {
   "Disabled",
   "On1Off2",
   "Hold1",
-  "On1Off1"
+  "On1Off1",
+  "ExtThermostat"
 };
 
-const char* GPIOoutNames[3] = {
+const char* GPIOoutNames[] = {
   "Disabled",
   "Status",
   "User"
 };
 
-const char* GPIOalgNames[2] = {
+const char* GPIOalgNames[] = {
   "Disabled",
   "HeatDemand"
 };
@@ -127,6 +128,8 @@ CGPIOin::simulateKey(uint8_t newKey)
     case GPIOinOn1Off1:
       _doOn1Off1(newKey);
       break;
+    case GPIOinExtThermostat2:
+      break;  // handling actually performed at Tx Manage for setting the fuel rate
   }
 }
 

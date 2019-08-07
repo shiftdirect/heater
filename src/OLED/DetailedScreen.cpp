@@ -98,8 +98,9 @@ CDetailedScreen::show()
   float desiredT = 0;
   float fPump = 0;
   if((runstate && (runstate <= 5)) || (runstate == 9) || _showTarget) {  // state 9 = manufactured "heating glow plug"
-    if(getThermostatModeActive())
+    if(getThermostatModeActive() && !getExternalThermostatModeActive()) {
       desiredT = getTemperatureDesired();
+    }
     else {
       fPump = getHeaterInfo().getPump_Fixed();
       if(NVstore.getUserSettings().cyclic.isEnabled())
@@ -328,7 +329,16 @@ CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump)
   // draw target setting
   // may be suppressed if not in normal start or run state
   if((fDesired != 0) || (fPump != 0)) {
-    _drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIconInfo);   // draw target icon
+    if(getThermostatModeActive() && getExternalThermostatModeActive()) {
+      _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+1, ExtThermoIconInfo);   // draw external input #2 icon
+      if(getExternalThermostatOn()) 
+        _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+9, CloseIconInfo);   // draw external input #2 icon
+      else
+        _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+9, OpenIconInfo);   // draw external input #2 icon
+    }
+    else {
+      _drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIconInfo);   // draw target icon
+    }
     char msg[16];
     if(fPump == 0) {
       int yPos = Y_BULB + TEMP_YPOS(fDesired) - 2;      // 2 offsets mid height of icon

@@ -105,20 +105,20 @@ int BoardDetect()
   int pin26 = digitalRead(26);
 
   if((pin33 == HIGH) && (pin26 == HIGH) && (pin25 == HIGH)) {
-    revision = 10;
+    revision = BRD_V2_FULLGPIO;
     DebugPort.println("Board detect: digital input test reveals V1.x PCB");
   }
   else if((pin33 == LOW) && (pin26 == HIGH) && (pin25 == LOW)) {
-    revision = 20;
-    DebugPort.println("Board detect: digital input test reveals V2.0 PCB");
-  }
-  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == LOW)) {
-    revision = 21;
-    DebugPort.println("Board detect: digital input test reveals V2.1 PCB");
+    revision = BRD_V2_NOGPIO;
+    DebugPort.println("Board detect: digital input test reveals V2.2 PCB - no GPIO (V2.0 userID) ");
   }
   else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == HIGH)) {
-    revision = 22;
-    DebugPort.println("Board detect: digital input test reveals V2.0 PCB - no GPIO");
+    revision = BRD_V2_GPIO_NOALG;
+    DebugPort.println("Board detect: digital input test reveals V2.0 PCB - Digital only GPIO (V2.1 userID)");
+  }
+  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == LOW)) {
+    revision = BRD_V2_FULLGPIO;
+    DebugPort.println("Board detect: digital input test reveals V2.1 PCB - Full GPIO (V2.2 userID)");
   }
   else {
     DebugPort.println("Board detect: digital input test failed to detect a valid combination!!!");
@@ -135,4 +135,15 @@ int BoardDetect()
 
   DebugPort.printf("Board detect: Result = V%.1f\r\n", float(revision)*0.1f);
   return revision;
+}
+
+const char* getBoardRevisionString(int ID)
+{
+  switch(ID) {
+    case BRD_V1_FULLGPIO: return "V1.0"; 
+    case BRD_V2_FULLGPIO: return "V2.2"; 
+    case BRD_V2_NOGPIO: return "V2.0"; 
+    case BRD_V2_GPIO_NOALG: return "V2.1"; 
+    default: return "???"; 
+  }
 }

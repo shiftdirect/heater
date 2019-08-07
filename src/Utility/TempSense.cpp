@@ -34,6 +34,24 @@ void CTempSense::begin(int pin)
 {
   // initialise DS18B20 sensor interface
   // create one wire bus interface, using RMT peripheral
+  pinMode(pin, INPUT_PULLUP);
+  _owb = owb_rmt_initialize(&_rmt_driver_info, pin, RMT_CHANNEL_1, RMT_CHANNEL_0);
+  owb_use_crc(_owb, true);  // enable CRC check for ROM code
+
+//  bool found = find();
+  delay(10);  // couple of glitches take place during pin setup - give a bit of space to avoid no sensor issues?
+
+  bool found = readROMcode();
+
+  // Create DS18B20 device on the 1-Wire bus
+  if(found) {
+    attach();
+  }
+}
+/*void CTempSense::begin(int pin)
+{
+  // initialise DS18B20 sensor interface
+  // create one wire bus interface, using RMT peripheral
   _owb = owb_rmt_initialize(&_rmt_driver_info, pin, RMT_CHANNEL_1, RMT_CHANNEL_0);
   owb_use_crc(_owb, true);  // enable CRC check for ROM code
 
@@ -46,8 +64,43 @@ void CTempSense::begin(int pin)
     attach();
   }
 }
-
+*/
 bool
+CTempSense::readTemperature(float& tempReading)
+{
+  if(_TempSensor == NULL) {
+
+//    bool found = find();
+    bool found = readROMcode();
+
+    if(found) {
+      DebugPort.println("Found DS18B20 device");
+
+//      readROMcode();
+
+      attach();
+
+      startConvert();  // request a new conversion,
+      waitConvertDone();
+    }
+  }
+
+  if(_TempSensor != NULL) {
+    DS18B20_ERROR error = ds18b20_read_temp(_TempSensor, &tempReading);
+//          DebugPort.printf(">>>> DS18B20 = %f, error=%d\r\n", fTemperature, error);
+
+    if(error == DS18B20_OK) {
+      return true;
+    }
+    else {
+      DebugPort.println("\007DS18B20 sensor removed?");
+      ds18b20_free(&_TempSensor);
+    }
+  }
+
+  return false;
+}
+/*bool
 CTempSense::readTemperature(float& tempReading)
 {
   if(_TempSensor == NULL) {
@@ -81,7 +134,7 @@ CTempSense::readTemperature(float& tempReading)
 
   return false;
 }
-
+*/
 bool 
 CTempSense::find()
 {

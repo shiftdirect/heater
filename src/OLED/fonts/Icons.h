@@ -116,8 +116,9 @@ extern const BITMAP_INFO RefreshIconInfo;
 // Bitmap for thermostat modes
 extern const BITMAP_INFO ThermostatIconInfo;
 
-// Bitmap for gPIO
+// Bitmap for GPIO
 extern const BITMAP_INFO GPIOIconInfo;
+extern const BITMAP_INFO GPIOIconNoAlgInfo;
 
 // Bitmap for firmware
 extern const BITMAP_INFO FirmwareIconInfo;
@@ -142,3 +143,4 @@ extern const BITMAP_INFO ThermostatDegFIconInfo;
 extern const BITMAP_INFO ThermostatHzIconInfo;
 extern const BITMAP_INFO resetIconInfo;
 extern const BITMAP_INFO miniThermoIconInfo;
+extern const BITMAP_INFO ExtThermoIconInfo;

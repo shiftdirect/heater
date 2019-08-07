@@ -345,7 +345,7 @@ sUserSettings::load()
   validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
   validatedLoad("cyclicStart", cyclic.Start, -1, s8inBounds, -20, 0);
   uint8_t tVal;
-  validatedLoad("GPIOinMode", tVal, 0, u8inBounds, 0, 3);  GPIO.inMode = (GPIOinModes)tVal;
+  validatedLoad("GPIOinMode", tVal, 0, u8inBounds, 0, 4);  GPIO.inMode = (GPIOinModes)tVal;
   validatedLoad("GPIOoutMode", tVal, 0, u8inBounds, 0, 2); GPIO.outMode = (GPIOoutModes)tVal;
   validatedLoad("GPIOalgMode", tVal, 0, u8inBounds, 0, 2); GPIO.algMode = (GPIOalgModes)tVal;
   validatedLoad("MenuOnTimeout", HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
