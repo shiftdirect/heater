@@ -267,8 +267,10 @@ struct sUserSettings : public CESP32_NVStorage {
     retval &= useThermostat < 2;
     retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= (enableOTA == 0) || (enableOTA == 1);
-    retval &= GPIO.inMode < 4;
-    retval &= GPIO.outMode < 3;
+    retval &= GPIO.in1Mode < 4;
+    retval &= GPIO.in2Mode < 3;
+    retval &= GPIO.out1Mode < 3;
+    retval &= GPIO.out2Mode < 2;
     retval &= INBOUNDS(FrameRate, 300, 1500);
     retval &= cyclic.valid();
     retval &= HomeMenu.valid();
@@ -284,8 +286,10 @@ struct sUserSettings : public CESP32_NVStorage {
     useThermostat = 1;
     enableWifi = 1;
     enableOTA = 1;
-    GPIO.inMode = GPIOinNone;
-    GPIO.outMode = GPIOoutNone;
+    GPIO.in1Mode = GPIOin1None;
+    GPIO.in2Mode = GPIOin2None;
+    GPIO.out1Mode = GPIOout1None;
+    GPIO.out2Mode = GPIOout2None;
     GPIO.algMode = GPIOalgNone;
     FrameRate = 1000;
     cyclic.init();
@@ -303,8 +307,10 @@ struct sUserSettings : public CESP32_NVStorage {
     useThermostat = rhs.useThermostat;
     enableWifi = rhs.enableWifi;
     enableOTA = rhs.enableOTA;
-    GPIO.inMode = rhs.GPIO.inMode;
-    GPIO.outMode = rhs.GPIO.outMode;
+    GPIO.in1Mode = rhs.GPIO.in1Mode;
+    GPIO.in2Mode = rhs.GPIO.in2Mode;
+    GPIO.out1Mode = rhs.GPIO.out1Mode;
+    GPIO.out2Mode = rhs.GPIO.out2Mode;
     GPIO.algMode = rhs.GPIO.algMode;
     FrameRate = rhs.FrameRate;
     cyclic = rhs.cyclic;

@@ -345,8 +345,41 @@ sUserSettings::load()
   validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
   validatedLoad("cyclicStart", cyclic.Start, -1, s8inBounds, -20, 0);
   uint8_t tVal;
-  validatedLoad("GPIOinMode", tVal, 0, u8inBounds, 0, 4);  GPIO.inMode = (GPIOinModes)tVal;
-  validatedLoad("GPIOoutMode", tVal, 0, u8inBounds, 0, 2); GPIO.outMode = (GPIOoutModes)tVal;
+//  validatedLoad("GPIOinMode", tVal, 0, u8inBounds, 0, 4);  GPIO.inMode = (GPIOinModes)tVal;
+  validatedLoad("GPIOinMode", tVal, 0, u8inBounds, 0, 255);
+  if(tVal <= 4) {
+    // migrate old GPIO input mode
+    GPIO.in1Mode = GPIOin1None;  
+    GPIO.in2Mode = GPIOin2None; 
+    switch(tVal) {
+      case 1: GPIO.in1Mode = GPIOin1On;    GPIO.in2Mode = GPIOin2Off; break;
+      case 2: GPIO.in1Mode = GPIOin1Hold;  GPIO.in2Mode = GPIOin2ExtThermostat; break;
+      case 3: GPIO.in1Mode = GPIOin1OnOff; break;
+      case 4: GPIO.in2Mode = GPIOin2ExtThermostat; break;
+    }
+    preferences.putUChar("GPIOinMode", 0xff);  // cancel old
+    preferences.putUChar("GPIOin1Mode", GPIO.in1Mode);  // set new
+    preferences.putUChar("GPIOin2Mode", GPIO.in2Mode);  // set new
+  }  
+  validatedLoad("GPIOin1Mode", tVal, 0, u8inBounds, 0, 3); GPIO.in1Mode = (GPIOin1Modes)tVal;
+  validatedLoad("GPIOin2Mode", tVal, 0, u8inBounds, 0, 2); GPIO.in2Mode = (GPIOin2Modes)tVal;
+//  validatedLoad("GPIOoutMode", tVal, 0, u8inBounds, 0, 2); GPIO.outMode = (GPIOoutModes)tVal;
+  validatedLoad("GPIOoutMode", tVal, 0, u8inBounds, 0, 255); 
+  if(tVal <= 2) {
+    // migrate old GPIO output mode
+    GPIO.out1Mode = GPIOout1None;  
+    GPIO.out2Mode = GPIOout2None; 
+    switch(tVal) {
+      case 0: GPIO.out1Mode = GPIOout1None;  GPIO.out2Mode = GPIOout2None; break;
+      case 1: GPIO.out1Mode = GPIOout1Status;  GPIO.out2Mode = GPIOout2None; break;
+      case 2: GPIO.out1Mode = GPIOout1User;  GPIO.out2Mode = GPIOout2User; break;
+    }
+    preferences.putUChar("GPIOoutMode", 0xff);  // cancel old
+    preferences.putUChar("GPIOout1Mode", GPIO.out1Mode);  // set new
+    preferences.putUChar("GPIOout2Mode", GPIO.out2Mode);  // set new
+  }
+  validatedLoad("GPIOout1Mode", tVal, 0, u8inBounds, 0, 2); GPIO.out1Mode = (GPIOout1Modes)tVal;
+  validatedLoad("GPIOout2Mode", tVal, 0, u8inBounds, 0, 1); GPIO.out2Mode = (GPIOout2Modes)tVal;
   validatedLoad("GPIOalgMode", tVal, 0, u8inBounds, 0, 2); GPIO.algMode = (GPIOalgModes)tVal;
   validatedLoad("MenuOnTimeout", HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
   validatedLoad("MenuonStart", HomeMenu.onStart, 0, u8inBounds, 0, 3);
@@ -373,8 +406,10 @@ sUserSettings::save()
   preferences.putUChar("enableOTA", enableOTA);
   preferences.putChar("cyclicStop", cyclic.Stop);
   preferences.putChar("cyclicStart",cyclic.Start);  
-  preferences.putUChar("GPIOinMode", GPIO.inMode);
-  preferences.putUChar("GPIOoutMode", GPIO.outMode);
+  preferences.putUChar("GPIOin1Mode", GPIO.in1Mode);
+  preferences.putUChar("GPIOin2Mode", GPIO.in2Mode);
+  preferences.putUChar("GPIOout1Mode", GPIO.out1Mode);
+  preferences.putUChar("GPIOout2Mode", GPIO.out2Mode);
   preferences.putUChar("GPIOalgMode", GPIO.algMode);
   preferences.putUChar("MenuOnTimeout", HomeMenu.onTimeout);
   preferences.putUChar("MenuonStart", HomeMenu.onStart);

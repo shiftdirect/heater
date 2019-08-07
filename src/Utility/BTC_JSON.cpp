@@ -428,8 +428,10 @@ bool makeJSONStringGPIO(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("GPout1", info.outState[0], root); 
   bSend |= moderator.addJson("GPout2", info.outState[1], root); 
   bSend |= moderator.addJson("GPanlg", info.algVal * 100 / 4096, root); 
-  bSend |= moderator.addJson("GPmodeIn", GPIOinNames[info.inMode], root); 
-  bSend |= moderator.addJson("GPmodeOut", GPIOoutNames[info.outMode], root); 
+  bSend |= moderator.addJson("GPmodeIn1", GPIOin1Names[info.in1Mode], root); 
+  bSend |= moderator.addJson("GPmodeIn2", GPIOin2Names[info.in2Mode], root); 
+  bSend |= moderator.addJson("GPmodeOut1", GPIOout1Names[info.out1Mode], root); 
+  bSend |= moderator.addJson("GPmodeOut2", GPIOout2Names[info.out2Mode], root); 
   bSend |= moderator.addJson("GPmodeAnlg", GPIOalgNames[info.algMode], root); 
 
   if(bSend) {

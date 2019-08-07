@@ -1373,12 +1373,12 @@ void setupGPIO()
     // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
     int activePinState = (BoardRevision == 10) ? LOW : HIGH;  
     int Input1 = BoardRevision == 20 ? GPIOin1_pinV20 : GPIOin1_pinV21V10;
-    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getUserSettings().GPIO.inMode, activePinState);
+    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getUserSettings().GPIO.in1Mode, NVstore.getUserSettings().GPIO.in2Mode, activePinState);
 
     // GPIO out is always active high from ESP32
     // V1.0 PCBs only expose the bare pins
     // V2.0+ PCBs provide an open collector output that conducts when active
-    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getUserSettings().GPIO.outMode);
+    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getUserSettings().GPIO.out1Mode, NVstore.getUserSettings().GPIO.out2Mode);
 
     // ### MAJOR ISSUE WITH ADC INPUTS ###
     //
@@ -1407,27 +1407,44 @@ void setupGPIO()
     pinMode(GPIOin1_pinV20, INPUT_PULLUP);
     pinMode(GPIOout1_pin, INPUT_PULLUP);
     pinMode(GPIOout2_pin, INPUT_PULLUP);
-    GPIOin.begin(0, 0, GPIOinNone, LOW);            // ensure modes disabled (should already be by constructors)
-    GPIOout.begin(0, 0, GPIOoutNone);
+    GPIOin.begin(0, 0, GPIOin1None, GPIOin2None, LOW);            // ensure modes disabled (should already be by constructors)
+    GPIOout.begin(0, 0, GPIOout1None, GPIOout2None);
     GPIOalg.begin(ADC1_CHANNEL_5, GPIOalgNone);
   }
 }
 
 bool toggleGPIOout(int channel) 
 {
-  if(NVstore.getUserSettings().GPIO.outMode == GPIOoutUser) {
-    setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
-    return true;
+  if(channel == 0) {
+    if(NVstore.getUserSettings().GPIO.out1Mode == GPIOout1User) {
+      setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
+      return true;
+    }
+  }
+  else if(channel == 1) {
+    if(NVstore.getUserSettings().GPIO.out2Mode == GPIOout2User) {
+      setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
+      return true;
+    }
   }
   return false;
 }
 
 bool setGPIOout(int channel, bool state)
 {
-  if(GPIOout.getMode() != GPIOoutNone) {
-    DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
-    GPIOout.setState(channel, state);
-    return true;
+  if(channel == 0) {
+    if(GPIOout.getMode1() != GPIOout1None) {
+      DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
+      GPIOout.setState(channel, state);
+      return true;
+    }
+  }
+  else if(channel == 1) {
+    if(GPIOout.getMode2() != GPIOout2None) {
+      DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
+      GPIOout.setState(channel, state);
+      return true;
+    }
   }
   return false;
 }
@@ -1526,8 +1543,10 @@ void getGPIOinfo(sGPIO& info)
   info.outState[0] = GPIOout.getState(0);
   info.outState[1] = GPIOout.getState(1);
   info.algVal = GPIOalg.getValue();
-  info.inMode = GPIOin.getMode();
-  info.outMode = GPIOout.getMode();
+  info.in1Mode = GPIOin.getMode1();
+  info.in2Mode = GPIOin.getMode2();
+  info.out1Mode = GPIOout.getMode1();
+  info.out2Mode = GPIOout.getMode2();
   info.algMode = GPIOalg.getMode();
 }
 

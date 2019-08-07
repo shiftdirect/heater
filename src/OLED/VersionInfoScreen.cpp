@@ -71,8 +71,6 @@ CVersionInfoScreen::_initUI()
 bool 
 CVersionInfoScreen::show()
 {
-  char msg[16];
-
   _display.clearDisplay();
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
@@ -86,14 +84,6 @@ CVersionInfoScreen::show()
       _printMenuText(41, 15, getVersionStr());
       _printMenuText(41, 26, getVersionDate());
        int newVer = isUpdateAvailable();
-      // if(newVer) {
-      //   char msg[32];
-      //   int major = (int)(newVer * 0.01);
-      //   int minor = newVer - major*100;
-      //   float prtMajor = major * 0.1;
-      //   sprintf(msg, "V%.1f.%d", prtMajor, minor);
-      //   _printMenuText(128, 15, msg, false, eRightJustify);
-      // }
       _drawBitmap(18, 34, HardwareIconInfo);
       int PCB = getBoardRevision();
       _printMenuText(41, 38, getBoardRevisionString(PCB));

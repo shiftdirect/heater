@@ -42,14 +42,16 @@ extern CGPIOalg GPIOalg;
 static const int Line3 = 14;
 static const int Line2 = 27;
 static const int Line1 = 40;
-//static const int Column = 58;
-static const int Column = 38;
+static const int Column1 = 26;
+static const int Column2 = 85;
 
 CGPIOScreen::CGPIOScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _initUI();
-  _GPIOparams.inMode = GPIOinNone;
-  _GPIOparams.outMode = GPIOoutNone;
+  _GPIOparams.in1Mode = GPIOin1None;
+  _GPIOparams.in2Mode = GPIOin2None;
+  _GPIOparams.out1Mode = GPIOout1None;
+  _GPIOparams.out2Mode = GPIOout2None;
   _GPIOparams.algMode = GPIOalgNone;
 }
 
@@ -73,36 +75,57 @@ CGPIOScreen::show()
 {
   _display.clearDisplay();
 
+  static bool animated = false;
+  animated = !animated;
+
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 4) {
+    if(_rowSel == 10) {
       _showConfirmMessage();
     }
     else {
       _showTitle("GPIO Settings");
-      _drawBitmap(10, 14, (getBoardRevision() != BRD_V2_GPIO_NOALG) ? GPIOIconInfo : GPIOIconNoAlgInfo);
+      _drawBitmap(0, 14, (getBoardRevision() != BRD_V2_GPIO_NOALG) ? GPIOIconInfo : GPIOIconNoAlgInfo);
       {
         const char* msgText = NULL;
-        switch(_GPIOparams.inMode) {
-          case GPIOinNone: msgText = "Disabled"; break;
-          case GPIOinOn1Off2: msgText = "1:On 2:Off"; break;
-          case GPIOinOnHold1: msgText = "1:On 2:\352T"; break;
-          case GPIOinOn1Off1: msgText = "1:On/Off"; break;
-          case GPIOinExtThermostat2: msgText = "2:\352T"; break;
+        switch(_GPIOparams.in1Mode) {
+          case GPIOin1None:  msgText = "1: --- "; break;
+          case GPIOin1On:    msgText = "1:Start"; break;
+          case GPIOin1Hold:  msgText = "1: Run "; break;
+          case GPIOin1OnOff: msgText = animated ? "1:Start" : "1: Stop"; break;
         }
         if(msgText)
-          _printMenuText(Column, Line3, msgText, _rowSel == 3);
+          _printMenuText(Column1, Line3, msgText, _rowSel == 4);
+      }
+      {
+        const char* msgText = NULL;
+        switch(_GPIOparams.in2Mode) {
+          case GPIOin2None:           msgText = "2: ---"; break;
+          case GPIOin2Off:            msgText = "2:Stop"; break;
+          case GPIOin2ExtThermostat:  msgText = "2: \352T "; break;
+        }
+        if(msgText)
+          _printMenuText(Column2, Line3, msgText, _rowSel == 5);
       }
 
       {
         const char* msgText = NULL;
-        switch(_GPIOparams.outMode) {
-          case GPIOoutNone: msgText = "Disabled"; break;
-          case GPIOoutStatus: msgText = "1: Status LED"; break;
-          case GPIOoutUser: msgText = "1&2 User"; break;
+        switch(_GPIOparams.out1Mode) {
+          case GPIOout1None:   msgText = "1: ---  "; break;
+          case GPIOout1Status: msgText = "1:Status"; break;
+          case GPIOout1User:   msgText = "1: User "; break;
         }
         if(msgText)
-          _printMenuText(Column, Line2, msgText, _rowSel == 2);
+          _printMenuText(Column1, Line2, msgText, _rowSel == 2);
+      }
+      {
+        const char* msgText = NULL;
+        switch(_GPIOparams.out2Mode) {
+          case GPIOout2None: msgText = "2: ---"; break;
+          case GPIOout2User: msgText = "2:User"; break;
+        }
+        if(msgText)
+          _printMenuText(Column2, Line2, msgText, _rowSel == 3);
       }
 
       if(getBoardRevision() != BRD_V2_GPIO_NOALG) {  // Not No Analog support
@@ -112,7 +135,7 @@ CGPIOScreen::show()
           case GPIOalgHeatDemand: msgText = "Ip1 allows"; break;
         }
         if(msgText)
-          _printMenuText(Column, Line1, msgText, _rowSel == 1);
+          _printMenuText(Column1, Line1, msgText, _rowSel == 1);
       }
     }
   }
@@ -126,7 +149,7 @@ CGPIOScreen::animate()
   CPasswordScreen::animate();
   
   if(!CPasswordScreen::_busy()) {
-    if(_rowSel != 4) {
+    if(_rowSel != 10) {
       int yPos = 53;
       int xPos = _display.xCentre();
       const char* pMsg = NULL;
@@ -146,23 +169,41 @@ CGPIOScreen::animate()
 
         case 2:
           _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_GPIOparams.outMode) {
-            case GPIOoutNone:   pMsg = "                   Digital outputs are disabled.                    "; break;
-            case GPIOoutStatus: pMsg = "                   Output1: LED status indicator.                    "; break;
-            case GPIOoutUser:   pMsg = "                   Output 1&2: User controlled.                    "; break;
+          switch(_GPIOparams.out1Mode) {
+            case GPIOout1None:   pMsg = "                   Output 1: DISABLED.                    "; break;
+            case GPIOout1Status: pMsg = "                   Output 1: LED status indicator.                    "; break;
+            case GPIOout1User:   pMsg = "                   Output 1: User controlled.                    "; break;
+          }
+          if(pMsg)
+            _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 3:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          switch(_GPIOparams.out2Mode) {
+            case GPIOout2None:   pMsg = "                   Output 2: DISABLED.                    "; break;
+            case GPIOout2User:   pMsg = "                   Output 2: User controlled.                    "; break;
           }
           if(pMsg)
             _scrollMessage(56, pMsg, _scrollChar);
           break;
 
-        case 3:
+        case 4:
           _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_GPIOparams.inMode) {
-            case GPIOinNone:    pMsg = "                   Digital inputs are disabled.                    "; break;
-            case GPIOinOn1Off2: pMsg = "                   Input 1: Starts upon closure.  Input 2: Stops upon closure.                    "; break;
-            case GPIOinOnHold1: pMsg = "                   Input 1: Starts when held closed, stops when opened.  Input2: Max fuel when closed, min fuel when open.                    "; break;
-            case GPIOinOn1Off1: pMsg = "                   Input 1: Starts or Stops upon closure.                    "; break;
-            case GPIOinExtThermostat2: pMsg = "                   Input 1: not used.  Input 2: Max fuel when closed, min fuel when open.                    "; break;
+          switch(_GPIOparams.in1Mode) {
+            case GPIOin1None:   pMsg = "                   Input 1: DISABLED.                    "; break;
+            case GPIOin1On:     pMsg = "                   Input 1: Starts heater upon closure.                    "; break;
+            case GPIOin1Hold:   pMsg = "                   Input 1: Starts heater when held closed, stops when opened.                    "; break;
+            case GPIOin1OnOff:  pMsg = "                   Input 1: Starts or Stops heater upon closure.                    "; break;
+          }
+          if(pMsg)
+            _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 5:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          switch(_GPIOparams.in2Mode) {
+            case GPIOin2None:          pMsg = "                   Input 2: DISABLED.                    "; break;
+            case GPIOin2Off:           pMsg = "                   Input 2: Stops heater upon closure.                    "; break;
+            case GPIOin2ExtThermostat: pMsg = "                   Input 2: External thermostat. Max fuel when closed, min fuel when open.                    "; break;
           }
           if(pMsg)
             _scrollMessage(56, pMsg, _scrollChar);
@@ -188,10 +229,12 @@ CGPIOScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
+        case 4:
+        case 5:
           _scrollChar = 0;
           _adjust(-1);
           break;
-        case 4:
+        case 10:
           _rowSel = 0;   // abort save
           break;
       }
@@ -205,10 +248,12 @@ CGPIOScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
+        case 4:
+        case 5:
           _scrollChar = 0;
           _adjust(+1);
           break;
-        case 4:
+        case 10:
           _rowSel = 0;   // abort save
           break;
       }
@@ -229,11 +274,13 @@ CGPIOScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
+        case 4:
+        case 5:
           _scrollChar = 0;
           _rowSel++;
-          UPPERLIMIT(_rowSel, 3);
+          UPPERLIMIT(_rowSel, 5);
           break;
-        case 4:    // confirmed save
+        case 10:    // confirmed save
           _enableStoringMessage();
           us = NVstore.getUserSettings();
           us.GPIO = _GPIOparams;
@@ -256,7 +303,9 @@ CGPIOScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _rowSel = 4;
+        case 4:
+        case 5:
+          _rowSel = 10;
           break;
       }
     }
@@ -278,16 +327,28 @@ CGPIOScreen::_adjust(int dir)
       _GPIOparams.algMode = (GPIOalgModes)tVal;
       break;
     case 2:   // outputs mode
-      tVal = _GPIOparams.outMode;
+      tVal = _GPIOparams.out1Mode;
       tVal += dir;
       WRAPLIMITS(tVal, 0, 2);
-      _GPIOparams.outMode = (GPIOoutModes)tVal;
+      _GPIOparams.out1Mode = (GPIOout1Modes)tVal;
       break;
-    case 3:
-      tVal = _GPIOparams.inMode;
+    case 3:   // outputs mode
+      tVal = _GPIOparams.out2Mode;
       tVal += dir;
-      WRAPLIMITS(tVal, 0, 4);
-      _GPIOparams.inMode = (GPIOinModes)tVal;
+      WRAPLIMITS(tVal, 0, 1);
+      _GPIOparams.out2Mode = (GPIOout2Modes)tVal;
+      break;
+    case 4:
+      tVal = _GPIOparams.in1Mode;
+      tVal += dir;
+      WRAPLIMITS(tVal, 0, 3);
+      _GPIOparams.in1Mode = (GPIOin1Modes)tVal;
+      break;
+    case 5:
+      tVal = _GPIOparams.in2Mode;
+      tVal += dir;
+      WRAPLIMITS(tVal, 0, 2);
+      _GPIOparams.in2Mode = (GPIOin2Modes)tVal;
       break;
   }
 }
@@ -319,39 +380,45 @@ CGPIOInfoScreen::show()
   _printMenuText(91, 20, "1", false, eCentreJustify);
   _printMenuText(118, 20, "2", false, eCentreJustify);
 
-  _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
+  if(getBoardRevision() == BRD_V2_FULLGPIO || getBoardRevision() == BRD_V1_FULLGPIO)
+    _printMenuText(55, Line1, "Analogue:", false, eRightJustify);
 
-  if(NVstore.getUserSettings().GPIO.inMode == GPIOinNone) {
+  if(NVstore.getUserSettings().GPIO.in1Mode == GPIOin1None) {
     _drawBitmap(7, 28, CrossLgIconInfo);
-    _drawBitmap(30, 28, CrossLgIconInfo);
   }
   else {
     _drawBitmap(4, 29, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
-    if(NVstore.getUserSettings().GPIO.inMode == GPIOinOn1Off1) 
-      _drawBitmap(30, 28, CrossLgIconInfo);
-    else 
-      _drawBitmap(27, 29, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
+  }
+  if(NVstore.getUserSettings().GPIO.in2Mode == GPIOin2None) {
+    _drawBitmap(30, 28, CrossLgIconInfo);
+  }
+  else {
+    _drawBitmap(27, 29, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
   }
 
   
-  if(NVstore.getUserSettings().GPIO.outMode == GPIOoutNone) {
+  if(NVstore.getUserSettings().GPIO.out1Mode == GPIOout1None) {
     _drawBitmap(87, 28, CrossLgIconInfo);
-    _drawBitmap(114, 28, CrossLgIconInfo);
   }
   else {
     _drawBitmap(86, 29, GPIOout.getState(0) ? BulbOnIconInfo : BulbOffIconInfo);
-    if(NVstore.getUserSettings().GPIO.outMode == GPIOoutStatus) 
-      _drawBitmap(114, 28, CrossLgIconInfo);
-    else 
-      _drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIconInfo : BulbOffIconInfo);
   }
-
-  if(NVstore.getUserSettings().GPIO.algMode == GPIOalgNone) {
-    _drawBitmap(58, Line1, CrossLgIconInfo);
+  if(NVstore.getUserSettings().GPIO.out2Mode == GPIOout2None) {
+    _drawBitmap(114, 28, CrossLgIconInfo);
   }
   else {
-    sprintf(msg, "%d%%", GPIOalg.getValue() * 100 / 4096);
-    _printMenuText(58, Line1, msg);
+    _drawBitmap(113, 29, GPIOout.getState(1) ? BulbOnIconInfo : BulbOffIconInfo);
+  }
+
+
+  if(getBoardRevision() == BRD_V2_FULLGPIO || getBoardRevision() == BRD_V1_FULLGPIO) {
+    if(NVstore.getUserSettings().GPIO.algMode == GPIOalgNone) {
+      _drawBitmap(58, Line1, CrossLgIconInfo);
+    }
+    else {
+      sprintf(msg, "%d%%", GPIOalg.getValue() * 100 / 4096);
+      _printMenuText(58, Line1, msg);
+    }
   }
 
   _printMenuText(_display.xCentre(), 53, " \021                \020 ", true, eCentreJustify);
