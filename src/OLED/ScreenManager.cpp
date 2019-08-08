@@ -433,7 +433,7 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
   menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
   if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
-    menuloop.push_back(new CGPIOScreen(*_pDisplay, *this)); // GPIO settings screen
+    menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   _Screens.push_back(menuloop);
 
   // create System Settings screens loop 

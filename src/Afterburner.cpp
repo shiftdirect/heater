@@ -1373,12 +1373,19 @@ void setupGPIO()
     // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
     int activePinState = (BoardRevision == 10) ? LOW : HIGH;  
     int Input1 = BoardRevision == 20 ? GPIOin1_pinV20 : GPIOin1_pinV21V10;
-    GPIOin.begin(Input1, GPIOin2_pin, NVstore.getUserSettings().GPIO.in1Mode, NVstore.getUserSettings().GPIO.in2Mode, activePinState);
+    GPIOin.begin(Input1, 
+                 GPIOin2_pin, 
+                 NVstore.getUserSettings().GPIO.in1Mode, 
+                 NVstore.getUserSettings().GPIO.in2Mode, 
+                 activePinState);
 
     // GPIO out is always active high from ESP32
     // V1.0 PCBs only expose the bare pins
     // V2.0+ PCBs provide an open collector output that conducts when active
-    GPIOout.begin(GPIOout1_pin, GPIOout2_pin, NVstore.getUserSettings().GPIO.out1Mode, NVstore.getUserSettings().GPIO.out2Mode);
+    GPIOout.begin(GPIOout1_pin, 
+                  GPIOout2_pin, 
+                  NVstore.getUserSettings().GPIO.out1Mode, 
+                  NVstore.getUserSettings().GPIO.out2Mode);
 
     // ### MAJOR ISSUE WITH ADC INPUTS ###
     //
@@ -1394,9 +1401,9 @@ void setupGPIO()
     // This will be properly fixed in V2.1 PCBs
     //
     // As V1.0 PCBS expose the bare pins, the correct GPIO33 input can be readily chosen.
-    GPIOalgModes algMode = NVstore.getUserSettings().GPIO.algMode;
+    CGPIOalg::Modes algMode = NVstore.getUserSettings().GPIO.algMode;
     if(BoardRevision == 20)  
-      algMode = GPIOalgNone;      // force off analogue support in V2.0 PCBs
+      algMode = CGPIOalg::Disabled;      // force off analogue support in V2.0 PCBs
     GPIOalg.begin(GPIOalg_pin, algMode);
   }
   else {
@@ -1407,22 +1414,22 @@ void setupGPIO()
     pinMode(GPIOin1_pinV20, INPUT_PULLUP);
     pinMode(GPIOout1_pin, INPUT_PULLUP);
     pinMode(GPIOout2_pin, INPUT_PULLUP);
-    GPIOin.begin(0, 0, GPIOin1None, GPIOin2None, LOW);            // ensure modes disabled (should already be by constructors)
-    GPIOout.begin(0, 0, GPIOout1None, GPIOout2None);
-    GPIOalg.begin(ADC1_CHANNEL_5, GPIOalgNone);
+    GPIOin.begin(0, 0, CGPIOin1::Disabled, CGPIOin2::Disabled, LOW);            // ensure modes disabled (should already be by constructors)
+    GPIOout.begin(0, 0, CGPIOout1::Disabled, CGPIOout2::Disabled);
+    GPIOalg.begin(ADC1_CHANNEL_5, CGPIOalg::Disabled);
   }
 }
 
 bool toggleGPIOout(int channel) 
 {
   if(channel == 0) {
-    if(NVstore.getUserSettings().GPIO.out1Mode == GPIOout1User) {
+    if(NVstore.getUserSettings().GPIO.out1Mode == CGPIOout1::User) {
       setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
       return true;
     }
   }
   else if(channel == 1) {
-    if(NVstore.getUserSettings().GPIO.out2Mode == GPIOout2User) {
+    if(NVstore.getUserSettings().GPIO.out2Mode == CGPIOout2::User) {
       setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
       return true;
     }
@@ -1433,14 +1440,14 @@ bool toggleGPIOout(int channel)
 bool setGPIOout(int channel, bool state)
 {
   if(channel == 0) {
-    if(GPIOout.getMode1() != GPIOout1None) {
+    if(GPIOout.getMode1() != CGPIOout1::Disabled) {
       DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
       GPIOout.setState(channel, state);
       return true;
     }
   }
   else if(channel == 1) {
-    if(GPIOout.getMode2() != GPIOout2None) {
+    if(GPIOout.getMode2() != CGPIOout2::Disabled) {
       DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
       GPIOout.setState(channel, state);
       return true;

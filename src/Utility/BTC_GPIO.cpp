@@ -30,14 +30,6 @@ const int FADEAMOUNT = 3;
 const int FLASHPERIOD = 2000;
 const int ONFLASHINTERVAL = 50;
 
-// const char* GPIOinNames[] = {
-//   "Disabled",
-//   "On1Off2",
-//   "Hold1",
-//   "On1Off1",
-//   "ExtThermostat"
-// };
-
 const char* GPIOin1Names[] = {
   "Disabled",
   "Mom On",
@@ -51,11 +43,6 @@ const char* GPIOin2Names[] = {
 };
 
 
-// const char* GPIOoutNames[] = {
-//   "Disabled",
-//   "Status",
-//   "User"
-// };
 const char* GPIOout1Names[] = {
   "Disabled",
   "Status",
@@ -71,16 +58,132 @@ const char* GPIOalgNames[] = {
   "HeatDemand"
 };
 
+CGPIOin1::CGPIOin1()
+{
+  _Mode = Disabled;
+}
+
+void 
+CGPIOin1::begin(CGPIOin1::Modes mode)
+{
+  setMode(mode);
+}
+
+CGPIOin1::Modes CGPIOin1::getMode() const
+{
+  return _Mode;
+};
+
+void 
+CGPIOin1::manage(bool active)
+{
+  switch (_Mode) {
+    case Disabled:
+      break;
+    case On:
+      _doOn(active);
+      break;
+    case Hold:
+      _doOnHold(active);
+      break;
+    case OnOff:
+      _doOnOff(active);
+      break;
+  }
+}
+
+void 
+CGPIOin1::_doOn(bool active)
+{
+  if(active) {
+    requestOn();
+  }
+}
+
+// mode where heater runs if input 1 is shorted
+// stops when open
+void 
+CGPIOin1::_doOnHold(bool active)
+{
+  if(active) {
+    requestOn();
+  }
+  else {
+    requestOff();
+  }
+}
+
+// mode where heater runs if input 1 is shorted
+// stops when open
+void 
+CGPIOin1::_doOnOff(bool active)
+{
+  if(active) {
+    if(getHeaterInfo().getRunStateEx())
+      requestOff();
+    else 
+      requestOn();
+  }
+}
+
+CGPIOin2::CGPIOin2()
+{
+  _Mode = Disabled;
+}
+
+void 
+CGPIOin2::begin(CGPIOin2::Modes mode)
+{
+  setMode(mode);
+}
+
+CGPIOin2::Modes CGPIOin2::getMode() const
+{
+  return _Mode;
+};
+
+void 
+CGPIOin2::manage(bool active)
+{
+  switch (_Mode) {
+    case Disabled:
+      break;
+    case Off:
+      _doOff(active);
+      break;
+    case Thermostat:
+      _doThermostat(active);
+      break;
+  }
+}
+
+void 
+CGPIOin2::_doOff(bool active)
+{
+  if(active) {
+    requestOff();
+  }
+}
+
+// mode where heater runs if input 1 is shorted
+// stops when open
+void 
+CGPIOin2::_doThermostat(bool active)
+{
+  // handling actually performed at Tx Manage for setting the fuel rate
+}
+
+
 
 CGPIOin::CGPIOin()
 {
-  _Mode1 = GPIOin1None;
-  _Mode2 = GPIOin2None;
+  _Input1.setMode(CGPIOin1::Disabled);
+  _Input2.setMode(CGPIOin2::Disabled);
   _lastKey = 0;
 }
 
 void 
-CGPIOin::begin(int pin1, int pin2, GPIOin1Modes mode1, GPIOin2Modes mode2, int activeState)
+CGPIOin::begin(int pin1, int pin2, CGPIOin1::Modes mode1, CGPIOin2::Modes mode2, int activeState)
 {
   _Debounce.addPin(pin1);
   _Debounce.addPin(pin2);
@@ -112,14 +215,14 @@ CGPIOin::getState(int channel)
   return retval;
 }
 
-GPIOin1Modes CGPIOin::getMode1() const
+CGPIOin1::Modes CGPIOin::getMode1() const
 {
-  return _Mode1;
+  return _Input1.getMode();
 };
 
-GPIOin2Modes CGPIOin::getMode2() const
+CGPIOin2::Modes CGPIOin::getMode2() const
 {
-  return _Mode2;
+  return _Input2.getMode();
 };
 
 void 
@@ -144,80 +247,81 @@ CGPIOin::manage()
 void 
 CGPIOin::simulateKey(uint8_t newKey)
 {
-  switch (_Mode1) {
-    case GPIOin1None:
-      break;
-    case GPIOin1On:
-      _doOn1(newKey);
-      break;
-    case GPIOin1Hold:
-      _doOnHold1(newKey);
-      break;
-    case GPIOin1OnOff:
-      _doOn1Off1(newKey);
-      break;
-  }
-  switch (_Mode2) {
-    case GPIOin2None:
-      break;
-    case GPIOin2Off:
-      _doOff2(newKey);
-      break;
-    case GPIOin2ExtThermostat:
-      break;  // handling actually performed at Tx Manage for setting the fuel rate
-  }
+  _Input1.manage((newKey & 0x01) != 0);
+  _Input2.manage((newKey & 0x02) != 0);
 }
 
-void 
-CGPIOin::_doOn1(uint8_t newKey)
-{
-  if(newKey & 0x01) {
-    requestOn();
-  }
-}
-
-void 
-CGPIOin::_doOff2(uint8_t newKey)
-{
-  if(newKey & 0x02) {
-    requestOff();
-  }
-}
-
-// mode where heater runs if input 1 is shorted
-// stops when open
-void 
-CGPIOin::_doOnHold1(uint8_t newKey)
-{
-  if(newKey & 0x01) {
-    requestOn();
-  }
-  else {
-    requestOff();
-  }
-}
-
-// mode where heater runs if input 1 is shorted
-// stops when open
-void 
-CGPIOin::_doOn1Off1(uint8_t newKey)
-{
-  if(newKey & 0x01) {
-    if(getHeaterInfo().getRunStateEx())
-      requestOff();
-    else 
-      requestOn();
-  }
-}
-
+/*********************************************************************************************************
+ ** GPIO out root
+ *********************************************************************************************************/
 
 
 CGPIOout::CGPIOout()
 {
-  _Mode1 = GPIOout1None;
-  _Mode2 = GPIOout2None;
-  _pins[0] = 0;
-  _pins[1] = 0;
+}
+
+void 
+CGPIOout::begin(int pin1, int pin2, CGPIOout1::Modes mode1, CGPIOout2::Modes mode2)
+{
+  _Out1.begin(pin1, mode1);
+  _Out2.begin(pin2, mode2);
+}
+
+void 
+CGPIOout::setMode(CGPIOout1::Modes mode1, CGPIOout2::Modes mode2) 
+{ 
+  _Out1.setMode(mode1);
+  _Out2.setMode(mode2);
+};
+
+CGPIOout1::Modes 
+CGPIOout::getMode1() const
+{
+  return _Out1.getMode();
+};
+
+CGPIOout2::Modes 
+CGPIOout::getMode2() const
+{
+  return _Out2.getMode();
+};
+
+void
+CGPIOout::manage()
+{
+  _Out1.manage();
+  _Out2.manage();
+}
+
+
+void 
+CGPIOout::setState(int channel, bool state)
+{
+  if(channel)
+    _Out2.setState(state);
+  else
+    _Out1.setState(state);
+}
+
+bool
+CGPIOout::getState(int channel)
+{
+  if(channel)
+    return _Out2.getState();
+  else
+    return _Out1.getState();
+}
+
+
+/*********************************************************************************************************
+ ** GPIO out #1
+ *********************************************************************************************************/
+
+
+CGPIOout1::CGPIOout1()
+{
+  _Mode = Disabled;
+  _pin = 0;
   _breatheDelay = 0;
   _statusState = 0;
   _statusDelay = 0;
@@ -226,62 +330,45 @@ CGPIOout::CGPIOout()
 }
 
 void 
-CGPIOout::begin(int pin1, int pin2, GPIOout1Modes mode1, GPIOout2Modes mode2)
+CGPIOout1::begin(int pin, CGPIOout1::Modes mode)
 {
-  _pins[0] = pin1;
-  _pins[1] = pin2;
-  if(pin1) {
-    pinMode(pin1, OUTPUT);   // GPIO output pin #1
-    digitalWrite(pin1, LOW);
+  _pin = pin;
+  if(pin) {
+    pinMode(pin, OUTPUT);   // GPIO output pin #1
+    digitalWrite(pin, LOW);
     ledcSetup(0, 500, 8);   // create PWM channel for GPIO1: 500Hz, 8 bits
   }
-  if(pin2) {
-    pinMode(pin2, OUTPUT);   // GPIO output pin #2
-    digitalWrite(pin2, LOW);
-    ledcSetup(1, 500, 8);   // create PWM channel for GPIO2: 500Hz, 8 bits 
-  }
 
-  setMode(mode1, mode2);
+  setMode(mode);
 }
 
 void 
-CGPIOout::setMode(GPIOout1Modes mode1, GPIOout2Modes mode2) 
+CGPIOout1::setMode(Modes mode) 
 { 
-  _Mode1 = mode1; 
-  _Mode2 = mode2; 
+  _Mode = mode; 
   _prevState = -1;
-  ledcDetachPin(_pins[0]);     // ensure PWM detached from IO line
-  ledcDetachPin(_pins[1]);     // ensure PWM detached from IO line
+  ledcDetachPin(_pin);     // ensure PWM detached from IO line
 };
 
-GPIOout1Modes CGPIOout::getMode1() const
+CGPIOout1::Modes CGPIOout1::getMode() const
 {
-  return _Mode1;
-};
-
-GPIOout2Modes CGPIOout::getMode2() const
-{
-  return _Mode2;
+  return _Mode;
 };
 
 void
-CGPIOout::manage()
+CGPIOout1::manage()
 {
-  switch (_Mode1) {
-    case GPIOout1None: break;
-    case GPIOout1Status: _doStatus(); break;
-    case GPIOout1User: _doUser1(); break;
-  }
-  switch (_Mode2) {
-    case GPIOout2None: break;
-    case GPIOout2User: _doUser2(); break;
+  switch (_Mode) {
+    case Disabled:   break;
+    case Status: _doStatus(); break;
+    case User:   _doUser(); break;
   }
 }
 
 void
-CGPIOout::_doStatus()
+CGPIOout1::_doStatus()
 {
-  if(_pins[0] == 0) 
+  if(_pin == 0) 
     return;
 
 //  DebugPort.println("GPIOout::_doStatus()");
@@ -322,28 +409,28 @@ CGPIOout::_doStatus()
     _statusDelay = millis() + BREATHINTERVAL;
     switch(statusMode) {
       case 0:
-        ledcDetachPin(_pins[0]);     // detach PWM from IO line
-        digitalWrite(_pins[0], LOW);
+        ledcDetachPin(_pin);     // detach PWM from IO line
+        digitalWrite(_pin, LOW);
         break;
       case 1:
-        ledcAttachPin(_pins[0], 0);  // attach PWM to GPIO line
+        ledcAttachPin(_pin, 0);  // attach PWM to GPIO line
         ledcWrite(0, _statusState);
         _breatheDelay = millis() + BREATHINTERVAL; 
         break;
       case 2:
-        ledcDetachPin(_pins[0]);     // detach PWM from IO line
-        digitalWrite(_pins[0], HIGH);
+        ledcDetachPin(_pin);     // detach PWM from IO line
+        digitalWrite(_pin, HIGH);
         break;
       case 3:
-        ledcAttachPin(_pins[0], 0);  // attach PWM to GPIO line
+        ledcAttachPin(_pin, 0);  // attach PWM to GPIO line
         _statusState = 255;
         ledcWrite(0, _statusState);
         _breatheDelay = millis() + BREATHINTERVAL; 
         break;
       case 4:
-        ledcDetachPin(_pins[0]);     // detach PWM from IO line
+        ledcDetachPin(_pin);     // detach PWM from IO line
         _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
-        digitalWrite(_pins[0], LOW);
+        digitalWrite(_pin, LOW);
         break;
     }  
   }
@@ -355,25 +442,16 @@ CGPIOout::_doStatus()
 }
 
 void
-CGPIOout::_doUser1()
-{
-//  DebugPort.println("GPIOout::_doUser1()");
-  if(_pins[0]) {
-    digitalWrite(_pins[0], (_userState & 0x01) ? HIGH : LOW);
-  }
-}
-
-void
-CGPIOout::_doUser2()
+CGPIOout1::_doUser()
 {
 //  DebugPort.println("GPIOout::_doUser2()");
-  if(_pins[1]) {
-    digitalWrite(_pins[1], (_userState & 0x02) ? HIGH : LOW);
+  if(_pin) {
+    digitalWrite(_pin, _userState ? HIGH : LOW);
   }
 }
 
 void 
-CGPIOout::_doStartMode()   // breath up PWM
+CGPIOout1::_doStartMode()   // breath up PWM
 {
   long tDelta = millis() - _breatheDelay;
   if(tDelta >= 0) {
@@ -386,7 +464,7 @@ CGPIOout::_doStartMode()   // breath up PWM
 }
 
 void 
-CGPIOout::_doStopMode()   // breath down PWM
+CGPIOout1::_doStopMode()   // breath down PWM
 {
   long tDelta = millis() - _breatheDelay;
   if(tDelta >= 0) {
@@ -400,39 +478,98 @@ CGPIOout::_doStopMode()   // breath down PWM
 }
 
 void 
-CGPIOout::_doSuspendMode()  // brief flash
+CGPIOout1::_doSuspendMode()  // brief flash
 {
   long tDelta = millis() - _breatheDelay;
   if(tDelta >= 0) {
     _statusState++;
     if(_statusState & 0x01) {
       _breatheDelay += ONFLASHINTERVAL;  // brief flash on
-      digitalWrite(_pins[0], HIGH);
+      digitalWrite(_pin, HIGH);
     }
     else {
       _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
-      digitalWrite(_pins[0], LOW);
+      digitalWrite(_pin, LOW);
     }
   }
 }
 
 void 
-CGPIOout::setState(int channel, bool state)
+CGPIOout1::setState(bool state)
 {
-  int mask = 0x01 << (channel & 0x01);
-  if(state)
-    _userState |= mask;
-  else
-    _userState &= ~mask;
+  _userState = state;
 }
 
 bool
-CGPIOout::getState(int channel)
+CGPIOout1::getState()
 {
-  int mask = 0x01 << (channel & 0x01);
-  return (_userState & mask) != 0;
+  return _userState;
 }
 
+/*********************************************************************************************************
+ ** GPIO2
+ *********************************************************************************************************/
+CGPIOout2::CGPIOout2()
+{
+  _Mode = Disabled;
+  _pin = 0;
+  _userState = 0;
+}
+
+void 
+CGPIOout2::begin(int pin, Modes mode)
+{
+  _pin = pin;
+  if(pin) {
+    pinMode(pin, OUTPUT);   // GPIO output pin #2
+    digitalWrite(pin, LOW);
+    ledcSetup(1, 500, 8);   // create PWM channel for GPIO2: 500Hz, 8 bits 
+  }
+
+  setMode(mode);
+}
+
+void 
+CGPIOout2::setMode(CGPIOout2::Modes mode) 
+{ 
+  _Mode = mode; 
+  if(_pin)
+    ledcDetachPin(_pin);     // ensure PWM detached from IO line
+};
+
+CGPIOout2::Modes CGPIOout2::getMode() const
+{
+  return _Mode;
+};
+
+void
+CGPIOout2::manage()
+{
+  switch (_Mode) {
+    case CGPIOout2::Disabled: break;
+    case CGPIOout2::User: _doUser(); break;
+  }
+}
+
+void
+CGPIOout2::_doUser()
+{
+  if(_pin) {
+    digitalWrite(_pin, _userState ? HIGH : LOW);
+  }
+}
+
+void 
+CGPIOout2::setState(bool state)
+{
+  _userState = state;
+}
+
+bool
+CGPIOout2::getState()
+{
+  return _userState;
+}
 
 // expected external analogue circuit is a 10k pot.
 //   Top end of pot is connected to GPIO Vcc (red wire) via 5k6 fixed resistor. (GPIO Vcc is 5V via schottky diode)
@@ -445,19 +582,19 @@ CGPIOalg::CGPIOalg()
 }
 
 void
-CGPIOalg::begin(adc1_channel_t pin, GPIOalgModes mode)
+CGPIOalg::begin(adc1_channel_t pin, CGPIOalg::Modes mode)
 {
   _pin = pin;
   _Mode = mode;
 
-  if(_Mode != GPIOalgNone) {
+  if(_Mode != CGPIOalg::Disabled) {
     adc_gpio_init(ADC_UNIT_1, ADC_CHANNEL_5);
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_11db);
   }
 }
 
-GPIOalgModes CGPIOalg::getMode() const
+CGPIOalg::Modes CGPIOalg::getMode() const
 {
   return _Mode;
 };
@@ -467,7 +604,7 @@ void CGPIOalg::manage()
 {
   const float fAlpha = 0.95;           // exponential mean alpha
 
-  if(_Mode != GPIOalgNone) {
+  if(_Mode != CGPIOalg::Disabled) {
     int read_raw;
     char msg[32];
     read_raw = adc1_get_raw( ADC1_CHANNEL_5);

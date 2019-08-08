@@ -33,125 +33,164 @@ extern const char* GPIOout1Names[];
 extern const char* GPIOout2Names[];
 extern const char* GPIOalgNames[];
 
-enum GPIOin1Modes { 
-  GPIOin1None, 
-  GPIOin1On,      // input 1 closure, heater starts; input2 closure, heater stops
-  GPIOin1Hold,    // hold input 1 closure, heater runs; input 1 open, heater stops
-  GPIOin1OnOff    // alternate input 1 closures start or stop the heater 
-};
-enum GPIOin2Modes { 
-  GPIOin2None, 
-  GPIOin2Off,          // input 2 closure stops heater
-  GPIOin2ExtThermostat // input 2 used to max/min heater if closed/open
-};
 
 
-enum GPIOout1Modes { 
-  GPIOout1None, 
-  GPIOout1Status,
-  GPIOout1User
-};
-enum GPIOout2Modes { 
-  GPIOout2None, 
-  GPIOout2User
-};
-
-
-enum GPIOalgModes {
-  GPIOalgNone,   // Unmodified V2.0 PCBs must use this - ADC2 / Wifi unresolvable conflict
-  GPIOalgHeatDemand,
+class CGPIOin1 {
+public:
+  enum Modes { 
+    Disabled, 
+    On,      // input 1 closure, heater starts; input2 closure, heater stops
+    Hold,    // hold input 1 closure, heater runs; input 1 open, heater stops
+    OnOff    // alternate input 1 closures start or stop the heater 
+  };
+  CGPIOin1();
+  void setMode(Modes mode) { _Mode = mode; };
+  void begin(Modes mode);
+  void manage(bool active);
+  Modes getMode() const;
+private:
+  Modes _Mode;
+  void _doOn(bool active);
+  void _doOnHold(bool active);
+  void _doOnOff(bool active);
 };
 
-
-struct sGPIOparams {
-  GPIOin1Modes in1Mode;
-  GPIOin2Modes in2Mode;
-  GPIOout1Modes out1Mode;
-  GPIOout2Modes out2Mode;
-  GPIOalgModes algMode;
+class CGPIOin2 {
+public:
+  enum Modes { 
+    Disabled, 
+    Off,          // input 2 closure stops heater
+    Thermostat // input 2 used to max/min heater if closed/open
+  };
+  CGPIOin2();
+  void setMode(Modes mode) { _Mode = mode; };
+  void begin(Modes mode);
+  void manage(bool active);
+  Modes getMode() const;
+private:
+  Modes _Mode;
+  void _doOff(bool active);
+  void _doThermostat(bool active);
 };
-
 
 class CGPIOin {
-  GPIOin1Modes _Mode1;
-  GPIOin2Modes _Mode2;
+  CGPIOin1 _Input1;
+  CGPIOin2 _Input2;
   CDebounce _Debounce;
   uint8_t _lastKey;
   std::list<uint8_t> _eventList[2];
-  void _doOn1(uint8_t newKey);
-  void _doOff2(uint8_t newKey);
-  void _doOnHold1(uint8_t newKey);
-  void _doOn1Off1(uint8_t newKey);
 public:
   CGPIOin();
-  // void setMode(GPIOinModes mode) { _Mode = mode; };
-  // void begin(int pin1, int pin2, GPIOinModes mode, int activeState);
-  void setMode(GPIOin1Modes mode1, GPIOin2Modes mode2) { _Mode1 = mode1; _Mode2 = mode2; };
-  void begin(int pin1, int pin2, GPIOin1Modes mode1, GPIOin2Modes mode2, int activeState);
+  void setMode(CGPIOin1::Modes mode1, CGPIOin2::Modes mode2) { _Input1.setMode(mode1); _Input2.setMode(mode2); };
+  void begin(int pin1, int pin2, CGPIOin1::Modes mode1, CGPIOin2::Modes mode2, int activeState);
   void manage();
   uint8_t getState(int channel);
-  GPIOin1Modes getMode1() const;
-  GPIOin2Modes getMode2() const;
+  CGPIOin1::Modes  getMode1() const;
+  CGPIOin2::Modes getMode2() const;
   void simulateKey(uint8_t newKey);
   bool usesExternalThermostat() const { 
-//    return (_Mode == GPIOinOnHold1) || (_Mode == GPIOinExtThermostat2); 
-    return (_Mode2 == GPIOin2ExtThermostat); 
+    return (_Input2.getMode() == CGPIOin2::Thermostat); 
   };
 };
 
-class CGPIOout {
-//  GPIOoutModes _Mode;
-  GPIOout1Modes _Mode1;
-  GPIOout2Modes _Mode2;
+class CGPIOout1 {
+public:
+  enum Modes { 
+    Disabled, 
+    Status,
+    User
+  };
+  CGPIOout1();
+  void begin(int pin, Modes mode);
+  void setMode(Modes mode);
+  void manage();
+  void setState(bool state);
+  bool getState();
+  Modes getMode() const;
+private:
+  Modes _Mode;
+  int _pin;
   void _doStatus();
-  void _doUser1();
-  void _doUser2();
-  int _pins[2];
+  void _doUser();
   int _prevState;
   int _statusState;
   int _statusDelay;
   unsigned long _breatheDelay;
-  uint8_t _userState;
+  bool _userState;
   void _doStartMode();
   void _doStopMode();
   void _doSuspendMode();
+};
+
+class CGPIOout2 {
+public:
+  enum Modes { 
+    Disabled, 
+    User
+  };
+  CGPIOout2();
+  void begin(int pin, Modes mode);
+  void setMode(Modes mode);
+  void manage();
+  void setState(bool state);
+  bool getState();
+  Modes getMode() const;
+private:
+  Modes _Mode;
+  int _pin;
+  bool _userState;
+  void _doUser();
+};
+
+class CGPIOout {
+  CGPIOout1 _Out1;
+  CGPIOout2 _Out2;
 public:
   CGPIOout();
-//  void setMode(GPIOoutModes mode);
-//  void begin(int pin1, int pin2, GPIOoutModes mode);
-  void setMode(GPIOout1Modes mode1, GPIOout2Modes mode2);
-  void begin(int pin1, int pin2, GPIOout1Modes mode1, GPIOout2Modes mode2);
+  void setMode(CGPIOout1::Modes mode1, CGPIOout2::Modes mode2);
+  void begin(int pin1, int pin2, CGPIOout1::Modes mode1, CGPIOout2::Modes mode2);
   void manage();
   void setState(int channel, bool state);
   bool getState(int channel);
-//  GPIOoutModes getMode() const;
-  GPIOout1Modes getMode1() const;
-  GPIOout2Modes getMode2() const;
+  CGPIOout1::Modes getMode1() const;
+  CGPIOout2::Modes getMode2() const;
 };
 
 class CGPIOalg {
-  GPIOalgModes _Mode;
-  float _expMean;
-  adc1_channel_t _pin;
 public:
+  enum Modes {
+    Disabled,   // Unmodified V2.0 PCBs must use this - ADC2 / Wifi unresolvable conflict
+    HeatDemand,
+  };
   CGPIOalg();
-  void begin(adc1_channel_t pin, GPIOalgModes mode);
+  void begin(adc1_channel_t pin, Modes mode);
   void manage();
   int getValue();
-  GPIOalgModes getMode() const;
+  Modes getMode() const;
+private:
+  Modes _Mode;
+  float _expMean;
+  adc1_channel_t _pin;
+
+};
+
+struct sGPIOparams {
+  CGPIOin1::Modes in1Mode;
+  CGPIOin2::Modes in2Mode;
+  CGPIOout1::Modes out1Mode;
+  CGPIOout2::Modes out2Mode;
+  CGPIOalg::Modes algMode;
 };
 
 struct sGPIO {
   bool outState[2];
   bool inState[2];
   int  algVal;
-//  GPIOoutModes outMode;
-//  GPIOinModes inMode;
-  GPIOout1Modes out1Mode;
-  GPIOout2Modes out2Mode;
-  GPIOin1Modes in1Mode;
-  GPIOin2Modes in2Mode;
-  GPIOalgModes algMode;
+  CGPIOout1::Modes out1Mode;
+  CGPIOout2::Modes out2Mode;
+  CGPIOin1::Modes in1Mode;
+  CGPIOin2::Modes in2Mode;
+  CGPIOalg::Modes algMode;
   sGPIO& operator=(const sGPIO& rhs) {
     outState[0] = rhs.outState[0];
     outState[1] = rhs.outState[1];

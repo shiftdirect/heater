@@ -29,7 +29,7 @@
 class C128x64_OLED;
 class CScreenManager;
 
-class CGPIOScreen : public CPasswordScreen
+class CGPIOSetupScreen : public CPasswordScreen
 {
   int _rowSel;
   void _adjust(int dir);
@@ -38,7 +38,7 @@ class CGPIOScreen : public CPasswordScreen
   int _scrollChar;
   void _initUI();
 public:
-  CGPIOScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);

@@ -286,11 +286,11 @@ struct sUserSettings : public CESP32_NVStorage {
     useThermostat = 1;
     enableWifi = 1;
     enableOTA = 1;
-    GPIO.in1Mode = GPIOin1None;
-    GPIO.in2Mode = GPIOin2None;
-    GPIO.out1Mode = GPIOout1None;
-    GPIO.out2Mode = GPIOout2None;
-    GPIO.algMode = GPIOalgNone;
+    GPIO.in1Mode = CGPIOin1::Disabled;
+    GPIO.in2Mode = CGPIOin2::Disabled;
+    GPIO.out1Mode = CGPIOout1::Disabled;
+    GPIO.out2Mode = CGPIOout2::Disabled;
+    GPIO.algMode = CGPIOalg::Disabled;
     FrameRate = 1000;
     cyclic.init();
     HomeMenu.init();
