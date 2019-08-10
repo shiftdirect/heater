@@ -64,19 +64,19 @@ sample code bearing this copyright.
 
 #undef OW_DEBUG
 
+// reference for bus timings:
+// https://www.maximintegrated.com/en/app-notes/index.mvp/id/126
+
 
 // bus reset: duration of low phase [us]
 #define OW_DURATION_RESET 480
 // overall slot duration
-//#define OW_DURATION_SLOT 75
-#define OW_DURATION_SLOT 70
+#define OW_DURATION_SLOT 75  // > 'A' + 'B' OR 'C' + 'D' in timing spec
 // write 1 slot and read slot durations [us]
-//#define OW_DURATION_1_LOW    2
-#define OW_DURATION_1_LOW    6
+#define OW_DURATION_1_LOW    6   // 'A' in timing spec
 #define OW_DURATION_1_HIGH (OW_DURATION_SLOT - OW_DURATION_1_LOW)
 // write 0 slot durations [us]
-//#define OW_DURATION_0_LOW   65
-#define OW_DURATION_0_LOW   60
+#define OW_DURATION_0_LOW   60  // 'C' in timing spec
 #define OW_DURATION_0_HIGH (OW_DURATION_SLOT - OW_DURATION_0_LOW)
 // sample time for read slot
 //#define OW_DURATION_SAMPLE  (15-2)

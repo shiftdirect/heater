@@ -89,6 +89,7 @@ extern const BITMAP_INFO CloseIconInfo;
 
 // Bitmap for BulbOn
 extern const BITMAP_INFO BulbOnIconInfo;
+extern const BITMAP_INFO BulbOn2IconInfo;
 
 // Bitmap for BulbOff
 extern const BITMAP_INFO BulbOffIconInfo;
@@ -144,3 +145,12 @@ extern const BITMAP_INFO ThermostatHzIconInfo;
 extern const BITMAP_INFO resetIconInfo;
 extern const BITMAP_INFO miniThermoIconInfo;
 extern const BITMAP_INFO ExtThermoIconInfo;
+extern const BITMAP_INFO ExtThermo2IconInfo;
+extern const BITMAP_INFO RunIconInfo;
+extern const BITMAP_INFO InfoIconInfo;
+extern const BITMAP_INFO UserIconInfo;
+extern const BITMAP_INFO InputIconInfo;
+extern const BITMAP_INFO OutputIconInfo;
+extern const BITMAP_INFO _1IconInfo;
+extern const BITMAP_INFO _2IconInfo;
+extern const BITMAP_INFO algIconInfo;

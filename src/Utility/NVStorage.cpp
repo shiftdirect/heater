@@ -351,9 +351,9 @@ sUserSettings::load()
     GPIO.in1Mode = CGPIOin1::Disabled;  
     GPIO.in2Mode = CGPIOin2::Disabled; 
     switch(tVal) {
-      case 1: GPIO.in1Mode = CGPIOin1::On;    GPIO.in2Mode = CGPIOin2::Off; break;
-      case 2: GPIO.in1Mode = CGPIOin1::Hold;  GPIO.in2Mode = CGPIOin2::Thermostat; break;
-      case 3: GPIO.in1Mode = CGPIOin1::OnOff; break;
+      case 1: GPIO.in1Mode = CGPIOin1::Start;   GPIO.in2Mode = CGPIOin2::Stop; break;
+      case 2: GPIO.in1Mode = CGPIOin1::Run;     GPIO.in2Mode = CGPIOin2::Thermostat; break;
+      case 3: GPIO.in1Mode = CGPIOin1::StartStop; break;
       case 4: GPIO.in2Mode = CGPIOin2::Thermostat; break;
     }
     preferences.putUChar("GPIOinMode", 0xff);  // cancel old

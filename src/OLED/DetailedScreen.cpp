@@ -330,7 +330,7 @@ CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump)
   // may be suppressed if not in normal start or run state
   if((fDesired != 0) || (fPump != 0)) {
     if(getThermostatModeActive() && getExternalThermostatModeActive()) {
-      _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+1, ExtThermoIconInfo);   // draw external input #2 icon
+      _drawBitmap(X_TARGET_ICON-1, Y_TARGET_ICON, ExtThermo2IconInfo);   // draw external input #2 icon
       if(getExternalThermostatOn()) 
         _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+9, CloseIconInfo);   // draw external input #2 icon
       else

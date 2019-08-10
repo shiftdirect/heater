@@ -668,6 +668,21 @@ const uint8_t PROGMEM BulbOnIcon[]  =
 };
 const BITMAP_INFO BulbOnIconInfo(9, 8, BulbOnIcon);
 
+
+const uint8_t PROGMEM bulbOn2aBitmap[]  =
+{
+	0x14, 0x00, //    # #   
+	0x80, 0x80, // #       #
+	0x1C, 0x00, //    ###   
+	0xA2, 0x80, // # #   # #
+	0x22, 0x00, //   #   #  
+	0x1C, 0x00, //    ###   
+	0x14, 0x00, //    # #   
+	0x1C, 0x00, //    ###   
+};
+const BITMAP_INFO BulbOn2IconInfo(9, 8, bulbOn2aBitmap);
+
+
 const uint8_t PROGMEM BulbOffIcon[]  =
 {
 	0x00, 0x00, //      
@@ -1169,3 +1184,133 @@ const uint8_t PROGMEM ExtThermoIcon[]  =
 	0x00, 0x9c,  //         #  ###
 };
 const BITMAP_INFO ExtThermoIconInfo(14, 7, ExtThermoIcon);
+
+const uint8_t PROGMEM ExtThermo2Icon[]  =
+{
+	0x33, 0xE0,  //   ##  #####
+	0x42, 0xA0,  //  #    # # #
+	0x30, 0x80,  //   ##    #  
+	0x70, 0x80,  //  ###    #  
+	0x88, 0x80,  // #   #   #  
+	0x88, 0x80,  // #   #   #   
+	0x70, 0x80,  //  ###    #  
+};
+const BITMAP_INFO ExtThermo2IconInfo(11, 7, ExtThermo2Icon);
+
+const uint8_t PROGMEM inputIcon[]  =
+{
+	0x00, 0x80,  //         #  
+	0x04, 0x80,  //      #  #  
+	0x02, 0x80,  //       # #  
+	0xFF, 0x80,  // #########  
+	0x02, 0x80,  //       # #  
+	0x04, 0x80,  //      #  #  
+	0x00, 0x80,  //         #  
+};
+const BITMAP_INFO InputIconInfo(9, 7, inputIcon);
+
+const uint8_t PROGMEM outputIcon[]  =
+{
+  0x80, 0x00,  //   #           
+	0x82, 0x00,  //   #     #    
+	0x81, 0x00,  //   #      #   
+	0xFF, 0x80,  //   #########  
+	0x81, 0x00,  //   #      #   
+	0x82, 0x00,  //   #     #    
+	0x80, 0x00,  //   #          
+};
+const BITMAP_INFO OutputIconInfo(9, 7, outputIcon);
+
+const uint8_t PROGMEM _1Icon[]  =
+{
+	0x00, //          
+	0x44, //    #   # 
+	0xC0, //   ##     
+	0x40, //    #     
+	0x44, //    #   # 
+	0x40, //    #     
+	0xE0, //   ###    
+};
+const BITMAP_INFO _1IconInfo(7, 7, _1Icon);
+
+const uint8_t PROGMEM _2Icon[]  =
+{
+	0x00, //          
+	0x64, //   ##   # 
+	0x90, //  #  #    
+	0x10, //     #    
+	0x24, //    #   # 
+	0x40, //   #      
+	0xF0, //  ####    
+};
+const BITMAP_INFO _2IconInfo(7, 7, _2Icon);
+
+const uint8_t PROGMEM algIcon[]  =
+{
+	0x08, 0x00,  //     #               
+	0x09, 0x00,  //     #  #            
+	0x05, 0x00,  //      # #            
+	0x24, 0x08,  //   #  #      #       
+	0x02, 0x00,  //       #             
+	0x02, 0x00,  //       #             
+	0x01, 0x00,  //        #            
+	0xC3, 0x86,  // ##    ###    ##     
+	0x01, 0x80,  //        ##           
+};
+const BITMAP_INFO algIconInfo(15, 9, algIcon);
+
+// 
+//  Image data for run
+// 
+
+const uint8_t PROGMEM runBitmap[]  =
+{
+	0x03, //       ##
+	0x03, //       ##
+	0x30, //   ##    
+	0x4E, //  #  ### 
+	0x05, //      # #
+	0x08, //     #   
+	0x14, //    # #  
+	0x22, //   #   # 
+	0x44, //  #   #  
+};
+const BITMAP_INFO RunIconInfo(8, 9, runBitmap);
+
+// 
+//  Image data for info
+// 
+
+const uint8_t PROGMEM infoBitmap[]  =
+{
+	0x3C, 0x00, //   ####   
+	0x66, 0x00, //  ##  ##  
+	0xE7, 0x00, // ###  ### 
+	0xFF, 0x00, // ######## 
+	0xE7, 0x00, // ###  ### 
+	0xE7, 0x00, // ###  ### 
+	0xE7, 0x00, // ###  ### 
+	0x66, 0x00, //  ##  ##  
+	0x3C, 0x00, //   ####   
+};
+const BITMAP_INFO InfoIconInfo(9, 9, infoBitmap);
+
+// 
+//  Image data for user
+// 
+
+const uint8_t PROGMEM userBitmap[]  =
+{
+	0x18,  //    ##    
+	0x3C,  //   ####   
+	0x3C,  //   ####   
+	0x18,  //    ##    
+	0x24,  //   #  #   
+	0x7E,  //  ######  
+	0xFF,  // ######## 
+	0xFF,  // ######## 
+	0xFF,  // ######## 
+};
+const BITMAP_INFO UserIconInfo(8, 9, userBitmap);
+
+

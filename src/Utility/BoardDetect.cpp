@@ -104,19 +104,28 @@ int BoardDetect()
   int pin33 = digitalRead(33);   
   int pin26 = digitalRead(26);
 
-  if((pin33 == HIGH) && (pin26 == HIGH) && (pin25 == HIGH)) {
-    revision = BRD_V2_FULLGPIO;
+  // all pins to header strip and pulled high - V1 PCB
+  if((pin33 == HIGH) && (pin26 == HIGH) && (pin25 == HIGH)) {   
+    revision = BRD_V1_FULLGPIO;
     DebugPort.println("Board detect: digital input test reveals V1.x PCB");
   }
-  else if((pin33 == LOW) && (pin26 == HIGH) && (pin25 == LOW)) {
-    revision = BRD_V2_NOGPIO;
-    DebugPort.println("Board detect: digital input test reveals V2.2 PCB - no GPIO (V2.0 userID) ");
-  }
-  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == HIGH)) {
+  // original V2 PCB, no traces cut n shunted, unusable Alg to pin 26 pulls high, dig inputs pulled low by transistors
+  else if((pin33 == LOW) && (pin26 == HIGH) && (pin25 == LOW)) {  
     revision = BRD_V2_GPIO_NOALG;
     DebugPort.println("Board detect: digital input test reveals V2.0 PCB - Digital only GPIO (V2.1 userID)");
   }
-  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == LOW)) {
+  // original V2 PCB, no traces cut n shunted, pin 26 grounded via 0R instead of 100n cap, dig inputs pulled low by transistors
+  else if((pin33 == LOW) && (pin26 == LOW) && (pin25 == LOW)) {  
+    revision = BRD_V2_GPIO_NOALG;
+    DebugPort.println("Board detect: digital input test reveals V2.0 PCB - Digital only GPIO (V2.1 userID)");
+  }
+  // original V2 PCB, pin 26 grounded via 0R instead of 100n cap, digio transistors not fitted dig in pins pull high
+  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == HIGH)) {  
+    revision = BRD_V2_NOGPIO;
+    DebugPort.println("Board detect: digital input test reveals V2.2 PCB - no GPIO (V2.0 userID) ");
+  }
+  // modified V2 PCB or new V2.1PCB, pins 25 & 33 swapped, Alg routed to usuable pin 33 // cap, dig inputs pulled low by transistors
+  else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == LOW)) {   
     revision = BRD_V2_FULLGPIO;
     DebugPort.println("Board detect: digital input test reveals V2.1 PCB - Full GPIO (V2.2 userID)");
   }

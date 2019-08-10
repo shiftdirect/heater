@@ -39,9 +39,9 @@ class CGPIOin1 {
 public:
   enum Modes { 
     Disabled, 
-    On,      // input 1 closure, heater starts; input2 closure, heater stops
-    Hold,    // hold input 1 closure, heater runs; input 1 open, heater stops
-    OnOff    // alternate input 1 closures start or stop the heater 
+    Start,     // input 1 closure, heater starts; input2 closure, heater stops
+    Run,       // hold input 1 closure, heater runs; input 1 open, heater stops
+    StartStop  // alternate input 1 closures start or stop the heater 
   };
   CGPIOin1();
   void setMode(Modes mode) { _Mode = mode; };
@@ -50,17 +50,17 @@ public:
   Modes getMode() const;
 private:
   Modes _Mode;
-  void _doOn(bool active);
-  void _doOnHold(bool active);
-  void _doOnOff(bool active);
+  void _doStart(bool active);
+  void _doRun(bool active);
+  void _doStartStop(bool active);
 };
 
 class CGPIOin2 {
 public:
   enum Modes { 
     Disabled, 
-    Off,          // input 2 closure stops heater
-    Thermostat // input 2 used to max/min heater if closed/open
+    Stop,       // input 2 closure stops heater
+    Thermostat  // input 2 used to max/min heater if closed/open
   };
   CGPIOin2();
   void setMode(Modes mode) { _Mode = mode; };
@@ -69,7 +69,7 @@ public:
   Modes getMode() const;
 private:
   Modes _Mode;
-  void _doOff(bool active);
+  void _doStop(bool active);
   void _doThermostat(bool active);
 };
 
@@ -105,7 +105,7 @@ public:
   void setMode(Modes mode);
   void manage();
   void setState(bool state);
-  bool getState();
+  uint8_t getState();
   Modes getMode() const;
 private:
   Modes _Mode;
@@ -117,6 +117,7 @@ private:
   int _statusDelay;
   unsigned long _breatheDelay;
   bool _userState;
+  uint8_t _ledState;
   void _doStartMode();
   void _doStopMode();
   void _doSuspendMode();
@@ -133,7 +134,7 @@ public:
   void setMode(Modes mode);
   void manage();
   void setState(bool state);
-  bool getState();
+  uint8_t getState();
   Modes getMode() const;
 private:
   Modes _Mode;
@@ -151,7 +152,7 @@ public:
   void begin(int pin1, int pin2, CGPIOout1::Modes mode1, CGPIOout2::Modes mode2);
   void manage();
   void setState(int channel, bool state);
-  bool getState(int channel);
+  uint8_t getState(int channel);
   CGPIOout1::Modes getMode1() const;
   CGPIOout2::Modes getMode2() const;
 };

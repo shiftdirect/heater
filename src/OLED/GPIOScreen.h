@@ -45,13 +45,14 @@ public:
   void onSelect();
 };
 
-class CGPIOInfoScreen : public CScreenHeader
+class CGPIOInfoScreen : public CScreen
 {
   int _keyRepeatCount;     
   void _initUI();
 public:
   CGPIOInfoScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
 };
 

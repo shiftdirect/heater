@@ -78,22 +78,15 @@ void
 CGPIOin1::manage(bool active)
 {
   switch (_Mode) {
-    case Disabled:
-      break;
-    case On:
-      _doOn(active);
-      break;
-    case Hold:
-      _doOnHold(active);
-      break;
-    case OnOff:
-      _doOnOff(active);
-      break;
+    case Disabled:  break;
+    case Start:     _doStart(active); break;
+    case Run:       _doRun(active); break;
+    case StartStop: _doStartStop(active); break;
   }
 }
 
 void 
-CGPIOin1::_doOn(bool active)
+CGPIOin1::_doStart(bool active)
 {
   if(active) {
     requestOn();
@@ -103,7 +96,7 @@ CGPIOin1::_doOn(bool active)
 // mode where heater runs if input 1 is shorted
 // stops when open
 void 
-CGPIOin1::_doOnHold(bool active)
+CGPIOin1::_doRun(bool active)
 {
   if(active) {
     requestOn();
@@ -116,7 +109,7 @@ CGPIOin1::_doOnHold(bool active)
 // mode where heater runs if input 1 is shorted
 // stops when open
 void 
-CGPIOin1::_doOnOff(bool active)
+CGPIOin1::_doStartStop(bool active)
 {
   if(active) {
     if(getHeaterInfo().getRunStateEx())
@@ -146,19 +139,14 @@ void
 CGPIOin2::manage(bool active)
 {
   switch (_Mode) {
-    case Disabled:
-      break;
-    case Off:
-      _doOff(active);
-      break;
-    case Thermostat:
-      _doThermostat(active);
-      break;
+    case Disabled:   break;
+    case Stop:       _doStop(active); break;
+    case Thermostat: _doThermostat(active); break;
   }
 }
 
 void 
-CGPIOin2::_doOff(bool active)
+CGPIOin2::_doStop(bool active)
 {
   if(active) {
     requestOff();
@@ -303,7 +291,7 @@ CGPIOout::setState(int channel, bool state)
     _Out1.setState(state);
 }
 
-bool
+uint8_t
 CGPIOout::getState(int channel)
 {
   if(channel)
@@ -411,6 +399,7 @@ CGPIOout1::_doStatus()
       case 0:
         ledcDetachPin(_pin);     // detach PWM from IO line
         digitalWrite(_pin, LOW);
+        _ledState = 0;
         break;
       case 1:
         ledcAttachPin(_pin, 0);  // attach PWM to GPIO line
@@ -420,6 +409,7 @@ CGPIOout1::_doStatus()
       case 2:
         ledcDetachPin(_pin);     // detach PWM from IO line
         digitalWrite(_pin, HIGH);
+        _ledState = 1;
         break;
       case 3:
         ledcAttachPin(_pin, 0);  // attach PWM to GPIO line
@@ -461,6 +451,7 @@ CGPIOout1::_doStartMode()   // breath up PWM
     _statusState &= 0xff;
     ledcWrite(0, _statusState);
   }
+  _ledState = 2;
 }
 
 void 
@@ -473,25 +464,34 @@ CGPIOout1::_doStopMode()   // breath down PWM
     _statusState -= expo;
     _statusState &= 0xff;
     ledcWrite(0, _statusState);
-
   }
+  _ledState = 2;
 }
 
 void 
 CGPIOout1::_doSuspendMode()  // brief flash
 {
+  static unsigned long stretch = 0;
+
   long tDelta = millis() - _breatheDelay;
   if(tDelta >= 0) {
     _statusState++;
     if(_statusState & 0x01) {
       _breatheDelay += ONFLASHINTERVAL;  // brief flash on
       digitalWrite(_pin, HIGH);
+      stretch = (millis() + 250) | 1;   // pulse extend for UI purposes, ensure non zero
     }
     else {
       _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
       digitalWrite(_pin, LOW);
     }
   }
+  if(stretch) {
+    tDelta = millis() - stretch;
+    if(tDelta >= 0)
+      stretch = 0;
+  }
+  _ledState = stretch ? 1 : 0;
 }
 
 void 
@@ -500,10 +500,14 @@ CGPIOout1::setState(bool state)
   _userState = state;
 }
 
-bool
+uint8_t
 CGPIOout1::getState()
 {
-  return _userState;
+  switch(_Mode) {
+    case User:   return _userState;
+    case Status: return _ledState;   // special pulse extender for suspend mode
+    default:     return 0;
+   } 
 }
 
 /*********************************************************************************************************
@@ -565,7 +569,7 @@ CGPIOout2::setState(bool state)
   _userState = state;
 }
 
-bool
+uint8_t
 CGPIOout2::getState()
 {
   return _userState;
