@@ -86,6 +86,8 @@ extern float getGlowCurrent();
 extern float getFanSpeed();
 extern int sysUptime();
 
+void setSSID(const char* name);
+void setAPpassword(const char* name);
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 

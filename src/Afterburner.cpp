@@ -1178,6 +1178,11 @@ bool isWebClientConnected()
 
 void checkDebugCommands()
 {
+  static uint8_t nGetString = 0;
+  static uint8_t nGetConf = 0;
+  static String pw1;
+  static String pw2;
+
   // check for test commands received from PC Over USB
   if(DebugPort.available()) {
 #ifdef PROTOCOL_INVESTIGATION    
@@ -1190,6 +1195,94 @@ void checkDebugCommands()
     if(bTestBTModule) {
       bTestBTModule = Bluetooth.test(rxVal);
       return;
+    }
+
+    if(nGetConf) {
+      DebugPort.print(rxVal);
+      bool bSave = (rxVal == 'y') || (rxVal == 'Y');
+      if(!bSave) {
+        DebugPort.println(" ABORTED!");
+        nGetConf = 0;
+        return;
+      }
+      switch(nGetConf) {
+        case 1: 
+          setSSID(PCline.Line);  
+          break;
+        case 2:
+          setAPpassword(pw2.c_str());
+          break;
+      }
+      nGetConf = 0;
+      return;
+    }
+    else if(nGetString) {
+      if(rxVal < ' ') {
+        if(rxVal == 0x1b) {  // ESCAPE
+          nGetString = 0;
+          DebugPort.println("\r\nABORTED!");
+          return;
+        }
+        if(rxVal == '\n' || rxVal == '\r') {
+          switch(nGetString) {
+            case 1:  
+              if(PCline.Len <= 31) {
+                nGetConf = 1; 
+                DebugPort.printf("\r\nSet AP SSID to %s? (y/n) - ", PCline.Line);
+              }
+              else {
+                DebugPort.println("\r\nNew name is longer than 31 characters - ABORTING");
+              }
+              nGetString = 0;
+              return;
+            case 2:  
+              pw1 = PCline.Line;
+              PCline.clear();
+              pw2 = NVstore.getCredentials().APpassword;
+              if(pw1 != pw2) {
+                DebugPort.println("\r\nPassword does not match existing - ABORTING");
+                nGetString = 0;
+              }
+              else {
+                nGetString = 3;
+                DebugPort.print("\r\nPlease enter new password - ");
+              }
+              return;
+            case 3:
+              pw1 = PCline.Line;
+              if(PCline.Len <= 31) {
+                nGetString = 4;
+                DebugPort.print("\r\nPlease confirm new password - ");
+              }
+              else {
+                DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
+                nGetString = 0;
+              }
+              PCline.clear();
+              return;
+            case 4:
+              pw2 = PCline.Line;
+              PCline.clear();
+              if(pw1 != pw2) {
+                DebugPort.println("\r\nNew passwords do not match - ABORTING");
+              }
+              else {
+                nGetConf = 2;
+                DebugPort.print("\r\nSet new password (y/n) - ");
+              }
+              nGetString = 0;
+              return;
+          }
+        }
+      }
+      else {
+        if(nGetString == 1)
+          DebugPort.print(rxVal);
+        else 
+          DebugPort.print('*');
+        PCline.append(rxVal);
+        return;
+      }
     }
 
     rxVal = toLowerCase(rxVal);
@@ -1215,6 +1308,8 @@ void checkDebugCommands()
         DebugPort.printf("  <W> - toggle reporting of blue wire timeout/recycling event, currently %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
         DebugPort.printf("  <O> - toggle reporting of OEM resync event, currently %s\r\n", bReportOEMresync ? "ON" : "OFF");        
         DebugPort.printf("  <S> - toggle reporting of state machine transits %s\r\n", CommState.isReporting() ? "ON" : "OFF");        
+        DebugPort.printf("  <N> - change AP SSID, currently \"%s\"\r\n", NVstore.getCredentials().SSID);
+        DebugPort.println("  <P> - change AP password");
         DebugPort.println("  <+> - request heater turns ON");
         DebugPort.println("  <-> - request heater turns OFF");
         DebugPort.println("  <R> - restart the ESP");
@@ -1273,9 +1368,19 @@ void checkDebugCommands()
         bReportRecyleEvents = !bReportRecyleEvents;
         DebugPort.printf("Toggled blue wire recycling event reporting %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
       }
+      else if(rxVal == 'n') {
+        DebugPort.print("Please enter new SSID name for Access Point - ");
+        nGetString = 1;
+        PCline.clear();
+      }
       else if(rxVal == 'o')  {
         bReportOEMresync = !bReportOEMresync;
         DebugPort.printf("Toggled OEM resync event reporting %s\r\n", bReportOEMresync ? "ON" : "OFF");
+      }
+      else if(rxVal == 'p') {
+        DebugPort.print("Please enter current AP password - ");
+        nGetString = 2;
+        PCline.clear();
       }
       else if(rxVal == 's') {
         CommState.toggleReporting();
@@ -1617,3 +1722,28 @@ int sysUptime()
   return Clock.get().secondstime() - BootTime;
 }
 
+void setSSID(const char* name)
+{
+  sCredentials creds = NVstore.getCredentials();
+  strncpy(creds.SSID, name, 31);
+  creds.SSID[31] = 0;
+  NVstore.setCredentials(creds);
+  NVstore.save();
+  NVstore.doSave();   // ensure NV storage
+  DebugPort.println("Restarting ESP to invoke new network credentials");
+  delay(1000);
+  ESP.restart();
+}
+
+void setAPpassword(const char* name)
+{
+  sCredentials creds = NVstore.getCredentials();
+  strncpy(creds.APpassword, name, 31);
+  creds.APpassword[31] = 0;
+  NVstore.setCredentials(creds);
+  NVstore.save();
+  NVstore.doSave();   // ensure NV storage
+  DebugPort.println("Restarting ESP to invoke new network credentials");
+  delay(1000);
+  ESP.restart();
+}

@@ -23,8 +23,8 @@ extern "C" {
 #endif
 
 static TelnetSpy* actualObject = NULL;
- 
-/*
+
+
 static void TelnetSpy_putc(char c) {
 	if (actualObject) {
   		actualObject->write(c);
@@ -33,7 +33,6 @@ static void TelnetSpy_putc(char c) {
 
 static void TelnetSpy_ignore_putc(char c) {;
 }
-*/
 
 TelnetSpy::TelnetSpy() {
 	port = TELNETSPY_PORT;
@@ -430,12 +429,16 @@ uint32_t TelnetSpy::baudRate(void) {
 }
 
 void TelnetSpy::sendBlock() {
+CRITCAL_SECTION_START
 	uint16_t len = bufUsed;
 	if (len > maxBlockSize) {
 		len = maxBlockSize;
 	}
 	len = min(len, (uint16_t) (bufLen - bufRdIdx));
-	client.write(&telnetBuf[bufRdIdx], len);
+	uint16_t idx = bufRdIdx;
+CRITCAL_SECTION_END
+	client.write(&telnetBuf[idx], len);
+CRITCAL_SECTION_START
 	bufRdIdx += len;
 	if (bufRdIdx >= bufLen) {
 		bufRdIdx = 0;
@@ -445,6 +448,7 @@ void TelnetSpy::sendBlock() {
 		bufRdIdx = 0;
 		bufWrIdx = 0;
 	}
+CRITCAL_SECTION_END
 	waitRef = 0xFFFFFFFF;
 	if (pingRef != 0xFFFFFFFF) {
 		pingRef = (millis() & 0x7FFFFFF) + pingTime;
@@ -455,6 +459,7 @@ void TelnetSpy::sendBlock() {
 }
 
 void TelnetSpy::addTelnetBuf(char c) {
+CRITCAL_SECTION_START
 	telnetBuf[bufWrIdx] = c;
 	if (bufUsed == bufLen) {
 		bufRdIdx++;
@@ -468,17 +473,20 @@ void TelnetSpy::addTelnetBuf(char c) {
 	if (bufWrIdx >= bufLen) {
 		bufWrIdx = 0;
 	}
+CRITCAL_SECTION_END
 }
 
 char TelnetSpy::pullTelnetBuf() {
 	if (bufUsed == 0) {
 		return 0;
 	}
+CRITCAL_SECTION_START
 	char c = telnetBuf[bufRdIdx++]; 
 	if (bufRdIdx >= bufLen) {
 		bufRdIdx = 0;
 	}
 	bufUsed--;
+CRITCAL_SECTION_END
 	return c;
 }
 
@@ -486,7 +494,11 @@ char TelnetSpy::peekTelnetBuf() {
 	if (bufUsed == 0) {
 		return 0;
 	}
-	return telnetBuf[bufRdIdx]; 
+CRITCAL_SECTION_START
+char c = telnetBuf[bufRdIdx]; 
+CRITCAL_SECTION_END
+//	return telnetBuf[bufRdIdx]; 
+return c;
 }
 
 int TelnetSpy::telnetAvailable() {
