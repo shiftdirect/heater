@@ -39,7 +39,7 @@ const char* GPIOin1Names[] = {
 const char* GPIOin2Names[] = {
   "Disabled",
   "Mom Off",
-  "Ext \352T"
+  "Ext Thermo"
 };
 
 
