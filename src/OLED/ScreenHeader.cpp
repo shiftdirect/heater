@@ -218,6 +218,9 @@ CScreenHeader::showBTicon()
   if(getBluetoothClient().isConnected()) {
     _drawBitmap(X_BT_ICON, Y_BT_ICON, BluetoothIconInfo, WHITE);
   }
+  else {
+    _display.fillRect(X_BT_ICON, Y_BT_ICON, BluetoothIconInfo.width, BluetoothIconInfo.height, BLACK);
+  }
 }
 
 void 

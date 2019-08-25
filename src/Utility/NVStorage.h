@@ -245,6 +245,7 @@ struct sMQTTparams : public CESP32_NVStorage {
 struct sUserSettings : public CESP32_NVStorage {
   long dimTime;
   long menuTimeout;
+  long ExtThermoTimeout;
   uint8_t degF;
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   float   ThermostatWindow;   
@@ -261,6 +262,7 @@ struct sUserSettings : public CESP32_NVStorage {
     bool retval = true;
     retval &= INBOUNDS(dimTime, -600000, 600000);  // +/- 10 mins
     retval &= INBOUNDS(menuTimeout, 0, 300000);  // 5 mins
+    retval &= INBOUNDS(ExtThermoTimeout, 0, 3600000); // 1 hour
     retval &= (degF == 0) || (degF == 1);
     retval &= ThermostatMethod <= 3;  // only modes 0, 1 or 2, 3
     retval &= INBOUNDS(ThermostatWindow, 0.2f, 10.f);
@@ -280,6 +282,7 @@ struct sUserSettings : public CESP32_NVStorage {
   void init() {
     dimTime = 60000;
     menuTimeout = 60000;
+    ExtThermoTimeout = 0;
     degF = 0;
     ThermostatMethod = 0;
     ThermostatWindow = 1.0;
@@ -301,6 +304,7 @@ struct sUserSettings : public CESP32_NVStorage {
   sUserSettings& operator=(const sUserSettings& rhs) {
     dimTime = rhs.dimTime;
     menuTimeout = rhs.menuTimeout;
+    ExtThermoTimeout = rhs.ExtThermoTimeout;
     degF = rhs.degF;
     ThermostatMethod = rhs.ThermostatMethod;
     ThermostatWindow = rhs.ThermostatWindow;

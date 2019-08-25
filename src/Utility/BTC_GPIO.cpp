@@ -24,6 +24,7 @@
 #include <driver/adc.h>
 #include "DebugPort.h"
 #include "../Protocol/Protocol.h"
+#include "../Utility/NVStorage.h"
 
 const int BREATHINTERVAL = 45;
 const int FADEAMOUNT = 3;
@@ -61,6 +62,7 @@ const char* GPIOalgNames[] = {
 CGPIOin1::CGPIOin1()
 {
   _Mode = Disabled;
+  _prevActive = false;
 }
 
 void 
@@ -77,11 +79,14 @@ CGPIOin1::Modes CGPIOin1::getMode() const
 void 
 CGPIOin1::manage(bool active)
 {
-  switch (_Mode) {
-    case Disabled:  break;
-    case Start:     _doStart(active); break;
-    case Run:       _doRun(active); break;
-    case StartStop: _doStartStop(active); break;
+  if(_prevActive ^ active) {
+    switch (_Mode) {
+      case Disabled:  break;
+      case Start:     _doStart(active); break;
+      case Run:       _doRun(active); break;
+      case StartStop: _doStartStop(active); break;
+    }
+    _prevActive = active;
   }
 }
 
@@ -122,6 +127,8 @@ CGPIOin1::_doStartStop(bool active)
 CGPIOin2::CGPIOin2()
 {
   _Mode = Disabled;
+  _prevActive = false;
+  _OffHoldoff = 0;
 }
 
 void 
@@ -148,8 +155,11 @@ CGPIOin2::manage(bool active)
 void 
 CGPIOin2::_doStop(bool active)
 {
-  if(active) {
-    requestOff();
+  if(_prevActive ^ active) {
+    if(active) {
+      requestOff();
+    }
+    _prevActive = active;
   }
 }
 
@@ -158,6 +168,28 @@ CGPIOin2::_doStop(bool active)
 void 
 CGPIOin2::_doThermostat(bool active)
 {
+    // only if actually using thermostat input, and a timeout is defined do we perform heater start / stop functions
+  if((NVstore.getUserSettings().ThermostatMethod == 3) && NVstore.getUserSettings().ExtThermoTimeout) {
+    if(active && !_prevActive)  {  // initial switch on of thermostat input
+      DebugPort.println("starting heater due to thermostat contact closure");
+      requestOn();   // request heater to start upon closure of thermostat input
+    }
+    if(!active && _prevActive)  {  // initial switch off of thermostat input
+      _OffHoldoff = (millis() + NVstore.getUserSettings().ExtThermoTimeout) | 1;
+      DebugPort.printf("thermostat contact opened - will stop in %ldms\r\n", NVstore.getUserSettings().ExtThermoTimeout);
+    }
+    if(!active) {
+      if(_OffHoldoff) {
+        long tDelta = millis() - _OffHoldoff;
+        if(tDelta >= 0) {
+          DebugPort.println("stopping heater due to thermostat contact being open for required dwell");
+          requestOff();  // request heater to stop after thermostat input has stayed open for interval
+          _OffHoldoff = 0;
+        }
+      }
+    }
+    _prevActive = active;
+  }
   // handling actually performed at Tx Manage for setting the fuel rate
 }
 
@@ -222,7 +254,6 @@ CGPIOin::manage()
   _lastKey = newKey;
 
   if(keyChange) {
-    simulateKey(newKey);
     
     // record possible sub sample transients - JSON usage especially
     if(keyChange & 0x01)
@@ -230,6 +261,7 @@ CGPIOin::manage()
     if(keyChange & 0x02)
       _eventList[1].push_back(newKey & 0x02);  // mask the channel bit
   }
+  simulateKey(newKey);
 }
 
 void 

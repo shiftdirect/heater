@@ -329,6 +329,7 @@ sUserSettings::load()
   preferences.begin("user", false);
   validatedLoad("dimTime", dimTime, 60000, -600000, 600000);
   validatedLoad("menuTimeout", menuTimeout, 60000, 0, 300000);
+  validatedLoad("thermoTimeout", ExtThermoTimeout, 0, 0, 3600000);
   validatedLoad("degF", degF, 0, u8inBounds, 0, 1);
   validatedLoad("thermostat", useThermostat, 1, u8inBounds, 0, 1);
   validatedLoad("thermoMethod", ThermostatMethod, 0, u8inBounds, 0, 255);
@@ -395,6 +396,7 @@ sUserSettings::save()
   preferences.begin("user", false);
   preferences.putLong("dimTime", dimTime);
   preferences.putLong("menuTimeout", menuTimeout);
+  preferences.putLong("thermoTimeout", ExtThermoTimeout);
   preferences.putUChar("thermostat", useThermostat);
   preferences.putUChar("degF", degF);
   preferences.putUChar("thermoMethod", ThermostatMethod);

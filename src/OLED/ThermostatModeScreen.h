@@ -36,6 +36,7 @@ class CThermostatModeScreen : public CPasswordScreen
   void _adjust(int dir);
   float _window;
   int _thermoMode;
+  unsigned long _ExtHold;
   sCyclicThermostat _cyclicMode;
   int _animateCount;
   int _scrollChar;

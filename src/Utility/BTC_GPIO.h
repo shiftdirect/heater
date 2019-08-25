@@ -50,6 +50,7 @@ public:
   Modes getMode() const;
 private:
   Modes _Mode;
+  bool _prevActive;
   void _doStart(bool active);
   void _doRun(bool active);
   void _doStartStop(bool active);
@@ -69,6 +70,8 @@ public:
   Modes getMode() const;
 private:
   Modes _Mode;
+  bool _prevActive;
+  unsigned long _OffHoldoff;
   void _doStop(bool active);
   void _doThermostat(bool active);
 };
