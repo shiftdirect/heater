@@ -645,9 +645,9 @@ const uint8_t PROGMEM segoeUI_Italic_7ptBitmaps [] =
 	// @24 '4' (5 pixels wide)
 	0x18, //    ## 
 	0x28, //   # # 
-	0x48, //  #  # 
-	0xFC, // ######
-	0x88, // #   # 
+	0x4E, //  #  ###
+	0xB8, // # ###
+	0xC8, // ##  # 
 
 	// @29 '5' (5 pixels wide)
 	0x06, //      ##
@@ -737,7 +737,7 @@ const FONT_CHAR_INFO PROGMEM segoeUI_Italic_7ptDescriptors[] =
 	{2, 7, 12}, 		// '1' 
 	{5, 7, 14}, 		// '2' 
 	{5, 7, 19}, 		// '3' 
-	{5, 6, 24}, 		// '4' 
+	{5, 7, 24}, 		// '4' 
 	{5, 7, 29}, 		// '5' 
 	{4, 7, 34}, 		// '6' 
 	{4, 7, 39}, 		// '7' 

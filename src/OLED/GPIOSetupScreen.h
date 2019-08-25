@@ -19,29 +19,27 @@
  * 
  */
 
-#ifndef __THERMOSTATMODESCREEN_H__
-#define __THERMOSTATMODESCREEN_H__
+#ifndef __GPIOSETUPSCREEN_H__
+#define __GPIOSETUPSCREEN_H__
 
 #include <stdint.h>
 #include "PasswordScreen.h"
-#include "../Utility/NVStorage.h"
+#include "../Utility/BTC_GPIO.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CThermostatModeScreen : public CPasswordScreen
+class CGPIOSetupScreen : public CPasswordScreen
 {
   int _rowSel;
-  int _keyRepeat;
   void _adjust(int dir);
-  float _window;
-  int _thermoMode;
-  sCyclicThermostat _cyclicMode;
+  sGPIOparams _GPIOparams;
+  unsigned long _ExtHold;
   int _animateCount;
   int _scrollChar;
   void _initUI();
 public:
-  CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);

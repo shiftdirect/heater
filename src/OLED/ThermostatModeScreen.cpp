@@ -56,7 +56,6 @@ CThermostatModeScreen::onSelect()
   _window = NVstore.getUserSettings().ThermostatWindow;
   _thermoMode = NVstore.getUserSettings().ThermostatMethod;
   _cyclicMode = NVstore.getUserSettings().cyclic;
-  _ExtHold = NVstore.getUserSettings().ExtThermoTimeout;
 }
 
 void
@@ -99,21 +98,6 @@ CThermostatModeScreen::show()
       }
       if(modeStr)
         _printMenuText(Column, Line3, modeStr, _rowSel == 4);
-      modeStr = "??";
-      if(_thermoMode == 3) {
-        switch(_ExtHold) {
-          case 0: modeStr = "Psv"; break;
-          case 60000: modeStr = "1 min"; break;
-          case 120000: modeStr = "2 min"; break;
-          case 300000: modeStr = "5 min"; break;
-          case 600000: modeStr = "10 min"; break;
-          case 900000: modeStr = "15 min"; break;
-          case 1200000: modeStr = "20 min"; break;
-          case 1800000: modeStr = "30 min"; break;
-          case 3600000: modeStr = "1 hour"; break;
-        }
-        _printMenuText(_display.width()-border, Line2, modeStr, _rowSel == 5, eRightJustify);
-      }
       if(_cyclicMode.isEnabled()) {
         float fTemp = _cyclicMode.Stop+1;
         if(NVstore.getUserSettings().degF) {
@@ -194,10 +178,6 @@ CThermostatModeScreen::animate()
           if(pMsg)
             _scrollMessage(56, pMsg, _scrollChar);
           break;
-        case 5:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                   External thermostat handling - start upon initial closure, stop the heater after the nominated period.                    ";
-          break;
       }
       return true;
     }
@@ -219,10 +199,10 @@ CThermostatModeScreen::keyHandler(uint8_t event)
           break;
         case 4:
           _scrollChar = 0;
+          // deliberate fall through here
         case 1:
         case 2:
         case 3:
-        case 5:
           _adjust(-1);
           break;
         case 10:
@@ -238,10 +218,10 @@ CThermostatModeScreen::keyHandler(uint8_t event)
           break;
         case 4:
           _scrollChar = 0;
+          // deliberate fall through here
         case 1:
         case 2:
         case 3:
-        case 5:
           _adjust(+1);
           break;
         case 10:
@@ -274,17 +254,12 @@ CThermostatModeScreen::keyHandler(uint8_t event)
             _rowSel++;
           UPPERLIMIT(_rowSel, 4);
           break;
-        case 4:
-          if(_thermoMode == 3)
-            _rowSel++;
-          break;
         case 10:    // confirmed save
           _enableStoringMessage();
           settings = NVstore.getUserSettings();
           settings.ThermostatMethod = _thermoMode;
           settings.ThermostatWindow = _window;
           settings.cyclic = _cyclicMode;
-          settings.ExtThermoTimeout = _ExtHold;
           NVstore.setUserSettings(settings);
           saveNV();
           _rowSel = 0;
@@ -302,7 +277,6 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
         case 4:
-        case 5:
           _rowSel = 10;
           break;
       }
@@ -356,20 +330,6 @@ CThermostatModeScreen::_adjust(int dir)
       _thermoMode += dir;
       wrap = getExternalThermostatModeActive() ? 3 : 2;
       WRAPLIMITS(_thermoMode, 0, wrap);
-      break;
-    case 5:
-      switch(_ExtHold) {
-        case 0: _ExtHold = (dir > 0) ? 60000 : 0; break;
-        case 60000: _ExtHold = (dir > 0) ? 120000 : 0; break;
-        case 120000: _ExtHold = (dir > 0) ? 300000 : 60000; break;
-        case 300000: _ExtHold = (dir > 0) ? 600000 : 120000; break;
-        case 600000: _ExtHold = (dir > 0) ? 900000 : 300000; break;
-        case 900000: _ExtHold = (dir > 0) ? 1200000 : 600000; break;
-        case 1200000: _ExtHold = (dir > 0) ? 1800000 : 900000; break;
-        case 1800000: _ExtHold = (dir > 0) ? 3600000 : 1200000; break;
-        case 3600000: _ExtHold = (dir > 0) ? 3600000 : 1800000; break;
-        default: _ExtHold = 0; break;
-      }
       break;
   }
 }
