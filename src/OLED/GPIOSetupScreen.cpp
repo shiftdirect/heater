@@ -113,9 +113,9 @@ CGPIOSetupScreen::show()
           _printMenuText(Column1, Line2, msgText, _rowSel == 2);
         
         if(_GPIOparams.in2Mode == CGPIOin2::Thermostat) {
-          const char* modeStr = "---";
+          _drawBitmap(Column1 + 13, Line2-2, TimerIconInfo);
+          const char* modeStr = "No";
           switch(_ExtHold) {
-//            case 0: modeStr = "Psv"; break;
             case 60000: modeStr = "1m"; break;
             case 120000: modeStr = "2m"; break;
             case 300000: modeStr = "5m"; break;
@@ -125,7 +125,7 @@ CGPIOSetupScreen::show()
             case 1800000: modeStr = "30m"; break;
             case 3600000: modeStr = "1hr"; break;
           }
-          _printMenuText(Column1 + 18, Line2, modeStr, _rowSel == 3);
+          _printMenuText(Column1 + 29, Line2, modeStr, _rowSel == 3);
         }
       }
 
@@ -205,7 +205,7 @@ CGPIOSetupScreen::animate()
           break;
         case 3:
           _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                   Input 2: External thermostat. Start heater upon closure, stop after open for specified period.                    "; 
+          pMsg = "                   Input 2: External thermostat heater control. Start heater upon closure, stop after open for specified period.                    "; 
           _scrollMessage(56, pMsg, _scrollChar);
           break;
         case 4:
@@ -292,6 +292,10 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
       }
     }
     if(event & key_Down) {
+      if(_rowSel == 10) {
+        _rowSel = 0;   // abort save
+      }
+      else {
         _scrollChar = 0;
         _rowSel--;
         if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
@@ -299,6 +303,7 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
         if((_rowSel == 1) && (getBoardRevision() == BRD_V2_GPIO_NOALG))  // GPIO but NO analog support
           _rowSel--;   // force skip if analog input is not supported by PCB
         LOWERLIMIT(_rowSel, 0);
+      }
     }
     // UP press
     if(event & key_Up) {

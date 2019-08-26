@@ -330,11 +330,19 @@ CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump)
   // may be suppressed if not in normal start or run state
   if((fDesired != 0) || (fPump != 0)) {
     if(getThermostatModeActive() && getExternalThermostatModeActive()) {
-      _drawBitmap(X_TARGET_ICON-1, Y_TARGET_ICON, ExtThermo2IconInfo);   // draw external input #2 icon
-      if(getExternalThermostatOn()) 
-        _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+9, CloseIconInfo);   // draw external input #2 icon
+      const char* pTimeStr = getExternalThermostatHoldTime();
+      if(pTimeStr) {
+        CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+        _drawBitmap(X_TARGET_ICON-1, Y_TARGET_ICON+2, ExtThermo2IconInfo);   // draw external input #2 icon
+        _printMenuText(X_TARGET_ICON+(TargetIconInfo.width/2)-1, Y_TARGET_ICON-4, pTimeStr, false, eCentreJustify);
+        _drawBitmap(X_TARGET_ICON-8, Y_TARGET_ICON-4, miniStopIconInfo);   // draw stop icon
+      }
       else
-        _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+9, OpenIconInfo);   // draw external input #2 icon
+        _drawBitmap(X_TARGET_ICON-1, Y_TARGET_ICON+2, ExtThermo2IconInfo);   // draw external input #2 icon
+      if(getExternalThermostatOn()) 
+        _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+10, CloseIconInfo);   // draw external input #2 icon
+      else
+        _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+10, OpenIconInfo);   // draw external input #2 icon
     }
     else {
       _drawBitmap(X_TARGET_ICON, Y_TARGET_ICON, TargetIconInfo);   // draw target icon

@@ -68,6 +68,7 @@ public:
   void begin(Modes mode);
   void manage(bool active);
   Modes getMode() const;
+  const char* getExtThermTime();
 private:
   Modes _Mode;
   bool _prevActive;
@@ -94,6 +95,9 @@ public:
   bool usesExternalThermostat() const { 
     return (_Input2.getMode() == CGPIOin2::Thermostat); 
   };
+  const char* getExtThermHoldTime() {
+    return _Input2.getExtThermTime();
+  }
 };
 
 class CGPIOout1 {

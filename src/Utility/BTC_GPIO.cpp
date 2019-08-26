@@ -178,7 +178,15 @@ CGPIOin2::_doThermostat(bool active)
       _OffHoldoff = (millis() + NVstore.getUserSettings().ExtThermoTimeout) | 1;
       DebugPort.printf("thermostat contact opened - will stop in %ldms\r\n", NVstore.getUserSettings().ExtThermoTimeout);
     }
-    if(!active) {
+    if(active) {
+      _OffHoldoff = 0;
+      int runstate = getHeaterInfo().getRunStateEx();
+      int errstate = getHeaterInfo().getErrState(); 
+      if(runstate == 0 && errstate == 0) {
+        requestOn();   // request heater to start upon closure of thermostat input (may have shutdown before contact closed again)
+      }
+    }
+    else {
       if(_OffHoldoff) {
         long tDelta = millis() - _OffHoldoff;
         if(tDelta >= 0) {
@@ -193,6 +201,23 @@ CGPIOin2::_doThermostat(bool active)
   // handling actually performed at Tx Manage for setting the fuel rate
 }
 
+const char* 
+CGPIOin2::getExtThermTime()
+{
+  if((_OffHoldoff == 0) || (NVstore.getUserSettings().ThermostatMethod != 3) || (NVstore.getUserSettings().ExtThermoTimeout == 0)) 
+    return NULL;
+
+  long tDelta = _OffHoldoff - millis();
+  if(tDelta < 0)
+    return NULL;
+
+  long secs = tDelta / 1000;
+  long mins = secs / 60;
+  secs -= mins * 60;
+  static char timeStr[8];
+  sprintf(timeStr, "%02ld:%02ld", mins, secs);
+  return timeStr;
+}
 
 
 CGPIOin::CGPIOin()

@@ -123,8 +123,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 30;
-const int FirmwareSubRevision = 4;
-const char* FirmwareDate = "18 Aug 2019";
+const int FirmwareSubRevision = 5;
+const char* FirmwareDate = "26 Aug 2019";
 
 
 #ifdef ESP32
@@ -1041,6 +1041,11 @@ bool getExternalThermostatModeActive()
 bool getExternalThermostatOn()
 {
   return GPIOin.getState(1);
+}
+
+const char* getExternalThermostatHoldTime()
+{
+  return GPIOin.getExtThermHoldTime();
 }
 
 
