@@ -216,6 +216,7 @@ CGPIOSetupScreen::animate()
             case CGPIOin1::Start:     pMsg = "                   Input 1: Starts heater upon closure.                    "; break;
             case CGPIOin1::Run:       pMsg = "                   Input 1: Starts heater when held closed, stops when opened.                    "; break;
             case CGPIOin1::StartStop: pMsg = "                   Input 1: Starts or Stops heater upon closure.                    "; break;
+            case CGPIOin1::Stop:      pMsg = "                   Input 1: Stops heater upon closure.                    "; break;
           }
           if(pMsg)
             _scrollMessage(56, pMsg, _scrollChar);

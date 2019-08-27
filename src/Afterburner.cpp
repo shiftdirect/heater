@@ -85,7 +85,7 @@
   This example code is in the public domain.
 */
 
-//#include "src/WiFi/ABMqtt.h"
+#include "WiFi/ABMqtt.h"
 #include "cfg/BTCConfig.h"
 #include "cfg/pins.h"
 #include "RTC/Timers.h"
@@ -410,6 +410,9 @@ void setup() {
 #if USE_WEBSERVER == 1
     initWebServer();
 #endif // USE_WEBSERVER
+#if USE_MQTT == 1
+    MqttSetup();
+#endif // USE_MQTT
   }
 
 #endif // USE_WIFI
@@ -1621,6 +1624,10 @@ void doStreaming()
 #if USE_WEBSERVER == 1
   bHaveWebClient = doWebServer();
 #endif //USE_WEBSERVER
+#if USE_MQTT == 1
+  doMQTT();
+#endif
+
 
 #endif // USE_WIFI
 

@@ -81,6 +81,9 @@ CGPIOInfoScreen::animate()
       _drawBitmap(23, 14, StartIconInfo);  
       _drawBitmap(30, 14, StopIconInfo); 
       break;
+    case CGPIOin1::Stop:      
+      _drawBitmap(23, 14, StopIconInfo); 
+      break;
   }
   _drawBitmap(40, 16, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
 
