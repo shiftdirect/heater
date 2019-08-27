@@ -39,9 +39,10 @@ class CGPIOin1 {
 public:
   enum Modes { 
     Disabled, 
-    Start,     // input 1 closure, heater starts; input2 closure, heater stops
-    Run,       // hold input 1 closure, heater runs; input 1 open, heater stops
-    StartStop  // alternate input 1 closures start or stop the heater 
+    Start,     // input 1 closure starts heater
+    Run,       // hold input 1 closed, heater runs; open, heater stops
+    StartStop, // alternate input 1 closures start or stop the heater 
+    Stop       // input 1 closure stops heater
   };
   CGPIOin1();
   void setMode(Modes mode) { _Mode = mode; };
@@ -54,6 +55,7 @@ private:
   void _doStart(bool active);
   void _doRun(bool active);
   void _doStartStop(bool active);
+  void _doStop(bool active);
 };
 
 class CGPIOin2 {

@@ -96,6 +96,7 @@ CGPIOSetupScreen::show()
           case CGPIOin1::Start:     msgText = "Start"; break;
           case CGPIOin1::Run:       msgText = "Run  "; break;
           case CGPIOin1::StartStop: msgText = animated ? "Start" : "Stop "; break;
+          case CGPIOin1::Stop:      msgText = "Stop "; break;
         }
         if(msgText)
           _printMenuText(Column1, Line3, msgText, _rowSel == 4);
@@ -369,23 +370,11 @@ CGPIOSetupScreen::_adjust(int dir)
       WRAPLIMITS(tVal, 0, 1);
       _GPIOparams.algMode = (CGPIOalg::Modes)tVal;
       break;
-    case 6:   // outputs mode
-      tVal = _GPIOparams.out1Mode;
+    case 2:
+      tVal = _GPIOparams.in2Mode;
       tVal += dir;
       WRAPLIMITS(tVal, 0, 2);
-      _GPIOparams.out1Mode = (CGPIOout1::Modes)tVal;
-      break;
-    case 5:   // outputs mode
-      tVal = _GPIOparams.out2Mode;
-      tVal += dir;
-      WRAPLIMITS(tVal, 0, 1);
-      _GPIOparams.out2Mode = (CGPIOout2::Modes)tVal;
-      break;
-    case 4:
-      tVal = _GPIOparams.in1Mode;
-      tVal += dir;
-      WRAPLIMITS(tVal, 0, 3);
-      _GPIOparams.in1Mode = (CGPIOin1::Modes)tVal;
+      _GPIOparams.in2Mode = (CGPIOin2::Modes)tVal;
       break;
     case 3:
       switch(_ExtHold) {
@@ -401,11 +390,23 @@ CGPIOSetupScreen::_adjust(int dir)
         default: _ExtHold = 0; break;
       }
       break;
-    case 2:
-      tVal = _GPIOparams.in2Mode;
+    case 4:
+      tVal = _GPIOparams.in1Mode;
+      tVal += dir;
+      WRAPLIMITS(tVal, 0, 4);
+      _GPIOparams.in1Mode = (CGPIOin1::Modes)tVal;
+      break;
+    case 5:   // outputs mode
+      tVal = _GPIOparams.out2Mode;
+      tVal += dir;
+      WRAPLIMITS(tVal, 0, 1);
+      _GPIOparams.out2Mode = (CGPIOout2::Modes)tVal;
+      break;
+    case 6:   // outputs mode
+      tVal = _GPIOparams.out1Mode;
       tVal += dir;
       WRAPLIMITS(tVal, 0, 2);
-      _GPIOparams.in2Mode = (CGPIOin2::Modes)tVal;
+      _GPIOparams.out1Mode = (CGPIOout1::Modes)tVal;
       break;
   }
 }

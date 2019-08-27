@@ -35,7 +35,8 @@ const char* GPIOin1Names[] = {
   "Disabled",
   "Mom On",
   "Hold On",
-  "Mom On/Off"
+  "Mom On/Off",
+  "Mom Off"
 };
 const char* GPIOin2Names[] = {
   "Disabled",
@@ -85,6 +86,7 @@ CGPIOin1::manage(bool active)
       case Start:     _doStart(active); break;
       case Run:       _doRun(active); break;
       case StartStop: _doStartStop(active); break;
+      case Stop:      _doStop(active); break;
     }
     _prevActive = active;
   }
@@ -121,6 +123,14 @@ CGPIOin1::_doStartStop(bool active)
       requestOff();
     else 
       requestOn();
+  }
+}
+
+void 
+CGPIOin1::_doStop(bool active)
+{
+  if(active) {
+    requestOff();
   }
 }
 
