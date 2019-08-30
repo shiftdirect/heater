@@ -430,6 +430,7 @@ sMQTTparams::load()
   validatedLoad("host", host, 127, "hostIP");
   validatedLoad("username", username, 31, "username");
   validatedLoad("password", password, 31, "password");
+  validatedLoad("topic", topic, 31, "Afterburner");
   preferences.end();    
 }
 
@@ -443,6 +444,7 @@ sMQTTparams::save()
   preferences.putString("host", host);
   preferences.putString("username", username);
   preferences.putString("password", password);
+  preferences.putString("topic", topic);
   preferences.end();    
 }
 

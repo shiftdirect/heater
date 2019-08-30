@@ -10,7 +10,7 @@
 
         
 void MqttCallback(char* topic, byte* payload, unsigned int length);
-void MqttSetup();
+bool MqttSetup();
 void doMQTT();
 
 #endif
