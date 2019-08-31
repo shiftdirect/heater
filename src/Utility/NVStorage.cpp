@@ -427,6 +427,7 @@ sMQTTparams::load()
   preferences.begin("mqtt", false);
   validatedLoad("enabled", enabled, 0, u8inBounds, 0, 1);
   validatedLoad("port", port, 0, u16inBounds, 0, 0xffff);
+  validatedLoad("qos", qos, 0, u8inBounds, 0, 2);
   validatedLoad("host", host, 127, "hostIP");
   validatedLoad("username", username, 31, "username");
   validatedLoad("password", password, 31, "password");
@@ -441,6 +442,7 @@ sMQTTparams::save()
   preferences.begin("mqtt", false);
   preferences.putUChar("enabled", enabled);
   preferences.putUShort("port", port);
+  preferences.putUChar("qos", qos);
   preferences.putString("host", host);
   preferences.putString("username", username);
   preferences.putString("password", password);

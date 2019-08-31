@@ -216,6 +216,7 @@ struct sCredentials : public CESP32_NVStorage {
 struct sMQTTparams : public CESP32_NVStorage {
   uint8_t enabled;
   uint16_t  port;
+  uint8_t qos;
   char host[128];
   char username[32];
   char password[32];
@@ -223,6 +224,7 @@ struct sMQTTparams : public CESP32_NVStorage {
   void init() {
     enabled = false;
     port = 1234;
+    qos = 0;
     memset(host, 0, 128);
     memset(username, 0, 32);
     memset(password, 0, 32);
@@ -231,6 +233,7 @@ struct sMQTTparams : public CESP32_NVStorage {
   sMQTTparams& operator=(const sMQTTparams& rhs) {
     enabled = rhs.enabled;
     port = rhs.port;
+    qos = rhs.qos;
     memcpy(host, rhs.host, 128);
     memcpy(username, rhs.username, 32);
     memcpy(password, rhs.password, 32);

@@ -30,6 +30,7 @@
 #include "../Bluetooth/BluetoothAbstract.h"
 #include "../WiFi/BTCWebServer.h"
 #include "../WiFi/BTCWifi.h"
+#include "../WiFi/ABmqtt.h"
 #include "../cfg/BTCConfig.h"
 #include "macros.h"
 #include "../Protocol/Protocol.h"
@@ -528,6 +529,7 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebSocketString( jsonStr );
+      mqttPublishJSON(jsonStr);
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -540,6 +542,7 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebSocketString( jsonStr );
+      mqttPublishJSON(jsonStr);
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -549,22 +552,16 @@ void updateJSONclients(bool report)
   bool bNewTimerInfo = false;
   for(int tmr=0; tmr<14; tmr++) 
   {
-    unsigned long tStart = millis();
     if(makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr))) {
-      unsigned long tJSON = millis() - tStart;
       if (report) { 
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      tStart = millis();
       sendWebSocketString( jsonStr );
-      unsigned long tWF = millis() - tStart;
-      tStart = millis();
+      mqttPublishJSON(jsonStr);
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
-      unsigned long tBT = millis() - tStart;
       bNewTimerInfo = true;
-//      DebugPort.printf("JSON times : %ld,%ld,%ld\r\n", tJSON, tBT, tWF); 
     }
   }
   // request timer refesh upon clients
@@ -583,6 +580,7 @@ void updateJSONclients(bool report)
       DebugPort.printf("JSON send: %s\r\n", jsonStr);
     }
     sendWebSocketString( jsonStr );
+    mqttPublishJSON(jsonStr);
     std::string expand = jsonStr;
     Expand(expand);
     getBluetoothClient().send( expand.c_str() );
@@ -595,6 +593,7 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebSocketString( jsonStr );
+      mqttPublishJSON(jsonStr);
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -608,6 +607,7 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebSocketString( jsonStr );
+      mqttPublishJSON(jsonStr);
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -621,6 +621,7 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebSocketString( jsonStr );
+      mqttPublishJSON(jsonStr);
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );
@@ -633,6 +634,7 @@ void updateJSONclients(bool report)
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
       sendWebSocketString( jsonStr );
+      mqttPublishJSON(jsonStr);
       std::string expand = jsonStr;
       Expand(expand);
       getBluetoothClient().send( expand.c_str() );

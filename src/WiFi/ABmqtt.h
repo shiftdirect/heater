@@ -4,14 +4,8 @@
 #define _ABMQTT_h
 
 
-//#include "../../lib/PubSubClient/src/PubSubClient.h"
-#include "BTCWifi.h"
-#include "BTCWebServer.h"
-
-        
-void MqttCallback(char* topic, byte* payload, unsigned int length);
-bool MqttSetup();
-void doMQTT();
+bool mqttInit();
+bool mqttPublishJSON(const char* str);
 
 #endif
 

@@ -153,6 +153,9 @@ void doStreaming();
 void heaterOn();
 void heaterOff();
 void updateFilteredData();
+bool HandleMQTTsetup(char rxVal);
+void showMainmenu();
+void showMQTTmenu();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus
@@ -162,6 +165,7 @@ int DS18B20holdoff = 2;
 
 int BoardRevision = 0;
 bool bTestBTModule = false;
+bool bSetupMQTT = false;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
@@ -179,6 +183,7 @@ TelnetSpy DebugPort;
 CGPIOin GPIOin;
 CGPIOout GPIOout;
 CGPIOalg GPIOalg;
+sMQTTparams MQTTsetup;
 
 
 sRxLine PCline;
@@ -411,7 +416,7 @@ void setup() {
     initWebServer();
 #endif // USE_WEBSERVER
 #if USE_MQTT == 1
-    MqttSetup();
+    mqttInit();
 #endif // USE_MQTT
   }
 
@@ -1204,6 +1209,14 @@ void checkDebugCommands()
       bTestBTModule = Bluetooth.test(rxVal);
       return;
     }
+    if(bSetupMQTT) {
+      bSetupMQTT = HandleMQTTsetup(rxVal);
+      if(!bSetupMQTT) {    // left MQTT setup menu     
+        showMainmenu();
+        mqttInit();
+      }
+      return;
+    }
 
     if(nGetConf) {
       DebugPort.print(rxVal);
@@ -1308,26 +1321,7 @@ void checkDebugCommands()
     }
     else {
       if(rxVal == ' ') {   // SPACE to bring up menu
-        DebugPort.print("\014");
-        DebugPort.println("MENU options");
-        DebugPort.println("");
-        DebugPort.printf("  <B> - toggle raw blue wire data reporting, currently %s\r\n", bReportBlueWireData ? "ON" : "OFF");
-        DebugPort.printf("  <J> - toggle output JSON reporting, currently %s\r\n", bReportJSONData ? "ON" : "OFF");
-        DebugPort.printf("  <W> - toggle reporting of blue wire timeout/recycling event, currently %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
-        DebugPort.printf("  <O> - toggle reporting of OEM resync event, currently %s\r\n", bReportOEMresync ? "ON" : "OFF");        
-        DebugPort.printf("  <S> - toggle reporting of state machine transits %s\r\n", CommState.isReporting() ? "ON" : "OFF");        
-        DebugPort.printf("  <N> - change AP SSID, currently \"%s\"\r\n", NVstore.getCredentials().SSID);
-        DebugPort.println("  <P> - change AP password");
-        DebugPort.println("  <+> - request heater turns ON");
-        DebugPort.println("  <-> - request heater turns OFF");
-        DebugPort.println("  <R> - restart the ESP");
-        DebugPort.println("");
-        DebugPort.println("");
-        DebugPort.println("");
-        DebugPort.println("");
-        DebugPort.println("");
-        DebugPort.println("");
-        DebugPort.println("");
+        showMainmenu();
       }
 #ifdef PROTOCOL_INVESTIGATION    
       else if(isDigit(rxVal)) {
@@ -1380,6 +1374,11 @@ void checkDebugCommands()
         DebugPort.print("Please enter new SSID name for Access Point - ");
         nGetString = 1;
         PCline.clear();
+      }
+      else if(rxVal == 'm') {
+        MQTTsetup = NVstore.getMQTTinfo();
+        bSetupMQTT = true;
+        showMQTTmenu();
       }
       else if(rxVal == 'o')  {
         bReportOEMresync = !bReportOEMresync;
@@ -1625,7 +1624,7 @@ void doStreaming()
   bHaveWebClient = doWebServer();
 #endif //USE_WEBSERVER
 #if USE_MQTT == 1
-  doMQTT();
+  // MQTT is managed via callbacks!!!
 #endif
 
 
@@ -1759,3 +1758,248 @@ void setAPpassword(const char* name)
   delay(1000);
   ESP.restart();
 }
+
+const char* MQTTsetupmodes[] = {
+  "Enter MQTT broker's IP address",
+  "Enter MQTT broker's port",
+  "Enter MQTT broker's username",
+  "Enter MQTT broker's password",
+  "Enter root topic name",
+  "Enter QoS level",
+  "Enable? (Y)es / (N)o"
+};
+
+bool HandleMQTTsetup(char rxVal)
+{
+  static int mode = 0;
+  static int idx = 0;
+  static char lclbuffer[128];
+  switch(mode) {
+    case 0:
+      if(rxVal == 0x1b) {
+        MQTTsetup = NVstore.getMQTTinfo();
+        return false;
+      }
+//      if(rxVal == '\r' || rxVal == '\n') {
+      if(rxVal == '\n') {
+        NVstore.setMQTTinfo(MQTTsetup);
+        NVstore.save();
+        return false;
+      }
+      if(rxVal >= '1' && rxVal <= '7') {
+        mode = rxVal - '0';
+        idx = 0;
+        DebugPort.print("\014");
+        DebugPort.print(MQTTsetupmodes[mode-1]);
+        switch(mode) {
+          case 1: DebugPort.printf(" (%s)", MQTTsetup.host); break;
+          case 2: DebugPort.printf(" (%d)", MQTTsetup.port); break;
+          case 3: DebugPort.printf(" (%s)", MQTTsetup.username); break;
+          case 4: DebugPort.printf(" (%s)", MQTTsetup.password); break;
+          case 5: DebugPort.printf(" (%s)", MQTTsetup.topic); break;
+          case 6: DebugPort.printf(" (%d)", MQTTsetup.qos); break;
+          case 7: DebugPort.printf(" (%s)", MQTTsetup.enabled ? "YES" : "NO"); break;
+        }
+        DebugPort.print("... ");
+      }
+      else {
+        showMQTTmenu();
+      }
+      return true;
+    case 1:  // enter MQTT broker IP
+      if(rxVal < ' ') {
+        if(idx == 0) strcpy(lclbuffer, MQTTsetup.host);
+        if(rxVal == '\n') {
+          strncpy(MQTTsetup.host, lclbuffer, 127);
+          MQTTsetup.host[127] = 0;
+          mode = 0;
+          showMQTTmenu();
+        }
+        if(rxVal == 0x1b) {
+          mode = 0;
+          showMQTTmenu();
+        }
+        return true;
+      }
+      if(idx == 0) memset(lclbuffer, 0, sizeof(lclbuffer));
+      DebugPort.print(rxVal);
+      lclbuffer[idx++] = rxVal;
+      if(idx == 127) {
+        strncpy(MQTTsetup.host, lclbuffer, 127);
+        MQTTsetup.host[127] = 0;
+        mode = 0;
+        showMQTTmenu();
+        return true;
+      }
+      break;
+    case 2:  // enter MQTT broker port
+      if(rxVal < ' ') {
+        if(idx == 0) sprintf(lclbuffer, "%d", MQTTsetup.port);
+        if(rxVal == '\n') {
+          int val = atoi(lclbuffer);
+          MQTTsetup.port = val;
+          mode = 0;
+          showMQTTmenu();
+        }
+        if(rxVal == 0x1b) {
+          mode = 0;
+          showMQTTmenu();
+        }
+        return true;
+      }
+      DebugPort.print(rxVal);
+      if(isdigit(rxVal)) {
+        if(idx == 0) memset(lclbuffer, 0, sizeof(lclbuffer));
+        lclbuffer[idx++] = rxVal;
+        if(idx == 5) {
+          int val = atoi(lclbuffer);
+          MQTTsetup.port = val;
+          mode = 0;
+          showMQTTmenu();
+          return true;
+        }
+      }
+      else {
+        mode = 0;
+        showMQTTmenu();
+        return true;
+      }
+      break;
+    case 3:  // enter MQTT broker username
+      if(rxVal < ' ') {
+        if(idx == 0) strcpy(lclbuffer, MQTTsetup.username);
+        if(rxVal == '\n') {
+          strncpy(MQTTsetup.username, lclbuffer, 31);
+          MQTTsetup.username[31] = 0;
+          mode = 0;
+          showMQTTmenu();
+        }
+        if(rxVal == 0x1b) {
+          mode = 0;
+          showMQTTmenu();
+        }
+        return true;
+      }
+      if(idx == 0) memset(lclbuffer, 0, sizeof(lclbuffer));
+      DebugPort.print(rxVal);
+      lclbuffer[idx++] = rxVal;
+      if(idx == 31) {
+        strncpy(MQTTsetup.username, lclbuffer, 31);
+        MQTTsetup.username[31] = 0;
+        mode = 0;
+        showMQTTmenu();
+        return true;
+      }
+      break;
+    case 4:  // enter MQTT broker username
+      if(rxVal < ' ') {
+        if(idx == 0) strcpy(lclbuffer, MQTTsetup.password);
+        if(rxVal == '\n') {
+          strncpy(MQTTsetup.password, lclbuffer, 31);
+          MQTTsetup.password[31] = 0;
+          mode = 0;
+          showMQTTmenu();
+        }
+        if(rxVal == 0x1b) {
+          mode = 0;
+          showMQTTmenu();
+        }
+        return true;
+      }
+      if(idx == 0) memset(lclbuffer, 0, sizeof(lclbuffer));
+      DebugPort.print(rxVal);
+      lclbuffer[idx++] = rxVal;
+      if(idx == 31) {
+        strncpy(MQTTsetup.password, lclbuffer, 31);
+        MQTTsetup.password[31] = 0;
+        mode = 0;
+        showMQTTmenu();
+        return true;
+      }
+      break;
+    case 5:  // enter root topic name
+      if(rxVal < ' ') {
+        if(idx == 0) strcpy(lclbuffer, MQTTsetup.topic);
+        if(rxVal == '\n') {
+          strncpy(MQTTsetup.topic, lclbuffer, 31);
+          MQTTsetup.topic[31] = 0;
+          mode = 0;
+          showMQTTmenu();
+        }
+        if(rxVal == 0x1b) {
+          mode = 0;
+          showMQTTmenu();
+        }
+        return true;
+      }
+      if(idx == 0) memset(lclbuffer, 0, sizeof(lclbuffer));
+      DebugPort.print(rxVal);
+      lclbuffer[idx++] = rxVal;
+      if(idx == 31) {
+        strncpy(MQTTsetup.topic, lclbuffer, 31);
+        MQTTsetup.topic[31] = 0;
+        mode = 0;
+        showMQTTmenu();
+        return true;
+      }
+      break;
+    case 6:
+      if(rxVal >= '0' && rxVal <= '2') {
+        MQTTsetup.qos = rxVal - '0';  
+      }
+      mode = 0;
+      showMQTTmenu();
+      return true;
+    case 7:
+      if(tolower(rxVal) == 'y')
+        MQTTsetup.enabled = true;
+      if(tolower(rxVal) == 'n')
+        MQTTsetup.enabled = false;
+      mode = 0;
+      showMQTTmenu();
+      return true;
+  }
+  return true;
+}
+
+void showMainmenu()
+{
+  DebugPort.print("\014");
+  DebugPort.println("MENU options");
+  DebugPort.println("");
+  DebugPort.printf("  <B> - toggle raw blue wire data reporting, currently %s\r\n", bReportBlueWireData ? "ON" : "OFF");
+  DebugPort.printf("  <J> - toggle output JSON reporting, currently %s\r\n", bReportJSONData ? "ON" : "OFF");
+  DebugPort.printf("  <W> - toggle reporting of blue wire timeout/recycling event, currently %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
+  DebugPort.printf("  <O> - toggle reporting of OEM resync event, currently %s\r\n", bReportOEMresync ? "ON" : "OFF");        
+  DebugPort.printf("  <S> - toggle reporting of state machine transits %s\r\n", CommState.isReporting() ? "ON" : "OFF");        
+  DebugPort.printf("  <N> - change AP SSID, currently \"%s\"\r\n", NVstore.getCredentials().SSID);
+  DebugPort.println("  <P> - change AP password");
+  DebugPort.println("  <M> - configure MQTT");
+  DebugPort.println("  <+> - request heater turns ON");
+  DebugPort.println("  <-> - request heater turns OFF");
+  DebugPort.println("  <R> - restart the ESP");
+  DebugPort.println("");
+  DebugPort.println("");
+  DebugPort.println("");
+  DebugPort.println("");
+  DebugPort.println("");
+  DebugPort.println("");
+  DebugPort.println("");
+}
+
+void showMQTTmenu()
+{
+  DebugPort.print("\014");
+  DebugPort.println("MQTT broker configuration");
+  DebugPort.println("");
+  DebugPort.printf("  <1> - set IP address, currently \"%s\"\r\n", MQTTsetup.host);
+  DebugPort.printf("  <2> - set port, currently %d\r\n", MQTTsetup.port);
+  DebugPort.printf("  <3> - set username, currently \"%s\"\r\n", MQTTsetup.username);
+  DebugPort.printf("  <4> - set password, currently \"%s\"\r\n", MQTTsetup.password);
+  DebugPort.printf("  <5> - set root topic, currently \"%s\"\r\n", MQTTsetup.topic);
+  DebugPort.printf("  <6> - set QoS, currently %d\r\n", MQTTsetup.qos);
+  DebugPort.printf("  <7> - set enabled, currently %s\r\n", MQTTsetup.enabled ? "ON" : "OFF");
+  DebugPort.printf("  <ENTER> - save and exit\r\n");
+  DebugPort.printf("  <ESC> - abort\r\n");
+}
+
