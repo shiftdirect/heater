@@ -223,7 +223,7 @@ struct sMQTTparams : public CESP32_NVStorage {
   char topic[32];
   void init() {
     enabled = false;
-    port = 1234;
+    port = 1883;
     qos = 0;
     memset(host, 0, 128);
     memset(username, 0, 32);

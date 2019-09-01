@@ -86,6 +86,7 @@ extern float getGlowVolts();
 extern float getGlowCurrent();
 extern float getFanSpeed();
 extern int sysUptime();
+extern void doJSONwatchdog(int topup);
 
 void setSSID(const char* name);
 void setAPpassword(const char* name);

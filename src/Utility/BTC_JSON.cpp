@@ -144,6 +144,9 @@ void interpretJsonCommand(char* pLine)
       if(it->value.as<int>() == 8861)
 			  saveNV();
 		}
+    else if(strcmp("Watchdog", it->key) == 0) {
+      doJSONwatchdog(it->value.as<int>());
+    }
 		else if(strcmp("DateTime", it->key) == 0) {
       setDateTime(it->value.as<const char*>());
       bTriggerDateTime = true;

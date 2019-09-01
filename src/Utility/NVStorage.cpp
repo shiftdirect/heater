@@ -426,11 +426,11 @@ sMQTTparams::load()
   // **** MAX LENGTH is 15 for names ****
   preferences.begin("mqtt", false);
   validatedLoad("enabled", enabled, 0, u8inBounds, 0, 1);
-  validatedLoad("port", port, 0, u16inBounds, 0, 0xffff);
+  validatedLoad("port", port, 1883, u16inBounds, 0, 0xffff);
   validatedLoad("qos", qos, 0, u8inBounds, 0, 2);
-  validatedLoad("host", host, 127, "hostIP");
-  validatedLoad("username", username, 31, "username");
-  validatedLoad("password", password, 31, "password");
+  validatedLoad("host", host, 127, "");
+  validatedLoad("username", username, 31, "");
+  validatedLoad("password", password, 31, "");
   validatedLoad("topic", topic, 31, "Afterburner");
   preferences.end();    
 }

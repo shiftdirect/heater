@@ -215,6 +215,7 @@ bool bBTconnected = false;
 long BootTime;
 
 hw_timer_t *watchdogTimer = NULL;
+hw_timer_t *JSONwatchdog = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
@@ -454,6 +455,11 @@ void setup() {
   timerAttachInterrupt(watchdogTimer, &interruptReboot, true);     
   timerAlarmEnable(watchdogTimer); //enable interrupt
 #endif
+
+  JSONwatchdog = timerBegin(1, 80, true);
+  timerAlarmWrite(JSONwatchdog, 60000000, false); //set time in uS must be fed within this time or reboot     
+  timerAttachInterrupt(JSONwatchdog, &interruptReboot, true);     
+  timerAlarmDisable(JSONwatchdog); //disable interrupt for now
 
   FilteredSamples.ipVolts.setRounding(0.1);
   FilteredSamples.GlowAmps.setRounding(0.01);
@@ -1609,6 +1615,19 @@ void feedWatchdog()
 
   timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
   timerAlarmWrite(watchdogTimer, 15000000, false); //set time in uS must be fed within this time or reboot     
+}
+
+void doJSONwatchdog(int topup)
+{
+  if(topup) {
+    timerWrite(JSONwatchdog, 0); //reset timer (feed watchdog)  
+    uint64_t deathtime = topup * 1000000;
+    timerAlarmWrite(JSONwatchdog, deathtime, false); //set time in uS must be fed within this time or reboot     
+    timerAlarmEnable(JSONwatchdog); //enable interrupt
+  }
+  else {
+    timerAlarmDisable(JSONwatchdog); //disable interrupt
+  }
 }
 
 
