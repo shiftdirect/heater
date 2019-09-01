@@ -123,8 +123,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 0;
-const char* FirmwareDate = "31 Aug 2019";
+const int FirmwareSubRevision = 1;
+const char* FirmwareDate = "1 Sep 2019";
 
 
 #ifdef ESP32
@@ -1624,7 +1624,8 @@ void doStreaming()
   bHaveWebClient = doWebServer();
 #endif //USE_WEBSERVER
 #if USE_MQTT == 1
-  // MQTT is managed via callbacks!!!
+  // most MQTT is managed via callbacks, but need some sundry housekeeping
+  doMQTT();
 #endif
 
 
