@@ -146,7 +146,9 @@ void doWiFiManager()
 {
   wm.process();
 
-/*  if(WiFi.status() != WL_CONNECTED) {
+  if(WiFi.status() != WL_CONNECTED) {
+    if(isSTA) DebugPort.println("STA lost");
+    isSTA = false;
     if(WifiReconnectHoldoff) {
       long tDelta = millis() - WifiReconnectHoldoff;
       if(tDelta >= 0) {
@@ -163,8 +165,10 @@ void doWiFiManager()
     }
   }
   else {
+    if(!isSTA) DebugPort.println("STA established");
+    isSTA = true;
     WifiReconnectHoldoff = 0;
-  }*/
+  }
 
 #if USE_PORTAL_TRIGGER_PIN == 1
   // manage handling of pin to enter WiFManager config portal

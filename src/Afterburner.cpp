@@ -404,7 +404,7 @@ void setup() {
 
 #if USE_WIFI == 1
 
-  sCredentials creds = NVstore.getCredentials();
+  sCredentials creds = NVstore.getCredentials();  // local AP credentials
 
   if(NVstore.getUserSettings().enableWifi) {
     initWifi(WiFi_TriggerPin, creds.SSID, creds.APpassword);
