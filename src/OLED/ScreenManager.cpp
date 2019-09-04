@@ -44,6 +44,7 @@
 #include "HourMeterScreen.h"
 #include "BTScreen.h"
 #include "MenuTrunkScreen.h"
+#include "MQTTScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -442,6 +443,7 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
   menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
   menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
+  menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
   menuloop.push_back(new CBTScreen(*_pDisplay, *this));
   _Screens.push_back(menuloop);
 

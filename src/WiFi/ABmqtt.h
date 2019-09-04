@@ -9,6 +9,7 @@ void doMQTT();
 bool mqttPublishJSON(const char* str);
 void connectToMqtt();
 void kickMQTT();
+bool isMQTTconnected();
 
 
 #endif

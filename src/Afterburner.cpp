@@ -1753,6 +1753,11 @@ int sysUptime()
   return Clock.get().secondstime() - BootTime;
 }
 
+void resetFuelGauge()
+{
+  FuelGauge.reset();
+}
+
 void setSSID(const char* name)
 {
   sCredentials creds = NVstore.getCredentials();

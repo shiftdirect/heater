@@ -60,6 +60,7 @@ extern void  setSystemVoltage(float val);
 extern void  interpretJsonCommand(char* pLine);
 extern void  resetWebModerator();
 extern void  resetJSONmoderator();
+extern void  resetFuelGauge();
 extern const char* getBlueWireStatStr();
 extern bool  hasOEMcontroller();
 extern bool  hasOEMLCDcontroller();

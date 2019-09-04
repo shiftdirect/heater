@@ -244,4 +244,8 @@ void doMQTT()
 
 }
 
+bool isMQTTconnected() {
+  return MQTTclient.connected();
+}
+
 #endif

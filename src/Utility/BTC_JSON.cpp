@@ -275,7 +275,7 @@ void interpretJsonCommand(char* pLine)
     else if(strcmp("PumpCount", it->key) == 0) {  // reset fuel gauge
       int Count = it->value.as<int>();
       if(Count == 0) {
-        RTC_Store.setFuelGauge(0);
+        resetFuelGauge();
       }
     }
     else if(strcmp("PumpCal", it->key) == 0) {
