@@ -84,7 +84,6 @@ CHomeMenuSelScreen::show()
         case 3: strcpy(msg, "Clock"); break;
       }
       _printMenuText(50, 38, msg, _rowSel == 1);
-
     }
   }
   return true;
@@ -197,6 +196,190 @@ CHomeMenuSelScreen::adjust(int dir)
     case 3: 
       _action.onTimeout += dir;
       WRAPLIMITS(_action.onTimeout, 0, 3);
+      break;
+  }
+}
+
+
+
+CNoHeaterHomeMenuSelScreen::CNoHeaterHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+{
+}
+
+void 
+CNoHeaterHomeMenuSelScreen::onSelect()
+{
+  CScreenHeader::onSelect();
+  _rowSel = 0;
+  _action = NVstore.getUserSettings().HomeMenu;
+  _dispTimeout = NVstore.getUserSettings().dimTime; 
+  _menuTimeout = NVstore.getUserSettings().menuTimeout; 
+  if(_action.onTimeout == 0)
+    _action.onTimeout = 2;
+}
+
+void
+CNoHeaterHomeMenuSelScreen::_initUI()
+{
+}
+
+bool 
+CNoHeaterHomeMenuSelScreen::show()
+{
+  char msg[16];
+
+  _display.clearDisplay();
+
+  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+
+    if(_rowSel == 4) {
+      _showConfirmMessage();
+    }
+    else {
+      _showTitle("Home Menu Actions");
+      
+      _drawBitmap(22, 14, TimeoutIconInfo);
+      switch(_action.onTimeout) {
+        case 2: strcpy(msg, "Temperature"); break;
+        case 3: strcpy(msg, "Clock"); break;
+      }
+      _printMenuText(40, 14, msg, _rowSel == 3);
+
+      // display timeout
+      _drawBitmap(10, 26, DisplayTimeoutIconInfo);
+      if(_dispTimeout) {
+        float mins = float(abs(_dispTimeout)) / 60000.f;
+        sprintf(msg, "%s %0.1f min%s",  (_dispTimeout < 0) ? "Blank" : "Dim", mins, mins < 2 ? "" : "s");
+        _printMenuText(40, 26, msg, _rowSel == 2);
+      }
+      else 
+        _printMenuText(40, 26, "Always on", _rowSel == 2);
+
+      // menu timeout
+      _drawBitmap(10, 38, MenuTimeoutIconInfo);
+      if(_menuTimeout) {
+        float mins = float(abs(_menuTimeout)) / 60000.f;
+        sprintf(msg, "Home %0.1f min%s", mins, mins < 2 ? "" : "s");
+        _printMenuText(40, 38, msg, _rowSel == 1);
+      }
+      else 
+        _printMenuText(40, 38, "Disabled", _rowSel == 1);
+
+    }
+  }
+  return true;
+}
+
+bool 
+CNoHeaterHomeMenuSelScreen::animate()
+{
+  if(!CPasswordScreen::_busy()) {
+    if(_rowSel != 4) {
+      int yPos = 53;
+      int xPos = _display.xCentre();
+      const char* pMsg = NULL;
+      switch(_rowSel) {
+        case 0:
+          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          break;
+        case 1:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    No keypad activity returns to the home menu.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 2:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 3:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          pMsg = "                    Menu to return to after no keypad activity.                    ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+
+bool 
+CNoHeaterHomeMenuSelScreen::keyHandler(uint8_t event)
+{
+  sUserSettings us;
+  if(event & keyPressed) {
+    // UP press
+    if(event & key_Up) {
+      if(_rowSel == 4) {
+        _enableStoringMessage();
+        us = NVstore.getUserSettings();
+        us.HomeMenu = _action;
+        us.menuTimeout = _menuTimeout;
+        us.dimTime = _dispTimeout;
+        NVstore.setUserSettings(us);
+        saveNV();
+        _rowSel = 0;
+      }
+      else {
+        _scrollChar = 0;
+        _rowSel++;
+        UPPERLIMIT(_rowSel, 3);
+      }
+    }
+    // DOWN press
+    if(event & key_Down) {
+      _scrollChar = 0;
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
+    }
+    // CENTRE press
+    if(event & key_Centre) {
+      if(_rowSel == 0) {
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+      }
+      else {
+        _rowSel = 4;
+      }
+    }
+    // LEFT press
+    if(event & key_Left) {
+      if(_rowSel == 0)
+        _ScreenManager.prevMenu();
+      else 
+        adjust(-1);
+    }
+    // RIGHT press
+    if(event & key_Right) {
+      if(_rowSel == 0)
+        _ScreenManager.nextMenu();
+      else 
+        adjust(+1);
+    }
+  }
+
+  _ScreenManager.reqUpdate();
+
+  return true;
+}
+
+void
+CNoHeaterHomeMenuSelScreen::adjust(int dir)
+{
+  switch(_rowSel) {
+    case 1: 
+      _menuTimeout += dir * 30000;
+      LOWERLIMIT(_menuTimeout, 0);
+      UPPERLIMIT(_menuTimeout, 300000);
+      break;
+    case 2: 
+      _dispTimeout += dir * 30000;
+      LOWERLIMIT(_dispTimeout, -600000);
+      UPPERLIMIT(_dispTimeout, 600000);
+      break;
+    case 3: 
+      _action.onTimeout = _action.onTimeout==3 ? 2 : 3;
       break;
   }
 }

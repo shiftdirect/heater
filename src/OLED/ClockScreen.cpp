@@ -24,8 +24,10 @@
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "fonts/Tahoma24.h"
+#include "fonts/Arial.h"
 #include "../RTC/Clock.h"
 #include "../Protocol/Protocol.h"
+#include "../Utility/NVStorage.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -54,18 +56,40 @@ CClockScreen::show()
   const BTCDateTime& now = Clock.get();
 
   char str[32];
-//  if(now.second() & 0x01)
+  int clockcentre = _display.xCentre();
+  int hr = now.hour();
+  if(NVstore.getUserSettings().clock12hr) {
+    if(hr == 0)
+      hr = 12;
+    else if (hr > 12)
+      hr -= 12;
+    clockcentre -= 8; // allow space for AM/PM indicators
+  }
+
+  
   if(_colon)
-    sprintf(str, "%d:%02d", now.hour(), now.minute());
+    sprintf(str, "%d:%02d", hr, now.minute());
   else 
-    sprintf(str, "%d %02d", now.hour(), now.minute());
+    sprintf(str, "%d %02d", hr, now.minute());
   _colon = !_colon;
 
   int yPos = 25;
+  int timewidth = 0;
   {
-//    CTransientFont AF(_display, &tahoma_16ptFontInfo);  // temporarily use a large font
     CTransientFont AF(_display, &tahoma_24ptFontInfo);  // temporarily use a large font
-    _printMenuText(_display.xCentre(), yPos, str, false, eCentreJustify);
+    _printMenuText(clockcentre, yPos, str, false, eCentreJustify);
+    CRect extents;
+    extents.xPos = 0;
+    extents.yPos = 0;
+    _display.getTextExtents(str, extents);
+    timewidth = extents.width;
+  }
+  if(NVstore.getUserSettings().clock12hr) {
+    CTransientFont AF(_display, &arial_8ptBoldFontInfo);  // temporarily use a large font
+    if(now.hour() >= 12)
+      _printMenuText(clockcentre + timewidth/2 + 5, yPos + 14, "PM");
+    else 
+      _printMenuText(clockcentre + timewidth/2 + 5, yPos, "AM");
   }
   sprintf(str, "%s %d %s %d", now.dowStr(), now.day(), now.monthStr(), now.year());
   _printMenuText(_display.xCentre(), 56, str, false, eCentreJustify);
@@ -85,7 +109,9 @@ CClockScreen::keyHandler(uint8_t event)
     }
     // press DOWN
     if(event & key_Down) {
-      _ScreenManager.selectMenu(CScreenManager::TimerMenuLoop);    // switch to timer set screen loop
+      if(!NVstore.getUserSettings().NoHeater) {
+        _ScreenManager.selectMenu(CScreenManager::TimerMenuLoop);    // switch to timer set screen loop
+      }
     }
   }
   if(event & keyRepeat) {
@@ -107,18 +133,20 @@ CClockScreen::keyHandler(uint8_t event)
       }
       // hold CENTRE to toggle On/Off state
       if(event & key_Centre) {
-        int runstate = getHeaterInfo().getRunStateEx();
-        if(runstate) {   // running, including cyclic mode idle
-          if(_keyRepeatCount > 5) {
-            _keyRepeatCount = -1;
-            requestOff();         
+        if(!NVstore.getUserSettings().NoHeater) {
+          int runstate = getHeaterInfo().getRunStateEx();
+          if(runstate) {   // running, including cyclic mode idle
+            if(_keyRepeatCount > 5) {
+              _keyRepeatCount = -1;
+              requestOff();         
+            }
           }
-        }
-        else {  // standard idle state
-          // standby, request ON
-          if(_keyRepeatCount > 3) {
-            _keyRepeatCount = -1;
-            requestOn();
+          else {  // standard idle state
+            // standby, request ON
+            if(_keyRepeatCount > 3) {
+              _keyRepeatCount = -1;
+              requestOn();
+            }
           }
         }
       }

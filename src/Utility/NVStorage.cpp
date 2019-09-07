@@ -342,7 +342,7 @@ sUserSettings::load()
   validatedLoad("thermoWindow", ThermostatWindow, 1.0f, 0.2f, 10.f);
   DebugPort.printf("2) Window = %f\r\n", ThermostatWindow);
   validatedLoad("enableWifi", enableWifi, 1, u8inBounds, 0, 1);
-  validatedLoad("enableOTA", enableOTA, 1, u8inBounds, 0, 1);
+  validatedLoad("enableOTA", enableOTA, 0, u8inBounds, 0, 1);
   validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
   validatedLoad("cyclicStart", cyclic.Start, -1, s8inBounds, -20, 0);
   uint8_t tVal;
@@ -386,6 +386,8 @@ sUserSettings::load()
   validatedLoad("JSONsingle", JSON.singleElement, 0, u8inBounds, 0, 1);
   validatedLoad("JSONLF", JSON.LF, 0, u8inBounds, 0, 1);
   validatedLoad("JSONpad", JSON.padding, 0, u8inBounds, 0, 1);
+  validatedLoad("NoHeater", NoHeater, 0, u8inBounds, 0, 1);
+  validatedLoad("Clock12hr", clock12hr, 0, u8inBounds, 0, 1);
   preferences.end();    
 }
 
@@ -417,6 +419,8 @@ sUserSettings::save()
   preferences.putUChar("JSONsingle", JSON.singleElement);
   preferences.putUChar("JSONLF", JSON.LF);
   preferences.putUChar("JSONpad", JSON.padding);
+  preferences.putUChar("NoHeater", NoHeater);
+  preferences.putUChar("Clock12hr", clock12hr);
   preferences.end();    
 }
 

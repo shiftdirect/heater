@@ -24,6 +24,7 @@
 #include "../Utility/helpers.h"
 #include "../Utility/macros.h"
 #include "fonts/Arial.h"
+#include "../Utility/NVStorage.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -70,7 +71,9 @@ CMenuTrunkScreen::show()
 
   _printMenuText(_display.xCentre(), yPos[_rowSel], " \021                \020 ", true, eCentreJustify);
 
-  _printMenuText(_display.xCentre(), yPos[3], "Heater Tuning", false, eCentreJustify);
+  if(!NVstore.getUserSettings().NoHeater) {
+    _printMenuText(_display.xCentre(), yPos[3], "Heater Tuning", false, eCentreJustify);
+  }
   _printMenuText(_display.xCentre(), yPos[2], "System Settings", false, eCentreJustify);
   _printMenuText(_display.xCentre(), yPos[1], "User Settings", false, eCentreJustify);
   _printMenuText(_display.xCentre(), yPos[0], "Root menu", false, eCentreJustify);
@@ -134,7 +137,8 @@ CMenuTrunkScreen::keyHandler(uint8_t event)
     // press UP
     if(event & key_Up) {
       _rowSel++;
-      UPPERLIMIT(_rowSel, 3);
+      int lim = NVstore.getUserSettings().NoHeater ? 2 : 3;
+      UPPERLIMIT(_rowSel, lim);
     }
     // press DOWN
     if(event & key_Down) {

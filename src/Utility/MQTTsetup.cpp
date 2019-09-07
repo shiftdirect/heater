@@ -1,18 +1,27 @@
+/*
+ * This file is part of the "bluetoothheater" distribution 
+ * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
+ *
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * 
+ */
+
 #include "NVStorage.h"
 #include "DebugPort.h"
 #include "MQTTsetup.h"
-
-#ifdef newmqttmenu
-
-/*const char* MQTTsetupmodes[] = {
-  "Enter MQTT broker's IP address",
-  "Enter MQTT broker's port",
-  "Enter MQTT broker's username",
-  "Enter MQTT broker's password",
-  "Enter root topic name",
-  "Enter QoS level",
-  "Enable? (Y)es / (N)o"
-};*/
 
 CMQTTsetup::CMQTTsetup()
 {
@@ -171,13 +180,9 @@ CMQTTsetup::getMQTTstring(char rxVal, int maxidx, char* pTargetString)
     if(rxVal == '\n') {
       strncpy(pTargetString, _buffer, maxidx);
       pTargetString[maxidx] = 0;
-//      _mode = 0;
-//      showMQTTmenu();
       return true;
     }
     if(rxVal == 0x1b) {
-//      _mode = 0;
-//      showMQTTmenu();
       return true;
     }
   }
@@ -188,12 +193,9 @@ CMQTTsetup::getMQTTstring(char rxVal, int maxidx, char* pTargetString)
     if(_idx == maxidx) {
       strncpy(pTargetString, _buffer, maxidx);
       pTargetString[maxidx] = 0;
-//      _mode = 0;
-//      showMQTTmenu();
       return true;
     }
   }
   return false;
 }
 
-#endif

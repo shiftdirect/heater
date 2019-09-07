@@ -43,7 +43,7 @@
 #define Y_WIFI_ICON     0
 #define X_CLOCK        50  
 #define Y_CLOCK         0
-#define X_TIMER_ICON   83
+#define X_TIMER_ICON   84
 #define Y_TIMER_ICON    0
 #define X_BATT_ICON   103
 #define Y_BATT_ICON     0
@@ -309,19 +309,21 @@ CScreenHeader::showWifiIcon()
 void
 CScreenHeader::showBatteryIcon(float voltage)
 {
-  _drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIconInfo);
-  char msg[16];
-  sprintf(msg, "%.1fV", voltage);
-  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
-  _display.setCursor(X_BATT_ICON + BatteryIconInfo.width/2, 
-                     Y_BATT_ICON + BatteryIconInfo.height + 2);
-  _display.printCentreJustified(msg);
+  if(!NVstore.getUserSettings().NoHeater) {
+    _drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIconInfo);
+    char msg[16];
+    sprintf(msg, "%.1fV", voltage);
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    _display.setCursor(X_BATT_ICON + BatteryIconInfo.width/2, 
+                      Y_BATT_ICON + BatteryIconInfo.height + 2);
+    _display.printCentreJustified(msg);
 
-  // nominal 10.5 -> 13.5V bargraph
-  int Capacity = (voltage - 10.7) * 4;
-  if(Capacity < 0)   Capacity = 0;
-  if(Capacity > 11)  Capacity = 11;
-  _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, BatteryIconInfo.width-4-Capacity, 6, BLACK);
+    // nominal 10.5 -> 13.5V bargraph
+    int Capacity = (voltage - 10.7) * 4;
+    if(Capacity < 0)   Capacity = 0;
+    if(Capacity > 11)  Capacity = 11;
+    _display.fillRect(X_BATT_ICON+2 + Capacity, Y_BATT_ICON+2, BatteryIconInfo.width-4-Capacity, 6, BLACK);
+  }
 }
 
 int
@@ -372,21 +374,43 @@ CScreenHeader::showTime()
     sprintf(msg, "No RTC");    
   }
   else {
+    int hr = now.hour();
+    if(NVstore.getUserSettings().clock12hr) {
+      if(hr == 0)
+        hr = 12;
+      if(hr > 12) {
+        hr -= 12;
+      }
+    }
     if(_colon)
-      sprintf(msg, "%02d:%02d", now.hour(), now.minute());
+      sprintf(msg, "%02d:%02d", hr, now.minute());
     else
-      sprintf(msg, "%02d %02d", now.hour(), now.minute());
+      sprintf(msg, "%02d %02d", hr, now.minute());
     _colon = !_colon;
   }
 
+  int timewidth = 0;
+  int xPos = X_CLOCK;
   {
     CTransientFont AF(_display, &arial_8ptFontInfo);
-    // determine centre position of remaining real estate
-    int xPos = X_WIFI_ICON + WifiIconInfo.width + WifiInIconInfo.width;  // rhs of wifi conglomeration
-    if(isWifiAP())  xPos += 4;                             // add more if an Access Point
-    
-    _display.fillRect(xPos - 15, Y_CLOCK, 30, arial_8ptFontInfo.nBitsPerLine, BLACK);
-    _printMenuText(X_CLOCK, Y_CLOCK, msg);
+    if(NVstore.getUserSettings().clock12hr) 
+      xPos -= 3;
+    _display.fillRect(xPos, Y_CLOCK, 30, arial_8ptFontInfo.nBitsPerLine, BLACK);
+    _printMenuText(xPos, Y_CLOCK-2, msg);
+    CRect extents;
+    extents.xPos = 0;
+    extents.yPos = 0;
+    _display.getTextExtents(msg, extents);
+    timewidth = extents.width;
+  }
+  if(NVstore.getUserSettings().clock12hr) {
+    CTransientFont AF(_display, &miniFontInfo);
+    xPos += timewidth + 2;
+    _display.fillRect(xPos, Y_CLOCK, 8, 10, BLACK);
+    if(now.hour() >= 12) 
+      _printMenuText(xPos, Y_CLOCK+5, "PM");
+    else
+      _printMenuText(xPos, Y_CLOCK, "AM");
   }
 }
 

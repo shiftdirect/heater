@@ -1414,6 +1414,20 @@ void checkDebugCommands()
         bTestBTModule = !bTestBTModule;
         Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
       }
+      else if(rxVal == ('s' & 0x1f)) {   // CTRL-S Stripped back - no heater mode
+        sUserSettings us = NVstore.getUserSettings();
+        us.NoHeater = !us.NoHeater;
+        NVstore.setUserSettings(us);
+        NVstore.save();
+        NVstore.doSave();
+        if(us.NoHeater)
+          DebugPort.println("Restarting ESP to invoke cut back No Heater mode");
+        else
+          DebugPort.println("Restarting ESP to invoke Full control mode");
+        DebugPort.handle();
+        delay(1000);
+        ESP.restart();
+      }
     }
 #ifdef PROTOCOL_INVESTIGATION    
     if(bSendVal) {
@@ -1765,6 +1779,7 @@ void setSSID(const char* name)
   NVstore.save();
   NVstore.doSave();   // ensure NV storage
   DebugPort.println("Restarting ESP to invoke new network credentials");
+  DebugPort.handle();
   delay(1000);
   ESP.restart();
 }
@@ -1778,6 +1793,7 @@ void setAPpassword(const char* name)
   NVstore.save();
   NVstore.doSave();   // ensure NV storage
   DebugPort.println("Restarting ESP to invoke new network credentials");
+  DebugPort.handle();
   delay(1000);
   ESP.restart();
 }

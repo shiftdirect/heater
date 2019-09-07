@@ -28,6 +28,7 @@ char mqttHost[128];
 char mqttUser[32];
 char mqttPass[32];
 #endif
+char statusTopic[128];
 
 #ifdef USE_RTOS_MQTTTIMER
 TimerHandle_t mqttReconnectTimer = NULL;
@@ -57,6 +58,8 @@ void onMqttConnect(bool sessionPresent)
   mqttReconnect = 0;
 #endif
 
+  sprintf(statusTopic, "%s/status", NVstore.getMQTTinfo().topic);
+
   DebugPort.println("MQTT: Connected to broker.");
 //  DebugPort.printf("Session present: %d\r\n", sessionPresent);
 
@@ -68,9 +71,9 @@ void onMqttConnect(bool sessionPresent)
   MQTTclient.subscribe(topicnameJSONin, NVstore.getMQTTinfo().qos);
 
   // spit out an "I'm here" message
-  char lcltopic[128];
-  sprintf(lcltopic, "%s/Status", NVstore.getMQTTinfo().topic);
-  MQTTclient.publish(lcltopic, NVstore.getMQTTinfo().qos, true, "onMqttConnect");
+  MQTTclient.publish(statusTopic, NVstore.getMQTTinfo().qos, true, "online");
+  // and a will if we die unexpectedly
+  MQTTclient.setWill(statusTopic, NVstore.getMQTTinfo().qos, true, "offline");
 
 #ifdef MQTT_DBG_LOOPBACK
   // testo - loopback

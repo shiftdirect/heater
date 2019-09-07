@@ -44,4 +44,21 @@ public:
   void adjust(int dir);
 };
 
+class CNoHeaterHomeMenuSelScreen : public CPasswordScreen
+{
+  int _rowSel;
+  int _scrollChar;
+  sHomeMenuActions _action;
+  long _dispTimeout;
+  long _menuTimeout;
+  void _initUI();
+public:
+  CNoHeaterHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr);
+  bool show();
+  bool animate();
+  bool keyHandler(uint8_t event);
+  void onSelect();
+  void adjust(int dir);
+};
+
 #endif

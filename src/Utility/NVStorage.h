@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -264,6 +264,8 @@ struct sUserSettings : public CESP32_NVStorage {
   sHomeMenuActions HomeMenu;
   sGPIOparams GPIO;
   sJSONoptions JSON;
+  uint8_t NoHeater;
+  uint8_t clock12hr;
 
   bool valid() {
     bool retval = true;
@@ -295,7 +297,7 @@ struct sUserSettings : public CESP32_NVStorage {
     ThermostatWindow = 1.0;
     useThermostat = 1;
     enableWifi = 1;
-    enableOTA = 1;
+    enableOTA = 0;
     GPIO.in1Mode = CGPIOin1::Disabled;
     GPIO.in2Mode = CGPIOin2::Disabled;
     GPIO.out1Mode = CGPIOout1::Disabled;
@@ -305,6 +307,8 @@ struct sUserSettings : public CESP32_NVStorage {
     cyclic.init();
     HomeMenu.init();
     JSON.init();
+    NoHeater = 0;
+    clock12hr = 0;
   };
   void load();
   void save();
@@ -327,6 +331,8 @@ struct sUserSettings : public CESP32_NVStorage {
     cyclic = rhs.cyclic;
     HomeMenu = rhs.HomeMenu;
     JSON = rhs.JSON;
+    NoHeater = rhs.NoHeater;
+    clock12hr = rhs.clock12hr;
     return *this;
   }
 };

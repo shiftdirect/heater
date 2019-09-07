@@ -191,15 +191,19 @@ CBasicScreen::keyHandler(uint8_t event)
       if(event & key_Down) {
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
-          _showModeTime = millis() + 5000;
-          _nModeSel = getThermostatModeActive() ? 0 : 1;
+          if(!NVstore.getUserSettings().NoHeater) {
+            _showModeTime = millis() + 5000;
+            _nModeSel = getThermostatModeActive() ? 0 : 1;
+          }
         }
       }
       // hold UP to toggle degC/degF mode selection
       if(event & key_Up) {
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
-          _showModeTime = millis() + 5000;
+          if(!NVstore.getUserSettings().NoHeater) {
+            _showModeTime = millis() + 5000;
+          }
           sUserSettings settings = NVstore.getUserSettings();
           toggle(settings.degF);
           NVstore.setUserSettings(settings);
@@ -208,18 +212,20 @@ CBasicScreen::keyHandler(uint8_t event)
       }
       // hold CENTRE to turn ON or OFF
       if(event & key_Centre) {
-        int runstate = getHeaterInfo().getRunStateEx();
-        if(runstate) {   // running, including cyclic mode idle
-          if(repeatCount > 5) {
-            repeatCount = -1;
-            requestOff();         
+        if(!NVstore.getUserSettings().NoHeater) {
+          int runstate = getHeaterInfo().getRunStateEx();
+          if(runstate) {   // running, including cyclic mode idle
+            if(repeatCount > 5) {
+              repeatCount = -1;
+              requestOff();         
+            }
           }
-        }
-        else {  // standard idle state
-          // standby, request ON
-          if(repeatCount > 3) {
-            repeatCount = -1;
-            requestOn();
+          else {  // standard idle state
+            // standby, request ON
+            if(repeatCount > 3) {
+              repeatCount = -1;
+              requestOn();
+            }
           }
         }
       }
@@ -232,24 +238,26 @@ CBasicScreen::keyHandler(uint8_t event)
   if(event & keyReleased) {
     if(!_showModeTime) {
       // release DOWN key to reduce set demand, provided we are not in mode select
-      if(event & key_Down) {
-        if(reqDemandDelta(-1)) {
-          _showSetModeTime = millis() + 2000;
-          _feedbackType = 0;
-          _ScreenManager.reqUpdate();
+      if(!NVstore.getUserSettings().NoHeater) {
+        if(event & key_Down) {
+          if(reqDemandDelta(-1)) {
+            _showSetModeTime = millis() + 2000;
+            _feedbackType = 0;
+            _ScreenManager.reqUpdate();
+          }
+          else 
+            _reqOEMWarning();
         }
-        else 
-          _reqOEMWarning();
-      }
-      // release UP key to increase set demand, provided we are not in mode select
-      if(event & key_Up) {
-        if(reqDemandDelta(+1)) {
-          _showSetModeTime = millis() + 2000;
-          _feedbackType = 0;
-          _ScreenManager.reqUpdate();
+        // release UP key to increase set demand, provided we are not in mode select
+        if(event & key_Up) {
+          if(reqDemandDelta(+1)) {
+            _showSetModeTime = millis() + 2000;
+            _feedbackType = 0;
+            _ScreenManager.reqUpdate();
+          }
+          else 
+            _reqOEMWarning();
         }
-        else 
-          _reqOEMWarning();
       }
     }
     if(event & key_Left) {
@@ -289,14 +297,16 @@ CBasicScreen::keyHandler(uint8_t event)
     }
     // release CENTRE to accept new mode, and/or show current setting
     if(event & key_Centre) {
-      if(repeatCount != -2) {  // prevent after off commands
-        if(_showModeTime) {
-          _showModeTime = millis(); // force immediate cancellation of showmode (via screen update)
+      if(!NVstore.getUserSettings().NoHeater) {
+        if(repeatCount != -2) {  // prevent after off commands
+          if(_showModeTime) {
+            _showModeTime = millis(); // force immediate cancellation of showmode (via screen update)
+          }
+          _showSetModeTime = millis() + 2000; 
+          _feedbackType = 0;
         }
-        _showSetModeTime = millis() + 2000; 
-        _feedbackType = 0;
+        _ScreenManager.reqUpdate();
       }
-      _ScreenManager.reqUpdate();
     }
 
     repeatCount = -1;
@@ -307,6 +317,9 @@ CBasicScreen::keyHandler(uint8_t event)
 void 
 CBasicScreen::showRunState()
 {
+  if(NVstore.getUserSettings().NoHeater)
+    return;
+
   int runstate = getHeaterInfo().getRunStateEx(); 
   int errstate = getHeaterInfo().getErrState(); 
 

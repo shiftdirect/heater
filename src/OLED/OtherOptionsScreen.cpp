@@ -86,14 +86,6 @@ COtherOptionsScreen::show()
       }
       else 
         _printMenuText(40, 38, "Disabled", _rowSel == 1);
-
-/*      if(_rowSel == 0)
-        _printMenuText(_display.xCentre(), 53, " \021     Exit     \020 ", _rowSel == 0, eCentreJustify);
-      else {
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        _printMenuText(_display.xCentre(), 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
-        _printMenuText(_display.xCentre(), 56, "Save", false, eCentreJustify);
-      }*/
     }
   }
   return true;
