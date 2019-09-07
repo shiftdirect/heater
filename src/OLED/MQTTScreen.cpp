@@ -95,6 +95,9 @@ CMQTTScreen::show()
   yPos += _display.textHeight() + 2;
   sprintf(msg, "%s/%s", NVstore.getMQTTinfo().username, NVstore.getMQTTinfo().password);
   _printMenuText(border, yPos, msg);  
+  yPos += _display.textHeight() + 2;
+  sprintf(msg, "%s", NVstore.getMQTTinfo().topic);
+  _printMenuText(border, yPos, msg);  
 
   return true;
 }

@@ -1,7 +1,8 @@
 Import("env")
+import sys
 
 # access to global build environment
-print env
+print (env)
 
 CRCTable = [
 	0X0000, 0XC0C1, 0XC181, 0X0140, 0XC301, 0X03C0, 0X0280, 0XC241,
@@ -41,18 +42,20 @@ CRCTable = [
 
 def appendCRC(source, target, env) :
 
-  print "Adding CRC to %s" % str(target[0])
+  print ("Adding CRC to %s" % str(target[0]))
 
 # read entire firmware binary file into a string
   f = open(str(target[0]), "rb")
-  bindata = f.read()
+  binfile = f.read()
   f.close()
 
 # create CRC for the firmware binary input file
   CRCword = 0xffff
   count = 0
-  for val in bindata :
-    byte = ord(val)
+  for byte in binfile :
+    if sys.version_info[0] < 3 :
+      byte = ord(byte)
+
     if(count == 0) :
       byte = 0xff
     temp = (byte ^ CRCword) & 0xff   # mask to keep in bouds of lookup table
@@ -60,12 +63,16 @@ def appendCRC(source, target, env) :
     CRCword = CRCword ^ CRCTable[temp]
     count = count + 1
 
-  print "CRC result = %X from %d bytes" % (CRCword, count)
+  print ("CRC result = %X from %d bytes" % (CRCword, count))
 
 # append CRC to the firmware binary file
   o = open(str(target[0]), "a+b")
-  o.write(chr(CRCword & 0xff))
-  o.write(chr((CRCword >> 8) & 0xff))
+  if sys.version_info[0] < 3 :
+    o.write(chr(CRCword & 0xff))
+    o.write(chr((CRCword >> 8) & 0xff))
+  else :
+    o.write(CRCword.to_bytes(2, byteorder='little'))
+
   o.close()
 
 
