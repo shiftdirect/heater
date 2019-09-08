@@ -57,6 +57,7 @@ const char* GPIOout2Names[] = {
 
 const char* GPIOalgNames[] = {
   "Disabled",
+  "Enabled",
   "HeatDemand"
 };
 

@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  James Clark
+ * Copyright (C) 2019  Ray Jones, James Clark
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,6 @@
 
 
 bool CheckFirmwareCRC(int filesize);
-bool CheckFirmwareCRC0(int filesize);
 void onSuccess();
 void onWebProgress(size_t progress, size_t total);
 
@@ -118,7 +117,7 @@ void DoOTA()
     FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
       FOTA.onProgress(onWebProgress);        // important - keeps watchdog fed
-      FOTA.onComplete(CheckFirmwareCRC0);     // upload complete, but not yet verified
+      FOTA.onComplete(CheckFirmwareCRC);     // upload complete, but not yet verified
       FOTA.onSuccess(onSuccess);
 #ifdef TESTFOTA
       FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fotatest.json";
@@ -169,44 +168,9 @@ void checkFOTA()
 
 const int CRCbufsize = 1024;
 uint8_t CRCReadBuff[CRCbufsize];   
-/*
-bool CheckFirmwareCRC(int filesize)
-{
-  const esp_partition_t* pUsePartition = esp_ota_get_next_update_partition(NULL);
-  if(NULL == pUsePartition) {
-    DebugPort.println("CheckCRC: FAILED - bad partition?");
-    return false;
-  }
-  int size = (filesize >> 2) << 2;  // mod 4
-  if((filesize - size) != 2) {
-    // we expect 2 extra bytes where the custom CRC is added
-    // all normal applications without CRC are multiples of 4
-    DebugPort.println("CheckCRC: FAILED - bad source file size");
-    return false;
-  }
-
-  CModBusCRC16 CRCengine;
-
-  int processed = 0;
-  while(processed < size) {
-    int toRead = size - processed;
-    if(toRead > CRCbufsize)
-      toRead = CRCbufsize;
-
-    ESP.flashRead(pUsePartition->address + processed, (uint32_t*)CRCReadBuff, toRead);
-    CRCengine.process(toRead, CRCReadBuff); 
-    processed += toRead;
-  }
-  ESP.flashRead(pUsePartition->address + processed, (uint32_t*)CRCReadBuff, 4);
-  uint32_t fileCRC = CRCReadBuff[0] + (CRCReadBuff[1]<<8);
-
-  DebugPort.printf("Upload CRC TEST: calcCRC= %04X, fileCRC = %08X\r\n", CRCengine.get(), fileCRC);
-
-  return fileCRC == CRCengine.get();
-}*/
 
 // CRC of everything, including our extra CRC bytes should return ZERO :-)
-bool CheckFirmwareCRC0(int filesize)
+bool CheckFirmwareCRC(int filesize)
 {
   const esp_partition_t* pUsePartition = esp_ota_get_next_update_partition(NULL);
   if(NULL == pUsePartition) {

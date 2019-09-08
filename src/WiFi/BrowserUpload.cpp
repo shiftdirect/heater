@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -148,8 +148,8 @@ sBrowserUpload::end(HTTPUpload& upload)
   else {
     // completion of firmware update
     // check the added CRC we genertaed matches 
-    // - this guards against malicious, badly formatted bin file attempts.
-    if(!CheckFirmwareCRC0(SrcFile.size)) {
+    // - this helps guard against malicious, badly formatted bin file attempts.
+    if(!CheckFirmwareCRC(SrcFile.size)) {
       Update.abort();
       retval = -4;
     }

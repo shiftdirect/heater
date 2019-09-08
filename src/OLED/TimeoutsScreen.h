@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ class C128x64_OLED;
 class CScreenManager;
 
 
-class COtherOptionsScreen : public CPasswordScreen
+class CTimeoutsScreen : public CPasswordScreen
 {
   int _rowSel;
   uint16_t _frameRate;
@@ -39,7 +39,7 @@ class COtherOptionsScreen : public CPasswordScreen
   int _scrollChar;
   void _initUI();
 public:
-  COtherOptionsScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CTimeoutsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);

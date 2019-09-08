@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ public:
   void adjustMonth(int val);
   void adjustYear(int dir);
   void adjustHour(int dir);
+  void adjustHour12();
   void adjustMinute(int dir);
   void adjustSecond(int dir);
   BTCDateTime& operator=(const DateTime& rhs);

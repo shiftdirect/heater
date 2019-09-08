@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,8 @@ class CProtocol;
 class CSetClockScreen : public CScreen {
   int  _rowSel;
   unsigned long _nextT;
-  BTCDateTime working;
+  BTCDateTime _working;
+  int _12hr;
   unsigned long _SaveTime;
 
   void _adjTimeDate(int dir);

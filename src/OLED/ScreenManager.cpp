@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@
 #include "GPIOSetupScreen.h"
 #include "VersionInfoScreen.h"
 #include "HomeMenuSelScreen.h"
-#include "OtherOptionsScreen.h"
+#include "TimeoutsScreen.h"
 #include "HourMeterScreen.h"
 #include "BTScreen.h"
 #include "MenuTrunkScreen.h"
@@ -449,7 +449,7 @@ CScreenManager::begin(bool bNoClock)
   else {
     menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
     menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
-    menuloop.push_back(new COtherOptionsScreen(*_pDisplay, *this)); // Other options screen
+    menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
       menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }

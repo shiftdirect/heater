@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,19 +20,19 @@
  */
 
 #include "128x64OLED.h"
-#include "OtherOptionsScreen.h"
+#include "TimeoutsScreen.h"
 #include "KeyPad.h"
 #include "../Utility/NVStorage.h"
 #include "fonts/Icons.h"
 
 
 
-COtherOptionsScreen::COtherOptionsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CTimeoutsScreen::CTimeoutsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
 }
 
 void 
-COtherOptionsScreen::onSelect()
+CTimeoutsScreen::onSelect()
 {
   CScreenHeader::onSelect();
   _rowSel = 0;
@@ -43,12 +43,12 @@ COtherOptionsScreen::onSelect()
 }
 
 void
-COtherOptionsScreen::_initUI()
+CTimeoutsScreen::_initUI()
 {
 }
 
 bool 
-COtherOptionsScreen::show()
+CTimeoutsScreen::show()
 {
   char msg[16];
 
@@ -92,7 +92,7 @@ COtherOptionsScreen::show()
 }
 
 bool 
-COtherOptionsScreen::animate()
+CTimeoutsScreen::animate()
 {
   if(!CPasswordScreen::_busy()) {
     if(_rowSel != 4) {
@@ -126,7 +126,7 @@ COtherOptionsScreen::animate()
 }
 
 bool 
-COtherOptionsScreen::keyHandler(uint8_t event)
+CTimeoutsScreen::keyHandler(uint8_t event)
 {
   if(event & keyPressed) {
     _repeatCount = 0;
@@ -205,7 +205,7 @@ COtherOptionsScreen::keyHandler(uint8_t event)
 }
 
 void
-COtherOptionsScreen::adjust(int dir)
+CTimeoutsScreen::adjust(int dir)
 {
   switch(_rowSel) {
     case 1: 

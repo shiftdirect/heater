@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  James Clark
+ * Copyright (C) 2019  Ray Jones, James Clark
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
 
 void initOTA();
 void DoOTA();
-//bool CheckFirmwareCRC(int size);
-bool CheckFirmwareCRC0(int size);
+bool CheckFirmwareCRC(int size);
 
 #endif

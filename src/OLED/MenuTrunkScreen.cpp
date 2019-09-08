@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,16 +98,12 @@ CMenuTrunkScreen::keyHandler(uint8_t event)
           break;
         case 1:
           _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop);
-//          _ScreenManager.prevMenu(); 
           break;
         case 2:
           _ScreenManager.selectMenu(CScreenManager::SystemSettingsLoop);
-//          _ScreenManager.prevMenu(); 
           break;
         case 3:
           _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::HtrSettingsUI);
-//          _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop);
-//          _ScreenManager.prevMenu(); 
           break;
       }
     }
@@ -120,17 +116,12 @@ CMenuTrunkScreen::keyHandler(uint8_t event)
           break;
         case 1:
           _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop);
-//          _ScreenManager.nextMenu(); 
           break;
         case 2:
           _ScreenManager.selectMenu(CScreenManager::SystemSettingsLoop);
-//          _ScreenManager.nextMenu(); 
           break;
         case 3:
           _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::HtrSettingsUI);
-
-//          _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop);
-//          _ScreenManager.nextMenu(); 
           break;
       }
     }

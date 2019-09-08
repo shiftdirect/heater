@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  * Copyright (C) 2018  James Clark
  *
  * This program is free software: you can redistribute it and/or modify
@@ -124,8 +124,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 1;
-const char* FirmwareDate = "1 Sep 2019";
+const int FirmwareSubRevision = 2;
+const char* FirmwareDate = "8 Sep 2019";
 
 
 #ifdef ESP32
