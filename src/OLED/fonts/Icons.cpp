@@ -501,6 +501,22 @@ const uint8_t timerIcon [] PROGMEM = {
 };
 const BITMAP_INFO TimerIconInfo(15, 11, timerIcon);
 
+// 'timer', 15x15px
+const uint8_t timerIconRpt [] PROGMEM = {
+  0x07, 0xc0, //      #####
+  0x09, 0x20, //     #  #  #
+  0x11, 0x10, //    #   #   #
+  0x21, 0x08, //   #    #    #
+  0x21, 0x08, //   #    #    #
+  0x21, 0xE8, //   #    #### #
+  0x20, 0x08, //   #         #
+  0x3E, 0x08, //   #####     #
+  0x30, 0x10, //   ##       #
+  0x28, 0x20, //   # #     #
+  0x27, 0xc0, //   #  #####
+};
+const BITMAP_INFO TimerIconRptInfo(15, 11, timerIconRpt);
+
 // 'large timer', 15x15px
 const uint8_t largeTimerIcon[] PROGMEM  =
 {

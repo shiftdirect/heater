@@ -332,9 +332,10 @@ CScreenHeader::showTimers()
   int nextTimer = CTimerManager::getNextTimer();   // timer ID and repeat flag info of next scheduled timer
   if(nextTimer) {
     int xPos = X_TIMER_ICON;   
-    _drawBitmap(xPos, Y_TIMER_ICON, TimerIconInfo);
     if(nextTimer & 0x80)
-      _drawBitmap(xPos-3, Y_TIMER_ICON, verticalRepeatIconInfo);
+      _drawBitmap(xPos, Y_TIMER_ICON, TimerIconRptInfo);
+    else
+      _drawBitmap(xPos, Y_TIMER_ICON, TimerIconInfo);
     if(_hdrDetail) {
       sTimer timerInfo;
       char msg[8];

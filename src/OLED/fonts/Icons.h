@@ -73,6 +73,7 @@ extern const BITMAP_INFO RepeatIconInfo;
 extern const BITMAP_INFO TimerId1IconInfo;
 extern const BITMAP_INFO TimerId2IconInfo;
 extern const BITMAP_INFO TimerIconInfo;
+extern const BITMAP_INFO TimerIconRptInfo;
 extern const BITMAP_INFO verticalRepeatIconInfo;
 extern const BITMAP_INFO LargeTimerIconInfo;
 extern const BITMAP_INFO VerticalLargeRepeatIconInfo;
