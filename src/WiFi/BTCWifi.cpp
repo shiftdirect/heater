@@ -144,79 +144,81 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 // call from main sketch loop()
 void doWiFiManager()
 {
-  wm.process();
+  if(NVstore.getUserSettings().enableWifi) {
+    wm.process();
 
-  if(WiFi.status() != WL_CONNECTED) {
-    if(isSTA) DebugPort.println("STA lost");
-    isSTA = false;
-    if(WifiReconnectHoldoff) {
-      long tDelta = millis() - WifiReconnectHoldoff;
-      if(tDelta >= 0) {
-        WifiReconnectHoldoff = 0;  
-        WiFi.disconnect();
-        WiFi.mode(WIFI_AP_STA);
-        wifi_config_t conf;
-        esp_wifi_get_config(WIFI_IF_STA, &conf);
-        WiFi.begin((char*)conf.sta.ssid, (char*)conf.sta.password);
+    if(WiFi.status() != WL_CONNECTED) {
+      if(isSTA) DebugPort.println("STA lost");
+      isSTA = false;
+      if(WifiReconnectHoldoff) {
+        long tDelta = millis() - WifiReconnectHoldoff;
+        if(tDelta >= 0) {
+          WifiReconnectHoldoff = 0;  
+          WiFi.disconnect();
+          WiFi.mode(WIFI_AP_STA);
+          wifi_config_t conf;
+          esp_wifi_get_config(WIFI_IF_STA, &conf);
+          WiFi.begin((char*)conf.sta.ssid, (char*)conf.sta.password);
+        }
+      }
+      else {
+        WifiReconnectHoldoff = millis() + 15000;
       }
     }
     else {
-      WifiReconnectHoldoff = millis() + 10000;
+      if(!isSTA) DebugPort.println("STA established");
+      isSTA = true;
+      WifiReconnectHoldoff = 0;
     }
-  }
-  else {
-    if(!isSTA) DebugPort.println("STA established");
-    isSTA = true;
-    WifiReconnectHoldoff = 0;
-  }
 
 #if USE_PORTAL_TRIGGER_PIN == 1
-  // manage handling of pin to enter WiFManager config portal
-  // we typically use the BOOT pin for this (pins.h)
-  //
-  // Quick Press (< 1 sec)      - enable config portal
-  // > 1 second (< 5 sec) press - disable config portal
-  // > 5 second press           - erase credentials, enable config portal
-  static bool pinDown = false;
-  static long pinTime = 0;
-  unsigned long tDelta;
+    // manage handling of pin to enter WiFManager config portal
+    // we typically use the BOOT pin for this (pins.h)
+    //
+    // Quick Press (< 1 sec)      - enable config portal
+    // > 1 second (< 5 sec) press - disable config portal
+    // > 5 second press           - erase credentials, enable config portal
+    static bool pinDown = false;
+    static long pinTime = 0;
+    unsigned long tDelta;
 
-  if(digitalRead(TRIG_PIN) == LOW) {
-    if(!pinDown) {
-      pinTime = millis();
-      ScreenManager.reqUpdate();
-    }
-    pinDown = true;
-    // track hold duration - change OLED Wifi annotation according to length of press
-    tDelta = millis() - pinTime;
-    if(tDelta > 5000)
-      wifiButtonState = 3;        // we will show 'ERS' on OLED!
-    else if(tDelta > 1000)
-      wifiButtonState = 2;        // we will show 'HTR' on OLED!
-    else
-      wifiButtonState = 1;        // we will show 'CFG' on OLED!
-  } 
-  else {
-    if(pinDown) {
-      pinDown = false;
+    if(digitalRead(TRIG_PIN) == LOW) {
+      if(!pinDown) {
+        pinTime = millis();
+        ScreenManager.reqUpdate();
+      }
+      pinDown = true;
+      // track hold duration - change OLED Wifi annotation according to length of press
       tDelta = millis() - pinTime;
-      DebugPort.printf("Wifi config button tDelta = %ld\r\n", tDelta);
-      // > 5 second press?
-      if(tDelta > 5000) {    
-        wifiEnterConfigPortal(true, true);  // very long press - clear credentials, reboot into portal
+      if(tDelta > 5000)
+        wifiButtonState = 3;        // we will show 'ERS' on OLED!
+      else if(tDelta > 1000)
+        wifiButtonState = 2;        // we will show 'HTR' on OLED!
+      else
+        wifiButtonState = 1;        // we will show 'CFG' on OLED!
+    } 
+    else {
+      if(pinDown) {
+        pinDown = false;
+        tDelta = millis() - pinTime;
+        DebugPort.printf("Wifi config button tDelta = %ld\r\n", tDelta);
+        // > 5 second press?
+        if(tDelta > 5000) {    
+          wifiEnterConfigPortal(true, true);  // very long press - clear credentials, reboot into portal
+        }
+        // > 1 second press?
+        else if(tDelta > 1000) {    
+          wifiEnterConfigPortal(false);   // long press - reboot into web server
+        }
+        // > 50ms press?
+        else if(tDelta > 50) {
+          wifiEnterConfigPortal(true);    // quick press - reboot into portal
+        }
+        // consider as contact bounce if < 50ms!
       }
-      // > 1 second press?
-      else if(tDelta > 1000) {    
-        wifiEnterConfigPortal(false);   // long press - reboot into web server
-      }
-      // > 50ms press?
-      else if(tDelta > 50) {
-        wifiEnterConfigPortal(true);    // quick press - reboot into portal
-      }
-      // consider as contact bounce if < 50ms!
     }
-  }
 #endif
+  }
 }
 
 void wifiDisable(long rebootDelay) 
@@ -297,18 +299,26 @@ void APstartedCallback(WiFiManager*)
 
 const char* getWifiAPAddrStr()
 { 
-  IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
-  static char APIPaddr[16];
-  sprintf(APIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
-  return APIPaddr;
+  if(NVstore.getUserSettings().enableWifi) {
+    IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
+    static char APIPaddr[16];
+    sprintf(APIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
+    return APIPaddr;
+  }
+  else 
+    return "";
 }
   
 const char* getWifiSTAAddrStr()
 { 
-  IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
-  static char STAIPaddr[16];
-  sprintf(STAIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
-  return STAIPaddr;
+  if(NVstore.getUserSettings().enableWifi) {
+    IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
+    static char STAIPaddr[16];
+    sprintf(STAIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
+    return STAIPaddr;
+  }
+  else 
+    return "";
 }
   
 const char* getWifiAPMACStr()
@@ -323,20 +333,31 @@ const char* getWifiSTAMACStr()
 
 String getSSID()
 {
-  wifi_config_t conf;
-  esp_wifi_get_config(WIFI_IF_STA, &conf);
-  return String(reinterpret_cast<const char*>(conf.sta.ssid));
+  if(NVstore.getUserSettings().enableWifi) {
+    wifi_config_t conf;
+    esp_wifi_get_config(WIFI_IF_STA, &conf);
+    return String(reinterpret_cast<const char*>(conf.sta.ssid));
+  }
+  else 
+    return "";
 }
 
 bool isWifiConnected()
 {
-  return WiFi.status() == WL_CONNECTED;
+  if(NVstore.getUserSettings().enableWifi) 
+    return WiFi.status() == WL_CONNECTED;
+  else 
+    return false;
 }
 
 bool isWifiAP()
 {
-  int mode = WiFi.getMode();
-  return !isSTA && ((mode & WIFI_MODE_AP) != 0);   
+  if(NVstore.getUserSettings().enableWifi) {
+    int mode = WiFi.getMode();
+    return !isSTA && ((mode & WIFI_MODE_AP) != 0);   
+  }
+  else 
+    return false;
 }
 
 bool isWifiSTA()

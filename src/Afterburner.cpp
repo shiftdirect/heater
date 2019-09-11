@@ -124,8 +124,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 2;
-const char* FirmwareDate = "8 Sep 2019";
+const int FirmwareSubRevision = 3;
+const char* FirmwareDate = "11 Sep 2019";
 
 
 #ifdef ESP32
@@ -1647,18 +1647,19 @@ void doStreaming()
 {
 #if USE_WIFI == 1
 
-  doWiFiManager();
+  if(NVstore.getUserSettings().enableWifi) {
+    doWiFiManager();
 #if USE_OTA == 1
-  DoOTA();
+    DoOTA();
 #endif // USE_OTA 
 #if USE_WEBSERVER == 1
-  bHaveWebClient = doWebServer();
+    bHaveWebClient = doWebServer();
 #endif //USE_WEBSERVER
 #if USE_MQTT == 1
-  // most MQTT is managed via callbacks, but need some sundry housekeeping
-  doMQTT();
+    // most MQTT is managed via callbacks, but need some sundry housekeeping
+    doMQTT();
 #endif
-
+  }
 
 #endif // USE_WIFI
 
