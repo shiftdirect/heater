@@ -71,10 +71,12 @@ CMenuTrunkScreen::show()
 
   _printMenuText(_display.xCentre(), yPos[_rowSel], " \021                \020 ", true, eCentreJustify);
 
-  if(!NVstore.getUserSettings().NoHeater) {
+  if(NVstore.getUserSettings().menuMode == 0) {
     _printMenuText(_display.xCentre(), yPos[3], "Heater Tuning", false, eCentreJustify);
   }
-  _printMenuText(_display.xCentre(), yPos[2], "System Settings", false, eCentreJustify);
+  if(NVstore.getUserSettings().menuMode != 1) {
+    _printMenuText(_display.xCentre(), yPos[2], "System Settings", false, eCentreJustify);
+  }
   _printMenuText(_display.xCentre(), yPos[1], "User Settings", false, eCentreJustify);
   _printMenuText(_display.xCentre(), yPos[0], "Root menu", false, eCentreJustify);
 
@@ -128,7 +130,11 @@ CMenuTrunkScreen::keyHandler(uint8_t event)
     // press UP
     if(event & key_Up) {
       _rowSel++;
-      int lim = NVstore.getUserSettings().NoHeater ? 2 : 3;
+      int lim = 3;
+      switch(NVstore.getUserSettings().menuMode) {
+        case 1: lim = 1; break;
+        case 2: lim = 2; break;
+      } 
       UPPERLIMIT(_rowSel, lim);
     }
     // press DOWN

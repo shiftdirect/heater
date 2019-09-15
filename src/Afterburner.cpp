@@ -470,6 +470,7 @@ void setup() {
   FilteredSamples.Fan.setRounding(10);
   FilteredSamples.Fan.setAlpha(0.7);
   FilteredSamples.AmbientTemp.reset(-100.0);
+  FilteredSamples.AmbientTemp.setAlpha(0);  // no average - for test
   FilteredSamples.FastipVolts.setRounding(0.1);
   FilteredSamples.FastipVolts.setAlpha(0.7);
   FilteredSamples.FastGlowAmps.setRounding(0.01);
@@ -1414,7 +1415,7 @@ void checkDebugCommands()
         bTestBTModule = !bTestBTModule;
         Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
       }
-      else if(rxVal == ('s' & 0x1f)) {   // CTRL-S Stripped back - no heater mode
+/*      else if(rxVal == ('s' & 0x1f)) {   // CTRL-S Stripped back - no heater mode
         sUserSettings us = NVstore.getUserSettings();
         us.NoHeater = !us.NoHeater;
         NVstore.setUserSettings(us);
@@ -1427,7 +1428,7 @@ void checkDebugCommands()
         DebugPort.handle();
         delay(1000);
         ESP.restart();
-      }
+      }*/
     }
 #ifdef PROTOCOL_INVESTIGATION    
     if(bSendVal) {

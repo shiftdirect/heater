@@ -191,7 +191,7 @@ CBasicScreen::keyHandler(uint8_t event)
       if(event & key_Down) {
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
-          if(!NVstore.getUserSettings().NoHeater) {
+          if(NVstore.getUserSettings().menuMode < 2) {
             _showModeTime = millis() + 5000;
             _nModeSel = getThermostatModeActive() ? 0 : 1;
           }
@@ -201,7 +201,7 @@ CBasicScreen::keyHandler(uint8_t event)
       if(event & key_Up) {
         if(repeatCount > 2) {
           repeatCount = -1;        // prevent double handling
-          if(!NVstore.getUserSettings().NoHeater) {
+          if(NVstore.getUserSettings().menuMode < 2) {
             _showModeTime = millis() + 5000;
           }
           sUserSettings settings = NVstore.getUserSettings();
@@ -212,7 +212,7 @@ CBasicScreen::keyHandler(uint8_t event)
       }
       // hold CENTRE to turn ON or OFF
       if(event & key_Centre) {
-        if(!NVstore.getUserSettings().NoHeater) {
+        if(NVstore.getUserSettings().menuMode < 2) {
           int runstate = getHeaterInfo().getRunStateEx();
           if(runstate) {   // running, including cyclic mode idle
             if(repeatCount > 5) {
@@ -238,7 +238,7 @@ CBasicScreen::keyHandler(uint8_t event)
   if(event & keyReleased) {
     if(!_showModeTime) {
       // release DOWN key to reduce set demand, provided we are not in mode select
-      if(!NVstore.getUserSettings().NoHeater) {
+      if(NVstore.getUserSettings().menuMode < 2) {
         if(event & key_Down) {
           if(reqDemandDelta(-1)) {
             _showSetModeTime = millis() + 2000;
@@ -297,7 +297,7 @@ CBasicScreen::keyHandler(uint8_t event)
     }
     // release CENTRE to accept new mode, and/or show current setting
     if(event & key_Centre) {
-      if(!NVstore.getUserSettings().NoHeater) {
+      if(NVstore.getUserSettings().menuMode < 2) {
         if(repeatCount != -2) {  // prevent after off commands
           if(_showModeTime) {
             _showModeTime = millis(); // force immediate cancellation of showmode (via screen update)
@@ -317,7 +317,7 @@ CBasicScreen::keyHandler(uint8_t event)
 void 
 CBasicScreen::showRunState()
 {
-  if(NVstore.getUserSettings().NoHeater)
+  if(NVstore.getUserSettings().menuMode == 2)
     return;
 
   int runstate = getHeaterInfo().getRunStateEx(); 

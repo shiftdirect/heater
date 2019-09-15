@@ -393,15 +393,7 @@ CScreenManager::begin(bool bNoClock)
 
   std::vector<CScreen*> menuloop;
   // create root menu loop
-  if(NVstore.getUserSettings().NoHeater) {
-    menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
-    menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
-    if(!bNoClock)
-      menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
-    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
-      menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
-  }
-  else {
+  if(NVstore.getUserSettings().menuMode == 0) {
     menuloop.push_back(new CDetailedScreen(*_pDisplay, *this));         //  detail control
     menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
     if(!bNoClock)
@@ -410,6 +402,20 @@ CScreenManager::begin(bool bNoClock)
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
       menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
     menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
+  }
+  else if(NVstore.getUserSettings().menuMode == 1) {
+    menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
+    menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
+    if(!bNoClock)
+      menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
+  }
+  else if(NVstore.getUserSettings().menuMode == 2) {
+    menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
+    menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
+    if(!bNoClock)
+      menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
+    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
+      menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
   }
   _Screens.push_back(menuloop);
 
@@ -432,38 +438,45 @@ CScreenManager::begin(bool bNoClock)
   menuloop.push_back(new CSetTimerScreen(*_pDisplay, *this, 13)); // set timer 14
   _Screens.push_back(menuloop);
 
-  // create heater tuning screens loop - password protected
-  menuloop.clear();
-  menuloop.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  mixture tuning
-  menuloop.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // heater system tuning
-  menuloop.push_back(new CFuelCalScreen(*_pDisplay, *this));          // fuel pump calibration
-  _Screens.push_back(menuloop);
-
   // create User Settings screens loop 
   menuloop.clear();
-  if(NVstore.getUserSettings().NoHeater) {
-    menuloop.push_back(new CNoHeaterHomeMenuSelScreen(*_pDisplay, *this)); // No Heater Home menu settings screen
-    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
-      menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
-  }
-  else {
+  if(NVstore.getUserSettings().menuMode == 0) {
     menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
     menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
     menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
       menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }
+  else if(NVstore.getUserSettings().menuMode == 1) {
+    menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
+    menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
+    menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
+  }
+  else if(NVstore.getUserSettings().menuMode == 2) {
+    menuloop.push_back(new CNoHeaterHomeMenuSelScreen(*_pDisplay, *this)); // No Heater Home menu settings screen
+    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
+      menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
+  }
   _Screens.push_back(menuloop);
 
   // create System Settings screens loop 
-  menuloop.clear();
-  menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
-  if(!NVstore.getUserSettings().NoHeater) {
-    menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
+  if(NVstore.getUserSettings().menuMode == 0 || NVstore.getUserSettings().menuMode == 2) {
+    menuloop.clear();
+    menuloop.push_back(new CVersionInfoScreen(*_pDisplay, *this)); // GPIO settings screen
+    if(NVstore.getUserSettings().menuMode == 0) {
+      menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
+    }
+    menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
+    menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
+    menuloop.push_back(new CBTScreen(*_pDisplay, *this));
+    _Screens.push_back(menuloop);
   }
-  menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
-  menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
-  menuloop.push_back(new CBTScreen(*_pDisplay, *this));
+  
+  // create heater tuning screens loop - password protected
+  menuloop.clear();
+  menuloop.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  mixture tuning
+  menuloop.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // heater system tuning
+  menuloop.push_back(new CFuelCalScreen(*_pDisplay, *this));          // fuel pump calibration
   _Screens.push_back(menuloop);
 
   // create branch screens
@@ -522,7 +535,7 @@ CScreenManager::checkUpdate()
       //   Basic Control
       //   Clock
       // return to those upon timeout, otherwise return to Basic Control screen
-      if((_rootMenu > 2) || ((_rootMenu == 0) && NVstore.getUserSettings().NoHeater)) {
+      if((_rootMenu > 2) || ((_rootMenu == 0) && NVstore.getUserSettings().menuMode)) {
         uint8_t userHomeMenu = NVstore.getUserSettings().HomeMenu.onTimeout;
         if(userHomeMenu) {  // allow user to override defualt screen
           userHomeMenu--;

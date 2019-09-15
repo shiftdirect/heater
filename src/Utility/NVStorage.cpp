@@ -386,7 +386,7 @@ sUserSettings::load()
   validatedLoad("JSONsingle", JSON.singleElement, 0, u8inBounds, 0, 1);
   validatedLoad("JSONLF", JSON.LF, 0, u8inBounds, 0, 1);
   validatedLoad("JSONpad", JSON.padding, 0, u8inBounds, 0, 1);
-  validatedLoad("NoHeater", NoHeater, 0, u8inBounds, 0, 1);
+  validatedLoad("menuMode", menuMode, 0, u8inBounds, 0, 2);
   validatedLoad("Clock12hr", clock12hr, 0, u8inBounds, 0, 1);
   preferences.end();    
 }
@@ -419,7 +419,7 @@ sUserSettings::save()
   preferences.putUChar("JSONsingle", JSON.singleElement);
   preferences.putUChar("JSONLF", JSON.LF);
   preferences.putUChar("JSONpad", JSON.padding);
-  preferences.putUChar("NoHeater", NoHeater);
+  preferences.putUChar("menuMode", menuMode);
   preferences.putUChar("Clock12hr", clock12hr);
   preferences.end();    
 }

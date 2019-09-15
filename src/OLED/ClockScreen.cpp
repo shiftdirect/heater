@@ -109,7 +109,7 @@ CClockScreen::keyHandler(uint8_t event)
     }
     // press DOWN
     if(event & key_Down) {
-      if(!NVstore.getUserSettings().NoHeater) {
+      if(NVstore.getUserSettings().menuMode < 2) {
         _ScreenManager.selectMenu(CScreenManager::TimerMenuLoop);    // switch to timer set screen loop
       }
     }
@@ -133,7 +133,7 @@ CClockScreen::keyHandler(uint8_t event)
       }
       // hold CENTRE to toggle On/Off state
       if(event & key_Centre) {
-        if(!NVstore.getUserSettings().NoHeater) {
+        if(NVstore.getUserSettings().menuMode < 2) {
           int runstate = getHeaterInfo().getRunStateEx();
           if(runstate) {   // running, including cyclic mode idle
             if(_keyRepeatCount > 5) {

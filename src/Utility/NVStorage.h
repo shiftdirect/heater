@@ -264,7 +264,7 @@ struct sUserSettings : public CESP32_NVStorage {
   sHomeMenuActions HomeMenu;
   sGPIOparams GPIO;
   sJSONoptions JSON;
-  uint8_t NoHeater;
+  uint8_t menuMode;  // 0 normal, 1, basic, 2 no heater
   uint8_t clock12hr;
 
   bool valid() {
@@ -307,7 +307,7 @@ struct sUserSettings : public CESP32_NVStorage {
     cyclic.init();
     HomeMenu.init();
     JSON.init();
-    NoHeater = 0;
+    menuMode = 0;
     clock12hr = 0;
   };
   void load();
@@ -331,7 +331,7 @@ struct sUserSettings : public CESP32_NVStorage {
     cyclic = rhs.cyclic;
     HomeMenu = rhs.HomeMenu;
     JSON = rhs.JSON;
-    NoHeater = rhs.NoHeater;
+    menuMode = rhs.menuMode;
     clock12hr = rhs.clock12hr;
     return *this;
   }

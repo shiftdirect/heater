@@ -309,7 +309,7 @@ CScreenHeader::showWifiIcon()
 void
 CScreenHeader::showBatteryIcon(float voltage)
 {
-  if(!NVstore.getUserSettings().NoHeater) {
+  if(NVstore.getUserSettings().menuMode < 2) {
     _drawBitmap(X_BATT_ICON, Y_BATT_ICON, BatteryIconInfo);
     char msg[16];
     sprintf(msg, "%.1fV", voltage);

@@ -326,6 +326,23 @@ void interpretJsonCommand(char* pLine)
         NVstore.setHeaterTuning(ht);
       }
     }
+    else if(strcmp("SMenu", it->key) == 0) {
+      sUserSettings us = NVstore.getUserSettings();
+      us.menuMode = it->value.as<uint8_t>();
+      if(us.menuMode <=2) {
+        NVstore.setUserSettings(us);
+        NVstore.save();
+        NVstore.doSave();
+        switch(us.menuMode) {
+          case 0: DebugPort.println("Restarting ESP to invoke Full menu control mode"); break;
+          case 1: DebugPort.println("Restarting ESP to invoke Basic menu mode"); break;
+          case 2: DebugPort.println("Restarting ESP to invoke cut back No Heater mode"); break;
+        }
+        DebugPort.handle();
+        delay(1000);
+        ESP.restart();
+      }
+    }
   }
 }
 
@@ -354,7 +371,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
   }
   bSend |= moderator.addJson("TempDesired", getTemperatureDesired(), root); 
 	bSend |= moderator.addJson("TempMode", NVstore.getUserSettings().degF, root); 
-  if(!NVstore.getUserSettings().NoHeater) {
+  if(NVstore.getUserSettings().menuMode < 2) {
     bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
     bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
     bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root); 
@@ -393,7 +410,7 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
 
 	bool bSend = false;  // reset should send flag
 
-  if(!NVstore.getUserSettings().NoHeater) {
+  if(NVstore.getUserSettings().menuMode < 2) {
     bSend |= moderator.addJson("ThermostatMethod", NVstore.getUserSettings().ThermostatMethod, root); 
     bSend |= moderator.addJson("ThermostatWindow", NVstore.getUserSettings().ThermostatWindow, root); 
     int stop = NVstore.getUserSettings().cyclic.Stop;
@@ -513,7 +530,7 @@ bool makeJSONStringSysInfo(CModerator& moderator, char* opStr, int len)
       bSend |= moderator.addJson("SysVer", getVersionStr(), root); 
       bSend |= moderator.addJson("SysDate", getVersionDate(), root); 
       bSend |= moderator.addJson("SysFreeMem", ESP.getFreeHeap(), root); 
-      if(!NVstore.getUserSettings().NoHeater) {
+      if(NVstore.getUserSettings().menuMode < 2) {
         bSend |= moderator.addJson("SysRunTime", pHourMeter->getRunTime(), root); 
         bSend |= moderator.addJson("SysGlowTime", pHourMeter->getGlowTime(), root); 
       }
