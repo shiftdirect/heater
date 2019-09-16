@@ -40,6 +40,7 @@
 #include "GPIOSetupScreen.h"
 #include "VersionInfoScreen.h"
 #include "HomeMenuSelScreen.h"
+#include "MenuSelScreen.h"
 #include "TimeoutsScreen.h"
 #include "HourMeterScreen.h"
 #include "BTScreen.h"
@@ -351,6 +352,7 @@ CScreenManager::CScreenManager()
   _MenuTimeout = millis() + 60000;
   _pRebootScreen = NULL;
   _bDimmed = false;
+  _bReload = true;
 }
 
 CScreenManager::~CScreenManager()
@@ -369,7 +371,7 @@ CScreenManager::~CScreenManager()
 }
 
 void 
-CScreenManager::begin(bool bNoClock)
+CScreenManager::begin()
 {
 
   // 128 x 64 OLED support (I2C)
@@ -389,6 +391,24 @@ CScreenManager::begin(bool bNoClock)
 
   delay(2000);
 
+  _loadScreens();
+}
+
+void CScreenManager::_unloadScreens()
+{
+  for (auto menuloop  : _Screens) {
+    for(auto menu : menuloop) {
+      delete menu;
+    }
+  }
+  _Screens.clear();
+}
+
+void 
+CScreenManager::_loadScreens()
+{
+  _unloadScreens();
+
   DebugPort.println("Creating Screens");
 
   std::vector<CScreen*> menuloop;
@@ -396,8 +416,7 @@ CScreenManager::begin(bool bNoClock)
   if(NVstore.getUserSettings().menuMode == 0) {
     menuloop.push_back(new CDetailedScreen(*_pDisplay, *this));         //  detail control
     menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
-    if(!bNoClock)
-      menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
+    menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
     menuloop.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
       menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
@@ -406,14 +425,12 @@ CScreenManager::begin(bool bNoClock)
   else if(NVstore.getUserSettings().menuMode == 1) {
     menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
     menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
-    if(!bNoClock)
-      menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
+    menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
   }
   else if(NVstore.getUserSettings().menuMode == 2) {
     menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
     menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
-    if(!bNoClock)
-      menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
+    menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
       menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
   }
@@ -444,16 +461,16 @@ CScreenManager::begin(bool bNoClock)
     menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
     menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
     menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
+    menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
       menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }
   else if(NVstore.getUserSettings().menuMode == 1) {
-    menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
-    menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
-    menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
+    menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
   }
   else if(NVstore.getUserSettings().menuMode == 2) {
     menuloop.push_back(new CNoHeaterHomeMenuSelScreen(*_pDisplay, *this)); // No Heater Home menu settings screen
+    menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
       menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }
@@ -495,13 +512,17 @@ CScreenManager::begin(bool bNoClock)
 	_rootMenu = 1;   // basic control screen
   _subMenu = 1;
 #endif
-
+  _bReload = false;
+  reqUpdate();
   _enterScreen();
 }
 
 bool 
 CScreenManager::checkUpdate()
 {
+  if(_bReload)
+    _loadScreens();
+
   long dimTimeout = NVstore.getUserSettings().dimTime;
 
   // manage dimming or blanking the display, according to user defined inactivity interval

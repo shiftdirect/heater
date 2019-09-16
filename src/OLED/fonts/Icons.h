@@ -108,6 +108,7 @@ extern const BITMAP_INFO DisplayTimeoutIconInfo;
 
 // Bitmap for menuTimeout
 extern const BITMAP_INFO MenuTimeoutIconInfo;
+extern const BITMAP_INFO MenuIconInfo;
 
 // Bitmap for timeout
 extern const BITMAP_INFO TimeoutIconInfo;

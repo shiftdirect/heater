@@ -129,7 +129,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
   DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
   DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
   DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
-  #endif
+#endif
 
   // even though we may have started in STA mode - start the config portal if demanded via the NV flag
   if(shouldBootIntoConfigPortal()) {
@@ -137,6 +137,8 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     wm.startWebPortal();
     isPortalAP = true;                   // we started portal, we have to flag it!
   }
+
+//  WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
 
   return retval;
 }

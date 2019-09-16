@@ -78,7 +78,6 @@ CDetailedScreen::CDetailedScreen(C128x64_OLED& display, CScreenManager& mgr) : C
   _showTarget = 0;
 }
 
-
 bool 
 CDetailedScreen::show()
 {
@@ -197,6 +196,10 @@ CDetailedScreen::keyHandler(uint8_t event)
   if(event & keyRepeat) {
     if(_keyRepeatCount >= 0) {
       _keyRepeatCount++;
+      if((event & (key_Left | key_Right)) == (key_Left | key_Right)) {
+        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::HtrSettingsUI);
+        return true;
+      }
       // hold LEFT to toggle GPIO output #1
       if(event & key_Left) {
         if(_keyRepeatCount > 2) {

@@ -791,6 +791,21 @@ const uint8_t PROGMEM menuTimeoutIcon[]  =
 };
 const BITMAP_INFO MenuTimeoutIconInfo(24, 10, menuTimeoutIcon);
 
+const uint8_t PROGMEM menuIcon[]  =
+{
+	0x00, 0x00,  //            
+	0xFF, 0xC0,  // ########## 
+	0x00, 0x00,  //            
+	0xFF, 0x00,  // ########   
+	0x00, 0x00,  //            
+	0xFC, 0x00,  // ######     
+	0x00, 0x00,  //            
+	0xFF, 0x80,  // #########  
+	0x00, 0x00,  //            
+	0x00, 0x00,  //            
+};
+const BITMAP_INFO MenuIconInfo(10, 10, menuIcon);
+
 const uint8_t PROGMEM timeoutIcon[]  =
 {
 	0xFF, 0x80, // #########

@@ -42,6 +42,7 @@ enum eJUSTIFY {
 
 const int border = 3;
 const int radius = 4;
+const int SaveConfirm = 10;
 
 class CScreen {
 protected:

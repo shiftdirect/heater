@@ -37,6 +37,7 @@ class CScreenManager {
   int _subMenu;
   int _rootMenu;
   bool _bDimmed;
+  bool _bReload;
   unsigned long _DimTime_ms;
   unsigned long _MenuTimeout;
   bool _bReqUpdate;
@@ -44,6 +45,8 @@ class CScreenManager {
   void _leaveScreen();
   void _changeSubMenu(int dir);
   void _dim(bool state);
+  void _loadScreens();
+  void _unloadScreens();
 public:
   enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, UserSettingsLoop, SystemSettingsLoop, TuningMenuLoop, BranchMenu };
   enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, GPIOInfoUI, TrunkUI };
@@ -56,7 +59,7 @@ public:
 public:
   CScreenManager();
   ~CScreenManager();
-  void begin(bool bNoClock);
+  void begin();
   bool checkUpdate();
   bool animate();
   void keyHandler(uint8_t event);
@@ -70,6 +73,7 @@ public:
   void clearDisplay();
   void bumpTimeout();
   void showSplash();
+  void reqReload() { _bReload = true; };
 };
 
 #endif // __SCREEN_MANAGER_H__

@@ -394,14 +394,10 @@ void setup() {
   // Initialize the rtc object
   Clock.begin();
 
-  bool bNoClock = true;
-  const BTCDateTime& now = Clock.get();
-  if(now.day() != 0xa5)
-    bNoClock = false;
   BootTime = Clock.get().secondstime();
   
-  ScreenManager.begin(bNoClock);
-  if(!bNoClock && Clock.lostPower()) {
+  ScreenManager.begin();
+  if(Clock.lostPower()) {
     ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::SetClockUI);
   }
 
@@ -470,7 +466,6 @@ void setup() {
   FilteredSamples.Fan.setRounding(10);
   FilteredSamples.Fan.setAlpha(0.7);
   FilteredSamples.AmbientTemp.reset(-100.0);
-  FilteredSamples.AmbientTemp.setAlpha(0);  // no average - for test
   FilteredSamples.FastipVolts.setRounding(0.1);
   FilteredSamples.FastipVolts.setAlpha(0.7);
   FilteredSamples.FastGlowAmps.setRounding(0.01);
@@ -1826,3 +1821,7 @@ void showMainmenu()
   DebugPort.println("");
 }
 
+void reloadScreens()
+{
+  ScreenManager.reqReload();
+}

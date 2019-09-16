@@ -332,16 +332,16 @@ void interpretJsonCommand(char* pLine)
       if(us.menuMode <=2) {
         NVstore.setUserSettings(us);
         NVstore.save();
-        NVstore.doSave();
         switch(us.menuMode) {
-          case 0: DebugPort.println("Restarting ESP to invoke Full menu control mode"); break;
-          case 1: DebugPort.println("Restarting ESP to invoke Basic menu mode"); break;
-          case 2: DebugPort.println("Restarting ESP to invoke cut back No Heater mode"); break;
+          case 0: DebugPort.println("Invoking Full menu control mode"); break;
+          case 1: DebugPort.println("Invoking Basic menu mode"); break;
+          case 2: DebugPort.println("Invoking cut back No Heater mode"); break;
         }
-        DebugPort.handle();
-        delay(1000);
-        ESP.restart();
+        reloadScreens();
       }
+    }
+    else if(strcmp("SysHourMeters", it->key) == 0) {
+      pHourMeter->resetHard();
     }
   }
 }
