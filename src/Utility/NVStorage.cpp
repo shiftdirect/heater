@@ -388,6 +388,7 @@ sUserSettings::load()
   validatedLoad("JSONpad", JSON.padding, 0, u8inBounds, 0, 1);
   validatedLoad("menuMode", menuMode, 0, u8inBounds, 0, 2);
   validatedLoad("Clock12hr", clock12hr, 0, u8inBounds, 0, 1);
+  validatedLoad("holdPassword", holdPassword, 0, u8inBounds, 0, 1);
   preferences.end();    
 }
 
@@ -421,6 +422,7 @@ sUserSettings::save()
   preferences.putUChar("JSONpad", JSON.padding);
   preferences.putUChar("menuMode", menuMode);
   preferences.putUChar("Clock12hr", clock12hr);
+  preferences.putUChar("holdPassword", holdPassword);
   preferences.end();    
 }
 

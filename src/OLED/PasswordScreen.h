@@ -33,10 +33,13 @@ class CPasswordScreen : public CScreenHeader {
   bool _bPasswordOK;
   int  _PWcol;
   unsigned long _SaveTime;
+  static long __Expiry;
+  void __initPassword(bool get);
 protected:
   bool _showPassword();
+  void _holdPassword();
   void _getPassword();
-  bool _isPasswordOK() { return _bPasswordOK; };
+  bool _isPasswordOK();
   void _enableStoringMessage();
   void _initUI();
   bool _busy();

@@ -266,6 +266,7 @@ struct sUserSettings : public CESP32_NVStorage {
   sJSONoptions JSON;
   uint8_t menuMode;  // 0 normal, 1, basic, 2 no heater
   uint8_t clock12hr;
+  uint8_t holdPassword;
 
   bool valid() {
     bool retval = true;
@@ -309,6 +310,7 @@ struct sUserSettings : public CESP32_NVStorage {
     JSON.init();
     menuMode = 0;
     clock12hr = 0;
+    holdPassword = 0;
   };
   void load();
   void save();
@@ -333,6 +335,7 @@ struct sUserSettings : public CESP32_NVStorage {
     JSON = rhs.JSON;
     menuMode = rhs.menuMode;
     clock12hr = rhs.clock12hr;
+    holdPassword = rhs.holdPassword;
     return *this;
   }
 };

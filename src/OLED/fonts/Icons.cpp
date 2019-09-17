@@ -1345,3 +1345,31 @@ const uint8_t PROGMEM userBitmap[]  =
 const BITMAP_INFO UserIconInfo(8, 9, userBitmap);
 
 
+// 
+//  Image data for password
+// 
+
+const uint8_t PROGMEM passwordIcon[]  =
+{
+	0x0E, 0x00, //     ###    
+	0x1B, 0x00, //    ## ##   
+	0x11, 0x00, //    #   #   
+	0x11, 0x00, //    #   #   
+	0x7F, 0xC0, //  ######### 
+	0x71, 0xC0, //  ###   ### 
+	0x71, 0xC0, //  ###   ### 
+	0x7B, 0xC0, //  #### #### 
+	0x7B, 0xC0, //  #### #### 
+	0x7F, 0xC0, //  ######### 
+	0x00, 0x00, //            
+	0xEE, 0xE0, // ### ### ###
+	0xAA, 0xA0, // # # # # # #
+	0x22, 0x20, //   #   #   #
+	0x44, 0x40, //  #   #   # 
+	0x00, 0x00, //            
+	0x44, 0x40, //  #   #   # 
+};
+
+const BITMAP_INFO passwordIconInfo(11, 17, passwordIcon);
+
+

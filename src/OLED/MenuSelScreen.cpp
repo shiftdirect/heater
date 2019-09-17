@@ -36,6 +36,7 @@ CMenuSelScreen::onSelect()
   CScreenHeader::onSelect();
   _rowSel = 0;
   _menuMode = NVstore.getUserSettings().menuMode;
+  _holdPW = NVstore.getUserSettings().holdPassword;
   _scrollChar = 0;
   _bReload = false;
 }
@@ -63,15 +64,23 @@ CMenuSelScreen::show()
       _showConfirmMessage();
     }
     else {
-      _showTitle("Menu Mode");
+      _showTitle("Menu Options");
       
-      _drawBitmap(30, 16, MenuIconInfo);
+      _drawBitmap(25, 16, MenuIconInfo);
       switch(_menuMode) {
         case 0: strcpy(msg, "Standard"); break;
         case 1: strcpy(msg, "Basic"); break;
         case 2: strcpy(msg, "No heater"); break;
       }
-      _printMenuText(50, 16, msg, _rowSel == 1);
+      _printMenuText(45, 16, msg, _rowSel == 2);
+
+      _drawBitmap(25, 28, passwordIconInfo);
+      if(_holdPW) 
+        strcpy(msg, "Retain 24hrs"); 
+      else
+        strcpy(msg, "Forget"); 
+      _printMenuText(45, 30, msg, _rowSel == 1);
+
     }
   }
   return true;
@@ -87,20 +96,28 @@ CMenuSelScreen::animate()
     }
     if(_rowSel != SaveConfirm) {
       const char* pMsg = NULL;
-      switch(_menuMode) {
+      switch(_rowSel) {
         case 0:
-          pMsg = "                    Standard, complete menu allows full access to features.                    ";
-          break;
-        case 1:
-          pMsg = "                    Basic simplified menu.                    ";
+          _printMenuText(_display.xCentre(), 52, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
           break;
         case 2:
-          pMsg = "                    No heater mode.                    ";
+          switch(_menuMode) {
+            case 0: pMsg = "                    Standard, complete menu allows full access to features.                    "; break;
+            case 1: pMsg = "                    Basic simplified menu.                    "; break;
+            case 2: pMsg = "                    No heater mode.                    "; break;
+          }
+          break;
+        case 1:
+          if(_holdPW)
+            pMsg = "                    Retain password for 24 hours after correct entry.                    ";
+          else
+            pMsg = "                    Forget password after each entry.                    ";
           break;
       }
-      _display.drawFastHLine(0, 52, 128, WHITE);
-      if(pMsg != NULL)
+      if(pMsg != NULL) {
+        _display.drawFastHLine(0, 52, 128, WHITE);
         _scrollMessage(56, pMsg, _scrollChar);
+      }
       return true;
     }
   }
@@ -127,6 +144,7 @@ CMenuSelScreen::keyHandler(uint8_t event)
           _enableStoringMessage();
           us = NVstore.getUserSettings();
           us.menuMode = _menuMode;
+          us.holdPassword = _holdPW;
           NVstore.setUserSettings(us);
           NVstore.save();
           switch(us.menuMode) {
@@ -134,11 +152,21 @@ CMenuSelScreen::keyHandler(uint8_t event)
             case 1: DebugPort.println("Invoking Basic menu mode"); break;
             case 2: DebugPort.println("Invoking No Heater menu mode"); break;
           }
+          _holdPassword();
           _bReload = true;
           _rowSel = 0;
         }
         else {
-          _getPassword();
+          if(_rowSel == 0) {
+            _getPassword();
+            if(_isPasswordOK()) {
+              _rowSel = 1;
+            }
+          }
+          else {
+            _rowSel++;
+            UPPERLIMIT(_rowSel, 2);
+          }
         }
       }
       // DOWN press
@@ -182,6 +210,9 @@ CMenuSelScreen::adjust(int dir)
 {
   switch(_rowSel) {
     case 1:
+      _holdPW = _holdPW ? 0 : 1;
+      break;
+    case 2:
       _menuMode += dir;
       WRAPLIMITS(_menuMode, 0, 2);
       break;

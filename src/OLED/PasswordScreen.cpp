@@ -31,8 +31,10 @@
 #include "PasswordScreen.h"
 #include "KeyPad.h"
 #include "../Utility/macros.h"
+#include "../Utility/NVStorage.h"
 #include "fonts/Arial.h"
 
+long CPasswordScreen::__Expiry = 0;
 
 CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
 {
@@ -47,14 +49,31 @@ CPasswordScreen::onSelect()
 }
 
 void
-CPasswordScreen::_initUI()
+CPasswordScreen::__initPassword(bool get)
 {
-  _bGetPassword = false;
+  _bGetPassword = get;
   _bPasswordOK = false;
+  _bPasswordOK |= __Expiry != 0;
   _PWcol = 0;
+  // reset PW digits
   for(int i= 0; i < 4; i++) 
     _PWdig[i] = -1;
+}
+
+void
+CPasswordScreen::_initUI()
+{
+  __initPassword(false);
+
   _SaveTime = 0;
+}
+
+void 
+CPasswordScreen::_getPassword()
+{
+  __initPassword(true);
+    
+  _ScreenManager.reqUpdate();
 }
 
 bool 
@@ -68,17 +87,13 @@ CPasswordScreen::show()
     return true;
   }
   else if(_bGetPassword) {
-    _display.clearDisplay();
-/*    {
-      CTransientFont AF(_display, &arial_8ptBoldFontInfo);
-      _printMenuText(_display.xCentre(), 32, "Enter password...", false, eCentreJustify);
-    }*/
-    _showPassword();
-    return true;
+    if(!_bPasswordOK) {
+      _display.clearDisplay();
+      _showPassword();
+      return true;
+    }
   }
-  else {
-    return false;
-  }
+  return false;
 }
 
 bool 
@@ -100,10 +115,25 @@ CPasswordScreen::_busy()
   return _SaveTime != 0;
 }
 
+void
+CPasswordScreen::_holdPassword()
+{
+  if(NVstore.getUserSettings().holdPassword)
+    __Expiry = millis() + 24 * 60 * 60 * 1000;  // 24 hours 
+  else 
+    __Expiry = 0;
+}
+
 bool 
 CPasswordScreen::keyHandler(uint8_t event)
 {
   if(_bGetPassword) {
+
+    if(_bPasswordOK) {
+      _bGetPassword = false;
+      return true;
+    }
+
     if(event & keyPressed) {
 
       // press CENTRE
@@ -114,6 +144,7 @@ CPasswordScreen::keyHandler(uint8_t event)
            (_PWdig[2] == 8) && 
            (_PWdig[3] == 8)) {
           _bPasswordOK = true;
+          _holdPassword();
         }
 
         _bGetPassword = false;
@@ -187,19 +218,6 @@ CPasswordScreen::_showPassword()
 }
 
 void 
-CPasswordScreen::_getPassword()
-{
-  _bGetPassword = true;
-  _bPasswordOK = false;
-  _PWcol = 0;
-  // reset PW digits
-  for(int i= 0; i < 4; i++) 
-    _PWdig[i] = -1;
-    
-  _ScreenManager.reqUpdate();
-}
-
-void 
 CPasswordScreen::_enableStoringMessage()
 {
   _SaveTime = millis() + 1500;
@@ -207,3 +225,14 @@ CPasswordScreen::_enableStoringMessage()
 }
 
 
+bool CPasswordScreen::_isPasswordOK() 
+{ 
+  if(__Expiry) {
+    long tDelta = millis() - __Expiry;
+    if(tDelta > 0) {
+      __Expiry = 0;
+      _bPasswordOK = false; 
+    }
+  }
+  return __Expiry != 0 || _bPasswordOK; 
+};
