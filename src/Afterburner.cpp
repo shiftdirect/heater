@@ -124,8 +124,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 3;
-const char* FirmwareDate = "11 Sep 2019";
+const int FirmwareSubRevision = 4;
+const char* FirmwareDate = "17 Sep 2019";
 
 
 #ifdef ESP32
@@ -1410,20 +1410,6 @@ void checkDebugCommands()
         bTestBTModule = !bTestBTModule;
         Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
       }
-/*      else if(rxVal == ('s' & 0x1f)) {   // CTRL-S Stripped back - no heater mode
-        sUserSettings us = NVstore.getUserSettings();
-        us.NoHeater = !us.NoHeater;
-        NVstore.setUserSettings(us);
-        NVstore.save();
-        NVstore.doSave();
-        if(us.NoHeater)
-          DebugPort.println("Restarting ESP to invoke cut back No Heater mode");
-        else
-          DebugPort.println("Restarting ESP to invoke Full control mode");
-        DebugPort.handle();
-        delay(1000);
-        ESP.restart();
-      }*/
     }
 #ifdef PROTOCOL_INVESTIGATION    
     if(bSendVal) {
