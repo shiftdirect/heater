@@ -846,6 +846,7 @@ void loop()
         pHourMeter->monitor(HeaterFrame2);
       }
       updateJSONclients(bReportJSONData);
+      updateMQTT();
       CommState.set(CommStates::Idle);
       NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
       break;

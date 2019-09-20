@@ -134,6 +134,24 @@ public:
   bool addJson(const char* name, const char* value, JsonObject& root) { 
     return szModerator.addJson(name, value, root); 
   };
+  bool shouldSend(const char* name, int value) { 
+    return iModerator.shouldSend(name, value); 
+  };
+  bool shouldSend(const char* name, uint32_t value) { 
+    return u32Moderator.shouldSend(name, value); 
+  };
+  bool shouldSend(const char* name, unsigned long value) { 
+    return u32Moderator.shouldSend(name, value); 
+  };
+  bool shouldSend(const char* name, float value) { 
+    return fModerator.shouldSend(name, value); 
+  };
+  bool shouldSend(const char* name, uint8_t value) { 
+    return ucModerator.shouldSend(name, value); 
+  };
+  bool shouldSend(const char* name, const char* value) { 
+    return szModerator.shouldSend(name, value); 
+  };
   // force changes on all held values
   void reset() {
     iModerator.reset();
