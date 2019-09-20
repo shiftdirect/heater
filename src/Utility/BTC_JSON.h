@@ -28,10 +28,18 @@
 extern char defaultJSONstr[64];
 
 void updateJSONclients(bool report);
-void initMQTTJSONmoderator();
-void initIPJSONmoderator();
-void initTimerJSONmoderator();
-void initSysModerator();
+void initJSONMQTTmoderator();
+void initJSONIPmoderator();
+void initJSONTimermoderator();
+void initJSONSysModerator();
+void triggerJSONTimeUpdate();
+void resetAllJSONmoderators();
+void resetJSONmoderator(const char* name);
+void resetJSONTimerModerator(int timerID);
+void resetJSONIPmoderator();
+void resetJSONSysModerator();
+void resetJSONMQTTmoderator();
+void validateTimer(int ID);
 
 template<class T>
 const char* createJSON(const char* name, T value)

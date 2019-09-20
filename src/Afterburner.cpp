@@ -382,10 +382,10 @@ void setup() {
   NVstore.init();
   NVstore.load();
   
-  initMQTTJSONmoderator();   // prevents JSON for MQTT unless requested
-  initIPJSONmoderator();   // prevents JSON for IP unless requested
-  initTimerJSONmoderator();  // prevents JSON for timers unless requested
-  initSysModerator();
+  initJSONMQTTmoderator();   // prevents JSON for MQTT unless requested
+  initJSONIPmoderator();   // prevents JSON for IP unless requested
+  initJSONTimermoderator();  // prevents JSON for timers unless requested
+  initJSONSysModerator();
 
 
   KeyPad.begin(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
@@ -1653,13 +1653,13 @@ void doStreaming()
   Bluetooth.check();    // check for Bluetooth activity
 
   GPIOin.manage();
-  GPIOout.manage();
+  GPIOout.manage(); 
   GPIOalg.manage();
 
   // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {
     if(!bBTconnected) {
-      resetJSONmoderator();  // force full send upon BT client connect
+      resetAllJSONmoderators();  // force full send upon BT client connect
     }
     bBTconnected = true;
   }
@@ -1668,7 +1668,7 @@ void doStreaming()
   }
   // manage changes in number of wifi clients
   if(isWebSocketClientChange()) {
-    resetJSONmoderator();  // force full send upon number of Wifi clients change
+    resetAllJSONmoderators();  // force full send upon increase of Wifi clients
   }
 
   DebugPort.handle();    // keep telnet spy alive
@@ -1725,12 +1725,12 @@ float getGlowCurrent()
 #endif
 }
 
-float getFanSpeed()
+int getFanSpeed()
 {
 #ifdef RAW_SAMPLES
 	return getHeaterInfo().getFan_Actual();
 #else
-  return FilteredSamples.Fan.getValue();
+  return (int)FilteredSamples.Fan.getValue();
 #endif
 }
 

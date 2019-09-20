@@ -33,6 +33,7 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/Moderator.h"
 #include "../Protocol/Protocol.h"
+#include "../Utility/BTC_JSON.h"
 
 extern void DecodeCmd(const char* cmd, String& payload);
 
@@ -109,7 +110,7 @@ void onMqttConnect(bool sessionPresent)
   MQTTclient.subscribe(lcltopic, NVstore.getMQTTinfo().qos);
 #endif
 
-  resetJSONmoderator();
+  resetAllJSONmoderators();
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) 
@@ -292,7 +293,7 @@ bool isMQTTconnected() {
 }
 
 
-void checkTopic(const char* name, int value) 
+void pubTopic(const char* name, int value) 
 {
   if(MQTTclient.connected()) {
     if(MQTTmoderator.shouldSend(name, value)) {
@@ -306,7 +307,7 @@ void checkTopic(const char* name, int value)
   }
 }
 
-void checkTopic(const char* name, float value) 
+void pubTopic(const char* name, float value) 
 {
   if(MQTTclient.connected()) {
     if(MQTTmoderator.shouldSend(name, value)) {
@@ -320,7 +321,7 @@ void checkTopic(const char* name, float value)
   }
 }
 
-void checkTopic(const char* name, const char* payload) 
+void pubTopic(const char* name, const char* payload) 
 {
   if(MQTTclient.connected()) {
     if(MQTTmoderator.shouldSend(name, payload)) {
@@ -334,28 +335,26 @@ void checkTopic(const char* name, const char* payload)
 
 void updateMQTT()
 {
-  checkTopic("RunState", getHeaterInfo().getRunStateEx());
-//  checkTopic("Run", getHeaterInfo().getRunStateEx() ? "{\"RunState\":1}" : "{\"RunState\":0}");
-//  checkTopic("RunSts", getHeaterInfo().getRunStateEx() ? "1" : "0");
-  checkTopic("Run", getHeaterInfo().getRunStateEx() ? "1" : "0");
-  checkTopic("RunString", getHeaterInfo().getRunStateStr());
+  pubTopic("RunState", getHeaterInfo().getRunStateEx());
+  pubTopic("Run", getHeaterInfo().getRunStateEx() ? "1" : "0");
+  pubTopic("RunString", getHeaterInfo().getRunStateStr());
   float tidyTemp = getTemperatureSensor();
   tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
-  checkTopic("TempCurrent", tidyTemp); 
-  checkTopic("TempDesired", getTemperatureDesired()); 
-  checkTopic("TempBody", getHeaterInfo().getTemperature_HeatExchg()); 
-  checkTopic("ErrorState", getHeaterInfo().getErrState());
-  checkTopic("ErrorString", getHeaterInfo().getErrStateStrEx()); // verbose it up!
-  checkTopic("Thermostat", getThermostatModeActive());
-  checkTopic("PumpFixed", getHeaterInfo().getPump_Fixed() );
-  checkTopic("PumpActual", getHeaterInfo().getPump_Actual());
-  checkTopic("FanRPM", getFanSpeed());
-  checkTopic("InputVoltage", getBatteryVoltage(false));
-  checkTopic("GlowVoltage", getGlowVolts());
-  checkTopic("GlowCurrent", getGlowCurrent());
+  pubTopic("TempCurrent", tidyTemp); 
+  pubTopic("TempDesired", getTemperatureDesired()); 
+  pubTopic("TempBody", getHeaterInfo().getTemperature_HeatExchg()); 
+  pubTopic("ErrorState", getHeaterInfo().getErrState());
+  pubTopic("ErrorString", getHeaterInfo().getErrStateStrEx()); // verbose it up!
+  pubTopic("Thermostat", getThermostatModeActive());
+  pubTopic("PumpFixed", getHeaterInfo().getPump_Fixed() );
+  pubTopic("PumpActual", getHeaterInfo().getPump_Actual());
+  pubTopic("FanRPM", getFanSpeed());
+  pubTopic("InputVoltage", getBatteryVoltage(false));
+  pubTopic("GlowVoltage", getGlowVolts());
+  pubTopic("GlowCurrent", getGlowCurrent());
   sGPIO info;
   getGPIOinfo(info);
-  checkTopic("GPanlg", info.algVal * 100 / 4096); 
+  pubTopic("GPanlg", info.algVal * 100 / 4096); 
 }
 
 void refreshMQTT()

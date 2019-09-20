@@ -86,12 +86,12 @@ void build500Response(String& content, String file);
 
 void initWebServer(void) {
 
-	if (MDNS.begin("Afterburner")) {
-		DebugPort.println("MDNS responder started");
-	}
-	
-	server.on("/wmconfig", onWMConfig);
-	server.on("/resetwifi", onResetWifi);
+  if (MDNS.begin("Afterburner")) {
+    DebugPort.println("MDNS responder started");
+  }
+
+  server.on("/wmconfig", onWMConfig);
+  server.on("/resetwifi", onResetWifi);
   server.on("/erase", HTTP_POST, onErase);  // erase file from SPIFFS
 
   // Magical code originally shamelessly lifted from Arduino WebUpdate example, then greatly modified
@@ -115,7 +115,7 @@ void initWebServer(void) {
     DebugPort.println("WEB: GET /formatnow - ILLEGAL - root redirect");
     rootRedirect();
   });
-	server.on("/formatnow", HTTP_POST, onFormatNow);  // access via POST is legal, but only if bFormatAccess == true
+  server.on("/formatnow", HTTP_POST, onFormatNow);  // access via POST is legal, but only if bFormatAccess == true
 
   server.on("/reboot", HTTP_GET, onReboot);  // access via POST is legal, but only if bFormatAccess == true
   server.on("/reboot", HTTP_POST, onDoReboot);  // access via POST is legal, but only if bFormatAccess == true
@@ -130,12 +130,12 @@ void initWebServer(void) {
     }
   });
 
-	server.begin();
+  server.begin();
   
-	webSocket.begin();
-	webSocket.onEvent(webSocketEvent);
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
 
-	DebugPort.println("HTTP server started");
+  DebugPort.println("HTTP server started");
 
 }
 
@@ -438,8 +438,8 @@ function onformatClick() {
 void onWMConfig() 
 {
   DebugPort.println("WEB: GET /wmconfig");
-	server.send(200, "text/plain", "Start Config Portal - Retaining credential");
-	DebugPort.println("Starting web portal for wifi config");
+  server.send(200, "text/plain", "Start Config Portal - Retaining credential");
+  DebugPort.println("Starting web portal for wifi config");
   delay(500);
   wifiEnterConfigPortal(true, false, 3000);
 }
@@ -447,8 +447,8 @@ void onWMConfig()
 void onResetWifi() 
 {
   DebugPort.println("WEB: GET /resetwifi");
-	server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
-	DebugPort.println("diconnecting client and wifi, then rebooting");
+  server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
+  DebugPort.println("diconnecting client and wifi, then rebooting");
   delay(500);
   wifiEnterConfigPortal(true, true, 3000);
 }
@@ -462,7 +462,7 @@ void onNotFound()
   String message;
   build404Response(message, path);
 
-	server.send(404, "text/html", message);
+  server.send(404, "text/html", message);
 }
 
 void rootRedirect()
@@ -477,7 +477,7 @@ bool sendWebSocketString(const char* Str)
   CProfile profile;
 #endif
 
-	if(webSocket.connectedClients()) {
+  if(webSocket.connectedClients()) {
 
 #ifdef WEBTIMES
     unsigned long tCon = profile.elapsed(true);
@@ -491,52 +491,55 @@ bool sendWebSocketString(const char* Str)
     DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
 #endif
 
-		return true;
-	}
+    return true;
+  }
   return false;
 }
 
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
 {
-	if (type == WStype_TEXT) {
-		bRxWebData = true;
-		char cmd[256];
-		memset(cmd, 0, 256);
-		for (int i = 0; i < length && i < 256; i++) {
-			cmd[i] = payload[i];
-		}
-		interpretJsonCommand(cmd);  // send to the main heater controller decode routine
+  if (type == WStype_TEXT) {
+    bRxWebData = true;
+    char cmd[256];
+    memset(cmd, 0, 256);
+    for (int i = 0; i < length && i < 256; i++) {
+      cmd[i] = payload[i];
+    }
+    interpretJsonCommand(cmd);  // send to the main heater controller decode routine
   }
 }
 
 bool isWebSocketClientChange() 
 {
-	static int prevNumClients = -1;
+  static int prevNumClients = -1;
 
-	int numClients = webSocket.connectedClients();
-	if(numClients != prevNumClients) {
-		prevNumClients = numClients;
-		DebugPort.println("Changed number of web clients, should reset JSON moderator");
-    return true;
-	}
+  int numClients = webSocket.connectedClients();
+  if(numClients != prevNumClients) {
+    bool retval = numClients > prevNumClients;
+    prevNumClients = numClients;
+    if(retval) {
+      DebugPort.println("Increased number of web socket clients, should reset JSON moderator");
+      return true;
+    }
+  }
   return false;
 }
 
 bool hasWebClientSpoken(bool reset)
 {
-	bool retval = bRxWebData;
-	if(reset)
-  	bRxWebData = false;
-	return retval;
+  bool retval = bRxWebData;
+  if(reset)
+    bRxWebData = false;
+  return retval;
 }
 
 bool hasWebServerSpoken(bool reset)
 {
-	bool retval = bTxWebData;
-	if(reset)
-		bTxWebData = false;
-	return retval;
+  bool retval = bTxWebData;
+  if(reset)
+    bTxWebData = false;
+  return retval;
 }
 
 void setUploadSize(long val)
@@ -911,7 +914,7 @@ void onFormatNow()
   DebugPort.println("WEB: POST /formatnow");
   String confirm = server.arg("confirm");        // get request argument value by name
   if(confirm == "yes" && bFormatAccessed) {      // confirm user agrees, and we did pass thru /formatspiffs first
-	  DebugPort.println("Formatting SPIFFS partition");
+    DebugPort.println("Formatting SPIFFS partition");
     SPIFFS.format();                             // re-format the SPIFFS partition
     bFormatPerformed = true;
   }
@@ -936,7 +939,7 @@ void onDoReboot()
   DebugPort.println("WEB: POST /reboot");
   String confirm = server.arg("reboot");        // get request argument value by name
   if(confirm == "yes") {      // confirm user agrees, and we did pass thru /formatspiffs first
-	  DebugPort.println("Rebooting via /reboot");
+    DebugPort.println("Rebooting via /reboot");
     ESP.restart();
   }
 }
@@ -986,7 +989,7 @@ void onRename()
   String oldname = server.arg("oldname");    // get request argument value by name
   String newname = server.arg("newname");    // get request argument value by name
   if(oldname != "" && newname != "") {      
-	  DebugPort.printf("Renaming %s to %s\r\n", oldname.c_str(), newname.c_str());
+    DebugPort.printf("Renaming %s to %s\r\n", oldname.c_str(), newname.c_str());
     SPIFFS.rename(oldname.c_str(), newname.c_str());
     checkSplashScreenUpdate();
   }
