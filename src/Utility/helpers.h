@@ -96,5 +96,7 @@ void setAPpassword(const char* name);
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 
+extern void updateMQTT();
+extern void refreshMQTT();
 
 #endif

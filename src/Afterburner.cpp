@@ -124,8 +124,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 4;
-const char* FirmwareDate = "17 Sep 2019";
+const int FirmwareSubRevision = 5;
+const char* FirmwareDate = "19 Sep 2019";
 
 
 #ifdef ESP32
@@ -842,6 +842,7 @@ void loop()
         pHourMeter->monitor(HeaterFrame2);
       }
       updateJSONclients(bReportJSONData);
+      updateMQTT();
       CommState.set(CommStates::Idle);
       NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
       break;
