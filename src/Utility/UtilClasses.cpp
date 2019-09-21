@@ -340,8 +340,22 @@ void DecodeCmd(const char* cmd, String& payload)
   }
   else if(strcmp("TempOffset", cmd) == 0) {
     sHeaterTuning ht = NVstore.getHeaterTuning();
-    ht.tempOfs = payload.toFloat();
-    if(INBOUNDS(ht.tempOfs, -10.0, +10.0)) {
+    ht.tempProbe[0].offset = payload.toFloat();
+    if(INBOUNDS(ht.tempProbe[0].offset, -10.0, +10.0)) {
+      NVstore.setHeaterTuning(ht);
+    }
+  }
+  else if(strcmp("Temp2Offset", cmd) == 0) {
+    sHeaterTuning ht = NVstore.getHeaterTuning();
+    ht.tempProbe[1].offset = payload.toFloat();
+    if(INBOUNDS(ht.tempProbe[1].offset, -10.0, +10.0)) {
+      NVstore.setHeaterTuning(ht);
+    }
+  }
+  else if(strcmp("Temp3Offset", cmd) == 0) {
+    sHeaterTuning ht = NVstore.getHeaterTuning();
+    ht.tempProbe[2].offset = payload.toFloat();
+    if(INBOUNDS(ht.tempProbe[2].offset, -10.0, +10.0)) {
       NVstore.setHeaterTuning(ht);
     }
   }

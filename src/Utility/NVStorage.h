@@ -25,12 +25,17 @@
 #include "BTC_GPIO.h"
 #include "NVCore.h"
 #include "../Utility/helpers.h"
+#include "Utility/TempSense.h"
 
 #include "../RTC/Timers.h"   // for sTimer
 
 void toggle(bool& ref);
 void toggle(uint8_t& ref);
 
+struct sProbeTuning { 
+  float offset;
+  OneWireBus_ROMCode romCode;
+};
 
 struct sHeaterTuning : public CESP32_NVStorage {
   uint8_t   Pmin;
@@ -42,7 +47,7 @@ struct sHeaterTuning : public CESP32_NVStorage {
   uint8_t   glowDrive;
   uint8_t   lowVolts;    // x10
   float     pumpCal;
-  float     tempOfs;
+  sProbeTuning tempProbe[3];   // [0],[1],[2] - Primary, Secondary, Tertiary
 
   bool valid() {
     bool retval = true;
@@ -58,7 +63,9 @@ struct sHeaterTuning : public CESP32_NVStorage {
       retval &= INBOUNDS(lowVolts, 100, 125) || (lowVolts == 0);
     else 
       retval &= INBOUNDS(lowVolts, 200, 250 || (lowVolts == 0));
-    retval &= INBOUNDS(tempOfs, -10, +10);
+    retval &= INBOUNDS(tempProbe[0].offset, -10, +10);
+    retval &= INBOUNDS(tempProbe[1].offset, -10, +10);
+    retval &= INBOUNDS(tempProbe[2].offset, -10, +10);
     return retval;
   };
   void init() {
@@ -71,7 +78,12 @@ struct sHeaterTuning : public CESP32_NVStorage {
     glowDrive = 5;
     pumpCal = 0.02;
     lowVolts = 115;
-    tempOfs = 0;
+    tempProbe[0].offset = 0;
+    tempProbe[1].offset = 0;
+    tempProbe[2].offset = 0;
+    memset(tempProbe[0].romCode.bytes, 0, sizeof(tempProbe[0].romCode));
+    memset(tempProbe[1].romCode.bytes, 0, sizeof(tempProbe[1].romCode));
+    memset(tempProbe[2].romCode.bytes, 0, sizeof(tempProbe[1].romCode));
   };
   void load();
   void save();
@@ -85,7 +97,12 @@ struct sHeaterTuning : public CESP32_NVStorage {
     glowDrive = rhs.glowDrive;
     pumpCal = rhs.pumpCal;
     lowVolts = rhs.lowVolts;
-    tempOfs = rhs.tempOfs;
+    tempProbe[0].offset = rhs.tempProbe[0].offset;
+    tempProbe[1].offset = rhs.tempProbe[1].offset;
+    tempProbe[2].offset = rhs.tempProbe[2].offset;
+    memcpy(tempProbe[0].romCode.bytes, rhs.tempProbe[0].romCode.bytes, 8);
+    memcpy(tempProbe[1].romCode.bytes, rhs.tempProbe[1].romCode.bytes, 8);
+    memcpy(tempProbe[2].romCode.bytes, rhs.tempProbe[2].romCode.bytes, 8);
     return *this;
   }
   float getPmin() const;

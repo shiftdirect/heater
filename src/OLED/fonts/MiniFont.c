@@ -168,6 +168,16 @@ const uint8_t miniFontBitmaps[] PROGMEM =
   // @81 ':' (1 pixel wide)
   0x50,   //   # # 
 
+  // @82 'b' (3 pixels wide)
+	0x38,   //    ###
+	0x28,   //    # # 
+	0xf8,   //  #####
+
+  // @85 'd' (3 pixels wide)
+	0xf8,   //  #####
+	0x28,   //    # # 
+	0x38,   //    ###
+
 };
 
 // Character descriptors for a 3x5 font
@@ -194,9 +204,9 @@ const FONT_CHAR_INFO miniFontDescriptors[] PROGMEM =
 	{0, 0, 0},      // '?' 
 	{0, 0, 0},      // '@' 
 	{3, 5, 33},     // 'A' 
-	{0, 0, 0},      // 'B' 
+	{3, 5, 82},     // 'B' 
 	{3, 5, 36},     // 'C' 
-	{0, 0, 0},      // 'D' 
+	{3, 5, 85},     // 'D' 
 	{3, 5, 72},     // 'E' 
 	{3, 5, 39},     // 'F' 
 	{3, 5, 42},     // 'G' 

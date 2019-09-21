@@ -482,6 +482,10 @@ void setup() {
   pHourMeter->init(bESP32PowerUpInit || RTC_Store.getBootInit());     // ensure persistent memory variable are reset after powerup, or OTA update
   RTC_Store.setBootInit(false);
 
+  TempSensor.mapSensor(0, NVstore.getHeaterTuning().tempProbe[0].romCode);
+  TempSensor.mapSensor(1, NVstore.getHeaterTuning().tempProbe[1].romCode);
+  TempSensor.mapSensor(2, NVstore.getHeaterTuning().tempProbe[2].romCode);
+
   delay(1000); // just to hold the splash screeen for while
 }
 
@@ -799,7 +803,9 @@ void loop()
       if(tDelta > MIN_TEMPERATURE_INTERVAL) {  // maintain a minimum holdoff period
         lastTemperatureTime = millis();    // reset time to observe temeprature        
 
-        if(TempSensor.readTemperature(fTemperature)) {
+        TempSensor.readSensors();
+//        TempSensor.checkNumSensors();
+        if(TempSensor.getTemperature(fTemperature)) {  // get Primary sensor temeprature
           if(DS18B20holdoff) {
             DS18B20holdoff--; 
             DebugPort.printf("Skipped initial DS18B20 reading: %f\r\n", fTemperature);
@@ -1125,7 +1131,8 @@ float getTemperatureDesired()
 
 float getTemperatureSensor()
 {
-  return FilteredSamples.AmbientTemp.getValue() + NVstore.getHeaterTuning().tempOfs;
+  // NVstore always holds primary sensor as index 0
+  return FilteredSamples.AmbientTemp.getValue() + NVstore.getHeaterTuning().tempProbe[0].offset;
 }
 
 void  setPumpMin(float val)

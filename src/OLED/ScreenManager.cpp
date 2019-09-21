@@ -46,6 +46,7 @@
 #include "BTScreen.h"
 #include "MenuTrunkScreen.h"
 #include "MQTTScreen.h"
+#include "DS18B20Screen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -486,6 +487,7 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
     menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
     menuloop.push_back(new CBTScreen(*_pDisplay, *this));
+    menuloop.push_back(new CDS18B20Screen(*_pDisplay, *this));
     _Screens.push_back(menuloop);
   }
   

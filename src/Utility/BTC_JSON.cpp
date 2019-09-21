@@ -36,7 +36,9 @@
 #include "../Protocol/Protocol.h"
 #include <string.h>
 #include "HourMeter.h"
+#include "Utility/TempSense.h"
 
+extern CTempSense TempSensor;
 extern CModerator MQTTmoderator;
 
 char defaultJSONstr[64];
@@ -143,6 +145,22 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
   if(tidyTemp > -80) {
 	  bSend |= moderator.addJson("TempCurrent", tidyTemp, root); 
   }
+  if(TempSensor.getNumSensors() > 1) {
+    TempSensor.getTemperature(tidyTemp, 1);
+    tidyTemp += NVstore.getHeaterTuning().tempProbe[1].offset;
+    tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
+    if(tidyTemp > -80) {
+	    bSend |= moderator.addJson("Temp2Current", tidyTemp, root); 
+    }
+    if(TempSensor.getNumSensors() > 2) {
+      TempSensor.getTemperature(tidyTemp, 2);
+      tidyTemp += NVstore.getHeaterTuning().tempProbe[2].offset;
+      tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
+      if(tidyTemp > -80) {
+	      bSend |= moderator.addJson("Temp3Current", tidyTemp, root); 
+      }
+    }
+  }
   bSend |= moderator.addJson("TempDesired", getTemperatureDesired(), root); 
 	bSend |= moderator.addJson("TempMode", NVstore.getUserSettings().degF, root); 
   if(NVstore.getUserSettings().menuMode < 2) {
@@ -196,9 +214,14 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root);  // threshold of under temp for cyclic mode
     bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root);               // running count of pump strokes
     bSend |= moderator.addJson("PumpCal", NVstore.getHeaterTuning().pumpCal, root);        // mL/stroke
-    bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low volatge cutout
+    bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low voltage cutout
   }
-  bSend |= moderator.addJson("TempOffset", NVstore.getHeaterTuning().tempOfs, root);     // degC offset
+  bSend |= moderator.addJson("TempOffset", NVstore.getHeaterTuning().tempProbe[0].offset, root);     // degC offset
+  if(TempSensor.getNumSensors() > 1) {
+    bSend |= moderator.addJson("Temp2Offset", NVstore.getHeaterTuning().tempProbe[1].offset, root);     // degC offset
+    if(TempSensor.getNumSensors() > 2) 
+      bSend |= moderator.addJson("Temp3Offset", NVstore.getHeaterTuning().tempProbe[2].offset, root);     // degC offset
+  }
 
   if(bSend) {
 		root.printTo(opStr, len);

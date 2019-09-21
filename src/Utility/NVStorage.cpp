@@ -265,8 +265,25 @@ sHeaterTuning::load()
   else
     validatedLoad("lowVolts", lowVolts, 230, u8inBoundsOrZero, 200, 250);
   validatedLoad("pumpCal", pumpCal, 0.02, 0.001, 1);
-  validatedLoad("tempOfs", tempOfs, 0.0, -10.0, +10.0);
+  validatedLoad("tempOffset0", tempProbe[0].offset, 0.0, -10.0, +10.0);
+  validatedLoad("tempOffset1", tempProbe[1].offset, 0.0, -10.0, +10.0);
+  validatedLoad("tempOffset2", tempProbe[2].offset, 0.0, -10.0, +10.0);
+  preferences.getBytes("probeSerial0", tempProbe[0].romCode.bytes, 8);
+  preferences.getBytes("probeSerial1", tempProbe[1].romCode.bytes, 8);
+  preferences.getBytes("probeSerial2", tempProbe[2].romCode.bytes, 8);
   preferences.end();    
+
+  for(int i=0; i<3; i++) {
+    DebugPort.printf("Rd Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
+                     i,
+                     tempProbe[i].romCode.fields.serial_number[5],
+                     tempProbe[i].romCode.fields.serial_number[4],
+                     tempProbe[i].romCode.fields.serial_number[3],
+                     tempProbe[i].romCode.fields.serial_number[2],
+                     tempProbe[i].romCode.fields.serial_number[1],
+                     tempProbe[i].romCode.fields.serial_number[0]
+                     );
+  }
 }
 
 void 
@@ -284,8 +301,25 @@ sHeaterTuning::save()
   preferences.putUChar("glowDrive", glowDrive);
   preferences.putUChar("lowVolts", lowVolts);
   preferences.putFloat("pumpCal", pumpCal);
-  preferences.putFloat("tempOfs", tempOfs);
+  preferences.putFloat("tempOffset0", tempProbe[0].offset);
+  preferences.putFloat("tempOffset1", tempProbe[1].offset);
+  preferences.putFloat("tempOffset2", tempProbe[2].offset);
+  preferences.putBytes("probeSerial0", tempProbe[0].romCode.bytes, 8);
+  preferences.putBytes("probeSerial1", tempProbe[1].romCode.bytes, 8);
+  preferences.putBytes("probeSerial2", tempProbe[2].romCode.bytes, 8);
   preferences.end();    
+
+  for(int i=0; i<3; i++) {
+    DebugPort.printf("Wr Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
+                     i,
+                     tempProbe[i].romCode.fields.serial_number[5],
+                     tempProbe[i].romCode.fields.serial_number[4],
+                     tempProbe[i].romCode.fields.serial_number[3],
+                     tempProbe[i].romCode.fields.serial_number[2],
+                     tempProbe[i].romCode.fields.serial_number[1],
+                     tempProbe[i].romCode.fields.serial_number[0]
+                     );
+  }
 }
 
 void 

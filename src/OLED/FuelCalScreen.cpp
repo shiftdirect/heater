@@ -48,7 +48,7 @@ CFuelCalScreen::onSelect()
   _initUI();
   _mlPerStroke = NVstore.getHeaterTuning().pumpCal;
   _LVC = NVstore.getHeaterTuning().lowVolts;
-  _tOfs = NVstore.getHeaterTuning().tempOfs;
+  _tOfs = NVstore.getHeaterTuning().tempProbe[0].offset;
 }
 
 void
@@ -231,7 +231,7 @@ CFuelCalScreen::keyHandler(uint8_t event)
           tuning = NVstore.getHeaterTuning();
           tuning.pumpCal = _mlPerStroke;
           tuning.lowVolts = _LVC;
-          tuning.tempOfs = _tOfs;
+          tuning.tempProbe[0].offset = _tOfs;
           NVstore.setHeaterTuning(tuning);
           saveNV();
           _rowSel = 0;
