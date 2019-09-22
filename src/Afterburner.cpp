@@ -482,6 +482,32 @@ void setup() {
   pHourMeter->init(bESP32PowerUpInit || RTC_Store.getBootInit());     // ensure persistent memory variable are reset after powerup, or OTA update
   RTC_Store.setBootInit(false);
 
+  // Check for solo DS18B20
+  // store it's serial number as the primary sensor
+  // This allows seamless standard operation, and marks the iniital sensor 
+  // as the primary if another is added later
+  OneWireBus_ROMCode romCode;
+  TempSensor.getRomCodeIdx(0, romCode);
+  if(TempSensor.getNumSensors() == 1 && 
+     memcmp(NVstore.getHeaterTuning().tempProbe[0].romCode.bytes, romCode.bytes, 8) != 0) 
+  {   
+    sHeaterTuning tuning = NVstore.getHeaterTuning();
+    tuning.tempProbe[0].romCode = romCode;
+    tuning.tempProbe[1].romCode = {0};
+    tuning.tempProbe[2].romCode = {0};
+    tuning.tempProbe[0].offset = 0;
+    NVstore.setHeaterTuning(tuning);
+    NVstore.save();
+
+    DebugPort.printf("Saved solo DS18B20 %02X:%02X:%02X:%02X:%02X:%02X to NVstore\r\n",
+                      romCode.fields.serial_number[5], 
+                      romCode.fields.serial_number[4], 
+                      romCode.fields.serial_number[3], 
+                      romCode.fields.serial_number[2], 
+                      romCode.fields.serial_number[1], 
+                      romCode.fields.serial_number[0] 
+                    );
+  }
   TempSensor.mapSensor(0, NVstore.getHeaterTuning().tempProbe[0].romCode);
   TempSensor.mapSensor(1, NVstore.getHeaterTuning().tempProbe[1].romCode);
   TempSensor.mapSensor(2, NVstore.getHeaterTuning().tempProbe[2].romCode);
@@ -804,8 +830,7 @@ void loop()
         lastTemperatureTime = millis();    // reset time to observe temeprature        
 
         TempSensor.readSensors();
-//        TempSensor.checkNumSensors();
-        if(TempSensor.getTemperature(fTemperature)) {  // get Primary sensor temeprature
+        if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temeprature
           if(DS18B20holdoff) {
             DS18B20holdoff--; 
             DebugPort.printf("Skipped initial DS18B20 reading: %f\r\n", fTemperature);

@@ -75,23 +75,23 @@ CDS18B20Screen::show()
       else
         _showTitle("Temp Sensor Offset");
 
-      int baseLine = 40;
+      int baseLine = 16;
       switch(_nNumSensors) {
-        case 1: baseLine = 18; break;
-        case 2: baseLine = 30; break;
+        case 2: baseLine = 28; break;
+        case 3: baseLine = 40; break;
       }
-      for(int i = 0; i<_nNumSensors; i++) {
+      for(int sensor = 0; sensor<_nNumSensors; sensor++) {
 
-        switch(_sensorRole[i]) {
+        switch(_sensorRole[sensor]) {
           case 0: strcpy(msg, "Pri"); break;
           case 1: strcpy(msg, "Sec"); break;
           case 2: strcpy(msg, "Ter"); break;
           default: strcpy(msg, " ? "); break;
         }
-        _printMenuText(border, baseLine-i*12, msg, _rowSel == (i+1) && _colSel == 0);
+        _printMenuText(border, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 0);
 
         OneWireBus_ROMCode romCode;
-        if(!TempSensor.getRomCodeIdx(romCode, i)) {
+        if(!TempSensor.getRomCodeIdx(sensor, romCode)) {
           strcpy(msg, "missing?") ;
         }
         else {
@@ -103,18 +103,18 @@ CDS18B20Screen::show()
         }
         {
           CTransientFont AF(_display, &miniFontInfo);
-          _printMenuText(27, baseLine+2-i*12, msg);
+          _printMenuText(27, baseLine+2-sensor*12, msg);
         }
 
         if(_colSel == 0) {
           float temperature;
-          TempSensor.getTemperatureIdx(temperature, i);
-          sprintf(msg, "%.01fC", temperature + _Offset[i]);
+          TempSensor.getTemperatureIdx(sensor, temperature);
+          sprintf(msg, "%.01fC", temperature + _Offset[sensor]);
         }
         else {
-          sprintf(msg, "%+.01f", _Offset[i]);
+          sprintf(msg, "%+.01f", _Offset[sensor]);
         }
-        _printMenuText(90, baseLine-i*12, msg, _rowSel == (i+1) && _colSel == 1);
+        _printMenuText(90, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 1);
       }
       
     }
@@ -166,33 +166,6 @@ CDS18B20Screen::keyHandler(uint8_t event)
     sUserSettings us;
     if(event & keyPressed) {
       _keyHold = 0;
-      // UP press
-      if(event & key_Up) {
-        if(_rowSel == SaveConfirm) {
-          _enableStoringMessage();
-          _saveNV();
-          NVstore.save();
-          TempSensor.mapSensor(-1);   // reset existing mapping
-          TempSensor.mapSensor(0, NVstore.getHeaterTuning().tempProbe[0].romCode);
-          TempSensor.mapSensor(1, NVstore.getHeaterTuning().tempProbe[1].romCode);
-          TempSensor.mapSensor(2, NVstore.getHeaterTuning().tempProbe[2].romCode);
-          TempSensor.mapSensor(-2);   // report mapping
-          _rowSel = 0;
-        }
-        else {
-          if(_rowSel == 0) {
-            _getPassword();
-            if(_isPasswordOK()) {
-              _rowSel = 1;
-            }
-          }
-          else {
-            _testCancel();
-            _rowSel++;
-            UPPERLIMIT(_rowSel, 3);
-          }
-        }
-      }
       // DOWN press
       if(event & key_Down) {
         _testCancel();
@@ -208,11 +181,18 @@ CDS18B20Screen::keyHandler(uint8_t event)
       if(_keyHold >= 0) {
         _keyHold++;
         if(_keyHold == 2) {
+          if(event & key_Up) {
+            // rescan the one wire bus
+            TempSensor.find();
+            _nNumSensors = TempSensor.getNumSensors();
+            _readNV();
+          }
           if(event & key_Left) {
             _colSel = 0;
             _scrollChar = 0;
           }
           if(event & key_Right) {
+            _testCancel();
             _colSel = 1;
             _scrollChar = 0;
           }
@@ -230,6 +210,33 @@ CDS18B20Screen::keyHandler(uint8_t event)
 
     if(event & keyReleased) {
       if(_keyHold == 0) {
+        // UP release
+        if(event & key_Up) {
+          if(_rowSel == SaveConfirm) {
+            _enableStoringMessage();
+            _saveNV();
+            NVstore.save();
+            TempSensor.mapSensor(-1);   // reset existing mapping
+            TempSensor.mapSensor(0, NVstore.getHeaterTuning().tempProbe[0].romCode);
+            TempSensor.mapSensor(1, NVstore.getHeaterTuning().tempProbe[1].romCode);
+            TempSensor.mapSensor(2, NVstore.getHeaterTuning().tempProbe[2].romCode);
+            TempSensor.mapSensor(-2);   // report mapping
+            _rowSel = 0;
+          }
+          else {
+            if(_rowSel == 0) {
+              _getPassword();
+              if(_isPasswordOK()) {
+                _rowSel = 1;
+              }
+            }
+            else {
+              _testCancel();
+              _rowSel++;
+              UPPERLIMIT(_rowSel, 3);
+            }
+          }
+        }
         // LEFT press
         if(event & key_Left) {
           if(_rowSel == 0)
@@ -327,13 +334,14 @@ CDS18B20Screen::_testCancel()
 void
 CDS18B20Screen::_readNV() 
 {
-  _sensorRole[0] = _sensorRole[1] = _sensorRole[2] = -1;
+  for(int i=0; i< 3; i++) 
+    _sensorRole[i] = -1;
 
   const sHeaterTuning& tuning = NVstore.getHeaterTuning();
   
   for(int sensor = 0; sensor < TempSensor.getNumSensors(); sensor++) {
     OneWireBus_ROMCode romCode;
-    TempSensor.getRomCodeIdx(romCode, sensor); // get rom code of each attached sensor
+    TempSensor.getRomCodeIdx(sensor, romCode); // get rom code of each attached sensor
     // NV storage indices are the sensor role 
     // ie 0 is normal thermostat
     // scan the NV store and match the stored romCodes
@@ -342,7 +350,7 @@ CDS18B20Screen::_readNV()
       if(memcmp(tuning.tempProbe[i].romCode.bytes, romCode.bytes, 8) == 0) {
          _sensorRole[sensor] = i;  // assign role to sensor according to NV placement
          _Offset[sensor] = tuning.tempProbe[i].offset;
-         continue; 
+         break; 
       }
     }
   }
@@ -363,7 +371,7 @@ CDS18B20Screen::_saveNV()
     if(role != -1) {
       tuning.tempProbe[role].offset = _Offset[sensor];
       OneWireBus_ROMCode romCode;
-      TempSensor.getRomCodeIdx(romCode, sensor); // get rom code of indexed sensor
+      TempSensor.getRomCodeIdx(sensor, romCode); // get rom code of indexed sensor
       memcpy(tuning.tempProbe[role].romCode.bytes, romCode.bytes, 8);
     }
   }

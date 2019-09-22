@@ -34,8 +34,10 @@
 #include "../Utility/Moderator.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/BTC_JSON.h"
+#include "Utility/TempSense.h"
 
 extern void DecodeCmd(const char* cmd, String& payload);
+extern CTempSense TempSensor;
 
 #define USE_RTOS_MQTTTIMER
 //#define USE_LOCAL_MQTTSTRINGS
@@ -48,6 +50,9 @@ AsyncMqttClient MQTTclient;
 char topicnameJSONin[128];
 char topicnameCmd[128];
 CModerator MQTTmoderator;
+
+void subscribe(const char* topic);
+
 
 #ifdef USE_LOCAL_MQTTSTRINGS
 char mqttHost[128];
@@ -84,20 +89,23 @@ void onMqttConnect(bool sessionPresent)
   mqttReconnect = 0;
 #endif
 
-  sprintf(statusTopic, "%s/status", NVstore.getMQTTinfo().topic);
 
   DebugPort.println("MQTT: Connected to broker.");
 //  DebugPort.printf("Session present: %d\r\n", sessionPresent);
 
   // create the topicname we use to accept incoming JSON
-  DebugPort.printf("MQTT: base topic name \"%s\"\r\n", NVstore.getMQTTinfo().topic);
-  sprintf(topicnameJSONin, "%s/JSONin", NVstore.getMQTTinfo().topic);
-  sprintf(topicnameCmd, "%s/cmd/#", NVstore.getMQTTinfo().topic);
+  DebugPort.printf("MQTT: topic prefix name \"%s\"\r\n", NVstore.getMQTTinfo().topicPrefix);
+  sprintf(statusTopic, "%s/status", NVstore.getMQTTinfo().topicPrefix);
+  sprintf(topicnameJSONin, "%s/JSONin", NVstore.getMQTTinfo().topicPrefix);
+  sprintf(topicnameCmd, "%s/cmd/#", NVstore.getMQTTinfo().topicPrefix);
   // subscribe to that topic
-  DebugPort.printf("MQTT: Subscribing to \"%s\"\r\n", topicnameJSONin);
-  MQTTclient.subscribe(topicnameJSONin, NVstore.getMQTTinfo().qos);
-  MQTTclient.subscribe(topicnameCmd, NVstore.getMQTTinfo().qos);
-  MQTTclient.subscribe(statusTopic, NVstore.getMQTTinfo().qos);
+  // DebugPort.printf("MQTT: Subscribing to \"%s\"\r\n", topicnameJSONin);
+  // MQTTclient.subscribe(topicnameJSONin, NVstore.getMQTTinfo().qos);
+  // MQTTclient.subscribe(topicnameCmd, NVstore.getMQTTinfo().qos);
+  // MQTTclient.subscribe(statusTopic, NVstore.getMQTTinfo().qos);
+  subscribe(topicnameJSONin);
+  subscribe(topicnameCmd);
+  subscribe(statusTopic);
 
   // spit out an "I'm here" message
   MQTTclient.publish(statusTopic, NVstore.getMQTTinfo().qos, true, "online");
@@ -241,7 +249,7 @@ bool mqttPublishJSON(const char* str)
   if(MQTTclient.connected()) {
     const sMQTTparams params = NVstore.getMQTTinfo();
     char topic[128];
-    sprintf(topic, "%s/JSONout", params.topic);
+    sprintf(topic, "%s/JSONout", params.topicPrefix);
     MQTTclient.publish(topic, params.qos, false, str);
     return true;
   }
@@ -299,7 +307,7 @@ void pubTopic(const char* name, int value)
     if(MQTTmoderator.shouldSend(name, value)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
-      sprintf(topic, "%s/sts/%s", params.topic, name);
+      sprintf(topic, "%s/sts/%s", params.topicPrefix, name);
       char payload[128];
       sprintf(payload, "%d", value);
       MQTTclient.publish(topic, params.qos, false, payload);
@@ -313,7 +321,7 @@ void pubTopic(const char* name, float value)
     if(MQTTmoderator.shouldSend(name, value)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
-      sprintf(topic, "%s/sts/%s", params.topic, name);
+      sprintf(topic, "%s/sts/%s", params.topicPrefix, name);
       char payload[128];
       sprintf(payload, "%.1f", value);
       MQTTclient.publish(topic, params.qos, false, payload);
@@ -327,7 +335,7 @@ void pubTopic(const char* name, const char* payload)
     if(MQTTmoderator.shouldSend(name, payload)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
-      sprintf(topic, "%s/sts/%s", params.topic, name);
+      sprintf(topic, "%s/sts/%s", params.topicPrefix, name);
       MQTTclient.publish(topic, params.qos, false, payload);
     }
   }
@@ -338,9 +346,33 @@ void updateMQTT()
   pubTopic("RunState", getHeaterInfo().getRunStateEx());
   pubTopic("Run", getHeaterInfo().getRunStateEx() ? "1" : "0");
   pubTopic("RunString", getHeaterInfo().getRunStateStr());
-  float tidyTemp = getTemperatureSensor();
-  tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
-  pubTopic("TempCurrent", tidyTemp); 
+
+  float tidyTemp;
+  if(TempSensor.getTemperature(0, tidyTemp)) {
+    tidyTemp += NVstore.getHeaterTuning().tempProbe[0].offset;
+    tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
+    pubTopic("TempCurrent", tidyTemp); 
+  }
+  else
+    pubTopic("TempCurrent", "n/a"); 
+  if(TempSensor.getNumSensors() > 1) {
+    if(TempSensor.getTemperature(1, tidyTemp)) {
+      tidyTemp += NVstore.getHeaterTuning().tempProbe[1].offset;
+      tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
+      pubTopic("Temp2Current", tidyTemp); 
+    }
+    else
+      pubTopic("Temp2Current", "n/a"); 
+    if(TempSensor.getNumSensors() > 2) {
+      if(TempSensor.getTemperature(2, tidyTemp)) {
+        tidyTemp += NVstore.getHeaterTuning().tempProbe[2].offset;
+        tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
+        pubTopic("Temp3Current", tidyTemp); 
+      }
+      else
+        pubTopic("Temp3Current", "n/a"); 
+    }
+  }
   pubTopic("TempDesired", getTemperatureDesired()); 
   pubTopic("TempBody", getHeaterInfo().getTemperature_HeatExchg()); 
   pubTopic("ErrorState", getHeaterInfo().getErrState());
@@ -362,5 +394,10 @@ void refreshMQTT()
   MQTTmoderator.reset();
 }
 
+void subscribe(const char* topic)
+{
+  DebugPort.printf("MQTT: Subscribing to \"%s\"\r\n", topic);
+  MQTTclient.subscribe(topic, NVstore.getMQTTinfo().qos);
+}
 
 #endif

@@ -210,6 +210,7 @@ CTempSense::find()
     {
         printf("Single device optimisations enabled\n");
         ds18b20_init_solo(ds18b20_info, _owb);          // only one device on bus
+        ds18b20_info->rom_code = _device_rom_codes[i];  // added, for GUI setup!!
     }
     else
     {
@@ -218,7 +219,6 @@ CTempSense::find()
     ds18b20_use_crc(ds18b20_info, true);           // enable CRC check for temperature readings
     ds18b20_set_resolution(ds18b20_info, DS18B20_RESOLUTION_12_BIT);
   }
-
 
   return found;
 }
@@ -313,9 +313,14 @@ CTempSense::mapSensor(int idx, OneWireBus_ROMCode romCode)
     if(memcmp(_Sensors[i]->rom_code.bytes, romCode.bytes, 8) == 0) {
       _sensorMap[idx] = i;
       DebugPort.printf("Mapped DS18B20 %02X:%02X:%02X:%02X:%02X:%02X as role %d\r\n",
-        romCode.fields.serial_number[5], romCode.fields.serial_number[4], romCode.fields.serial_number[3], 
-        romCode.fields.serial_number[2], romCode.fields.serial_number[1], romCode.fields.serial_number[0], 
-        idx);
+                        romCode.fields.serial_number[5], 
+                        romCode.fields.serial_number[4], 
+                        romCode.fields.serial_number[3], 
+                        romCode.fields.serial_number[2], 
+                        romCode.fields.serial_number[1], 
+                        romCode.fields.serial_number[0], 
+                        idx
+                      );
       return true;
     }
   }
@@ -323,29 +328,28 @@ CTempSense::mapSensor(int idx, OneWireBus_ROMCode romCode)
 }
 
 bool
-CTempSense::getTemperature(float& temperature, int mapIdx)
+CTempSense::getTemperature(int mapIdx, float& temperature)
 {
-  int idx = _sensorMap[mapIdx];
-  if(idx < 0)
-    return getTemperatureIdx(temperature, 0);  // default to sensor 0 if not mapped
-  // temperature = _Readings[idx];
-  // return _Errors[idx] == DS18B20_OK;
-  return getTemperatureIdx(temperature, idx);  
+  int snsIdx = _sensorMap[mapIdx];
+  if(snsIdx < 0) 
+    snsIdx = 0;  // default to sensor 0 if not mapped
+
+  return getTemperatureIdx(snsIdx, temperature);  
 }
 
 bool
-CTempSense::getTemperatureIdx(float& temperature, int idx)
+CTempSense::getTemperatureIdx(int snsIdx, float& temperature)
 {
-  temperature = _Readings[idx];
-  return _Errors[idx] == DS18B20_OK;
+  temperature = _Readings[snsIdx];
+  return _Errors[snsIdx] == DS18B20_OK;
 }
 
 bool 
-CTempSense::getRomCodeIdx(OneWireBus_ROMCode& romCode, int idx)
+CTempSense::getRomCodeIdx(int snsIdx, OneWireBus_ROMCode& romCode)
 {
-  if(idx >= _nNumSensors)
+  if(snsIdx >= _nNumSensors)
     return false;
-  romCode = _Sensors[idx]->rom_code;
+  romCode = _Sensors[snsIdx]->rom_code;
   return true;
 }
 

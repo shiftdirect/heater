@@ -52,9 +52,9 @@ public:
   bool readSensors();
   void startConvert();
   void waitConvertDone();
-  bool getTemperature(float& tempReading, int mapIdx=0);   // indexed as mapped by user
-  bool getTemperatureIdx(float& tempReading, int selSensor=0);      // index is discovery order on one-wire bus
-  bool getRomCodeIdx(OneWireBus_ROMCode& romCode, int selSensor=0); // index is discovery order on one-wire bus
+  bool getTemperature(int mapIdx, float& tempReading);   // indexed as mapped by user
+  bool getTemperatureIdx(int sensIdx, float& tempReading);      // index is sensor discovery order on one-wire bus
+  bool getRomCodeIdx(int sensIdx, OneWireBus_ROMCode& romCode); // index is sensor discovery order on one-wire bus
   int  checkNumSensors() const;
   int  getNumSensors() const { return _nNumSensors; };
   bool mapSensor(int idx, OneWireBus_ROMCode romCode = { 0 } );

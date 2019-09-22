@@ -146,14 +146,14 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
 	  bSend |= moderator.addJson("TempCurrent", tidyTemp, root); 
   }
   if(TempSensor.getNumSensors() > 1) {
-    TempSensor.getTemperature(tidyTemp, 1);
+    TempSensor.getTemperature(1, tidyTemp);
     tidyTemp += NVstore.getHeaterTuning().tempProbe[1].offset;
     tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
     if(tidyTemp > -80) {
 	    bSend |= moderator.addJson("Temp2Current", tidyTemp, root); 
     }
     if(TempSensor.getNumSensors() > 2) {
-      TempSensor.getTemperature(tidyTemp, 2);
+      TempSensor.getTemperature(2, tidyTemp);
       tidyTemp += NVstore.getHeaterTuning().tempProbe[2].offset;
       tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
       if(tidyTemp > -80) {
