@@ -87,7 +87,7 @@ CVersionInfoScreen::show()
       _drawBitmap(18, 34, HardwareIconInfo);
       int PCB = getBoardRevision();
       _printMenuText(41, 38, getBoardRevisionString(PCB));
-      if(PCB == BRD_V2_GPIO_NOALG) {
+      if(PCB == BRD_V2_GPIO_NOALG || PCB == BRD_V3_GPIO_NOALG) {
         _display.fillRect(70, 36, 57, 11, WHITE);
         _printInverted(99, 38, "No Analog", true, eCentreJustify);
       }
