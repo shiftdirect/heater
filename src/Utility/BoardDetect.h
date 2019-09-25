@@ -33,6 +33,7 @@
 #define BRD_V2_GPIO_NOALG  20   // original V20 board - no cut traces - analog on wrong pin :-(
 #define BRD_V2_FULLGPIO    21   // V2 board cut traces tranposed GPIO1 & Analog
 #define BRD_V2_NOGPIO      22   // V2 board forced short on analog input - NO GPIO mode
+#define BRD_V3_GPIO_NOALG  30   // V3 board - no cut traces - analog input grounded
 
 int BoardDetect();
 void BoardRevisionReset();

@@ -1116,10 +1116,10 @@ float getTemperatureDesired()
     return getHeaterInfo().getHeaterDemand();
   }
   else {
-//    if(getThermostatModeActive()) 
+    if(getThermostatModeActive()) 
       return RTC_Store.getDesiredTemp();
-//    else 
-//      return RTC_Store.getDesiredPump();
+    else 
+      return RTC_Store.getDesiredPump();
   }
 }
 
@@ -1480,7 +1480,7 @@ bool isCyclicActive()
 
 void setupGPIO()
 {
-  if(BoardRevision == 10 || BoardRevision == 20 || BoardRevision == 21) {
+  if(BoardRevision == 10 || BoardRevision == 20 || BoardRevision == 21 || BoardRevision == 30) {
     // some special considerations for GPIO inputs, depending upon PCB hardware
     // V1.0 PCBs only expose bare inputs, which are pulled high. Active state into ESP32 is LOW. 
     // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
