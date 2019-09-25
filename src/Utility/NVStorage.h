@@ -237,7 +237,7 @@ struct sMQTTparams : public CESP32_NVStorage {
   char host[128];
   char username[32];
   char password[32];
-  char topic[32];
+  char topicPrefix[32];
   void init() {
     enabled = false;
     port = 1883;
@@ -245,7 +245,7 @@ struct sMQTTparams : public CESP32_NVStorage {
     memset(host, 0, 128);
     memset(username, 0, 32);
     memset(password, 0, 32);
-    memset(topic, 0, 32);
+    memset(topicPrefix, 0, 32);
   }
   sMQTTparams& operator=(const sMQTTparams& rhs) {
     enabled = rhs.enabled;
@@ -254,11 +254,11 @@ struct sMQTTparams : public CESP32_NVStorage {
     memcpy(host, rhs.host, 128);
     memcpy(username, rhs.username, 32);
     memcpy(password, rhs.password, 32);
-    memcpy(topic, rhs.topic, 32);
+    memcpy(topicPrefix, rhs.topicPrefix, 32);
     host[127] = 0;
     username[31] = 0;
     password[31] = 0;
-    topic[31] = 0;
+    topicPrefix[31] = 0;
     return *this;
   }
   void load();

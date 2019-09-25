@@ -273,17 +273,17 @@ sHeaterTuning::load()
   preferences.getBytes("probeSerial2", tempProbe[2].romCode.bytes, 8);
   preferences.end();    
 
-  for(int i=0; i<3; i++) {
-    DebugPort.printf("Rd Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
-                     i,
-                     tempProbe[i].romCode.fields.serial_number[5],
-                     tempProbe[i].romCode.fields.serial_number[4],
-                     tempProbe[i].romCode.fields.serial_number[3],
-                     tempProbe[i].romCode.fields.serial_number[2],
-                     tempProbe[i].romCode.fields.serial_number[1],
-                     tempProbe[i].romCode.fields.serial_number[0]
-                     );
-  }
+  // for(int i=0; i<3; i++) {
+  //   DebugPort.printf("Rd Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
+  //                    i,
+  //                    tempProbe[i].romCode.fields.serial_number[5],
+  //                    tempProbe[i].romCode.fields.serial_number[4],
+  //                    tempProbe[i].romCode.fields.serial_number[3],
+  //                    tempProbe[i].romCode.fields.serial_number[2],
+  //                    tempProbe[i].romCode.fields.serial_number[1],
+  //                    tempProbe[i].romCode.fields.serial_number[0]
+  //                    );
+  // }
 }
 
 void 
@@ -309,17 +309,17 @@ sHeaterTuning::save()
   preferences.putBytes("probeSerial2", tempProbe[2].romCode.bytes, 8);
   preferences.end();    
 
-  for(int i=0; i<3; i++) {
-    DebugPort.printf("Wr Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
-                     i,
-                     tempProbe[i].romCode.fields.serial_number[5],
-                     tempProbe[i].romCode.fields.serial_number[4],
-                     tempProbe[i].romCode.fields.serial_number[3],
-                     tempProbe[i].romCode.fields.serial_number[2],
-                     tempProbe[i].romCode.fields.serial_number[1],
-                     tempProbe[i].romCode.fields.serial_number[0]
-                     );
-  }
+  // for(int i=0; i<3; i++) {
+  //   DebugPort.printf("Wr Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
+  //                    i,
+  //                    tempProbe[i].romCode.fields.serial_number[5],
+  //                    tempProbe[i].romCode.fields.serial_number[4],
+  //                    tempProbe[i].romCode.fields.serial_number[3],
+  //                    tempProbe[i].romCode.fields.serial_number[2],
+  //                    tempProbe[i].romCode.fields.serial_number[1],
+  //                    tempProbe[i].romCode.fields.serial_number[0]
+  //                    );
+  // }
 }
 
 void 
