@@ -124,8 +124,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 5;
-const char* FirmwareDate = "19 Sep 2019";
+const int FirmwareSubRevision = 6;
+const char* FirmwareDate = "18 Oct 2019";
 
 
 #ifdef ESP32
@@ -160,6 +160,7 @@ void showMQTTmenu();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus
+//CBME280Sensor BMESensor;
 CTempSense TempSensor;
 long lastTemperatureTime;            // used to moderate DS18B20 access
 int DS18B20holdoff = 2;
@@ -354,7 +355,7 @@ void setup() {
 //  DebugPort.printf("Previous user ON = %d\r\n", bUserON);   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
   // initialise DS18B20 sensor interface
-  TempSensor.begin(DS18B20_Pin);
+  TempSensor.begin(DS18B20_Pin, 0x76);
   TempSensor.startConvert();  // kick off initial temperature sample
 
 
@@ -387,7 +388,7 @@ void setup() {
   initJSONTimermoderator();  // prevents JSON for timers unless requested
   initJSONSysModerator();
 
-
+  
   KeyPad.begin(keyLeft_pin, keyRight_pin, keyCentre_pin, keyUp_pin, keyDown_pin);
   KeyPad.setCallback(parentKeyHandler);
 
@@ -487,15 +488,15 @@ void setup() {
   // This allows seamless standard operation, and marks the iniital sensor 
   // as the primary if another is added later
   OneWireBus_ROMCode romCode;
-  TempSensor.getRomCodeIdx(0, romCode);
-  if(TempSensor.getNumSensors() == 1 && 
-     memcmp(NVstore.getHeaterTuning().tempProbe[0].romCode.bytes, romCode.bytes, 8) != 0) 
+  TempSensor.getDS18B20().getRomCodeIdx(0, romCode);
+  if(TempSensor.getDS18B20().getNumSensors() == 1 && 
+     memcmp(NVstore.getHeaterTuning().DS18B20probe[0].romCode.bytes, romCode.bytes, 8) != 0) 
   {   
     sHeaterTuning tuning = NVstore.getHeaterTuning();
-    tuning.tempProbe[0].romCode = romCode;
-    tuning.tempProbe[1].romCode = {0};
-    tuning.tempProbe[2].romCode = {0};
-    tuning.tempProbe[0].offset = 0;
+    tuning.DS18B20probe[0].romCode = romCode;
+    tuning.DS18B20probe[1].romCode = {0};
+    tuning.DS18B20probe[2].romCode = {0};
+    tuning.DS18B20probe[0].offset = 0;
     NVstore.setHeaterTuning(tuning);
     NVstore.save();
 
@@ -508,9 +509,21 @@ void setup() {
                       romCode.fields.serial_number[0] 
                     );
   }
-  TempSensor.mapSensor(0, NVstore.getHeaterTuning().tempProbe[0].romCode);
-  TempSensor.mapSensor(1, NVstore.getHeaterTuning().tempProbe[1].romCode);
-  TempSensor.mapSensor(2, NVstore.getHeaterTuning().tempProbe[2].romCode);
+  TempSensor.getDS18B20().mapSensor(0, NVstore.getHeaterTuning().DS18B20probe[0].romCode);
+  TempSensor.getDS18B20().mapSensor(1, NVstore.getHeaterTuning().DS18B20probe[1].romCode);
+  TempSensor.getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
+
+/*  bool status = bme.begin(0x76);  
+  if (!status) {
+    DebugPort.println("Could not find a valid BME280 sensor, check wiring!");
+  }
+  bme.setSampling(Adafruit_BME280::MODE_FORCED, 
+                  Adafruit_BME280::SAMPLING_X1,
+                  Adafruit_BME280::SAMPLING_X1,
+                  Adafruit_BME280::SAMPLING_X1,
+                  Adafruit_BME280::FILTER_OFF,
+                  Adafruit_BME280::STANDBY_MS_1000);*/
+//  BMESensor.begin(0x76);
 
   delay(1000); // just to hold the splash screeen for while
 }
@@ -830,7 +843,7 @@ void loop()
         lastTemperatureTime = millis();    // reset time to observe temeprature        
 
         TempSensor.readSensors();
-        if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temeprature
+        if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temperature
           if(DS18B20holdoff) {
             DS18B20holdoff--; 
             DebugPort.printf("Skipped initial DS18B20 reading: %f\r\n", fTemperature);
@@ -880,6 +893,8 @@ void loop()
   }  // switch(CommState)
 
   BlueWireData.reset();   // ensure we flush any used data
+
+  vTaskDelay(1);  // give up for now - allow power lowering...
 
 }  // loop
 
@@ -1080,7 +1095,7 @@ bool getThermostatModeActive()
 
 bool getExternalThermostatModeActive()
 {
-  return GPIOin.usesExternalThermostat();
+  return GPIOin.usesExternalThermostat() && (NVstore.getUserSettings().ThermostatMethod == 3);
 }
 
 bool getExternalThermostatOn()
@@ -1147,17 +1162,38 @@ float getTemperatureDesired()
     return getHeaterInfo().getHeaterDemand();
   }
   else {
-//    if(getThermostatModeActive()) 
+    if(getThermostatModeActive()) 
       return RTC_Store.getDesiredTemp();
-//    else 
-//      return RTC_Store.getDesiredPump();
+    else 
+      return RTC_Store.getDesiredPump();
   }
 }
 
-float getTemperatureSensor()
+float getTemperatureSensor(int source)
 {
+  static long lasttime = millis();
+  static float tempsave = 0;
+  long tDelta;
   // NVstore always holds primary sensor as index 0
-  return FilteredSamples.AmbientTemp.getValue() + NVstore.getHeaterTuning().tempProbe[0].offset;
+  float retval;
+  TempSensor.getTemperature(source, retval);
+  return retval;
+
+//   switch (source) {
+//     case 0:
+//       return FilteredSamples.AmbientTemp.getValue() + NVstore.getHeaterTuning().DS18B20probe[0].offset;
+//     case 1:
+//       BMESensor.getTemperature(tempsave);
+// /*      tDelta = millis() - lasttime;
+//       if(tDelta >= 0) {
+//         bme.takeForcedMeasurement();
+//         tempsave = bme.readTemperature();
+//         lasttime = millis() + 10000;
+//       }*/
+//       return tempsave;
+//     default:
+//       return -100;
+//   }
 }
 
 void  setPumpMin(float val)
@@ -1427,11 +1463,9 @@ void checkDebugCommands()
       }
       else if(rxVal == '+') {
         TxManage.queueOnRequest();
-//        HeaterData.setRefTime();
       }
       else if(rxVal == '-') {
         TxManage.queueOffRequest();
-//        HeaterData.setRefTime();
       }
       else if(rxVal == 'r') {
         ESP.restart();            // reset the esp
@@ -1512,7 +1546,7 @@ bool isCyclicActive()
 
 void setupGPIO()
 {
-  if(BoardRevision == 10 || BoardRevision == 20 || BoardRevision == 21) {
+  if(BoardRevision == 10 || BoardRevision == 20 || BoardRevision == 21 || BoardRevision == 30) {
     // some special considerations for GPIO inputs, depending upon PCB hardware
     // V1.0 PCBs only expose bare inputs, which are pulled high. Active state into ESP32 is LOW. 
     // V2.0+ PCBs use an input transistor buffer. Active state into ESP32 is HIGH (inverted).
@@ -1843,4 +1877,9 @@ void showMainmenu()
 void reloadScreens()
 {
   ScreenManager.reqReload();
+}
+
+CTempSense& getTempSensor()
+{
+  return TempSensor;
 }

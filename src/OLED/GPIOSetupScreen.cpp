@@ -302,7 +302,7 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
         _rowSel--;
         if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
           _rowSel--;   // force skip if not set to external thermostat
-        if((_rowSel == 1) && (getBoardRevision() == BRD_V2_GPIO_NOALG))  // GPIO but NO analog support
+        if((_rowSel == 1) && ((getBoardRevision() == BRD_V2_GPIO_NOALG) || (getBoardRevision() == BRD_V3_GPIO_NOALG)))  // GPIO but NO analog support
           _rowSel--;   // force skip if analog input is not supported by PCB
         LOWERLIMIT(_rowSel, 0);
       }
@@ -311,7 +311,7 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
     if(event & key_Up) {
       switch(_rowSel) {
         case 0:
-          if(getBoardRevision() == BRD_V2_GPIO_NOALG)   // GPIO but NO Analog support
+          if((getBoardRevision() == BRD_V2_GPIO_NOALG) ||  (getBoardRevision() == BRD_V3_GPIO_NOALG))   // GPIO but NO Analog support
             _rowSel++;   // force skip if analog input is not supported by PCB
         case 1:
         case 2:

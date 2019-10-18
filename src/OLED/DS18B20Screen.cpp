@@ -24,9 +24,7 @@
 #include "KeyPad.h"
 #include "fonts/Icons.h"
 #include "fonts/MiniFont.h"
-#include "Utility/TempSense.h"
-
-extern CTempSense TempSensor;
+#include "../Utility/TempSense.h"
 
 
 CDS18B20Screen::CDS18B20Screen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
@@ -44,7 +42,7 @@ CDS18B20Screen::onSelect()
 {
   CScreenHeader::onSelect();
   _initUI();
-  _nNumSensors = TempSensor.getNumSensors();
+  _nNumSensors = getTempSensor().getDS18B20().getNumSensors();
   _readNV();
 }
 
@@ -71,9 +69,9 @@ CDS18B20Screen::show()
     }
     else {
       if(_colSel == 0)
-        _showTitle("Temp Sensor Role");
+        _showTitle("DS18B20 Sensor Role");
       else
-        _showTitle("Temp Sensor Offset");
+        _showTitle("DS18B20 Sensor Offset");
 
       int baseLine = 16;
       switch(_nNumSensors) {
@@ -91,7 +89,7 @@ CDS18B20Screen::show()
         _printMenuText(border, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 0);
 
         OneWireBus_ROMCode romCode;
-        if(!TempSensor.getRomCodeIdx(sensor, romCode)) {
+        if(!getTempSensor().getDS18B20().getRomCodeIdx(sensor, romCode)) {
           strcpy(msg, "missing?") ;
         }
         else {
@@ -108,7 +106,7 @@ CDS18B20Screen::show()
 
         if(_colSel == 0) {
           float temperature;
-          TempSensor.getTemperatureIdx(sensor, temperature);
+          getTempSensor().getDS18B20().getTemperatureIdx(sensor, temperature, false);
           sprintf(msg, "%.01fC", temperature + _Offset[sensor]);
         }
         else {
@@ -116,7 +114,6 @@ CDS18B20Screen::show()
         }
         _printMenuText(90, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 1);
       }
-      
     }
   }
   return true;
@@ -183,8 +180,8 @@ CDS18B20Screen::keyHandler(uint8_t event)
         if(_keyHold == 2) {
           if(event & key_Up) {
             // rescan the one wire bus
-            TempSensor.find();
-            _nNumSensors = TempSensor.getNumSensors();
+            getTempSensor().getDS18B20().find();
+            _nNumSensors = getTempSensor().getDS18B20().getNumSensors();
             _readNV();
           }
           if(event & key_Left) {
@@ -216,11 +213,11 @@ CDS18B20Screen::keyHandler(uint8_t event)
             _enableStoringMessage();
             _saveNV();
             NVstore.save();
-            TempSensor.mapSensor(-1);   // reset existing mapping
-            TempSensor.mapSensor(0, NVstore.getHeaterTuning().tempProbe[0].romCode);
-            TempSensor.mapSensor(1, NVstore.getHeaterTuning().tempProbe[1].romCode);
-            TempSensor.mapSensor(2, NVstore.getHeaterTuning().tempProbe[2].romCode);
-            TempSensor.mapSensor(-2);   // report mapping
+            getTempSensor().getDS18B20().mapSensor(-1);   // reset existing mapping
+            getTempSensor().getDS18B20().mapSensor(0, NVstore.getHeaterTuning().DS18B20probe[0].romCode);
+            getTempSensor().getDS18B20().mapSensor(1, NVstore.getHeaterTuning().DS18B20probe[1].romCode);
+            getTempSensor().getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
+            getTempSensor().getDS18B20().mapSensor(-2);   // report mapping
             _rowSel = 0;
           }
           else {
@@ -254,7 +251,12 @@ CDS18B20Screen::keyHandler(uint8_t event)
         // CENTRE press
         if(event & key_Centre) {
           if(_rowSel == 0) {
-            _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+//            _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+//            _ScreenManager.selectMenu(CScreenManager::SystemSettingsLoop, CScreenManager::TempSensorUI);  // force return to user settings menu
+            if(getTempSensor().getBME280().getCount())
+              _ScreenManager.returnMenu();
+            else
+              _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
           }
           else  {
             _rowSel = SaveConfirm;
@@ -339,17 +341,17 @@ CDS18B20Screen::_readNV()
 
   const sHeaterTuning& tuning = NVstore.getHeaterTuning();
   
-  for(int sensor = 0; sensor < TempSensor.getNumSensors(); sensor++) {
+  for(int sensor = 0; sensor < getTempSensor().getDS18B20().getNumSensors(); sensor++) {
+    _Offset[sensor] = tuning.DS18B20probe[sensor].offset;
     OneWireBus_ROMCode romCode;
-    TempSensor.getRomCodeIdx(sensor, romCode); // get rom code of each attached sensor
+    getTempSensor().getDS18B20().getRomCodeIdx(sensor, romCode); // get rom code of each attached sensor
     // NV storage indices are the sensor role 
     // ie 0 is normal thermostat
     // scan the NV store and match the stored romCodes
     // if not matched, the sensor remains unmapped
     for(int i=0; i< 3; i++) {
-      if(memcmp(tuning.tempProbe[i].romCode.bytes, romCode.bytes, 8) == 0) {
+      if(memcmp(tuning.DS18B20probe[i].romCode.bytes, romCode.bytes, 8) == 0) {
          _sensorRole[sensor] = i;  // assign role to sensor according to NV placement
-         _Offset[sensor] = tuning.tempProbe[i].offset;
          break; 
       }
     }
@@ -362,17 +364,17 @@ CDS18B20Screen::_saveNV()
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
   for(int i=0; i<3; i++) {
-    memset(tuning.tempProbe[i].romCode.bytes, 0, 8);
-    tuning.tempProbe[i].offset = 0;
+    memset(tuning.DS18B20probe[i].romCode.bytes, 0, 8);
+    tuning.DS18B20probe[i].offset = 0;
   }
 
-  for(int sensor = 0; sensor < TempSensor.getNumSensors(); sensor++) { 
+  for(int sensor = 0; sensor < getTempSensor().getDS18B20().getNumSensors(); sensor++) { 
+    tuning.DS18B20probe[sensor].offset = _Offset[sensor];
     int role = _sensorRole[sensor];  // role of probe determines placement in NV storage
     if(role != -1) {
-      tuning.tempProbe[role].offset = _Offset[sensor];
       OneWireBus_ROMCode romCode;
-      TempSensor.getRomCodeIdx(sensor, romCode); // get rom code of indexed sensor
-      memcpy(tuning.tempProbe[role].romCode.bytes, romCode.bytes, 8);
+      getTempSensor().getDS18B20().getRomCodeIdx(sensor, romCode); // get rom code of indexed sensor
+      memcpy(tuning.DS18B20probe[role].romCode.bytes, romCode.bytes, 8);
     }
   }
   NVstore.setHeaterTuning(tuning);

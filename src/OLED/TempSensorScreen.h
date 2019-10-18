@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,36 @@
  * 
  */
 
+#ifndef __TEMPSENSORSCREEN_H__
+#define __TEMPSENSORSCREEN_H__
+
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "PasswordScreen.h"
+#include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
-class CProtocolPackage;
 
-class CBasicScreen : public CScreenHeader
+class CTempSensorScreen : public CPasswordScreen
 {
-  unsigned long _showSetModeTime;
-  unsigned long _showModeTime;
-  uint8_t _bShowOtherSensors;
-  uint8_t _feedbackType;
-  uint8_t _nModeSel;
-  void showRunState();
+  int _rowSel, _colSel;
+  int  _keyHold;
+  int _scrollChar;
+//  int  _nNumSensors;
+  bool _bHasBME280;
+  bool _bHasDS18B20;
+  bool _bPrimary;
+  float _Offset;
+  void _initUI();
+  void _readNV();
+  void _saveNV();
 public:
-  CBasicScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CTempSensorScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
+  bool animate();
   bool keyHandler(uint8_t event);
+  void onSelect();
+  void adjust(int dir);
 };
+
+#endif

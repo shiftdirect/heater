@@ -21,13 +21,14 @@
 
 #include <Arduino.h>
 #include "fonts/Tahoma24.h"
+#include "fonts/Arial.h"
 #include "BasicScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
 #include "../Protocol/Protocol.h"
-
+#include "../Utility/TempSense.h"
 
 #define MAXIFONT tahoma_24ptFontInfo
 
@@ -45,6 +46,7 @@ CBasicScreen::CBasicScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen
   _showModeTime = 0;
   _feedbackType = 0;
   _nModeSel = 0;
+  _bShowOtherSensors = 0;
 }
 
 bool 
@@ -52,28 +54,10 @@ CBasicScreen::show()
 {
   CScreenHeader::show(false);
 
-  char msg[20];
+  char msg[32];
   int xPos, yPos;
-
-  float fTemp = getTemperatureSensor();
-  if(fTemp > -80) {
-    if(NVstore.getUserSettings().degF) {
-      fTemp = fTemp * 9 / 5 + 32;
-      sprintf(msg, "%.1f`F", fTemp);
-    }
-    else {
-      sprintf(msg, "%.1f`C", fTemp);
-    }
-
-    {
-      CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
-      _printMenuText(_display.xCentre(), 23, msg, false, eCentreJustify);
-    }
-  }
-  else {
-    _printMenuText(_display.xCentre(), 25, "No Temperature Sensor", false, eCentreJustify);
-  }
-
+  float fTemp;
+  bool bShowLargeTemp = true;
 
   // at bottom of screen show either:
   //   Selection between Fixed or Thermostat mode
@@ -104,6 +88,7 @@ CBasicScreen::show()
       // cancel selection mode, apply whatever is boxed
       _showModeTime = 0;
       _showSetModeTime = millis() + 5000;  // then make the new mode setting be shown
+      _bShowOtherSensors = 0;
       _feedbackType = 0;
       _ScreenManager.reqUpdate();
     }
@@ -116,14 +101,19 @@ CBasicScreen::show()
         case 0:
           // Show current heat demand setting
 
-          if(getThermostatModeActive() && !getExternalThermostatModeActive()) {
-            float fTemp = getTemperatureDesired();
-            if(NVstore.getUserSettings().degF) {
-              fTemp = fTemp * 9 / 5 + 32;
-              sprintf(msg, "Setpoint = %.0f`F", fTemp);
+          if(getThermostatModeActive()) {
+            if(getExternalThermostatModeActive()) {
+              sprintf(msg, "External @ %.1fHz", getHeaterInfo().getPump_Fixed());
             }
             else {
-              sprintf(msg, "Setpoint = %.0f`C", fTemp);
+              float fTemp = getTemperatureDesired();
+              if(NVstore.getUserSettings().degF) {
+                fTemp = fTemp * 9 / 5 + 32;
+                sprintf(msg, "Setpoint = %.0f`F", fTemp);
+              }
+              else {
+                sprintf(msg, "Setpoint = %.0f`C", fTemp);
+              }
             }
           }
           else {
@@ -137,6 +127,46 @@ CBasicScreen::show()
       }
       // centre message at bottom of screen
       _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
+
+      if(_bShowOtherSensors && getTempSensor().getNumSensors() > 1) {
+        bShowLargeTemp = false;
+        CTransientFont AF(_display, &arial_8ptFontInfo);
+        int yPos = 23;
+        if(getTempSensor().getTemperature(1, fTemp)) {
+//          fTemp += NVstore.getHeaterTuning().DS18B20probe[1].offset;
+          if(NVstore.getUserSettings().degF) {
+            fTemp = fTemp * 9 / 5 + 32;
+            sprintf(msg, "%.1fF", fTemp);
+          }
+          else {
+            sprintf(msg, "%.1fC", fTemp);
+          }
+        }
+        else {
+          strcpy(msg, "---");
+        }
+        _printMenuText(68, yPos, "External:", false, eRightJustify);
+        _printMenuText(72, yPos, msg);
+        yPos += 13;
+        if(getTempSensor().getNumSensors() == 3) {
+          if(getTempSensor().getTemperature(2, fTemp)) {
+//            fTemp += NVstore.getHeaterTuning().DS18B20probe[2].offset;
+            if(NVstore.getUserSettings().degF) {
+              fTemp = fTemp * 9 / 5 + 32;
+              sprintf(msg, "%.1fF", fTemp);
+            }
+            else {
+              sprintf(msg, "%.1fC", fTemp);
+            }
+          }
+          else {
+            strcpy(msg, "---");
+          }
+          _printMenuText(68, yPos, "Auxillary:", false, eRightJustify);
+          _printMenuText(72, yPos, msg);
+        }
+      }
+
     }
     else {
       _showSetModeTime = 0;
@@ -146,6 +176,30 @@ CBasicScreen::show()
     showRunState();
     showHeaderDetail(false);
   }
+
+  if(bShowLargeTemp) {
+    float fTemp = getTemperatureSensor(0);  // Primary system sensor - the one used for thermostat modes
+//    float fTemp = getTemperatureSensor(0);  // DHT22 or DS18B20
+  //  fTemp = getTemperatureSensor(1);  // BMP180
+    if(fTemp > -80) {
+      if(NVstore.getUserSettings().degF) {
+        fTemp = fTemp * 9 / 5 + 32;
+        sprintf(msg, "%.1f`F", fTemp);
+      }
+      else {
+        sprintf(msg, "%.1f`C", fTemp);
+      }
+
+      {
+        CTransientFont AF(_display, &MAXIFONT);  // temporarily use a large font
+        _printMenuText(_display.xCentre(), 23, msg, false, eCentreJustify);
+      }
+    }
+    else {
+      _printMenuText(_display.xCentre(), 25, "No Temperature Sensor", false, eCentreJustify);
+    }
+  }
+
   return true;
 }
 
@@ -170,7 +224,8 @@ CBasicScreen::keyHandler(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;      // prevent double handling
           if(toggleGPIOout(0)) {    // toggle GPIO output #1
-            _showSetModeTime = millis() + 2000;
+            _showSetModeTime = millis() + 5000;
+            _bShowOtherSensors = 0;
             _feedbackType = 1;
             _ScreenManager.reqUpdate();
           }
@@ -181,7 +236,8 @@ CBasicScreen::keyHandler(uint8_t event)
         if(repeatCount > 2) {
           repeatCount = -1;         // prevent double handling
           if(toggleGPIOout(1)) {    // toggle GPIO output #2
-            _showSetModeTime = millis() + 2000;
+            _showSetModeTime = millis() + 5000;
+            _bShowOtherSensors = 0;
             _feedbackType = 2;
             _ScreenManager.reqUpdate();
           }
@@ -241,7 +297,8 @@ CBasicScreen::keyHandler(uint8_t event)
       if(NVstore.getUserSettings().menuMode < 2) {
         if(event & key_Down) {
           if(reqDemandDelta(-1)) {
-            _showSetModeTime = millis() + 2000;
+            _showSetModeTime = millis() + 5000;
+            _bShowOtherSensors = 0;
             _feedbackType = 0;
             _ScreenManager.reqUpdate();
           }
@@ -251,7 +308,8 @@ CBasicScreen::keyHandler(uint8_t event)
         // release UP key to increase set demand, provided we are not in mode select
         if(event & key_Up) {
           if(reqDemandDelta(+1)) {
-            _showSetModeTime = millis() + 2000;
+            _showSetModeTime = millis() + 5000;
+            _bShowOtherSensors = 0;
             _feedbackType = 0;
             _ScreenManager.reqUpdate();
           }
@@ -302,7 +360,8 @@ CBasicScreen::keyHandler(uint8_t event)
           if(_showModeTime) {
             _showModeTime = millis(); // force immediate cancellation of showmode (via screen update)
           }
-          _showSetModeTime = millis() + 2000; 
+          _showSetModeTime = millis() + 5000; 
+          _bShowOtherSensors = 1;
           _feedbackType = 0;
         }
         _ScreenManager.reqUpdate();

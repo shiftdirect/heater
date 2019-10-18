@@ -86,14 +86,18 @@ CVersionInfoScreen::show()
        int newVer = isUpdateAvailable();
       _drawBitmap(18, 34, HardwareIconInfo);
       int PCB = getBoardRevision();
-      _printMenuText(41, 38, getBoardRevisionString(PCB));
-      if(PCB == BRD_V2_GPIO_NOALG) {
-        _display.fillRect(70, 36, 57, 11, WHITE);
-        _printInverted(99, 38, "No Analog", true, eCentreJustify);
+//      _printMenuText(41, 38, getBoardRevisionString(PCB));
+      if(PCB == BRD_V2_GPIO_NOALG || PCB == BRD_V3_GPIO_NOALG) {
+        _display.fillRect(41, 36, 57, 11, WHITE);
+        _printInverted(70, 38, "No Analog", true, eCentreJustify);
       }
-      if(PCB == BRD_V2_NOGPIO) {
-        _display.fillRect(82, 36, 45, 11, WHITE);
-        _printInverted(105, 38, "No GPIO", true, eCentreJustify);
+      else if(PCB == BRD_V2_NOGPIO) {
+        _display.fillRect(41, 36, 45, 11, WHITE);
+        _printInverted(76, 38, "No GPIO", true, eCentreJustify);
+      }
+      else {
+        _display.fillRect(41, 36, 57, 11, WHITE);
+        _printInverted(70, 38, "Full GPIO", true, eCentreJustify);
       }
 
       if(_rowSel == 1 && newVer) {

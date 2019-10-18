@@ -24,17 +24,22 @@
 
 #include "BTC_GPIO.h"
 #include "NVCore.h"
-#include "../Utility/helpers.h"
-#include "Utility/TempSense.h"
+#include "helpers.h"
+#include "TempSense.h"
 
 #include "../RTC/Timers.h"   // for sTimer
 
 void toggle(bool& ref);
 void toggle(uint8_t& ref);
 
-struct sProbeTuning { 
+struct sDS18B20ProbeTuning { 
   float offset;
   OneWireBus_ROMCode romCode;
+};
+
+struct sBM280tuning {
+  float offset;
+  uint8_t bPrimary;
 };
 
 struct sHeaterTuning : public CESP32_NVStorage {
@@ -47,7 +52,8 @@ struct sHeaterTuning : public CESP32_NVStorage {
   uint8_t   glowDrive;
   uint8_t   lowVolts;    // x10
   float     pumpCal;
-  sProbeTuning tempProbe[3];   // [0],[1],[2] - Primary, Secondary, Tertiary
+  sDS18B20ProbeTuning DS18B20probe[3];   // [0],[1],[2] - Primary, Secondary, Tertiary
+  sBM280tuning  BME280probe;
 
   bool valid() {
     bool retval = true;
@@ -63,9 +69,10 @@ struct sHeaterTuning : public CESP32_NVStorage {
       retval &= INBOUNDS(lowVolts, 100, 125) || (lowVolts == 0);
     else 
       retval &= INBOUNDS(lowVolts, 200, 250 || (lowVolts == 0));
-    retval &= INBOUNDS(tempProbe[0].offset, -10, +10);
-    retval &= INBOUNDS(tempProbe[1].offset, -10, +10);
-    retval &= INBOUNDS(tempProbe[2].offset, -10, +10);
+    retval &= INBOUNDS(DS18B20probe[0].offset, -10, +10);
+    retval &= INBOUNDS(DS18B20probe[1].offset, -10, +10);
+    retval &= INBOUNDS(DS18B20probe[2].offset, -10, +10);
+    retval &= INBOUNDS(BME280probe.offset, -10, +10);
     return retval;
   };
   void init() {
@@ -78,12 +85,14 @@ struct sHeaterTuning : public CESP32_NVStorage {
     glowDrive = 5;
     pumpCal = 0.02;
     lowVolts = 115;
-    tempProbe[0].offset = 0;
-    tempProbe[1].offset = 0;
-    tempProbe[2].offset = 0;
-    memset(tempProbe[0].romCode.bytes, 0, sizeof(tempProbe[0].romCode));
-    memset(tempProbe[1].romCode.bytes, 0, sizeof(tempProbe[1].romCode));
-    memset(tempProbe[2].romCode.bytes, 0, sizeof(tempProbe[1].romCode));
+    DS18B20probe[0].offset = 0;
+    DS18B20probe[1].offset = 0;
+    DS18B20probe[2].offset = 0;
+    memset(DS18B20probe[0].romCode.bytes, 0, sizeof(DS18B20probe[0].romCode));
+    memset(DS18B20probe[1].romCode.bytes, 0, sizeof(DS18B20probe[1].romCode));
+    memset(DS18B20probe[2].romCode.bytes, 0, sizeof(DS18B20probe[2].romCode));
+    BME280probe.offset = 0;
+    BME280probe.bPrimary = false;
   };
   void load();
   void save();
@@ -97,12 +106,14 @@ struct sHeaterTuning : public CESP32_NVStorage {
     glowDrive = rhs.glowDrive;
     pumpCal = rhs.pumpCal;
     lowVolts = rhs.lowVolts;
-    tempProbe[0].offset = rhs.tempProbe[0].offset;
-    tempProbe[1].offset = rhs.tempProbe[1].offset;
-    tempProbe[2].offset = rhs.tempProbe[2].offset;
-    memcpy(tempProbe[0].romCode.bytes, rhs.tempProbe[0].romCode.bytes, 8);
-    memcpy(tempProbe[1].romCode.bytes, rhs.tempProbe[1].romCode.bytes, 8);
-    memcpy(tempProbe[2].romCode.bytes, rhs.tempProbe[2].romCode.bytes, 8);
+    DS18B20probe[0].offset = rhs.DS18B20probe[0].offset;
+    DS18B20probe[1].offset = rhs.DS18B20probe[1].offset;
+    DS18B20probe[2].offset = rhs.DS18B20probe[2].offset;
+    memcpy(DS18B20probe[0].romCode.bytes, rhs.DS18B20probe[0].romCode.bytes, 8);
+    memcpy(DS18B20probe[1].romCode.bytes, rhs.DS18B20probe[1].romCode.bytes, 8);
+    memcpy(DS18B20probe[2].romCode.bytes, rhs.DS18B20probe[2].romCode.bytes, 8);
+    BME280probe.offset = rhs.BME280probe.offset;
+    BME280probe.bPrimary = rhs.BME280probe.bPrimary;
     return *this;
   }
   float getPmin() const;

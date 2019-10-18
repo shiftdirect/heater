@@ -34,10 +34,9 @@
 #include "../Utility/Moderator.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/BTC_JSON.h"
-#include "Utility/TempSense.h"
+#include "../Utility/TempSense.h"
 
 extern void DecodeCmd(const char* cmd, String& payload);
-extern CTempSense TempSensor;
 
 #define USE_RTOS_MQTTTIMER
 //#define USE_LOCAL_MQTTSTRINGS
@@ -348,29 +347,34 @@ void updateMQTT()
   pubTopic("RunString", getHeaterInfo().getRunStateStr());
 
   float tidyTemp;
-  if(TempSensor.getTemperature(0, tidyTemp)) {
-    tidyTemp += NVstore.getHeaterTuning().tempProbe[0].offset;
+  if(getTempSensor().getTemperature(0, tidyTemp)) {
     tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
     pubTopic("TempCurrent", tidyTemp); 
   }
   else
     pubTopic("TempCurrent", "n/a"); 
-  if(TempSensor.getNumSensors() > 1) {
-    if(TempSensor.getTemperature(1, tidyTemp)) {
-      tidyTemp += NVstore.getHeaterTuning().tempProbe[1].offset;
+  if(getTempSensor().getNumSensors() > 1) {
+    if(getTempSensor().getTemperature(1, tidyTemp)) {
       tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
       pubTopic("Temp2Current", tidyTemp); 
     }
     else
       pubTopic("Temp2Current", "n/a"); 
-    if(TempSensor.getNumSensors() > 2) {
-      if(TempSensor.getTemperature(2, tidyTemp)) {
-        tidyTemp += NVstore.getHeaterTuning().tempProbe[2].offset;
+    if(getTempSensor().getNumSensors() > 2) {
+      if(getTempSensor().getTemperature(2, tidyTemp)) {
         tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
         pubTopic("Temp3Current", tidyTemp); 
       }
       else
         pubTopic("Temp3Current", "n/a"); 
+    }
+    if(getTempSensor().getNumSensors() > 3) {
+      if(getTempSensor().getTemperature(3, tidyTemp)) {
+        tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
+        pubTopic("Temp4Current", tidyTemp); 
+      }
+      else
+        pubTopic("Temp4Current", "n/a"); 
     }
   }
   pubTopic("TempDesired", getTemperatureDesired()); 

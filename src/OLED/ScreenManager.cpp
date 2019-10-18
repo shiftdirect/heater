@@ -47,6 +47,7 @@
 #include "MenuTrunkScreen.h"
 #include "MQTTScreen.h"
 #include "DS18B20Screen.h"
+#include "TempSensorScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -487,7 +488,10 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
     menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
     menuloop.push_back(new CBTScreen(*_pDisplay, *this));
-    menuloop.push_back(new CDS18B20Screen(*_pDisplay, *this));
+    if(getTempSensor().getBME280().getCount())
+      menuloop.push_back(new CTempSensorScreen(*_pDisplay, *this));
+    else
+      menuloop.push_back(new CDS18B20Screen(*_pDisplay, *this));
     _Screens.push_back(menuloop);
   }
   
@@ -504,6 +508,7 @@ CScreenManager::_loadScreens()
   menuloop.push_back(new CInheritSettingsScreen(*_pDisplay, *this));  // inherit OEM settings branch screen
   menuloop.push_back(new CFontDumpScreen(*_pDisplay, *this)); // font dump branch screen
   menuloop.push_back(new CSettingsScreen(*_pDisplay, *this));         //  Tuning info
+  menuloop.push_back(new CDS18B20Screen(*_pDisplay, *this));
   _Screens.push_back(menuloop);
 
   _menu = 0;
@@ -681,6 +686,17 @@ CScreenManager::_leaveScreen()
 {
   if(_menu >= 0) 
     _Screens[_menu][_subMenu]->onExit();
+
+  _returnMenu = _menu;
+  _returnSubMenu = _subMenu;
+}
+
+void
+CScreenManager::returnMenu()
+{
+  _menu = _returnMenu;
+  _subMenu = _returnSubMenu;
+  _enterScreen();
 }
 
 void

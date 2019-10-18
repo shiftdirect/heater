@@ -25,6 +25,7 @@
 #include "../Utility/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "fonts/Icons.h"
+#include "../Utility/BTC_GPIO.h"
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -328,7 +329,7 @@ CThermostatModeScreen::_adjust(int dir)
       break;
     case 4:   // thermostat mode
       _thermoMode += dir;
-      wrap = getExternalThermostatModeActive() ? 3 : 2;
+      wrap = GPIOin.usesExternalThermostat() ? 3 : 2;
       WRAPLIMITS(_thermoMode, 0, wrap);
       break;
   }

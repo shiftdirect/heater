@@ -30,7 +30,7 @@
 #include "../Utility/NVStorage.h"
 #include "../../lib/WiFiManager-dev/WiFiManager.h"
 
-#define USE_AP  
+//#define USE_AP  
 
 // function to control the behaviour upon reboot if no wifi manager credentials exist
 // or connection fails
@@ -103,10 +103,12 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 
   int chnl = 1;
   bool retval = false;
+  bool startAP = false;
   if(!res) {
     // failed STA mode
     DebugPort.println("WiFimanager failed STA connection. Setting up AP...");
     WiFi.disconnect();  // apparently needed for AP only OTA to reboot properly!!!
+    startAP = true;
   }    
   else {
     // runs through here if STA connected OK
@@ -120,16 +122,17 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     retval = true;
   }
 #ifdef USE_AP  
-  // always setup an AP - for STA+AP mode we *must* use the same RF channel as STA
-  DebugPort.println("Starting AP mode");
-//REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
-// REMOVED    WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0));  
-  WiFi.softAP(failedssid, failedpassword, chnl);
-  WiFi.enableAP(true);
-  DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
-  DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
-  DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
+  startAP = true;
 #endif
+  if(startAP) {
+    //  for STA+AP mode we *must* use the same RF channel as STA
+    DebugPort.println("Starting AP mode");
+    WiFi.softAP(failedssid, failedpassword, chnl);
+    WiFi.enableAP(true);
+    DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
+    DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
+    DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
+  }
 
   // even though we may have started in STA mode - start the config portal if demanded via the NV flag
   if(shouldBootIntoConfigPortal()) {

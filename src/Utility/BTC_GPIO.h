@@ -216,4 +216,7 @@ struct sGPIO {
   }
 };
 
+extern CGPIOin GPIOin;
+extern CGPIOout GPIOout;
+
 #endif // __BTCGPIO_H__

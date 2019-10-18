@@ -24,38 +24,120 @@
 #include "TempSense.h"
 #include "DebugPort.h"
 #include "macros.h"
+#include "NVStorage.h"
 
-CTempSense::CTempSense()
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// DS18B20 probe support
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CDS18B20probe::CDS18B20probe() 
+{
+  pSensorInfo = NULL;
+  init();
+}
+
+void
+CDS18B20probe::init()
+{
+  release();
+  reading = -100;
+  error = DS18B20_ERROR_UNKNOWN;
+  holdoff = 3;
+  filter.reset(0);
+} 
+
+void
+CDS18B20probe::release()
+{
+  if(pSensorInfo)
+    ds18b20_free(&pSensorInfo);
+  pSensorInfo = NULL;
+}
+
+bool
+CDS18B20probe::readSensor()
+{
+  bool retval = false;
+
+  error = DS18B20_ERROR_UNKNOWN;
+
+  error = ds18b20_read_temp(pSensorInfo, &reading);   
+  if(error == DS18B20_OK) {
+    if(holdoff) {
+      holdoff--;
+      if(holdoff == 0) {
+        filter.reset(reading);
+      }
+      error = DS18B20_ERROR_DEVICE;  // avoid allowing initial readings
+    }
+    else {
+      filter.update(reading);
+      retval = true;
+    }
+  }
+  else {
+    holdoff = 3;
+    filter.reset(-100);
+  }
+
+  return retval;
+}
+
+float 
+CDS18B20probe::getReading(bool filtered) 
+{
+  if(filtered)
+    return filter.getValue();
+  else
+    return reading;
+}
+
+/*bool  
+CDS18B20probe::setROMcode(OneWireBus_ROMCode rom_code) 
+{ 
+  if(pSensor) {
+    pSensor->rom_code = rom_code; 
+    return true;
+  }
+  return false;
+}*/
+
+OneWireBus_ROMCode 
+CDS18B20probe::getROMcode() const 
+{ 
+  if(pSensorInfo)
+    return pSensorInfo->rom_code; 
+  else {
+    OneWireBus_ROMCode nullROM = {0};
+    return nullROM;
+  }
+}
+
+bool 
+CDS18B20probe::matchROMcode(uint8_t test[8])
+{
+  if(pSensorInfo)
+    return memcmp(pSensorInfo->rom_code.bytes, test, 8) == 0;
+  return false;
+}
+
+CDS18B20Sensor::CDS18B20Sensor()
 {
   _owb = NULL;
   _nNumSensors = 0;
   for(int i=0; i< MAX_DS18B20_DEVICES; i++)
-    _Sensors[i] = NULL;
+    _Sensors[i].init();
+
   for(int i=0; i<3; i++)
   	_sensorMap[i] = -1;
 }
 
-#ifdef SINGLE_DS18B20_SENSOR
-void CTempSense::begin(int pin)
-{
-  // initialise DS18B20 sensor interface
-  // create one wire bus interface, using RMT peripheral
-  pinMode(pin, INPUT_PULLUP);
-  _owb = owb_rmt_initialize(&_rmt_driver_info, pin, RMT_CHANNEL_1, RMT_CHANNEL_0);
-  owb_use_crc(_owb, true);  // enable CRC check for ROM code
-
-//  bool found = find();
-  delay(10);  // couple of glitches take place during pin setup - give a bit of space to avoid no sensor issues?
-
-  bool found = readROMcode();
-
-  // Create DS18B20 device on the 1-Wire bus
-  if(found) {
-    attach();
-  }
-}
-#else
-void CTempSense::begin(int pin)
+void 
+CDS18B20Sensor::begin(int pin)
 {
   // initialise DS18B20 sensor interface
 
@@ -65,47 +147,9 @@ void CTempSense::begin(int pin)
 
   find();
 }
-#endif
 
-#ifdef SINGLE_DS18B20_SENSOR
 bool
-CTempSense::readSensors(float& tempReading)
-{
-  if(_Sensors[0] == NULL) {
-
-//    bool found = find();
-    bool found = readROMcode();
-
-    if(found) {
-      DebugPort.println("Found DS18B20 device");
-
-//      readROMcode();
-
-      attach();
-
-      startConvert();  // request a new conversion,
-      waitConvertDone();
-    }
-  }
-
-  if(_Sensors[0] != NULL) {
-    DS18B20_ERROR error = ds18b20_read_temp(_Sensors[0], &tempReading);
-//          DebugPort.printf(">>>> DS18B20 = %f, error=%d\r\n", fTemperature, error);
-
-    if(error == DS18B20_OK) {
-      return true;
-    }
-    else {
-      DebugPort.println("\007DS18B20 sensor removed?");
-      ds18b20_free(&_Sensors[0]);
-    }
-  }
-
-  return false;
-}
-#else
-bool
-CTempSense::readSensors()
+CDS18B20Sensor::readSensors()
 {
   bool retval = false;
 
@@ -123,18 +167,18 @@ CTempSense::readSensors()
 
   if(_nNumSensors) {
     for (int i = 0; i < MAX_DS18B20_DEVICES; ++i) {
-      _Errors[i] = DS18B20_ERROR_UNKNOWN;
+      _Sensors[i].setError(DS18B20_ERROR_UNKNOWN);
     }
 
     for (int i = 0; i < _nNumSensors; ++i) {
-      _Errors[i] = ds18b20_read_temp(_Sensors[i], &_Readings[i]);   
+      _Sensors[i].readSensor();
     }
 
 #ifdef REPORT_READINGS
     DebugPort.println("\nTemperature readings (degrees C)");
 #endif
     for (int i = 0; i < _nNumSensors; ++i) {
-      if(_Errors[i] == DS18B20_OK) {
+      if(_Sensors[i].OK()) {
 #ifdef REPORT_READINGS
         DebugPort.printf("  %d: %.1f    OK\r\n", i, _Readings[i]);
 #endif
@@ -150,34 +194,15 @@ CTempSense::readSensors()
 
   return retval;
 }
-#endif
 
-#ifdef SINGLE_DS18B20_SENSOR
 bool 
-CTempSense::find()
-{
-  // Find all connected devices
-//  DebugPort.printf("Finding one wire bus devices...");
-  _nNumSensors = 0;
-  OneWireBus_SearchState search_state = {0};
-  bool found = false;
-  owb_search_first(_owb, &search_state, &found);
-  if(found) {
-    _nNumSensors = 1;
-    DebugPort.println("Found a one wire device");
-  }
-  else 
-    DebugPort.println("No one wire devices found!!");
-
-  return found;
-}
-#else
-bool 
-CTempSense::find()
+CDS18B20Sensor::find()
 {
   // Find all connected devices
   DebugPort.println("Finding one wire bus devices...");
-  memset(_device_rom_codes, 0, sizeof(_device_rom_codes));
+  OneWireBus_ROMCode rom_codes[MAX_DS18B20_DEVICES];
+  memset(&rom_codes, 0, sizeof(rom_codes));
+
   _nNumSensors = 0;
   OneWireBus_SearchState search_state = {0};
 
@@ -188,33 +213,32 @@ CTempSense::find()
     owb_string_from_rom_code(search_state.rom_code, rom_code_s, sizeof(rom_code_s));
     DebugPort.printf("  %d : %s\r\n", _nNumSensors, rom_code_s);
 
-    _device_rom_codes[_nNumSensors] = search_state.rom_code;
+    rom_codes[_nNumSensors] = search_state.rom_code;
     _nNumSensors++;
     owb_search_next(_owb, &search_state, &found);
   }
-  DebugPort.printf("Found %d device%s\r\n", _nNumSensors, _nNumSensors==1 ? "" : "s");
+  DebugPort.printf("Found %d DS18B20 device%s\r\n", _nNumSensors, _nNumSensors==1 ? "" : "s");
 
   // Create DS18B20 devices on the 1-Wire bus
   for (int i = 0; i < MAX_DS18B20_DEVICES; ++i) {
-    if(_Sensors[i]) {
-      ds18b20_free(&_Sensors[i]);
-    }
-    _Sensors[i] = NULL;
+    _Sensors[i].release();
   }
   for (int i = 0; i < _nNumSensors; ++i)
   {
     DS18B20_Info * ds18b20_info = ds18b20_malloc();  // heap allocation
-    _Sensors[i] = ds18b20_info;
+    _Sensors[i].assign(ds18b20_info);
 
     if (_nNumSensors == 1)
     {
-        printf("Single device optimisations enabled\n");
-        ds18b20_init_solo(ds18b20_info, _owb);          // only one device on bus
-        ds18b20_info->rom_code = _device_rom_codes[i];  // added, for GUI setup!!
+      printf("DS18B20 Single device optimisations enabled\n");
+      ds18b20_init_solo(ds18b20_info, _owb);          // only one device on bus
+//        ds18b20_info->rom_code = _Sensors[i].getROMcode();  // added, for GUI setup!!
+      ds18b20_info->rom_code = rom_codes[0];  // added, for GUI setup!!
     }
     else
     {
-        ds18b20_init(ds18b20_info, _owb, _device_rom_codes[i]); // associate with bus and device
+//        ds18b20_init(ds18b20_info, _owb, _Sensors[i].getROMcode()); // associate with bus and device
+      ds18b20_init(ds18b20_info, _owb, rom_codes[i]); // associate with bus and device
     }
     ds18b20_use_crc(ds18b20_info, true);           // enable CRC check for temperature readings
     ds18b20_set_resolution(ds18b20_info, DS18B20_RESOLUTION_12_BIT);
@@ -222,61 +246,24 @@ CTempSense::find()
 
   return found;
 }
-#endif
-
-#ifdef SINGLE_DS18B20_SENSOR
-bool 
-CTempSense::readROMcode()
-{
-  // For a single device only:
-  OneWireBus_ROMCode rom_code;
-  owb_status status = owb_read_rom(_owb, &rom_code);
-  if (status == OWB_STATUS_OK)
-  {
-    char rom_code_s[OWB_ROM_CODE_STRING_LENGTH];
-    owb_string_from_rom_code(rom_code, rom_code_s, sizeof(rom_code_s));
-    DebugPort.printf("Device %s present\r\n", rom_code_s);
-    return true;
-  }
-  else
-  {
-    DebugPort.printf("Error #%d occurred attempting to read ROM code\r\n", status);
-    return false;
-  }
-}
-
-bool
-CTempSense::attach()
-{
-  if(_Sensors[0] == NULL) {
-    _Sensors[0] = ds18b20_malloc();  // heap allocation
-
-    DebugPort.printf("Single device optimisations enabled\r\n");
-    ds18b20_init_solo(_Sensors[0], _owb);          // only one device on bus
-    ds18b20_use_crc(_Sensors[0], true);           // enable CRC check for temperature readings
-    ds18b20_set_resolution(_Sensors[0], DS18B20_RESOLUTION_12_BIT);
-  }
-  return true;
-}
-#endif
 
 void 
-CTempSense::startConvert()
+CDS18B20Sensor::startConvert()
 {
   // kick off the initial temperature conversion
-  if(_Sensors[0])
+  if(_Sensors[0].getSensorInfo())
     ds18b20_convert_all(_owb);
 }
 
 void
-CTempSense::waitConvertDone()
+CDS18B20Sensor::waitConvertDone()
 {
-  if(_Sensors[0])
-    ds18b20_wait_for_conversion(_Sensors[0]);
+  if(_Sensors[0].getSensorInfo())
+    ds18b20_wait_for_conversion(_Sensors[0].getSensorInfo());
 }
 
 int 
-CTempSense::checkNumSensors() const
+CDS18B20Sensor::checkNumSensors() const
 {
   long start = millis();
   bool found = false;
@@ -294,7 +281,7 @@ CTempSense::checkNumSensors() const
 }
 
 bool 
-CTempSense::mapSensor(int idx, OneWireBus_ROMCode romCode)
+CDS18B20Sensor::mapSensor(int idx, OneWireBus_ROMCode romCode)
 {
   if(idx == -1) {
     _sensorMap[0] = _sensorMap[1] = _sensorMap[2] = -1;
@@ -310,7 +297,7 @@ CTempSense::mapSensor(int idx, OneWireBus_ROMCode romCode)
     return false;
 
   for(int i = 0; i < _nNumSensors; i++) {
-    if(memcmp(_Sensors[i]->rom_code.bytes, romCode.bytes, 8) == 0) {
+    if(_Sensors[i].matchROMcode(romCode.bytes)) {
       _sensorMap[idx] = i;
       DebugPort.printf("Mapped DS18B20 %02X:%02X:%02X:%02X:%02X:%02X as role %d\r\n",
                         romCode.fields.serial_number[5], 
@@ -328,28 +315,241 @@ CTempSense::mapSensor(int idx, OneWireBus_ROMCode romCode)
 }
 
 bool
-CTempSense::getTemperature(int mapIdx, float& temperature)
+CDS18B20Sensor::getTemperature(int usrIdx, float& temperature, bool filtered) 
 {
-  int snsIdx = _sensorMap[mapIdx];
+  int snsIdx = _sensorMap[usrIdx];
   if(snsIdx < 0) 
     snsIdx = 0;  // default to sensor 0 if not mapped
 
-  return getTemperatureIdx(snsIdx, temperature);  
+  return getTemperatureIdx(snsIdx, temperature, filtered);  
 }
 
 bool
-CTempSense::getTemperatureIdx(int snsIdx, float& temperature)
+CDS18B20Sensor::getTemperatureIdx(int snsIdx, float& temperature, bool filtered) 
 {
-  temperature = _Readings[snsIdx];
-  return _Errors[snsIdx] == DS18B20_OK;
+  if(_Sensors[snsIdx].OK()) {
+    temperature = _Sensors[snsIdx].getReading(filtered);
+    temperature += NVstore.getHeaterTuning().DS18B20probe[snsIdx].offset;
+    return true;
+  }
+  else {
+    temperature = -100;
+    return false;
+  }
 }
 
 bool 
-CTempSense::getRomCodeIdx(int snsIdx, OneWireBus_ROMCode& romCode)
+CDS18B20Sensor::getRomCodeIdx(int snsIdx, OneWireBus_ROMCode& romCode) const
 {
   if(snsIdx >= _nNumSensors)
     return false;
-  romCode = _Sensors[snsIdx]->rom_code;
+//  romCode = _Sensors[snsIdx].sensor->rom_code;
+  romCode = _Sensors[snsIdx].getROMcode();
   return true;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// BME-280 probe support
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+CBME280Sensor::CBME280Sensor()
+{
+  _count = 0;
+}
+
+bool
+CBME280Sensor::begin(int ID)
+{
+  _count = 0;
+  bool status = _bme.begin(ID);  
+  if (!status) {
+    DebugPort.println("Could not find a valid BME280 sensor, check wiring!");
+    return false;
+  }
+  _count = 1;
+  _bme.setSampling(Adafruit_BME280::MODE_FORCED, 
+                  Adafruit_BME280::SAMPLING_X1,
+                  Adafruit_BME280::SAMPLING_X1,
+                  Adafruit_BME280::SAMPLING_X1,
+                  Adafruit_BME280::FILTER_OFF,
+                  Adafruit_BME280::STANDBY_MS_1000);
+  
+  _lastSampleTime = millis();
+
+  return true;
+}
+
+bool 
+CBME280Sensor::getTemperature(float& tempReading, bool filtered) 
+{
+  if(_count == 0) {
+    tempReading = -100;
+    return false;
+  }
+
+  long tDelta = millis() - _lastSampleTime;
+  if(tDelta >= 0) {
+    _bme.takeForcedMeasurement();
+    _lastTemperature = _bme.readTemperature();
+    _lastSampleTime = millis() + 1000;
+  }
+  if(filtered)
+    tempReading = _Filter.getValue();
+  else
+    tempReading = _lastTemperature;
+  tempReading += NVstore.getHeaterTuning().BME280probe.offset;;
+
+  return true;
+}
+
+const char* 
+CBME280Sensor::getID()
+{
+  return "BME-280";
+}
+
+
+CTempSense::CTempSense()
+{
+}
+
+void
+CTempSense::begin(int oneWirePin, int I2CID)
+{
+  DS18B20.begin(oneWirePin);
+  BME280.begin(I2CID);
+}
+
+int  
+CTempSense::getNumSensors() const
+{
+  int retval = 0;
+
+  retval += DS18B20.getNumSensors();
+  retval += BME280.getCount();
+
+  return retval;
+}
+
+void 
+CTempSense::startConvert()
+{
+  DS18B20.startConvert();
+}
+
+bool
+CTempSense::readSensors()
+{
+  return DS18B20.readSensors();
+}
+
+float
+CTempSense::getOffset(int usrIdx) 
+{
+  // no BME280 sensor? extract from DS18B20
+  if(BME280.getCount() == 0) {
+    if(INBOUNDS(usrIdx, 0, 2)) {
+      return NVstore.getHeaterTuning().DS18B20probe[usrIdx].offset;
+    }
+  }
+
+  if(NVstore.getHeaterTuning().BME280probe.bPrimary) {
+    // BME is primary sensor, index 0 => use BME meta data
+    if(usrIdx == 0) {
+      return NVstore.getHeaterTuning().BME280probe.offset;
+    }
+    usrIdx--;
+    if(INBOUNDS(usrIdx, 0, 2)) {
+      return NVstore.getHeaterTuning().DS18B20probe[usrIdx].offset;
+    }
+  }
+  else {
+    // BME is after the DS18B20s
+    if(usrIdx >= DS18B20.getNumSensors()) {
+      // assume any more than connected DS18B20 is the BME
+      return NVstore.getHeaterTuning().BME280probe.offset;
+    }
+    if(INBOUNDS(usrIdx, 0, 2)) {
+      return NVstore.getHeaterTuning().DS18B20probe[usrIdx].offset;
+    }
+  }
+  return 0;  // catch for invalid index
+}
+
+void 
+CTempSense::setOffset(int usrIdx, float offset)
+{
+  if(!INBOUNDS(offset, -10.0, +10.0)) {
+    return;
+  }
+
+  sHeaterTuning ht = NVstore.getHeaterTuning();
+
+  if(BME280.getCount() == 0) {
+    // no BME280 present - simply apply to DS18B20 list
+    if(INBOUNDS(usrIdx, 0, 2))
+      ht.DS18B20probe[usrIdx].offset = offset;
+  }
+  else {
+    // BME280 present
+    // need to change behvaiour depending if the BME is primary
+    if(NVstore.getHeaterTuning().BME280probe.bPrimary) {
+      // BME is primary - usrIdx 0 is BME, 1 is first DS18B20
+      if(usrIdx == 0) {
+        ht.BME280probe.offset = offset;
+      }
+      else {
+        usrIdx--;
+        if(INBOUNDS(usrIdx, 0, 2))
+          ht.DS18B20probe[usrIdx].offset = offset;
+      }
+    }
+    else {
+      // BME is after DS18B20s
+      // note the index for the BME depends upon how many DS18B20s are connected!
+      if(usrIdx >= DS18B20.getNumSensors()) {
+        // assume any more than connected DS18B20 is the BME
+        ht.BME280probe.offset = offset;
+      }
+      else {
+        if(INBOUNDS(usrIdx, 0, 2))
+          ht.DS18B20probe[usrIdx].offset = offset;
+      }
+    }
+  }
+
+  NVstore.setHeaterTuning(ht);
+}
+
+
+bool
+CTempSense::getTemperature(int usrIdx, float& temperature, bool filtered) 
+{
+  if(BME280.getCount() == 0)
+    return DS18B20.getTemperature(usrIdx, temperature, filtered);  
+
+  if(NVstore.getHeaterTuning().BME280probe.bPrimary) {
+    if(usrIdx == 0)
+      return BME280.getTemperature(temperature, filtered);
+
+    usrIdx--;
+    return DS18B20.getTemperature(usrIdx, temperature, filtered);  
+  }
+  else {
+
+    if(usrIdx >= DS18B20.getNumSensors()) {
+      return BME280.getTemperature(temperature, filtered);
+    }
+
+    return DS18B20.getTemperature(usrIdx, temperature, filtered);  
+  }
 }
 

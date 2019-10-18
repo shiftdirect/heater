@@ -290,8 +290,8 @@ void DecodeCmd(const char* cmd, String& payload)
   }
   else if(strcmp("MTopic", cmd) == 0) {
     sMQTTparams info = NVstore.getMQTTinfo();
-    strncpy(info.topic, payload.c_str(), 31);
-    info.topic[31] = 0;
+    strncpy(info.topicPrefix, payload.c_str(), 31);
+    info.topicPrefix[31] = 0;
     NVstore.setMQTTinfo(info);
   }
   else if(strcmp("UploadSize", cmd) == 0) {
@@ -339,25 +339,31 @@ void DecodeCmd(const char* cmd, String& payload)
     }
   }
   else if(strcmp("TempOffset", cmd) == 0) {
-    sHeaterTuning ht = NVstore.getHeaterTuning();
-    ht.tempProbe[0].offset = payload.toFloat();
-    if(INBOUNDS(ht.tempProbe[0].offset, -10.0, +10.0)) {
+    getTempSensor().setOffset(0, payload.toFloat());
+/*    sHeaterTuning ht = NVstore.getHeaterTuning();
+    ht.DS18B20probe[0].offset = payload.toFloat();
+    if(INBOUNDS(ht.DS18B20probe[0].offset, -10.0, +10.0)) {
       NVstore.setHeaterTuning(ht);
-    }
+    }*/
   }
   else if(strcmp("Temp2Offset", cmd) == 0) {
-    sHeaterTuning ht = NVstore.getHeaterTuning();
-    ht.tempProbe[1].offset = payload.toFloat();
-    if(INBOUNDS(ht.tempProbe[1].offset, -10.0, +10.0)) {
+    getTempSensor().setOffset(1, payload.toFloat());
+/*    sHeaterTuning ht = NVstore.getHeaterTuning();
+    ht.DS18B20probe[1].offset = payload.toFloat();
+    if(INBOUNDS(ht.DS18B20probe[1].offset, -10.0, +10.0)) {
       NVstore.setHeaterTuning(ht);
-    }
+    }*/
   }
   else if(strcmp("Temp3Offset", cmd) == 0) {
-    sHeaterTuning ht = NVstore.getHeaterTuning();
-    ht.tempProbe[2].offset = payload.toFloat();
-    if(INBOUNDS(ht.tempProbe[2].offset, -10.0, +10.0)) {
+    getTempSensor().setOffset(2, payload.toFloat());
+/*    sHeaterTuning ht = NVstore.getHeaterTuning();
+    ht.DS18B20probe[2].offset = payload.toFloat();
+    if(INBOUNDS(ht.DS18B20probe[2].offset, -10.0, +10.0)) {
       NVstore.setHeaterTuning(ht);
-    }
+    }*/
+  }
+  else if(strcmp("Temp4Offset", cmd) == 0) {
+    getTempSensor().setOffset(3, payload.toFloat());
   }
   else if(strcmp("LowVoltCutout", cmd) == 0) {
     float fCal = payload.toFloat();

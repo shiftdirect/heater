@@ -49,7 +49,7 @@ CMQTTsetup::showMQTTmenu(bool init)
   DebugPort.printf("  <2> - set port, currently %d\r\n", _MQTTsetup.port);
   DebugPort.printf("  <3> - set username, currently \"%s\"\r\n", _MQTTsetup.username);
   DebugPort.printf("  <4> - set password, currently \"%s\"\r\n", _MQTTsetup.password);
-  DebugPort.printf("  <5> - set root topic, currently \"%s\"\r\n", _MQTTsetup.topic);
+  DebugPort.printf("  <5> - set root topic, currently \"%s\"\r\n", _MQTTsetup.topicPrefix);
   DebugPort.printf("  <6> - set QoS, currently %d\r\n", _MQTTsetup.qos);
   DebugPort.printf("  <7> - set enabled, currently %s\r\n", _MQTTsetup.enabled ? "ON" : "OFF");
   DebugPort.printf("  <ENTER> - save and exit\r\n");
@@ -92,7 +92,7 @@ CMQTTsetup::HandleMQTTsetup(char rxVal)
           case 2: DebugPort.printf("Enter MQTT broker's port (%d)", _MQTTsetup.port); break;
           case 3: DebugPort.printf("Enter MQTT broker's username (%s)", _MQTTsetup.username); break;
           case 4: DebugPort.printf("Enter MQTT broker's password (%s)", _MQTTsetup.password); break;
-          case 5: DebugPort.printf("Enter root topic name (%s)", _MQTTsetup.topic); break;
+          case 5: DebugPort.printf("Enter root topic name (%s)", _MQTTsetup.topicPrefix); break;
           case 6: DebugPort.printf("Enter QoS level (%d)", _MQTTsetup.qos); break;
           case 7: DebugPort.printf("Enable MQTT? (Y)es / (N)o (%s)", _MQTTsetup.enabled ? "YES" : "NO"); break;
         }
@@ -145,7 +145,7 @@ CMQTTsetup::HandleMQTTsetup(char rxVal)
       }
       break;
     case 5:  // enter root topic name
-      if(getMQTTstring(rxVal, 31, _MQTTsetup.topic)) {
+      if(getMQTTstring(rxVal, 31, _MQTTsetup.topicPrefix)) {
         bJumptoMQTTmenuRoot = true;
       }
       break;

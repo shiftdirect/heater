@@ -36,6 +36,8 @@ class CScreenManager {
   int _menu;
   int _subMenu;
   int _rootMenu;
+  int _returnMenu;
+  int _returnSubMenu;
   bool _bDimmed;
   bool _bReload;
   unsigned long _DimTime_ms;
@@ -53,8 +55,8 @@ public:
   enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
   enum eUITuningMenus { MixtureUI, HeaterSettingsUI, FuelCalUI };
-  enum eUIUserSettingsMenus { ExThermostatUI, HomeMenuUI, TimeIntervalsUI, GPIOUI };
-  enum eUIBranchMenus { SetClockUI, InheritSettingsUI, FontDumpUI, HtrSettingsUI };
+  enum eUIUserSettingsMenus { ExThermostatUI, HomeMenuUI, TimeIntervalsUI, TempSensorUI, GPIOUI };
+  enum eUIBranchMenus { SetClockUI, InheritSettingsUI, FontDumpUI, HtrSettingsUI, DS18B20UI };
   enum eUISystemSettingsMenus { SysVerUI, SysHoursUI, SysWifiUI, SysBTUI };
 public:
   CScreenManager();
@@ -68,6 +70,7 @@ public:
   void prevMenu();
   void reqUpdate();
   void selectMenu(eUIMenuSets menuset, int specific = -1);   // use to select loop menus, including the root or branches
+  void returnMenu();   // use to select loop menus, including the root or branches
   void showRebootMsg(const char* content[2], long delayTime);
   void showOTAMessage(int percent, eOTAmodes updateType);
   void clearDisplay();

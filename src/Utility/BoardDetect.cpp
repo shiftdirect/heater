@@ -52,11 +52,12 @@
 //  Input state truth table
 //                        GPIO25    GPIO26    GPIO33
 //                        ------    ------    ------
-//                 V1.0    HIGH      HIGH      HIGH
-//      unmodified V2.0    LOW       HIGH      LOW
-//      modified   V2.0    LOW       LOW       HIGH    
-//                 V2.1    LOW       LOW       HIGH
-//         No GPIO V2.0    HIGH      LOW       HIGH
+//                 V1.0    HIGH      HIGH      HIGH    - green V1 PCB
+//      unmodified V2.0    LOW       HIGH      LOW     - digital only (V2 PCB)
+//      modified   V2.0    LOW       LOW       HIGH    - full GPIO (V2 or V3 PCB)
+//                 V2.1    LOW       LOW       HIGH    - digital only (modified V2 PCB)
+//         No GPIO V2.0    HIGH      LOW       HIGH    - no GPIO (V2 or V3 PCB, 0R in C6) 
+//                 V2.1    LOW       LOW       LOW     - digital only (V3 PCB, 0R in C6)
 //
 //
 //  ****************************************************************************************
@@ -114,10 +115,10 @@ int BoardDetect()
     revision = BRD_V2_GPIO_NOALG;
     DebugPort.println("Board detect: digital input test reveals V2.0 PCB - Digital only GPIO (V2.1 userID)");
   }
-  // original V2 PCB, no traces cut n shunted, pin 26 grounded via 0R instead of 100n cap, dig inputs pulled low by transistors
+  // V3 PCB, no traces cut n shunted, pin 26 grounded via 0R instead of 100n cap, dig inputs pulled low by transistors
   else if((pin33 == LOW) && (pin26 == LOW) && (pin25 == LOW)) {  
-    revision = BRD_V2_GPIO_NOALG;
-    DebugPort.println("Board detect: digital input test reveals V2.0 PCB - Digital only GPIO (V2.1 userID)");
+    revision = BRD_V3_GPIO_NOALG;
+    DebugPort.println("Board detect: digital input test reveals V3.0 PCB - Digital only GPIO (V2.1 userID)");
   }
   // original V2 PCB, pin 26 grounded via 0R instead of 100n cap, digio transistors not fitted dig in pins pull high
   else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == HIGH)) {  
@@ -153,6 +154,7 @@ const char* getBoardRevisionString(int ID)
     case BRD_V2_FULLGPIO: return "V2.2"; 
     case BRD_V2_NOGPIO: return "V2.0"; 
     case BRD_V2_GPIO_NOALG: return "V2.1"; 
+    case BRD_V3_GPIO_NOALG: return "V2.1"; 
     default: return "???"; 
   }
 }

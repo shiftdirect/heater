@@ -48,7 +48,7 @@ CFuelCalScreen::onSelect()
   _initUI();
   _mlPerStroke = NVstore.getHeaterTuning().pumpCal;
   _LVC = NVstore.getHeaterTuning().lowVolts;
-  _tOfs = NVstore.getHeaterTuning().tempProbe[0].offset;
+//  _tOfs = NVstore.getHeaterTuning().DS18B20probe[0].offset;
 }
 
 void
@@ -69,7 +69,7 @@ CFuelCalScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 4) {
+    if(_rowSel == 10) {
       _showConfirmMessage();
     }
     else {
@@ -92,11 +92,12 @@ CFuelCalScreen::show()
       else
         strcpy(msg, "OFF");
       _printMenuText(col, yPos, msg, _rowSel == 2);
-      // temp offset
+/*      // temp offset
       yPos = Line3;
       _printMenuText(col, yPos, "\367C offset : ", false, eRightJustify);
       sprintf(msg, "%+.1f", _tOfs);
       _printMenuText(col, yPos, msg, _rowSel == 3);
+*/
       // navigation line
       yPos = 53;
       int xPos = _display.xCentre();
@@ -189,7 +190,7 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 3:
           _adjust(-1);
           break;
-        case 4:
+        case 10:
           _rowSel = 0;   // abort save
           break;
       }
@@ -205,7 +206,7 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 3:
           _adjust(+1);
           break;
-        case 4:
+        case 10:
           _rowSel = 0;   // abort save
           break;
       }
@@ -222,16 +223,17 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _rowSel++;
-          UPPERLIMIT(_rowSel, 3);
+//          UPPERLIMIT(_rowSel, 3);
+          UPPERLIMIT(_rowSel, 2);
           break;
-        case 4:    // confirmed save
+        case 10:    // confirmed save
           _display.clearDisplay();
           _animateCount = -1;
           _enableStoringMessage();
           tuning = NVstore.getHeaterTuning();
           tuning.pumpCal = _mlPerStroke;
           tuning.lowVolts = _LVC;
-          tuning.tempProbe[0].offset = _tOfs;
+//          tuning.DS18B20probe[0].offset = _tOfs;
           NVstore.setHeaterTuning(tuning);
           saveNV();
           _rowSel = 0;
@@ -249,7 +251,7 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 3:
           _animateCount = -1;
           _display.clearDisplay();          
-          _rowSel = 4;
+          _rowSel = 10;
           break;
       }
     }
@@ -290,9 +292,10 @@ CFuelCalScreen::_adjust(int dir)
         }
       }
       break;
-    case 3:
+/*    case 3:
       _tOfs += dir * 0.1;
       BOUNDSLIMIT(_tOfs, -10, 10);
       break;
+*/
   }
 }

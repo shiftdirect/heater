@@ -25,6 +25,7 @@
 
 #include "UtilClasses.h"
 
+class CTempSense;
 struct sGPIO;
 
 extern void forceBootInit();
@@ -45,7 +46,7 @@ extern uint8_t getDemandDegC();
 extern void  setDemandDegC(uint8_t val);
 extern uint8_t getDemandPump();
 
-extern float getTemperatureSensor();
+extern float getTemperatureSensor(int source = 0);
 extern void  setPumpMin(float);
 extern void  setPumpMax(float);
 extern void  setFanMin(uint16_t);
@@ -88,6 +89,7 @@ extern int getFanSpeed();
 extern int sysUptime();
 extern void doJSONwatchdog(int topup);
 extern void reloadScreens();
+extern CTempSense& getTempSensor() ;
 
 
 void setSSID(const char* name);

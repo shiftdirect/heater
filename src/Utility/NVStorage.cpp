@@ -265,23 +265,25 @@ sHeaterTuning::load()
   else
     validatedLoad("lowVolts", lowVolts, 230, u8inBoundsOrZero, 200, 250);
   validatedLoad("pumpCal", pumpCal, 0.02, 0.001, 1);
-  validatedLoad("tempOffset0", tempProbe[0].offset, 0.0, -10.0, +10.0);
-  validatedLoad("tempOffset1", tempProbe[1].offset, 0.0, -10.0, +10.0);
-  validatedLoad("tempOffset2", tempProbe[2].offset, 0.0, -10.0, +10.0);
-  preferences.getBytes("probeSerial0", tempProbe[0].romCode.bytes, 8);
-  preferences.getBytes("probeSerial1", tempProbe[1].romCode.bytes, 8);
-  preferences.getBytes("probeSerial2", tempProbe[2].romCode.bytes, 8);
+  validatedLoad("tempOffset0", DS18B20probe[0].offset, 0.0, -10.0, +10.0);
+  validatedLoad("tempOffset1", DS18B20probe[1].offset, 0.0, -10.0, +10.0);
+  validatedLoad("tempOffset2", DS18B20probe[2].offset, 0.0, -10.0, +10.0);
+  preferences.getBytes("probeSerial0", DS18B20probe[0].romCode.bytes, 8);
+  preferences.getBytes("probeSerial1", DS18B20probe[1].romCode.bytes, 8);
+  preferences.getBytes("probeSerial2", DS18B20probe[2].romCode.bytes, 8);
+  validatedLoad("tempOffsetBME", BME280probe.offset, 0.0, -10.0, +10.0);
+  validatedLoad("probeBMEPrmy", BME280probe.bPrimary, 0, u8inBounds, 0, 1);
   preferences.end();    
 
   // for(int i=0; i<3; i++) {
   //   DebugPort.printf("Rd Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
   //                    i,
-  //                    tempProbe[i].romCode.fields.serial_number[5],
-  //                    tempProbe[i].romCode.fields.serial_number[4],
-  //                    tempProbe[i].romCode.fields.serial_number[3],
-  //                    tempProbe[i].romCode.fields.serial_number[2],
-  //                    tempProbe[i].romCode.fields.serial_number[1],
-  //                    tempProbe[i].romCode.fields.serial_number[0]
+  //                    DS18B20probe[i].romCode.fields.serial_number[5],
+  //                    DS18B20probe[i].romCode.fields.serial_number[4],
+  //                    DS18B20probe[i].romCode.fields.serial_number[3],
+  //                    DS18B20probe[i].romCode.fields.serial_number[2],
+  //                    DS18B20probe[i].romCode.fields.serial_number[1],
+  //                    DS18B20probe[i].romCode.fields.serial_number[0]
   //                    );
   // }
 }
@@ -301,23 +303,25 @@ sHeaterTuning::save()
   preferences.putUChar("glowDrive", glowDrive);
   preferences.putUChar("lowVolts", lowVolts);
   preferences.putFloat("pumpCal", pumpCal);
-  preferences.putFloat("tempOffset0", tempProbe[0].offset);
-  preferences.putFloat("tempOffset1", tempProbe[1].offset);
-  preferences.putFloat("tempOffset2", tempProbe[2].offset);
-  preferences.putBytes("probeSerial0", tempProbe[0].romCode.bytes, 8);
-  preferences.putBytes("probeSerial1", tempProbe[1].romCode.bytes, 8);
-  preferences.putBytes("probeSerial2", tempProbe[2].romCode.bytes, 8);
+  preferences.putFloat("tempOffset0", DS18B20probe[0].offset);
+  preferences.putFloat("tempOffset1", DS18B20probe[1].offset);
+  preferences.putFloat("tempOffset2", DS18B20probe[2].offset);
+  preferences.putBytes("probeSerial0", DS18B20probe[0].romCode.bytes, 8);
+  preferences.putBytes("probeSerial1", DS18B20probe[1].romCode.bytes, 8);
+  preferences.putBytes("probeSerial2", DS18B20probe[2].romCode.bytes, 8);
+  preferences.putFloat("tempOffsetBME", BME280probe.offset);
+  preferences.putUChar("probeBMEPrmy", BME280probe.bPrimary);
   preferences.end();    
 
   // for(int i=0; i<3; i++) {
   //   DebugPort.printf("Wr Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
   //                    i,
-  //                    tempProbe[i].romCode.fields.serial_number[5],
-  //                    tempProbe[i].romCode.fields.serial_number[4],
-  //                    tempProbe[i].romCode.fields.serial_number[3],
-  //                    tempProbe[i].romCode.fields.serial_number[2],
-  //                    tempProbe[i].romCode.fields.serial_number[1],
-  //                    tempProbe[i].romCode.fields.serial_number[0]
+  //                    DS18B20probe[i].romCode.fields.serial_number[5],
+  //                    DS18B20probe[i].romCode.fields.serial_number[4],
+  //                    DS18B20probe[i].romCode.fields.serial_number[3],
+  //                    DS18B20probe[i].romCode.fields.serial_number[2],
+  //                    DS18B20probe[i].romCode.fields.serial_number[1],
+  //                    DS18B20probe[i].romCode.fields.serial_number[0]
   //                    );
   // }
 }
@@ -471,7 +475,7 @@ sMQTTparams::load()
   validatedLoad("host", host, 127, "");
   validatedLoad("username", username, 31, "");
   validatedLoad("password", password, 31, "");
-  validatedLoad("topic", topic, 31, "Afterburner");
+  validatedLoad("topic", topicPrefix, 31, "Afterburner");
   preferences.end();    
 }
 
@@ -486,7 +490,7 @@ sMQTTparams::save()
   preferences.putString("host", host);
   preferences.putString("username", username);
   preferences.putString("password", password);
-  preferences.putString("topic", topic);
+  preferences.putString("topic", topicPrefix);
   preferences.end();    
 }
 
