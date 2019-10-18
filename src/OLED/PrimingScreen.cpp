@@ -146,23 +146,25 @@ CPrimingScreen::show()
   }
 
   // fuel pump priming menu
+  int toplinePump = topline+1;
+  int botlinePump = botline+1;
   loc.xPos = 66;
   loc.width = BowserIconInfo.width;
   loc.height = BowserIconInfo.height;
   _drawBitmap(loc.xPos, midline, BowserIconInfo);
   loc.xPos = 81;
   if(_paramSel == 3) {
-    _drawBitmap(loc.xPos, topline, FuelIconInfo);
-    _drawBitmap(loc.xPos, botline, resetIconInfo);
+    _drawBitmap(loc.xPos, toplinePump, FuelIconInfo);
+    _drawBitmap(loc.xPos, botlinePump, resetIconInfo);
 
     if(_colSel == -1) {
-      loc.yPos = botline;
+      loc.yPos = botlinePump;
       loc.width = resetIconInfo.width;
       loc.height = resetIconInfo.height;
       _drawMenuSelection(loc, border, radius);
     }
 
-    loc.yPos = _colSel == -1 ? botline : topline;
+    loc.yPos = _colSel == -1 ? botlinePump : toplinePump;
     loc.width = FuelIconInfo.width + StartIconInfo.width + 2;
     loc.height = FuelIconInfo.height;
     if(_colSel == 0) {
@@ -171,10 +173,10 @@ CPrimingScreen::show()
     loc.xPos += FuelIconInfo.width + 2;
     if(_colSel != 1) {                                    // only show start options if not priming already  
       if(getHeaterInfo().getRunState() == 0) {            // prevent priming option if heater is running
-        _drawBitmap(loc.xPos, topline+2, StartIconInfo);  // becomes Hz when actually priming 
+        _drawBitmap(loc.xPos, toplinePump+2, StartIconInfo);  // becomes Hz when actually priming 
       }
       else {
-        _drawBitmap(loc.xPos, topline, CrossIconInfo);
+        _drawBitmap(loc.xPos, toplinePump, CrossIconInfo);
       }
     }
     if(_colSel == 1) {
@@ -195,7 +197,7 @@ CPrimingScreen::show()
       if(_PrimeStop) {
         char msg[16];
         sprintf(msg, "%.1fHz", pumpHz);
-        _printMenuText(loc.xPos+1+border, topline+3, msg, true);
+        _printMenuText(loc.xPos+1+border, toplinePump+3, msg, true);
         _ScreenManager.bumpTimeout();  // don't allow menu timeouts whilst priming is active
       }
     }

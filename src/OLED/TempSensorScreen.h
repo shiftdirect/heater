@@ -36,9 +36,10 @@ class CTempSensorScreen : public CPasswordScreen
   int _scrollChar;
 //  int  _nNumSensors;
   bool _bHasBME280;
-  bool _bHasDS18B20;
+  int _nDS18B20;
   bool _bPrimary;
   float _Offset;
+  float _OffsetDS18B20;
   void _initUI();
   void _readNV();
   void _saveNV();

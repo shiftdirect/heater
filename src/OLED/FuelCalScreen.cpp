@@ -29,8 +29,8 @@
 #include "fonts/Icons.h"
 
 static const int Line3 = 14;
-static const int Line2 = 27;
-static const int Line1 = 40;
+static const int Line2 = 20;
+static const int Line1 = 36;
 
 
 CFuelCalScreen::CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
@@ -92,12 +92,6 @@ CFuelCalScreen::show()
       else
         strcpy(msg, "OFF");
       _printMenuText(col, yPos, msg, _rowSel == 2);
-/*      // temp offset
-      yPos = Line3;
-      _printMenuText(col, yPos, "\367C offset : ", false, eRightJustify);
-      sprintf(msg, "%+.1f", _tOfs);
-      _printMenuText(col, yPos, msg, _rowSel == 3);
-*/
       // navigation line
       yPos = 53;
       int xPos = _display.xCentre();
@@ -125,34 +119,34 @@ CFuelCalScreen::animate()
   if(_animateCount >= 0) {
     switch(_animateCount) {
       case 0:
-        _display.fillRect(0, Line3-3, BatteryIconInfo.width, 40, BLACK);
+        _display.fillRect(0, Line3-3, BatteryIconInfo.width, 35, BLACK);
         _drawBitmap(6, Line1-3, FuelIconSmallInfo);
         _drawBitmap(0, Line2-1 , BatteryIconInfo);
-        _drawBitmap(5, Line3-3, miniThermoIconInfo);
+//        _drawBitmap(5, Line3-3, miniThermoIconInfo);
         break;
       case 2:
         _display.fillRect(6, Line1-3, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1-2, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 4, Line2+2, 2, 5, BLACK);   // deplete battery
-        _display.fillRect(7, Line3+3, 2, 2, WHITE);    // grow thermometer
+//        _display.fillRect(7, Line3+3, 2, 2, WHITE);    // grow thermometer
         break;
       case 4:
         _display.fillRect(6, Line1-2, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1-1, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 7, Line2+2, 2, 5, BLACK);   // deplete battery
-        _display.fillRect(7, Line3+2, 2, 1, WHITE);    // grow thermometer
+//        _display.fillRect(7, Line3+2, 2, 1, WHITE);    // grow thermometer
         break;
       case 6:
         _display.fillRect(6, Line1-1, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 10, Line2+2, 2, 5, BLACK);   // deplete battery
-        _display.fillRect(7, Line3+1, 2, 1, WHITE);    // grow thermometer
+//        _display.fillRect(7, Line3+1, 2, 1, WHITE);    // grow thermometer
         break;
       case 8:
         _display.fillRect(6, Line1, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1+1, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 13, Line2+2, 2, 5, BLACK);   // deplete battery
-        _display.fillRect(7, Line3, 2, 1, WHITE);    // grow thermometer
+//        _display.fillRect(7, Line3, 2, 1, WHITE);    // grow thermometer
         break;
     }
 

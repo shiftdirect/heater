@@ -128,42 +128,42 @@ CBasicScreen::show()
       // centre message at bottom of screen
       _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
 
-      if(_bShowOtherSensors && getTempSensor().getNumSensors() > 1) {
+      int numSensors = getTempSensor().getNumSensors();
+      if(_bShowOtherSensors && numSensors > 1) {
         bShowLargeTemp = false;
         CTransientFont AF(_display, &arial_8ptFontInfo);
-        int yPos = 23;
+        int yPos = numSensors == 4 ? 14 : 23;
         if(getTempSensor().getTemperature(1, fTemp)) {
-//          fTemp += NVstore.getHeaterTuning().DS18B20probe[1].offset;
-          if(NVstore.getUserSettings().degF) {
-            fTemp = fTemp * 9 / 5 + 32;
-            sprintf(msg, "%.1fF", fTemp);
-          }
-          else {
-            sprintf(msg, "%.1fC", fTemp);
-          }
+          CTempSense::format(msg, fTemp);
         }
         else {
           strcpy(msg, "---");
         }
-        _printMenuText(68, yPos, "External:", false, eRightJustify);
-        _printMenuText(72, yPos, msg);
+        _printMenuText(50, yPos, "External:", false, eRightJustify);
+        _printMenuText(54, yPos, msg);
+
         yPos += 13;
-        if(getTempSensor().getNumSensors() == 3) {
+        if(numSensors > 2) {
           if(getTempSensor().getTemperature(2, fTemp)) {
-//            fTemp += NVstore.getHeaterTuning().DS18B20probe[2].offset;
-            if(NVstore.getUserSettings().degF) {
-              fTemp = fTemp * 9 / 5 + 32;
-              sprintf(msg, "%.1fF", fTemp);
-            }
-            else {
-              sprintf(msg, "%.1fC", fTemp);
-            }
+            CTempSense::format(msg, fTemp);
           }
           else {
             strcpy(msg, "---");
           }
-          _printMenuText(68, yPos, "Auxillary:", false, eRightJustify);
-          _printMenuText(72, yPos, msg);
+          _printMenuText(50, yPos, (numSensors == 3) ? "Aux:" : "Aux1:", false, eRightJustify);
+          _printMenuText(54, yPos, msg);
+        }
+
+        yPos += 13;
+        if(numSensors > 3) {
+          if(getTempSensor().getTemperature(3, fTemp)) {
+            CTempSense::format(msg, fTemp);
+          }
+          else {
+            strcpy(msg, "---");
+          }
+          _printMenuText(50, yPos, "Aux2:", false, eRightJustify);
+          _printMenuText(54, yPos, msg);
         }
       }
 

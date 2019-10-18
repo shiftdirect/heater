@@ -98,7 +98,7 @@ CMenuSelScreen::animate()
       const char* pMsg = NULL;
       switch(_rowSel) {
         case 0:
-          _printMenuText(_display.xCentre(), 52, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
           break;
         case 2:
           switch(_menuMode) {

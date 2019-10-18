@@ -84,10 +84,10 @@ CThermostatModeScreen::show()
       float fTemp = _window;
       if(NVstore.getUserSettings().degF) {
         fTemp = fTemp * 9 / 5;
-        sprintf(msg, "%.1f\367F", fTemp);
+        sprintf(msg, "%.1f`F", fTemp);
       }
       else {
-        sprintf(msg, "%.1f\367C", fTemp);
+        sprintf(msg, "%.1f`C", fTemp);
       }
       _printMenuText(Column, Line2, msg, _rowSel == 3);
       const char* modeStr = NULL;
@@ -103,10 +103,10 @@ CThermostatModeScreen::show()
         float fTemp = _cyclicMode.Stop+1;
         if(NVstore.getUserSettings().degF) {
           fTemp = fTemp * 9 / 5;
-          sprintf(msg, "\352>%.0f\367F", fTemp);
+          sprintf(msg, "\352>%.0f`F", fTemp);
         }
         else {
-          sprintf(msg, "\352>%.0f\367C", fTemp);
+          sprintf(msg, "\352>%.0f`C", fTemp);
         }
       }
       else {
@@ -117,10 +117,10 @@ CThermostatModeScreen::show()
         float fTemp = _cyclicMode.Start;
         if(NVstore.getUserSettings().degF) {
           fTemp = fTemp * 9 / 5;
-          sprintf(msg, "\352<%.0f\367F", fTemp);
+          sprintf(msg, "\352<%.0f`F", fTemp);
         }
         else {
-          sprintf(msg, "\352<%.0f\367C", fTemp);
+          sprintf(msg, "\352<%.0f`C", fTemp);
         }
       }
       else {

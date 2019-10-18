@@ -31,18 +31,21 @@
 const int MAX_DS18B20_DEVICES = 3;
 
 class CSensor {
+  float _reading;
+  CExpMean _filter;
+  int _holdoff;
+protected:
+  bool update(float val);
+  void reset();
 public:
-  CSensor() {};
+  CSensor();
   bool getTemperature(float& tempReading, bool filtered);
   const char* getID();
 };
 
-class CDS18B20probe {
+class CDS18B20probe : public CSensor {
   DS18B20_Info * pSensorInfo;
   DS18B20_ERROR error;
-  int holdoff;
-  float reading;
-  CExpMean filter;
 public:
   CDS18B20probe();
   void init();
@@ -51,14 +54,13 @@ public:
   bool readSensor();
   void setError(DS18B20_ERROR err) { error = err; };
   bool OK() { return error == DS18B20_OK; };
-//  bool setROMcode(OneWireBus_ROMCode rom_code) ;
   OneWireBus_ROMCode getROMcode() const;
   DS18B20_Info* getSensorInfo() { return pSensorInfo; };
   float getReading(bool filtered);
   bool matchROMcode(uint8_t test[8]);
 };
 
-class CDS18B20Sensor : public CSensor {
+class CDS18B20SensorSet  {
   OneWireBus * _owb;
   owb_rmt_driver_info _rmt_driver_info;
 
@@ -68,7 +70,7 @@ class CDS18B20Sensor : public CSensor {
   bool _discover();
 
 public:
-  CDS18B20Sensor();
+  CDS18B20SensorSet();
   void begin(int pin);
   bool find();
   bool readSensors();
@@ -86,9 +88,7 @@ public:
 class CBME280Sensor : public CSensor {
   Adafruit_BME280 _bme; // I2C
   long _lastSampleTime;
-  float _lastTemperature;
   int _count;
-  CExpMean _Filter;
 public:
   CBME280Sensor();
   bool begin(int ID);
@@ -99,7 +99,7 @@ public:
 
 class CTempSense {
 
-  CDS18B20Sensor DS18B20;
+  CDS18B20SensorSet DS18B20;
   CBME280Sensor BME280;
   
   bool _discover();
@@ -108,6 +108,8 @@ public:
   void begin(int oneWirePin, int I2CID);
   bool readSensors();
   void startConvert();
+  int getSensorType(int usrIdx);
+  const char* getID(int usrIdx);
   bool getTemperature(int usrIdx, float& tempReading, bool filtered=true) ;   // indexed as mapped by user
   float getOffset(int usrIdx);
   void setOffset(int usrIdx, float offset);
@@ -115,7 +117,8 @@ public:
   bool getTemperatureDS18B20Idx(int sensIdx, float& tempReading) ;      // index is sensor discovery order on one-wire bus
   int  getNumSensors() const;
   CBME280Sensor& getBME280() { return BME280; };
-  CDS18B20Sensor& getDS18B20() { return DS18B20; };
+  CDS18B20SensorSet& getDS18B20() { return DS18B20; };
+  static void format(char* msg, float fTemp);
 };
 
 #endif

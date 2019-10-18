@@ -675,6 +675,12 @@ const uint8_t PROGMEM arial_8ptBitmaps [] =
 	0x1F, 0xE0, //    ########   
   0x00, 0x00, //
 
+  // @890 'deg symbol' for `
+  0x0c, 0x00,
+  0x12, 0x00, 
+  0x12, 0x00,
+  0x0c, 0x00,
+
 };
 
 // Character descriptors for Arial 8pt
@@ -745,7 +751,7 @@ const FONT_CHAR_INFO PROGMEM arial_8ptDescriptors[] =
 	{2, 14, 590}, 		// ']' 
 	{5, 14, 594}, 		// '^' 
 	{6, 14, 604}, 		// '_' 
-	{2, 14, 616}, 		// '`' 
+	{4, 14, 890}, 		// '`' 
 	{5, 14, 620}, 		// 'a' 
 	{5, 14, 630}, 		// 'b' 
 	{5, 14, 640}, 		// 'c' 

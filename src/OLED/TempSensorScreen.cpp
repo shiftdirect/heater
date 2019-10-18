@@ -30,7 +30,7 @@
 CTempSensorScreen::CTempSensorScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _bHasBME280 = false;
-  _bHasDS18B20 = false;
+  _nDS18B20 = 0;
   _bPrimary = false;
   _Offset = 0;
   _initUI();
@@ -42,7 +42,7 @@ CTempSensorScreen::onSelect()
   CScreenHeader::onSelect();
   _initUI();
   _bHasBME280 = getTempSensor().getBME280().getCount() != 0;
-  _bHasDS18B20 = getTempSensor().getNumSensors() != 0;
+  _nDS18B20 = getTempSensor().getDS18B20().getNumSensors();
   _bPrimary = NVstore.getHeaterTuning().BME280probe.bPrimary;
   _readNV();
 }
@@ -75,13 +75,13 @@ CTempSensorScreen::show()
         _showTitle("Temp Sensor Offset");
 
       // force BME280 as primary if the only sensor
-      if(!_bHasDS18B20 && _bHasBME280)
+      if(!_nDS18B20 && _bHasBME280)
         _bPrimary = true;
 
       strcpy(msg, "Nul");
 
       if(_bHasBME280) {
-        if(!_bPrimary && _bHasDS18B20) {
+        if(!_bPrimary && _nDS18B20) {
           strcpy(msg, "Lst");
         }
         else {
@@ -95,14 +95,14 @@ CTempSensorScreen::show()
       if(_colSel == 0) {
         float temperature;
         getTempSensor().getBME280().getTemperature(temperature, false);
-        sprintf(msg, "%.01fC", temperature + _Offset);
+        sprintf(msg, "%.01f`C", temperature + _Offset);
       }
       else {
         sprintf(msg, "%+.01f", _Offset);
       }
       _printMenuText(90, baseLine, msg, _rowSel == 1 && _colSel == 1);
 
-      if(_bHasDS18B20) {
+      if(_nDS18B20) {
         if(_bPrimary) {
           strcpy(msg, "Nxt");   // BME280 is primary
         }
@@ -113,7 +113,10 @@ CTempSensorScreen::show()
         _printMenuText(border, baseLine, msg, _rowSel == 2 && _colSel == 0);
 
         _printMenuText(27, baseLine, "DS18B20");
-        _printMenuText(90, baseLine, "Edit", _rowSel == 2 && _colSel == 1);
+        if(_nDS18B20 == 1) {
+          sprintf(msg, "%+.01f", _OffsetDS18B20);
+          _printMenuText(90, baseLine, msg, _rowSel == 2 && _colSel == 1);
+        }
       }
 
     }
@@ -129,15 +132,25 @@ CTempSensorScreen::animate()
       const char* pMsg = NULL;
       switch(_rowSel) {
         case 0:
-          _printMenuText(_display.xCentre(), 52, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
           break;
         case 1:
-        case 2:
-        case 3:
           if(_colSel == 0)
             pMsg = "                    Hold Right to adjust probe offset.                    "; 
           else
-            pMsg = "                    Hold Left to select probe's role.                    "; 
+            pMsg = "                    Hold Left to select probe's priority.                    "; 
+          break;
+        case 2:
+          if(_nDS18B20 > 1)
+            pMsg = "                    Press UP to adjust DS18B20 priorities.                    ";
+          else if(_nDS18B20 == 1) {
+            if(_colSel == 0)
+              pMsg = "                    Hold Right to adjust probe offset.                    "; 
+            else
+              pMsg = "                    Hold Left to select probe's priority.                    "; 
+          }
+          break;
+        case 3:
           break;
       }
       if(pMsg != NULL) {
@@ -186,6 +199,7 @@ CTempSensorScreen::keyHandler(uint8_t event)
             _scrollChar = 0;
           }
           if(event & key_Right) {
+            if(_nDS18B20 == 1 || _rowSel == 1)
             _colSel = 1;
             _scrollChar = 0;
           }
@@ -210,6 +224,8 @@ CTempSensorScreen::keyHandler(uint8_t event)
             _rowSel = 0;
           }
           else {
+            if(_rowSel == 1 && _colSel == 1 && _nDS18B20 != 1)
+              _colSel = 0;
             if(_rowSel == 0) {
               _getPassword();
               if(_isPasswordOK()) {
@@ -218,10 +234,10 @@ CTempSensorScreen::keyHandler(uint8_t event)
             }
             else {
               _rowSel++;
-              if(_rowSel == 3)
+              if(_rowSel == 3 && _nDS18B20 > 1)
                 _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::DS18B20UI);  // force return to main menu
 
-              UPPERLIMIT(_rowSel, 2);
+              UPPERLIMIT(_rowSel, _nDS18B20 ? 2 : 1);
             }
           }
         }
@@ -261,25 +277,20 @@ CTempSensorScreen::keyHandler(uint8_t event)
 void
 CTempSensorScreen::adjust(int dir)
 {
-  switch(_rowSel) {
-    case 1:
-      if(_colSel == 0) {
-        _bPrimary = !_bPrimary;
-      }
-      else {
+  if(_colSel == 0) {
+    _bPrimary = !_bPrimary;
+  }
+  else {
+    switch(_rowSel) {
+      case 1:
         _Offset += dir * 0.1;
         BOUNDSLIMIT(_Offset, -10, +10);
-      }
-      break;
-    case 2:
-      if(_colSel == 0) {
-        _bPrimary = !_bPrimary;
-      }
-      else {
-        _Offset += dir * 0.1;
-        BOUNDSLIMIT(_Offset, -10, +10);
-      }
-      break;
+        break;
+      case 2:
+        _OffsetDS18B20 += dir * 0.1;
+        BOUNDSLIMIT(_OffsetDS18B20, -10, +10);
+        break;
+    }
   }
 }
 
@@ -292,6 +303,7 @@ CTempSensorScreen::_readNV()
   
   _bPrimary = tuning.BME280probe.bPrimary;
   _Offset = tuning.BME280probe.offset;
+  _OffsetDS18B20 = tuning.DS18B20probe[0].offset;
 }
 
 void
@@ -301,6 +313,7 @@ CTempSensorScreen::_saveNV()
 
   tuning.BME280probe.bPrimary = _bPrimary;
   tuning.BME280probe.offset = _Offset;
+  tuning.DS18B20probe[0].offset = _OffsetDS18B20;
 
   NVstore.setHeaterTuning(tuning);
 }

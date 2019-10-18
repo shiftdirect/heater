@@ -169,14 +169,14 @@ const uint8_t miniFontBitmaps[] PROGMEM =
   0x50,   //   # # 
 
   // @82 'b' (3 pixels wide)
-	0x38,   //    ###
-	0x28,   //    # # 
 	0xf8,   //  #####
+	0x28,   //    # # 
+	0x38,   //    ###
 
   // @85 'd' (3 pixels wide)
-	0xf8,   //  #####
-	0x28,   //    # # 
 	0x38,   //    ###
+	0x28,   //    # # 
+	0xf8,   //  #####
 
 };
 

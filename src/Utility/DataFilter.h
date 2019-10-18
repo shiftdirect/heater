@@ -28,6 +28,10 @@ class CExpMean {
   float _Alpha;
   float _rounding;
   float _roundingRecip;
+  struct {
+    float lower;
+    float upper;
+  } bounds;
 public:
   CExpMean();
   void  reset(float val);
@@ -36,6 +40,7 @@ public:
   void  setAlpha(float val);
   float getValue() const;
   float getValueRaw() const;
+  void  setBounds(float lower, float upper);
 };
 
 struct sFilteredData {

@@ -21,12 +21,14 @@
 
 #include "DataFilter.h"
 #include <math.h>
+#include "macros.h"
 
 CExpMean::CExpMean()
 {
   reset(0);
   setAlpha(0.95);
   setRounding(0.1);
+  setBounds(0, 0);
 }
 
 void
@@ -39,12 +41,18 @@ CExpMean::reset(float val)
 void 
 CExpMean::update(float val)
 {
-  if(_bFresh) {
-    _val = val;
-    _bFresh = false;
-  }
+  bool boundsOK = INBOUNDS(val, bounds.lower, bounds.upper);
+  if(bounds.lower == 0 && bounds.upper == 0)
+    boundsOK = true;  // if bounds were not defined
 
-  _val = _val * _Alpha + val * (1-_Alpha);
+  if(boundsOK) {
+    if(_bFresh) {
+      _val = val;
+      _bFresh = false;
+    }
+
+    _val = _val * _Alpha + val * (1-_Alpha);
+  }
 }
 
 float
@@ -73,4 +81,11 @@ void
 CExpMean::setAlpha(float val)
 {
   _Alpha = val;
+}
+
+void
+CExpMean::setBounds(float lower, float upper)
+{
+  bounds.lower = lower;
+  bounds.upper = upper;
 }

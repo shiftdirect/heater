@@ -221,12 +221,18 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low voltage cutout
   }
   bSend |= moderator.addJson("TempOffset", getTempSensor().getOffset(0), root);     // degC offset
+  bSend |= moderator.addJson("TempType", getTempSensor().getID(0), root);     // BME280 vs DS18B20
   if(getTempSensor().getNumSensors() > 1) {
     bSend |= moderator.addJson("Temp2Offset", getTempSensor().getOffset(1), root);     // degC offset
-    if(getTempSensor().getNumSensors() > 2) 
-      bSend |= moderator.addJson("Temp3Offset", getTempSensor().getOffset(2), root);     // degC offset
-    if(getTempSensor().getNumSensors() > 3) 
-      bSend |= moderator.addJson("Temp4Offset", getTempSensor().getOffset(3), root);     // degC offset
+    bSend |= moderator.addJson("Temp2Type", getTempSensor().getID(1), root);     // BME280 vs DS18B20
+  }
+  if(getTempSensor().getNumSensors() > 2) {
+    bSend |= moderator.addJson("Temp3Offset", getTempSensor().getOffset(2), root);     // degC offset
+    bSend |= moderator.addJson("Temp3Type", getTempSensor().getID(2), root);     // BME280 vs DS18B20
+  }
+  if(getTempSensor().getNumSensors() > 3) {
+    bSend |= moderator.addJson("Temp4Offset", getTempSensor().getOffset(3), root);     // degC offset
+    bSend |= moderator.addJson("Temp4Type", getTempSensor().getID(3), root);     // BME280 vs DS18B20
   }
   if(bSend) {
 		root.printTo(opStr, len);

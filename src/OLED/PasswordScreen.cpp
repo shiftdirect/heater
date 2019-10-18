@@ -51,7 +51,7 @@ CPasswordScreen::onSelect()
 void
 CPasswordScreen::__initPassword(bool get)
 {
-  _bGetPassword = get;
+  _bGetPassword = get && (__Expiry == 0);
   _bPasswordOK = false;
   _bPasswordOK |= __Expiry != 0;
   _PWcol = 0;
@@ -122,6 +122,16 @@ CPasswordScreen::_holdPassword()
     __Expiry = millis() + 24 * 60 * 60 * 1000;  // 24 hours 
   else 
     __Expiry = 0;
+}
+
+bool 
+CPasswordScreen::isPasswordBusy() 
+{ 
+//  return (_SaveTime != 0) || _bGetPassword; 
+  if(__Expiry)
+    return false;
+
+  return _busy() || _bGetPassword;   
 }
 
 bool 
