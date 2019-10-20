@@ -362,7 +362,6 @@ CDS18B20SensorSet::getRomCodeIdx(int snsIdx, OneWireBus_ROMCode& romCode) const
 {
   if(snsIdx >= _nNumSensors)
     return false;
-//  romCode = _Sensors[snsIdx].sensor->rom_code;
   romCode = _Sensors[snsIdx].getROMcode();
   return true;
 }
@@ -547,24 +546,6 @@ CTempSense::getTemperature(int usrIdx, float& temperature, bool filtered)
     default:
       return false;
   }
-/*  if(BME280.getCount() == 0)
-    return DS18B20.getTemperature(usrIdx, temperature, filtered);  
-
-  if(NVstore.getHeaterTuning().BME280probe.bPrimary) {
-    if(usrIdx == 0)
-      return BME280.getTemperature(temperature, filtered);
-
-    usrIdx--;
-    return DS18B20.getTemperature(usrIdx, temperature, filtered);  
-  }
-  else {
-
-    if(usrIdx >= DS18B20.getNumSensors()) {
-      return BME280.getTemperature(temperature, filtered);
-    }
-
-    return DS18B20.getTemperature(usrIdx, temperature, filtered);  
-  }*/
 }
 
 int 
