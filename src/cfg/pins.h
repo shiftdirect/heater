@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 #include <driver/adc.h>
+#include "BTCConfig.h"
+
 
 const uint8_t UART_Tx = 1;
 const uint8_t LED_Pin = 2;
@@ -30,7 +32,11 @@ const uint8_t TxEnbPin = 5;
 const uint8_t Tx433MHz_pin = 12;      // HSPI std pins
 const uint8_t Rx433MHz_pin = 13;      //  "
 const uint8_t GPIOout2_pin = 14;      //  "
+#if USE_JTAG == 1
+const uint8_t DS18B20_Pin = 33; 
+#else
 const uint8_t DS18B20_Pin = 15; 
+#endif
 const uint8_t Rx1Pin = 16;
 const uint8_t Tx1Pin = 17;
 const uint8_t Tx2Pin = 18;

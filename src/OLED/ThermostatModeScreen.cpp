@@ -329,7 +329,11 @@ CThermostatModeScreen::_adjust(int dir)
       break;
     case 4:   // thermostat mode
       _thermoMode += dir;
+#if USE_JTAG == 0
       wrap = GPIOin.usesExternalThermostat() ? 3 : 2;
+#else
+      wrap = 2;
+#endif
       WRAPLIMITS(_thermoMode, 0, wrap);
       break;
   }

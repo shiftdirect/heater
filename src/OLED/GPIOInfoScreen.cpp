@@ -27,9 +27,11 @@
 #include "fonts/Icons.h"
 #include "../Utility/BoardDetect.h"
 
+#if USE_JTAG == 0
 extern CGPIOout GPIOout;
 extern CGPIOin GPIOin;
 extern CGPIOalg GPIOalg;
+#endif
 
 static const int Line3 = 14;
 static const int Line2 = 27;
@@ -85,7 +87,9 @@ CGPIOInfoScreen::animate()
       _drawBitmap(23, 14, StopIconInfo); 
       break;
   }
+#if USE_JTAG == 0
   _drawBitmap(40, 16, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
+#endif
 
   switch(NVstore.getUserSettings().GPIO.in2Mode) {
     case CGPIOin2::Disabled:   
@@ -98,9 +102,14 @@ CGPIOInfoScreen::animate()
       _printMenuText(23, 27, "\352T"); 
       break;
   }
+#if USE_JTAG == 0
   _drawBitmap(40, 28, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
+#endif
 
-  int bulbmode = GPIOout.getState(0);
+  int bulbmode = 0;
+#if USE_JTAG == 0
+  bulbmode = GPIOout.getState(0);
+#endif
   static bool iconstate = false;
   switch(NVstore.getUserSettings().GPIO.out1Mode) {
     case CGPIOout1::Disabled: 
@@ -120,11 +129,14 @@ CGPIOInfoScreen::animate()
       break;
   }
 
+#if USE_JTAG == 0
+  bulbmode = GPIOout.getState(1);
+#endif
   switch(NVstore.getUserSettings().GPIO.out2Mode) {
     case CGPIOout2::Disabled: _drawBitmap(99, 27, CrossLgIconInfo); break;
     case CGPIOout2::User:     
       _drawBitmap(99, 27, UserIconInfo);  
-      _drawBitmap(110, 26, GPIOout.getState(1) ? BulbOnIconInfo : BulbOffIconInfo); 
+      _drawBitmap(110, 26, bulbmode ? BulbOnIconInfo : BulbOffIconInfo); 
       break;
   }
 
@@ -135,8 +147,10 @@ CGPIOInfoScreen::animate()
       _drawBitmap(23, Line1, CrossLgIconInfo);
     }
     else {
+#if USE_JTAG == 0
       sprintf(msg, "%d%%", GPIOalg.getValue() * 100 / 4096);
       _printMenuText(23, Line1, msg);
+#endif      
     }
   }
 

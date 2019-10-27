@@ -23,6 +23,8 @@
 
 // Place Holder Config File - User config vars and defines to be moved here
 
+#define USE_JTAG 1
+
 //////////////////////////////////////////////////////////////////////////////
 // Configure bluetooth options
 // ** Recommended to use HC-05 for now **

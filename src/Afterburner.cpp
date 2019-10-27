@@ -182,9 +182,11 @@ CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
 TelnetSpy DebugPort;
+#if USE_JTAG == 0
 CGPIOin GPIOin;
 CGPIOout GPIOout;
 CGPIOalg GPIOalg;
+#endif
 
 CMQTTsetup MQTTmenu;
 
@@ -330,10 +332,12 @@ void setup() {
   
   // initially, ensure the GPIO outputs are not activated during startup
   // (GPIO2 tends to be one with default chip startup)
+#if USE_JTAG == 0
   pinMode(GPIOout1_pin, OUTPUT);  
   pinMode(GPIOout2_pin, OUTPUT);  
   digitalWrite(GPIOout1_pin, LOW);
   digitalWrite(GPIOout2_pin, LOW);
+#endif
 
   nvs_stats_t nvs_stats;
   nvs_get_stats(NULL, &nvs_stats);
@@ -446,7 +450,9 @@ void setup() {
   bBTconnected = false;
   Bluetooth.begin();
 
+#if USE_JTAG == 0
   setupGPIO(); 
+#endif
 
 #if USE_SW_WATCHDOG == 1
   // create a watchdog timer
@@ -512,18 +518,6 @@ void setup() {
   TempSensor.getDS18B20().mapSensor(0, NVstore.getHeaterTuning().DS18B20probe[0].romCode);
   TempSensor.getDS18B20().mapSensor(1, NVstore.getHeaterTuning().DS18B20probe[1].romCode);
   TempSensor.getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
-
-/*  bool status = bme.begin(0x76);  
-  if (!status) {
-    DebugPort.println("Could not find a valid BME280 sensor, check wiring!");
-  }
-  bme.setSampling(Adafruit_BME280::MODE_FORCED, 
-                  Adafruit_BME280::SAMPLING_X1,
-                  Adafruit_BME280::SAMPLING_X1,
-                  Adafruit_BME280::SAMPLING_X1,
-                  Adafruit_BME280::FILTER_OFF,
-                  Adafruit_BME280::STANDBY_MS_1000);*/
-//  BMESensor.begin(0x76);
 
   delay(1000); // just to hold the splash screeen for while
 }
@@ -1095,17 +1089,29 @@ bool getThermostatModeActive()
 
 bool getExternalThermostatModeActive()
 {
+#if USE_JTAG == 0
   return GPIOin.usesExternalThermostat() && (NVstore.getUserSettings().ThermostatMethod == 3);
+#else
+  return false;
+#endif
 }
 
 bool getExternalThermostatOn()
 {
+#if USE_JTAG == 0
   return GPIOin.getState(1);
+#else
+  return false;
+#endif
 }
 
 const char* getExternalThermostatHoldTime()
 {
+#if USE_JTAG == 0
   return GPIOin.getExtThermHoldTime();
+#else
+  return "00:00";
+#endif
 }
 
 
@@ -1546,6 +1552,9 @@ bool isCyclicActive()
 
 void setupGPIO()
 {
+#if USE_JTAG == 1
+  return;
+#else
   if(BoardRevision == 10 || BoardRevision == 20 || BoardRevision == 21 || BoardRevision == 30) {
     // some special considerations for GPIO inputs, depending upon PCB hardware
     // V1.0 PCBs only expose bare inputs, which are pulled high. Active state into ESP32 is LOW. 
@@ -1597,10 +1606,12 @@ void setupGPIO()
     GPIOout.begin(0, 0, CGPIOout1::Disabled, CGPIOout2::Disabled);
     GPIOalg.begin(ADC1_CHANNEL_5, CGPIOalg::Disabled);
   }
+#endif
 }
 
 bool toggleGPIOout(int channel) 
 {
+#if USE_JTAG == 0
   if(channel == 0) {
     if(NVstore.getUserSettings().GPIO.out1Mode == CGPIOout1::User) {
       setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
@@ -1613,11 +1624,13 @@ bool toggleGPIOout(int channel)
       return true;
     }
   }
+#endif
   return false;
 }
 
 bool setGPIOout(int channel, bool state)
 {
+#if USE_JTAG == 0
   if(channel == 0) {
     if(GPIOout.getMode1() != CGPIOout1::Disabled) {
       DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
@@ -1632,14 +1645,19 @@ bool setGPIOout(int channel, bool state)
       return true;
     }
   }
+#endif
   return false;
 }
 
 bool getGPIOout(int channel)
 {
+#if USE_JTAG == 0
   bool retval = GPIOout.getState(channel);
   DebugPort.printf("getGPIO: Output #%d = %d\r\n", channel+1, retval);
   return retval;
+#else
+  return false;
+#endif
 }
 
 float getVersion()
@@ -1718,9 +1736,11 @@ void doStreaming()
 
   Bluetooth.check();    // check for Bluetooth activity
 
+#if USE_JTAG == 0
   GPIOin.manage();
   GPIOout.manage(); 
   GPIOalg.manage();
+#endif
 
   // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {
@@ -1743,6 +1763,7 @@ void doStreaming()
 
 void getGPIOinfo(sGPIO& info)
 {
+#if USE_JTAG == 0
   info.inState[0] = GPIOin.getState(0);
   info.inState[1] = GPIOin.getState(1);
   info.outState[0] = GPIOout.getState(0);
@@ -1753,12 +1774,15 @@ void getGPIOinfo(sGPIO& info)
   info.out1Mode = GPIOout.getMode1();
   info.out2Mode = GPIOout.getMode2();
   info.algMode = GPIOalg.getMode();
+#endif
 }
 
 // hook for JSON input, simulating a GPIO key press
 void simulateGPIOin(uint8_t newKey)   
 {
+#if USE_JTAG == 0
   GPIOin.simulateKey(newKey);
+#endif
 }
 
 float getBatteryVoltage(bool fast)
