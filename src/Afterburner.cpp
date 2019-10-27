@@ -125,7 +125,7 @@
 
 const int FirmwareRevision = 31;
 const int FirmwareSubRevision = 6;
-const char* FirmwareDate = "18 Oct 2019";
+const char* FirmwareDate = "27 Oct 2019";
 
 
 #ifdef ESP32
