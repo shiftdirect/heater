@@ -270,6 +270,8 @@ CBluetoothHC05::flush()
 bool
 CBluetoothHC05::test(char val) 
 {
+  DebugPort.enable(true);
+
   if(!val) {
     _bTest = false;
   }
@@ -277,28 +279,31 @@ CBluetoothHC05::test(char val)
     _bTest = true;
     if(val == 0xff) {  // special entry command
       DebugPort.println("ENTERING Test Bluetooth mode");
-      return true;
     }
-    if(val == ('b' & 0x1f)) {   // CTRL-B - leave bluetooth test mode
+    else if(val == ('b' & 0x1f)) {   // CTRL-B - leave bluetooth test mode
       DebugPort.println("LEAVING Test Bluetooth mode");
       digitalWrite(_keyPin, LOW);              // request HC-05 module to enter command mode
       openSerial(9600); 
-      return false;
+      _bTest = false;
     }
-    if(val == ('c' & 0x1f)) {   // CTRL-C - data mode
+    else if(val == ('c' & 0x1f)) {   // CTRL-C - data mode
       DebugPort.println("Test Bluetooth COMMAND mode");
       digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
       openSerial(9600); 
-      return true;
     }
-    if(val == ('d' & 0x1f)) {   // CTRL-D - data mode
+    else if(val == ('d' & 0x1f)) {   // CTRL-D - data mode
       DebugPort.println("Test Bluetooth DATA mode");
       digitalWrite(_keyPin, LOW);              // request HC-05 module to enter command mode
       openSerial(9600); 
-      return true;
     }
-    HC05_SerialPort.write(val);
+    else {
+      HC05_SerialPort.write(val);
+    }
   }
+
+  if(_bTest)
+    DebugPort.enable(false);
+    
   return _bTest;
 }
 

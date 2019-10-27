@@ -163,6 +163,8 @@ CDS18B20SensorSet::CDS18B20SensorSet()
 
   for(int i=0; i<3; i++)
   	_sensorMap[i] = -1;
+
+  _bReportFind = true;
 }
 
 void 
@@ -173,6 +175,8 @@ CDS18B20SensorSet::begin(int pin)
   // create one wire bus interface, using RMT peripheral
   _owb = owb_rmt_initialize(&_rmt_driver_info, pin, RMT_CHANNEL_1, RMT_CHANNEL_0);
   owb_use_crc(_owb, true);  // enable CRC check for ROM code
+
+  _bReportFind = true;
 
   find();
 }
@@ -228,7 +232,8 @@ bool
 CDS18B20SensorSet::find()
 {
   // Find all connected devices
-  DebugPort.println("Finding one wire bus devices...");
+  if(_bReportFind)
+    DebugPort.println("Finding one wire bus devices...");
   OneWireBus_ROMCode rom_codes[MAX_DS18B20_DEVICES];
   memset(&rom_codes, 0, sizeof(rom_codes));
 
@@ -240,13 +245,15 @@ CDS18B20SensorSet::find()
   while(found) {
     char rom_code_s[17];
     owb_string_from_rom_code(search_state.rom_code, rom_code_s, sizeof(rom_code_s));
-    DebugPort.printf("  %d : %s\r\n", _nNumSensors, rom_code_s);
+    if(_bReportFind)
+      DebugPort.printf("  %d : %s\r\n", _nNumSensors, rom_code_s);
 
     rom_codes[_nNumSensors] = search_state.rom_code;
     _nNumSensors++;
     owb_search_next(_owb, &search_state, &found);
   }
-  DebugPort.printf("Found %d DS18B20 device%s\r\n", _nNumSensors, _nNumSensors==1 ? "" : "s");
+  if(_bReportFind)
+    DebugPort.printf("Found %d DS18B20 device%s\r\n", _nNumSensors, _nNumSensors==1 ? "" : "s");
 
   // Create DS18B20 devices on the 1-Wire bus
   for (int i = 0; i < MAX_DS18B20_DEVICES; ++i) {
@@ -259,7 +266,7 @@ CDS18B20SensorSet::find()
 
     if (_nNumSensors == 1)
     {
-      printf("DS18B20 Single device optimisations enabled\n");
+      DebugPort.print("DS18B20 Single device optimisations enabled\n");
       ds18b20_init_solo(ds18b20_info, _owb);          // only one device on bus
       ds18b20_info->rom_code = rom_codes[0];  // added, for GUI setup!!
     }
@@ -270,6 +277,8 @@ CDS18B20SensorSet::find()
     ds18b20_use_crc(ds18b20_info, true);           // enable CRC check for temperature readings
     ds18b20_set_resolution(ds18b20_info, DS18B20_RESOLUTION_12_BIT);
   }
+
+  _bReportFind = false;
 
   return found;
 }

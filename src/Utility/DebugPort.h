@@ -20,14 +20,15 @@
  * 
  */
 
-#include "../../lib/TelnetSpy/TelnetSpy.h"
+//#include "../../lib/TelnetSpy/TelnetSpy.h"
+#include "ABTelnetSpy.h"
 
 #ifndef __DEBUGPORT_H__
 #define __DEBUGPORT_H__
 
 class CProtocol;
 
-extern TelnetSpy DebugPort;
+extern ABTelnetSpy DebugPort;
 
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr);
 

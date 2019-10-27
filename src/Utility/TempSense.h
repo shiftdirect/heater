@@ -66,6 +66,7 @@ class CDS18B20SensorSet  {
 
   CDS18B20probe _Sensors[MAX_DS18B20_DEVICES];
   int _nNumSensors;
+  bool _bReportFind;
   int _sensorMap[MAX_DS18B20_DEVICES];
   bool _discover();
 

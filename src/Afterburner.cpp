@@ -181,7 +181,7 @@ CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default paramet
 CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
-TelnetSpy DebugPort;
+ABTelnetSpy DebugPort;
 #if USE_JTAG == 0
 CGPIOin GPIOin;
 CGPIOout GPIOout;
@@ -560,7 +560,11 @@ void loop()
 
   // precautionary state machine action if all 24 bytes were not received 
   // whilst expecting a frame from the blue wire
-  if(RxTimeElapsed > RX_DATA_TIMOUT) {              
+  if(RxTimeElapsed > RX_DATA_TIMOUT) {         
+
+    if(NVstore.getUserSettings().menuMode == 2)
+      bReportRecyleEvents = false;
+      
     if( CommState.is(CommStates::OEMCtrlRx) || 
         CommState.is(CommStates::HeaterRx1) ||  
         CommState.is(CommStates::HeaterRx2) ) {
@@ -1290,8 +1294,9 @@ void checkDebugCommands()
       return;
     }
     if(MQTTmenu.Handle(rxVal)) {
-      if(rxVal == 0)
+      if(rxVal == 0) {
         showMainmenu();
+      }
       return;
     }
 

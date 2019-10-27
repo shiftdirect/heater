@@ -39,6 +39,7 @@ CMQTTsetup::setActive()
 void 
 CMQTTsetup::showMQTTmenu(bool init)
 {
+  DebugPort.enable(true);
   if(init)
     _MQTTsetup = NVstore.getMQTTinfo();
 
@@ -54,14 +55,19 @@ CMQTTsetup::showMQTTmenu(bool init)
   DebugPort.printf("  <7> - set enabled, currently %s\r\n", _MQTTsetup.enabled ? "ON" : "OFF");
   DebugPort.printf("  <ENTER> - save and exit\r\n");
   DebugPort.printf("  <ESC> - abort\r\n");
+
+  DebugPort.enable(false);  // suppress sundry debug whilst MQTT menu is active
 }
 
 bool 
 CMQTTsetup::Handle(char& rxVal)
 {
   if(_active) {
+    DebugPort.enable(true);
     _active = HandleMQTTsetup(rxVal);
-    if(!_active)
+    if(_active)
+      DebugPort.enable(false);
+    else
       rxVal = 0;
     return true;
   }
