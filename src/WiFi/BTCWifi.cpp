@@ -163,7 +163,8 @@ void doWiFiManager()
           WiFi.mode(WIFI_AP_STA);
           wifi_config_t conf;
           esp_wifi_get_config(WIFI_IF_STA, &conf);
-          WiFi.begin((char*)conf.sta.ssid, (char*)conf.sta.password);
+          if(strlen((char*)conf.sta.ssid))
+            WiFi.begin((char*)conf.sta.ssid, (char*)conf.sta.password);
         }
       }
       else {

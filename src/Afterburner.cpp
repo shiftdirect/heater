@@ -564,7 +564,7 @@ void loop()
 
     if(NVstore.getUserSettings().menuMode == 2)
       bReportRecyleEvents = false;
-      
+
     if( CommState.is(CommStates::OEMCtrlRx) || 
         CommState.is(CommStates::HeaterRx1) ||  
         CommState.is(CommStates::HeaterRx2) ) {
@@ -1320,6 +1320,7 @@ void checkDebugCommands()
       return;
     }
     else if(nGetString) {
+      DebugPort.enable(true);
       if(rxVal < ' ') {
         if(rxVal == 0x1b) {  // ESCAPE
           nGetString = 0;
@@ -1349,6 +1350,7 @@ void checkDebugCommands()
               else {
                 nGetString = 3;
                 DebugPort.print("\r\nPlease enter new password - ");
+                DebugPort.enable(false);  // block other debug msgs whilst we get the password
               }
               return;
             case 3:
@@ -1356,6 +1358,7 @@ void checkDebugCommands()
               if(PCline.Len <= 31) {
                 nGetString = 4;
                 DebugPort.print("\r\nPlease confirm new password - ");
+                DebugPort.enable(false);  // block other debug msgs whilst we get the password
               }
               else {
                 DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
@@ -1384,6 +1387,7 @@ void checkDebugCommands()
         else 
           DebugPort.print('*');
         PCline.append(rxVal);
+        DebugPort.enable(false);  // block other debug msgs whilst we get strings
         return;
       }
     }
@@ -1455,6 +1459,7 @@ void checkDebugCommands()
       else if(rxVal == 'n') {
         DebugPort.print("Please enter new SSID name for Access Point - ");
         nGetString = 1;
+        DebugPort.enable(false);  // block other debug msgs whilst we get strings
         PCline.clear();
       }
       else if(rxVal == 'm') {
@@ -1467,6 +1472,7 @@ void checkDebugCommands()
       else if(rxVal == 'p') {
         DebugPort.print("Please enter current AP password - ");
         nGetString = 2;
+        DebugPort.enable(false);  // block other debug msgs whilst we get strings
         PCline.clear();
       }
       else if(rxVal == 's') {
