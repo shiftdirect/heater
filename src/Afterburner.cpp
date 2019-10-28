@@ -454,7 +454,7 @@ void setup() {
   setupGPIO(); 
 #endif
 
-#if USE_SW_WATCHDOG == 1
+#if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
   // create a watchdog timer
   watchdogTimer = timerBegin(0, 80, true); //timer 0, divisor 80     
   timerAlarmWrite(watchdogTimer, 15000000, false); //set time in uS must be fed within this time or reboot     
@@ -607,7 +607,7 @@ void loop()
 
     case CommStates::Idle:
 
-#if USE_SW_WATCHDOG == 1
+#if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
       feedWatchdog(); //reset timer (feed watchdog)  
 #endif
       

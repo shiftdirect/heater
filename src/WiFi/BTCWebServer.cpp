@@ -766,7 +766,7 @@ void onUploadProgression()
 
     // handle file fragments of form upload
     else if (upload.status == UPLOAD_FILE_WRITE) {
-#if USE_SW_WATCHDOG == 1
+#if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
       feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
       int sts = BrowserUpload.fragment(upload);

@@ -196,6 +196,16 @@ struct sGPIO {
   bool outState[2];
   bool inState[2];
   int  algVal;
+  sGPIO() {
+    outState[0] = outState[1] = false;
+    inState[0] = inState[1] = false;
+    algVal = 0;
+    out1Mode = CGPIOout1::Disabled;
+    out2Mode = CGPIOout2::Disabled;
+    in1Mode = CGPIOin1::Disabled;
+    in2Mode = CGPIOin2::Disabled;
+    algMode = CGPIOalg::Disabled;
+  };
   CGPIOout1::Modes out1Mode;
   CGPIOout2::Modes out2Mode;
   CGPIOin1::Modes in1Mode;

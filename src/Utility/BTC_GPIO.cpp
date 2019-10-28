@@ -399,9 +399,10 @@ CGPIOout1::begin(int pin, CGPIOout1::Modes mode)
 }
 
 void 
-CGPIOout1::setMode(Modes mode) 
-{ 
-  _Mode = mode; 
+CGPIOout1::setMode(CGPIOout1::Modes mode) 
+{
+  if(mode >= Disabled && mode <= User) 
+    _Mode = mode; 
   _prevState = -1;
   ledcDetachPin(_pin);     // ensure PWM detached from IO line
 };
@@ -604,7 +605,8 @@ CGPIOout2::begin(int pin, Modes mode)
 void 
 CGPIOout2::setMode(CGPIOout2::Modes mode) 
 { 
-  _Mode = mode; 
+  if(mode >= Disabled && mode <= User) 
+    _Mode = mode; 
   if(_pin)
     ledcDetachPin(_pin);     // ensure PWM detached from IO line
 };
@@ -651,6 +653,7 @@ CGPIOout2::getState()
 CGPIOalg::CGPIOalg()
 {
   _expMean = 0;
+  _Mode = Disabled;
 }
 
 void
