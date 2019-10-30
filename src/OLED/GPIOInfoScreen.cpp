@@ -127,6 +127,10 @@ CGPIOInfoScreen::animate()
       _drawBitmap(99, 15, UserIconInfo);  
       _drawBitmap(110, 13, bulbmode ? BulbOnIconInfo : BulbOffIconInfo); 
       break;
+    case CGPIOout1::Thresh:     
+      _drawBitmap(99, 15, threshIconInfo);  
+      _drawBitmap(110, 13, bulbmode ? BulbOnIconInfo : BulbOffIconInfo); 
+      break;
   }
 
 #if USE_JTAG == 0
@@ -136,6 +140,10 @@ CGPIOInfoScreen::animate()
     case CGPIOout2::Disabled: _drawBitmap(99, 27, CrossLgIconInfo); break;
     case CGPIOout2::User:     
       _drawBitmap(99, 27, UserIconInfo);  
+      _drawBitmap(110, 26, bulbmode ? BulbOnIconInfo : BulbOffIconInfo); 
+      break;
+    case CGPIOout2::Thresh:     
+      _drawBitmap(99, 27, threshIconInfo);  
       _drawBitmap(110, 26, bulbmode ? BulbOnIconInfo : BulbOffIconInfo); 
       break;
   }

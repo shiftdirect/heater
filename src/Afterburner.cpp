@@ -1585,6 +1585,8 @@ void setupGPIO()
                   GPIOout2_pin, 
                   NVstore.getUserSettings().GPIO.out1Mode, 
                   NVstore.getUserSettings().GPIO.out2Mode);
+    GPIOout.setThresh(NVstore.getUserSettings().GPIO.thresh[0], 
+                      NVstore.getUserSettings().GPIO.thresh[1]);
 
     // ### MAJOR ISSUE WITH ADC INPUTS ###
     //
@@ -1592,7 +1594,7 @@ void setupGPIO()
     // This is ADC2 channel (#9). 
     // Unfortunately it was subsequently discovered that any ADC2 input cannot be 
     // used if Wifi is enabled. 
-    // THIS ISSUE IS NOT RESOLBVABLE IN SOFTWARE.
+    // THIS ISSUE IS NOT RESOLVABLE IN SOFTWARE.
     // *** It is not possible to use ANY of the 10 ADC2 channels if Wifi is enabled :-( ***
     //
     // Fix is to cut traces to GPIO33 & GPIO26 and swap the connections.

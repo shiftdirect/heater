@@ -1373,3 +1373,22 @@ const uint8_t PROGMEM passwordIcon[]  =
 const BITMAP_INFO passwordIconInfo(11, 17, passwordIcon);
 
 
+// 
+//  Image data for thresh
+// 
+
+const uint8_t PROGMEM threshIcon[]  =
+{
+	0xAA, 0x80, // # # # # #
+	0x00, 0x00, //          
+	0x30, 0x00, //   ##     
+	0x49, 0x00, //  #  #  # 
+	0xFF, 0x80, // #########
+	0x49, 0x00, //  #  #  # 
+	0x06, 0x00, //      ##  
+	0x00, 0x00, //          
+	0xAA, 0x80, // # # # # #
+};
+
+const BITMAP_INFO threshIconInfo(9, 9, threshIcon);
+

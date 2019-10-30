@@ -48,11 +48,13 @@ const char* GPIOin2Names[] = {
 const char* GPIOout1Names[] = {
   "Disabled",
   "Status",
-  "User"
+  "User",
+  "Thresh"
 };
 const char* GPIOout2Names[] = {
   "Disabled",
-  "User"
+  "User",
+  "Thresh"
 };
 
 const char* GPIOalgNames[] = {
@@ -307,8 +309,105 @@ CGPIOin::simulateKey(uint8_t newKey)
   _Input2.manage((newKey & 0x02) != 0);
 }
 
+
 /*********************************************************************************************************
- ** GPIO out root
+ ** GPIO out base class
+ *********************************************************************************************************/
+CGPIOoutBase::CGPIOoutBase()
+{
+  _pin = 0;
+  _thresh = 0;
+  _userState = 0;
+}
+
+void
+CGPIOoutBase::begin(int pin) 
+{
+  _pin = pin;
+  if(pin) {
+    pinMode(pin, OUTPUT);   // GPIO output pin #1
+    digitalWrite(pin, LOW);
+  }
+}
+
+void
+CGPIOoutBase::setThresh(int thresh)
+{
+  _thresh = thresh;
+}
+
+void 
+CGPIOoutBase::setState(bool state)
+{
+  _userState = state;
+}
+
+bool 
+CGPIOoutBase::_getUserState() 
+{ 
+  return _userState; 
+};
+
+void 
+CGPIOoutBase::_setPinState(int state)
+{
+  digitalWrite(_pin, state);
+}
+
+int 
+CGPIOoutBase::_getPinState() 
+{ 
+  return digitalRead(_pin); 
+};
+
+
+void
+CGPIOoutBase::_doUser()
+{
+//  DebugPort.println("GPIOout::_doUser2()");
+  if(_pin) {
+    digitalWrite(_pin, _userState ? HIGH : LOW);
+  }
+}
+
+
+void 
+CGPIOoutBase::_doThresh()
+{
+  if(_thresh) {
+    float tAct = getTemperatureSensor(0);
+    if(digitalRead(_pin)) {   
+      // output is currently active
+      if(_thresh > 0)  {               // active when OVER threshold mode
+        if((tAct + 0.1) < _thresh) {   // test if under threshold +0.1deg hysteresis
+          digitalWrite(_pin, LOW);     // deactivate output when less than threshold
+        }
+      }
+      else {                           // active if UNDER threshold mode
+        if(tAct > -_thresh) {          // inactive if over threshold
+          digitalWrite(_pin, LOW);     // deactivate output when over threshold
+        }
+      }
+    }
+    else {  
+      // output is not currently active
+      if(_thresh > 0)  {               // active when OVER threshold mode
+        if(tAct > _thresh) {           // test if over threshold 
+          digitalWrite(_pin, HIGH);    // activate output when over threshold
+        }
+      }
+      else {                           // active if UNDER threshold mode
+        if((tAct + 0.1) < -_thresh) {  // test if under threshold +0.1deg hysteresis
+          digitalWrite(_pin, HIGH);    // activate output when under threshold
+        }
+      }
+    }
+  }
+}
+
+
+/*********************************************************************************************************
+ ** GPIO out manager
  *********************************************************************************************************/
 
 
@@ -329,6 +428,13 @@ CGPIOout::setMode(CGPIOout1::Modes mode1, CGPIOout2::Modes mode2)
   _Out1.setMode(mode1);
   _Out2.setMode(mode2);
 };
+
+void 
+CGPIOout::setThresh(int op1, int op2)
+{
+  _Out1.setThresh(op1);
+  _Out2.setThresh(op2);
+}
 
 CGPIOout1::Modes 
 CGPIOout::getMode1() const
@@ -374,26 +480,21 @@ CGPIOout::getState(int channel)
  *********************************************************************************************************/
 
 
-CGPIOout1::CGPIOout1()
+CGPIOout1::CGPIOout1() : CGPIOoutBase()
 {
   _Mode = Disabled;
-  _pin = 0;
   _breatheDelay = 0;
   _statusState = 0;
   _statusDelay = 0;
-  _userState = 0;
   _prevState = -1;
 }
 
 void 
-CGPIOout1::begin(int pin, CGPIOout1::Modes mode)
+CGPIOout1::begin(int pin, CGPIOout1::Modes mode) 
 {
-  _pin = pin;
-  if(pin) {
-    pinMode(pin, OUTPUT);   // GPIO output pin #1
-    digitalWrite(pin, LOW);
-    ledcSetup(0, 500, 8);   // create PWM channel for GPIO1: 500Hz, 8 bits
-  }
+  CGPIOoutBase::begin(pin);
+
+  ledcSetup(0, 500, 8);   // create PWM channel for GPIO1: 500Hz, 8 bits
 
   setMode(mode);
 }
@@ -401,10 +502,11 @@ CGPIOout1::begin(int pin, CGPIOout1::Modes mode)
 void 
 CGPIOout1::setMode(CGPIOout1::Modes mode) 
 {
-  if(mode >= Disabled && mode <= User) 
+  if(mode >= Disabled && mode <= Thresh) 
     _Mode = mode; 
   _prevState = -1;
-  ledcDetachPin(_pin);     // ensure PWM detached from IO line
+  if(_getPin())
+    ledcDetachPin(_getPin());     // ensure PWM detached from IO line
 };
 
 CGPIOout1::Modes CGPIOout1::getMode() const
@@ -416,16 +518,18 @@ void
 CGPIOout1::manage()
 {
   switch (_Mode) {
-    case Disabled:   break;
-    case Status: _doStatus(); break;
-    case User:   _doUser(); break;
+    case CGPIOout1::Disabled:   break;
+    case CGPIOout1::Status: _doStatus(); break;
+    case CGPIOout1::User:   _doUser(); break;
+    case CGPIOout1::Thresh: _doThresh(); break;
   }
 }
 
 void
 CGPIOout1::_doStatus()
 {
-  if(_pin == 0) 
+  int pin = _getPin();
+  if(pin == 0) 
     return;
 
 //  DebugPort.println("GPIOout::_doStatus()");
@@ -466,30 +570,30 @@ CGPIOout1::_doStatus()
     _statusDelay = millis() + BREATHINTERVAL;
     switch(statusMode) {
       case 0:
-        ledcDetachPin(_pin);     // detach PWM from IO line
-        digitalWrite(_pin, LOW);
+        ledcDetachPin(pin);     // detach PWM from IO line
+        _setPinState(LOW);
         _ledState = 0;
         break;
       case 1:
-        ledcAttachPin(_pin, 0);  // attach PWM to GPIO line
+        ledcAttachPin(pin, 0);  // attach PWM to GPIO line
         ledcWrite(0, _statusState);
         _breatheDelay = millis() + BREATHINTERVAL; 
         break;
       case 2:
-        ledcDetachPin(_pin);     // detach PWM from IO line
-        digitalWrite(_pin, HIGH);
+        ledcDetachPin(pin);     // detach PWM from IO line
+        _setPinState(HIGH);
         _ledState = 1;
         break;
       case 3:
-        ledcAttachPin(_pin, 0);  // attach PWM to GPIO line
+        ledcAttachPin(pin, 0);  // attach PWM to GPIO line
         _statusState = 255;
         ledcWrite(0, _statusState);
         _breatheDelay = millis() + BREATHINTERVAL; 
         break;
       case 4:
-        ledcDetachPin(_pin);     // detach PWM from IO line
+        ledcDetachPin(pin);     // detach PWM from IO line
         _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
-        digitalWrite(_pin, LOW);
+        _setPinState(LOW);
         break;
     }  
   }
@@ -500,14 +604,6 @@ CGPIOout1::_doStatus()
   }
 }
 
-void
-CGPIOout1::_doUser()
-{
-//  DebugPort.println("GPIOout::_doUser2()");
-  if(_pin) {
-    digitalWrite(_pin, _userState ? HIGH : LOW);
-  }
-}
 
 void 
 CGPIOout1::_doStartMode()   // breath up PWM
@@ -547,12 +643,12 @@ CGPIOout1::_doSuspendMode()  // brief flash
     _statusState++;
     if(_statusState & 0x01) {
       _breatheDelay += ONFLASHINTERVAL;  // brief flash on
-      digitalWrite(_pin, HIGH);
+      _setPinState(HIGH);
       stretch = (millis() + 250) | 1;   // pulse extend for UI purposes, ensure non zero
     }
     else {
       _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
-      digitalWrite(_pin, LOW);
+      _setPinState(LOW);
     }
   }
   if(stretch) {
@@ -563,41 +659,34 @@ CGPIOout1::_doSuspendMode()  // brief flash
   _ledState = stretch ? 1 : 0;
 }
 
-void 
-CGPIOout1::setState(bool state)
-{
-  _userState = state;
-}
-
 uint8_t
 CGPIOout1::getState()
 {
   switch(_Mode) {
-    case User:   return _userState;
-    case Status: return _ledState;   // special pulse extender for suspend mode
-    default:     return 0;
-   } 
+    case User: 
+    case Thresh:
+      return _getPinState();
+    case Status: 
+      return _ledState;   // special pulse extender for suspend mode
+    default:
+      return 0;
+  } 
 }
 
 /*********************************************************************************************************
  ** GPIO2
  *********************************************************************************************************/
-CGPIOout2::CGPIOout2()
+CGPIOout2::CGPIOout2() : CGPIOoutBase()
 {
   _Mode = Disabled;
-  _pin = 0;
-  _userState = 0;
 }
 
 void 
 CGPIOout2::begin(int pin, Modes mode)
 {
-  _pin = pin;
-  if(pin) {
-    pinMode(pin, OUTPUT);   // GPIO output pin #2
-    digitalWrite(pin, LOW);
-    ledcSetup(1, 500, 8);   // create PWM channel for GPIO2: 500Hz, 8 bits 
-  }
+  CGPIOoutBase::begin(pin);
+
+  ledcSetup(1, 500, 8);   // create PWM channel for GPIO2: 500Hz, 8 bits 
 
   setMode(mode);
 }
@@ -605,10 +694,11 @@ CGPIOout2::begin(int pin, Modes mode)
 void 
 CGPIOout2::setMode(CGPIOout2::Modes mode) 
 { 
-  if(mode >= Disabled && mode <= User) 
+  if(mode >= Disabled && mode <= Thresh) 
     _Mode = mode; 
-  if(_pin)
-    ledcDetachPin(_pin);     // ensure PWM detached from IO line
+  int pin = _getPin();
+  if(pin)
+    ledcDetachPin(pin);     // ensure PWM detached from IO line
 };
 
 CGPIOout2::Modes CGPIOout2::getMode() const
@@ -622,27 +712,21 @@ CGPIOout2::manage()
   switch (_Mode) {
     case CGPIOout2::Disabled: break;
     case CGPIOout2::User: _doUser(); break;
+    case CGPIOout2::Thresh: _doThresh(); break;
   }
 }
 
-void
-CGPIOout2::_doUser()
-{
-  if(_pin) {
-    digitalWrite(_pin, _userState ? HIGH : LOW);
-  }
-}
-
-void 
-CGPIOout2::setState(bool state)
-{
-  _userState = state;
-}
 
 uint8_t
 CGPIOout2::getState()
 {
-  return _userState;
+  switch (_Mode) {
+    case CGPIOout2::User: 
+    case CGPIOout2::Thresh: 
+      return _getPinState();
+    default:
+      return 0;
+  }
 }
 
 // expected external analogue circuit is a 10k pot.

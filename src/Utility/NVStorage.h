@@ -332,6 +332,8 @@ struct sUserSettings : public CESP32_NVStorage {
     GPIO.out1Mode = CGPIOout1::Disabled;
     GPIO.out2Mode = CGPIOout2::Disabled;
     GPIO.algMode = CGPIOalg::Disabled;
+    GPIO.thresh[0] = 0;
+    GPIO.thresh[1] = 0;
     FrameRate = 1000;
     cyclic.init();
     HomeMenu.init();
@@ -357,6 +359,8 @@ struct sUserSettings : public CESP32_NVStorage {
     GPIO.out1Mode = rhs.GPIO.out1Mode;
     GPIO.out2Mode = rhs.GPIO.out2Mode;
     GPIO.algMode = rhs.GPIO.algMode;
+    GPIO.thresh[0] = rhs.GPIO.thresh[0];
+    GPIO.thresh[1] = rhs.GPIO.thresh[1];
     FrameRate = rhs.FrameRate;
     cyclic = rhs.cyclic;
     HomeMenu = rhs.HomeMenu;

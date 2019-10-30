@@ -37,6 +37,7 @@ class CGPIOSetupScreen : public CPasswordScreen
   unsigned long _ExtHold;
   int _animateCount;
   int _scrollChar;
+  int _repeatCount;
   void _initUI();
 public:
   CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr);

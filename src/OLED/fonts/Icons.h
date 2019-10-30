@@ -158,3 +158,4 @@ extern const BITMAP_INFO _2IconInfo;
 extern const BITMAP_INFO algIconInfo;
 
 extern const BITMAP_INFO passwordIconInfo;
+extern const BITMAP_INFO threshIconInfo;

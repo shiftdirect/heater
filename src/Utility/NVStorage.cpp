@@ -414,8 +414,10 @@ sUserSettings::load()
     preferences.putUChar("GPIOout1Mode", GPIO.out1Mode);  // set new
     preferences.putUChar("GPIOout2Mode", GPIO.out2Mode);  // set new
   }
-  validatedLoad("GPIOout1Mode", tVal, 0, u8inBounds, 0, 2); GPIO.out1Mode = (CGPIOout1::Modes)tVal;
-  validatedLoad("GPIOout2Mode", tVal, 0, u8inBounds, 0, 1); GPIO.out2Mode = (CGPIOout2::Modes)tVal;
+  validatedLoad("GPIOout1Mode", tVal, 0, u8inBounds, 0, 3); GPIO.out1Mode = (CGPIOout1::Modes)tVal;
+  validatedLoad("GPIOout2Mode", tVal, 0, u8inBounds, 0, 2); GPIO.out2Mode = (CGPIOout2::Modes)tVal;
+  validatedLoad("GPIOout1Thresh", GPIO.thresh[0], 0, s8inBounds, -50, 50); 
+  validatedLoad("GPIOout2Thresh", GPIO.thresh[1], 0, s8inBounds, -50, 50); 
   validatedLoad("GPIOalgMode", tVal, 0, u8inBounds, 0, 2); GPIO.algMode = (CGPIOalg::Modes)tVal;
   validatedLoad("MenuOnTimeout", HomeMenu.onTimeout, 0, u8inBounds, 0, 3);
   validatedLoad("MenuonStart", HomeMenu.onStart, 0, u8inBounds, 0, 3);
@@ -450,6 +452,8 @@ sUserSettings::save()
   preferences.putUChar("GPIOin2Mode", GPIO.in2Mode);
   preferences.putUChar("GPIOout1Mode", GPIO.out1Mode);
   preferences.putUChar("GPIOout2Mode", GPIO.out2Mode);
+  preferences.putChar("GPIOout1Thresh", GPIO.thresh[0]);
+  preferences.putChar("GPIOout2Thresh", GPIO.thresh[1]);
   preferences.putUChar("GPIOalgMode", GPIO.algMode);
   preferences.putUChar("MenuOnTimeout", HomeMenu.onTimeout);
   preferences.putUChar("MenuonStart", HomeMenu.onStart);

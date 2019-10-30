@@ -102,54 +102,66 @@ public:
   }
 };
 
-class CGPIOout1 {
+class CGPIOoutBase {
+  int  _thresh;
+  bool _userState;
+  int  _pin;
+protected:
+  void _doThresh();
+  void _doUser();
+  bool _getUserState();
+  int _getPin() { return _pin; };
+  void _setPinState(int state);
+  int _getPinState();
+public:
+  CGPIOoutBase();
+  void setState(bool state);
+  void setThresh(int val);
+  void begin(int pin);
+};
+
+class CGPIOout1 : public CGPIOoutBase {
 public:
   enum Modes { 
     Disabled, 
     Status,
-    User
+    User,
+    Thresh
   };
   CGPIOout1();
   void begin(int pin, Modes mode);
   void setMode(Modes mode);
   void manage();
-  void setState(bool state);
   uint8_t getState();
   Modes getMode() const;
 private:
   Modes _Mode;
-  int _pin;
   void _doStatus();
-  void _doUser();
   int _prevState;
   int _statusState;
   int _statusDelay;
   unsigned long _breatheDelay;
-  bool _userState;
   uint8_t _ledState;
   void _doStartMode();
   void _doStopMode();
   void _doSuspendMode();
 };
 
-class CGPIOout2 {
+class CGPIOout2 : public CGPIOoutBase {
 public:
   enum Modes { 
     Disabled, 
-    User
+    User,
+    Thresh
   };
   CGPIOout2();
   void begin(int pin, Modes mode);
   void setMode(Modes mode);
   void manage();
-  void setState(bool state);
   uint8_t getState();
   Modes getMode() const;
 private:
   Modes _Mode;
-  int _pin;
-  bool _userState;
-  void _doUser();
 };
 
 class CGPIOout {
@@ -161,6 +173,7 @@ public:
   void begin(int pin1, int pin2, CGPIOout1::Modes mode1, CGPIOout2::Modes mode2);
   void manage();
   void setState(int channel, bool state);
+  void setThresh(int thr1, int thr2);
   uint8_t getState(int channel);
   CGPIOout1::Modes getMode1() const;
   CGPIOout2::Modes getMode2() const;
@@ -190,6 +203,7 @@ struct sGPIOparams {
   CGPIOout1::Modes out1Mode;
   CGPIOout2::Modes out2Mode;
   CGPIOalg::Modes algMode;
+  int8_t thresh[2];
 };
 
 struct sGPIO {

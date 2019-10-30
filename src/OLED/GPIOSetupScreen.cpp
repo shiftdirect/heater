@@ -16,7 +16,7 @@
  * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- * 
+ *  
  */
 
 #include "128x64OLED.h"
@@ -30,6 +30,14 @@
 extern CGPIOout GPIOout;
 extern CGPIOin GPIOin;
 extern CGPIOalg GPIOalg;
+
+int8_t s8abs(int8_t val) 
+{
+  if(val >= 0)
+    return val;
+  else
+    return -val;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -53,6 +61,8 @@ CGPIOSetupScreen::CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr) :
   _GPIOparams.out1Mode = CGPIOout1::Disabled;
   _GPIOparams.out2Mode = CGPIOout2::Disabled;
   _GPIOparams.algMode = CGPIOalg::Disabled;
+  _GPIOparams.thresh[0] = 0;
+  _GPIOparams.thresh[1] = 0;
   _ExtHold = 0;
 }
 
@@ -63,6 +73,7 @@ CGPIOSetupScreen::onSelect()
   _initUI();
   _GPIOparams = NVstore.getUserSettings().GPIO;
   _ExtHold = NVstore.getUserSettings().ExtThermoTimeout;
+  _repeatCount = -1;
 }
 
 void
@@ -75,6 +86,8 @@ CGPIOSetupScreen::_initUI()
 bool 
 CGPIOSetupScreen::show()
 {
+  char msg[16];
+
   _display.clearDisplay();
 
   static bool animated = false;
@@ -138,6 +151,17 @@ CGPIOSetupScreen::show()
           case CGPIOout1::Disabled: msgText = "---"; break;
           case CGPIOout1::Status:   msgText = "Status"; break;
           case CGPIOout1::User:     msgText = "User"; break;
+          case CGPIOout1::Thresh:   
+            if(_rowSel == 6) {
+              sprintf(msg, "  %dC", s8abs(_GPIOparams.thresh[0]));
+              _printMenuText(Column2, Line3, msg, false);
+              _printMenuText(Column2, Line3, _GPIOparams.thresh[0] >= 0 ? ">" : "<", true);
+            }
+            else {
+              sprintf(msg, "%s %dC", _GPIOparams.thresh[0] >= 0 ? ">" : "<", s8abs(_GPIOparams.thresh[0]));
+              _printMenuText(Column2, Line3, msg, _rowSel == 8);
+            }
+            break;
         }
         if(msgText)
           _printMenuText(Column2, Line3, msgText, _rowSel == 6);
@@ -149,6 +173,17 @@ CGPIOSetupScreen::show()
         switch(_GPIOparams.out2Mode) {
           case CGPIOout2::Disabled: msgText = "---"; break;
           case CGPIOout2::User:     msgText = "User"; break;
+          case CGPIOout2::Thresh:   
+            if(_rowSel == 5) {
+              sprintf(msg, "  %d`C", s8abs(_GPIOparams.thresh[1]));
+              _printMenuText(Column2, Line2, msg, false);
+              _printMenuText(Column2, Line2, _GPIOparams.thresh[1] >= 0 ? ">" : "<", true);
+            }
+            else {
+              sprintf(msg, "%s %d`C", _GPIOparams.thresh[1] >= 0 ? ">" : "<", s8abs(_GPIOparams.thresh[1]));
+              _printMenuText(Column2, Line2, msg, _rowSel == 7);
+            }
+            break;
         }
         if(msgText)
           _printMenuText(Column2, Line2, msgText, _rowSel == 5);
@@ -227,6 +262,12 @@ CGPIOSetupScreen::animate()
           switch(_GPIOparams.out2Mode) {
             case CGPIOout2::Disabled: pMsg = "                   Output 2: DISABLED.                    "; break;
             case CGPIOout2::User:     pMsg = "                   Output 2: User controlled.                    "; break;
+            case CGPIOout2::Thresh:   
+              if(_GPIOparams.thresh[1] >= 0)
+                pMsg = "                   Output 2: Active if over temperature. Hold LEFT to set under. Hold RIGHT to set over.                   "; 
+              else
+                pMsg = "                   Output 2: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
+              break;
           }
           if(pMsg)
             _scrollMessage(56, pMsg, _scrollChar);
@@ -237,9 +278,31 @@ CGPIOSetupScreen::animate()
             case CGPIOout1::Disabled: pMsg = "                   Output 1: DISABLED.                    "; break;
             case CGPIOout1::Status:   pMsg = "                   Output 1: LED status indicator.                    "; break;
             case CGPIOout1::User:     pMsg = "                   Output 1: User controlled.                    "; break;
+            case CGPIOout1::Thresh:   
+              if(_GPIOparams.thresh[0] >= 0)
+                pMsg = "                   Output 1: Active if over temperature. Hold LEFT to set under. Hold RIGHT to set over.                   "; 
+              else
+                pMsg = "                   Output 1: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
+              break;
           }
           if(pMsg)
             _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 7:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          if(_GPIOparams.thresh[1] >= 0)
+            pMsg = "                   Output 2: Active if over temperature. CENTRE to accept. Hold LEFT to set under.                   "; 
+          else
+            pMsg = "                   Output 2: Active if under temperature. CENTRE to accept. Hold RIGHT to set over.                   ";
+          _scrollMessage(56, pMsg, _scrollChar);
+          break;
+        case 8:
+          _display.drawFastHLine(0, 52, 128, WHITE);
+          if(_GPIOparams.thresh[0] >= 0)
+            pMsg = "                   Output 1: Active if over temperature. Centre to accept. Hold LEFT to set under.                   "; 
+          else
+            pMsg = "                   Output 1: Active if under temperature. Centre to accept. Hold RIGHT to set over.                   ";
+          _scrollMessage(56, pMsg, _scrollChar);
           break;
       }
       return true;
@@ -251,109 +314,164 @@ CGPIOSetupScreen::animate()
 bool 
 CGPIOSetupScreen::keyHandler(uint8_t event)
 {
+
   sUserSettings us;
   if(event & keyPressed) {
-    // press LEFT to select previous screen
-    if(event & key_Left) {
-      switch(_rowSel) {
-        case 0:
-          _ScreenManager.prevMenu();
-          break;
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-          _scrollChar = 0;
-          _adjust(-1);
-          break;
-        case 10:
-          _rowSel = 0;   // abort save
-          break;
+    _repeatCount = 0;
+  }
+  
+  if(event & keyRepeat) {
+    if(_repeatCount >= 0) {
+      _repeatCount++;
+      // hold LEFT to toggle GPIO output #1
+      if(event & key_Left) {
+        if(_repeatCount > 1) {
+          _repeatCount = -1;      // prevent double handling
+          if((_rowSel == 6 || _rowSel == 8) && _GPIOparams.out1Mode == CGPIOout1::Thresh) {
+            _GPIOparams.thresh[0] = -s8abs(_GPIOparams.thresh[0]);
+            BOUNDSLIMIT(_GPIOparams.thresh[0], -50, -1);
+            _rowSel = 8;
+          }
+          if((_rowSel == 5 || _rowSel == 7)  && _GPIOparams.out2Mode == CGPIOout2::Thresh) {
+            _GPIOparams.thresh[1] = -s8abs(_GPIOparams.thresh[1]);
+            BOUNDSLIMIT(_GPIOparams.thresh[1], -50, -1);
+            _rowSel = 7;
+          }
+        }
+      }
+      if(event & key_Right) {
+        if(_repeatCount > 1) {
+          _repeatCount = -1;      // prevent double handling
+          if((_rowSel == 6 || _rowSel == 8)  && _GPIOparams.out1Mode == CGPIOout1::Thresh) {
+            _GPIOparams.thresh[0] = s8abs(_GPIOparams.thresh[0]);
+            BOUNDSLIMIT(_GPIOparams.thresh[0], 0, 50);
+            _rowSel = 8;
+          }
+          if((_rowSel == 5 || _rowSel == 7) && _GPIOparams.out2Mode == CGPIOout2::Thresh) {
+            _GPIOparams.thresh[1] = s8abs(_GPIOparams.thresh[1]);
+            BOUNDSLIMIT(_GPIOparams.thresh[1], 0, 50);
+            _rowSel = 7;
+          }
+        }
       }
     }
-    // press RIGHT to select next screen
-    if(event & key_Right) {
-      switch(_rowSel) {
-        case 0:
-          _ScreenManager.nextMenu();
-          break;
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-          _scrollChar = 0;
-          _adjust(+1);
-          break;
-        case 10:
-          _rowSel = 0;   // abort save
-          break;
-      }
-    }
-    if(event & key_Down) {
-      if(_rowSel == 10) {
-        _rowSel = 0;   // abort save
-      }
-      else {
-        _scrollChar = 0;
-        _rowSel--;
-        if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
-          _rowSel--;   // force skip if not set to external thermostat
-        if((_rowSel == 1) && ((getBoardRevision() == BRD_V2_GPIO_NOALG) || (getBoardRevision() == BRD_V3_GPIO_NOALG)))  // GPIO but NO analog support
-          _rowSel--;   // force skip if analog input is not supported by PCB
-        LOWERLIMIT(_rowSel, 0);
-      }
-    }
-    // UP press
-    if(event & key_Up) {
-      switch(_rowSel) {
-        case 0:
-          if((getBoardRevision() == BRD_V2_GPIO_NOALG) ||  (getBoardRevision() == BRD_V3_GPIO_NOALG))   // GPIO but NO Analog support
-            _rowSel++;   // force skip if analog input is not supported by PCB
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-          _scrollChar = 0;
-          _rowSel++;
-          if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
-            _rowSel++;   // force skip if not set to external thermostat
-          UPPERLIMIT(_rowSel, 6);
-          break;
-        case 10:    // confirmed save
-          _enableStoringMessage();
-          us = NVstore.getUserSettings();
-          us.GPIO = _GPIOparams;
-          us.ExtThermoTimeout = _ExtHold;
-          NVstore.setUserSettings(us);
-          saveNV();
+  }
 
-          setupGPIO();
-          
-          _rowSel = 0;
-          break;
+  if(event & keyReleased) {
+    // press LEFT to select previous screen
+    if(_repeatCount == 0) {
+      if(event & key_Left) {
+        switch(_rowSel) {
+          case 0:
+            _ScreenManager.prevMenu();
+            break;
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+          case 6:
+          case 7:
+          case 8:
+            _scrollChar = 0;
+            _adjust(-1);
+            break;
+          case 10:
+            _rowSel = 0;   // abort save
+            break;
+        }
+      }
+      // press RIGHT to select next screen
+      if(event & key_Right) {
+        switch(_rowSel) {
+          case 0:
+            _ScreenManager.nextMenu();
+            break;
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+          case 6:
+          case 7:
+          case 8:
+            _scrollChar = 0;
+            _adjust(+1);
+            break;
+          case 10:
+            _rowSel = 0;   // abort save
+            break;
+        }
+      }
+      if(event & key_Down) {
+        if(_rowSel == 10) {
+          _rowSel = 0;   // abort save
+        }
+        else {
+          _scrollChar = 0;
+          _rowSel--;
+          if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
+            _rowSel--;   // force skip if not set to external thermostat
+          if((_rowSel == 1) && ((getBoardRevision() == BRD_V2_GPIO_NOALG) || (getBoardRevision() == BRD_V3_GPIO_NOALG)))  // GPIO but NO analog support
+            _rowSel--;   // force skip if analog input is not supported by PCB
+          LOWERLIMIT(_rowSel, 0);
+        }
+      }
+      // UP press
+      if(event & key_Up) {
+        switch(_rowSel) {
+          case 0:
+            if((getBoardRevision() == BRD_V2_GPIO_NOALG) ||  (getBoardRevision() == BRD_V3_GPIO_NOALG))   // GPIO but NO Analog support
+              _rowSel++;   // force skip if analog input is not supported by PCB
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+            _scrollChar = 0;
+            _rowSel++;
+            if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
+              _rowSel++;   // force skip if not set to external thermostat
+            UPPERLIMIT(_rowSel, 6);
+            break;
+          case 10:    // confirmed save
+            _enableStoringMessage();
+            us = NVstore.getUserSettings();
+            us.GPIO = _GPIOparams;
+            us.ExtThermoTimeout = _ExtHold;
+            NVstore.setUserSettings(us);
+            saveNV();
+
+            setupGPIO();
+            
+            _rowSel = 0;
+            break;
+        }
+      }
+      // CENTRE press
+      if(event & key_Centre) {
+        switch(_rowSel) {
+          case 0:
+            _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+            break;
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+          case 6:
+            _rowSel = 10;
+            break;
+          case 7:
+            _rowSel = 5;
+            break;
+          case 8:
+            _rowSel = 6;
+            break;
+        }
       }
     }
-    // CENTRE press
-    if(event & key_Centre) {
-      switch(_rowSel) {
-        case 0:
-          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
-          break;
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-          _rowSel = 10;
-          break;
-      }
-    }
+    _repeatCount = -1;
     _ScreenManager.reqUpdate();
   }
 
@@ -400,14 +518,34 @@ CGPIOSetupScreen::_adjust(int dir)
     case 5:   // outputs mode
       tVal = _GPIOparams.out2Mode;
       tVal += dir;
-      WRAPLIMITS(tVal, 0, 1);
+      WRAPLIMITS(tVal, 0, 2);
       _GPIOparams.out2Mode = (CGPIOout2::Modes)tVal;
       break;
     case 6:   // outputs mode
       tVal = _GPIOparams.out1Mode;
       tVal += dir;
-      WRAPLIMITS(tVal, 0, 2);
+      WRAPLIMITS(tVal, 0, 3);
       _GPIOparams.out1Mode = (CGPIOout1::Modes)tVal;
+      break;
+    case 7:
+      if(_GPIOparams.thresh[1] < 0) {
+        _GPIOparams.thresh[1] += -dir;
+        BOUNDSLIMIT(_GPIOparams.thresh[1], -50, -1);
+      }
+      else {
+        _GPIOparams.thresh[1] += dir;
+        BOUNDSLIMIT(_GPIOparams.thresh[1], 0, 50);
+      }
+      break;
+    case 8:
+      if(_GPIOparams.thresh[0] < 0) {
+        _GPIOparams.thresh[0] += -dir;
+        BOUNDSLIMIT(_GPIOparams.thresh[0], -50, -1);
+      }
+      else {
+        _GPIOparams.thresh[0] += dir;
+        BOUNDSLIMIT(_GPIOparams.thresh[0], 0, 50);
+      }
       break;
   }
 }
