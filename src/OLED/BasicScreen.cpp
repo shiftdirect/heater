@@ -29,6 +29,7 @@
 #include "../Utility/NVStorage.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/TempSense.h"
+#include "../RTC/RTCStore.h"
 
 #define MAXIFONT tahoma_24ptFontInfo
 
@@ -270,7 +271,7 @@ CBasicScreen::keyHandler(uint8_t event)
       if(event & key_Centre) {
         if(NVstore.getUserSettings().menuMode < 2) {
           int runstate = getHeaterInfo().getRunStateEx();
-          if(runstate) {   // running, including cyclic mode idle
+          if(runstate && !RTC_Store.getFrostOn()) {   // running, including cyclic mode idle
             if(repeatCount > 5) {
               repeatCount = -1;
               requestOff();         

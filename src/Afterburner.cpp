@@ -124,8 +124,8 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 6;
-const char* FirmwareDate = "27 Oct 2019";
+const int FirmwareSubRevision = 7;
+const char* FirmwareDate = "30 Oct 2019";
 
 
 #ifdef ESP32
@@ -149,6 +149,7 @@ bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
 void manageCyclicMode();
+void manageFrostMode();
 bool preemptCyclicMode();
 void doStreaming();
 void heaterOn();
@@ -851,6 +852,7 @@ void loop()
             FilteredSamples.AmbientTemp.update(fTemperature);
 
             manageCyclicMode();
+            manageFrostMode();
           }
         }
         else {
@@ -941,6 +943,31 @@ void manageCyclicMode()
   }
 }
 
+
+void manageFrostMode()
+{
+  uint8_t engage = NVstore.getUserSettings().FrostOn;
+  if(engage) {
+    float deltaT = getTemperatureSensor() - engage;
+    int heaterState = getHeaterInfo().getRunState();
+    if(deltaT < 0) {
+      if(heaterState == 0) {
+        RTC_Store.setFrostOn(true);        
+        DebugPort.printf("FROST MODE: Starting heater, < %d`C\r\n", engage);
+        heaterOn();
+      }
+    }
+    uint8_t rise = NVstore.getUserSettings().FrostRise;
+    if(deltaT > rise) {
+      if(RTC_Store.getFrostOn()) {
+        DebugPort.printf("FROST MODE: Stopping heater, > %d`C\r\n", engage+rise);
+        heaterOff();
+        RTC_Store.setFrostOn(false);  // cancel active frost mode
+      }
+    }
+  }
+}
+
 bool preemptCyclicMode()
 {
   const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
@@ -993,6 +1020,7 @@ void requestOn()
 {
   if(bHasHtrData && (0 == SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue()))) {
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
+    RTC_Store.setFrostOn(false);  // cancel frost mode
     if(!preemptCyclicMode()) {    // only start if below cyclic threshold when enabled
       heaterOn();
     }
@@ -1003,6 +1031,7 @@ void requestOff()
 {
   heaterOff();
   RTC_Store.setCyclicEngaged(false);   // for cyclic mode
+  RTC_Store.setFrostOn(false);  // cancel active frost mode
 }
 
 void heaterOn() 

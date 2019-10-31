@@ -216,6 +216,8 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("CyclicTemp", getDemandDegC(), root);             // actual pivot point for cyclic mode
     bSend |= moderator.addJson("CyclicOff", stop, root);                         // threshold of over temp for cyclic mode
     bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root);  // threshold of under temp for cyclic mode
+    bSend |= moderator.addJson("FrostOn", NVstore.getUserSettings().FrostOn, root);        // temp drops below this, auto start - 0 = disable
+    bSend |= moderator.addJson("FrostRise", NVstore.getUserSettings().FrostRise, root);    // temp rise in frost mode till auto off
     bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root);               // running count of pump strokes
     bSend |= moderator.addJson("PumpCal", NVstore.getHeaterTuning().pumpCal, root);        // mL/stroke
     bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low voltage cutout
@@ -283,6 +285,8 @@ bool makeJSONStringGPIO(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("GPmodeIn2", GPIOin2Names[info.in2Mode], root); 
   bSend |= moderator.addJson("GPmodeOut1", GPIOout1Names[info.out1Mode], root); 
   bSend |= moderator.addJson("GPmodeOut2", GPIOout2Names[info.out2Mode], root); 
+  bSend |= moderator.addJson("GPOutThr1", NVstore.getUserSettings().GPIO.thresh[0], root); 
+  bSend |= moderator.addJson("GPOutThr2", NVstore.getUserSettings().GPIO.thresh[1], root); 
   bSend |= moderator.addJson("GPmodeAnlg", GPIOalgNames[info.algMode], root); 
   bSend |= moderator.addJson("ExtThermoTmout", (uint32_t)NVstore.getUserSettings().ExtThermoTimeout, root); 
   const char* stop = getExternalThermostatHoldTime();

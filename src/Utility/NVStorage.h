@@ -284,6 +284,8 @@ struct sUserSettings : public CESP32_NVStorage {
   uint8_t degF;
   uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
   float   ThermostatWindow;   
+  uint8_t FrostOn;
+  uint8_t FrostRise;
   uint8_t useThermostat;
   uint8_t enableWifi;
   uint8_t enableOTA;
@@ -324,6 +326,8 @@ struct sUserSettings : public CESP32_NVStorage {
     degF = 0;
     ThermostatMethod = 0;
     ThermostatWindow = 1.0;
+    FrostOn = 0;
+    FrostRise = 5;
     useThermostat = 1;
     enableWifi = 1;
     enableOTA = 0;
@@ -351,6 +355,8 @@ struct sUserSettings : public CESP32_NVStorage {
     degF = rhs.degF;
     ThermostatMethod = rhs.ThermostatMethod;
     ThermostatWindow = rhs.ThermostatWindow;
+    FrostOn = rhs.FrostOn;
+    FrostRise = rhs.FrostRise;
     useThermostat = rhs.useThermostat;
     enableWifi = rhs.enableWifi;
     enableOTA = rhs.enableOTA;

@@ -309,6 +309,22 @@ void DecodeCmd(const char* cmd, String& payload)
   else if(strcmp("GPin2", cmd) == 0) {
     simulateGPIOin(payload.toInt() ? 0x02 : 0x00);  // simulate key 2 press
   }
+  else if(strcmp("GPOutThr1", cmd) == 0) {
+    sUserSettings us = NVstore.getUserSettings();
+    us.GPIO.thresh[0] = payload.toInt();   // 0 = disable; < 0, active if less than abs(val); > 0, active if over val
+    if(INBOUNDS(us.GPIO.thresh[0], -50, 50)) {
+      NVstore.setUserSettings(us);
+      NVstore.save();
+    }
+  }
+  else if(strcmp("GPOutThr2", cmd) == 0) {
+    sUserSettings us = NVstore.getUserSettings();
+    us.GPIO.thresh[1] = payload.toInt();   // 0 = disable; < 0, active if less than abs(val); > 0, active if over val
+    if(INBOUNDS(us.GPIO.thresh[1], -50, 50)) {
+      NVstore.setUserSettings(us);
+      NVstore.save();
+    }
+  }
   else if(strcmp("JSONpack", cmd) == 0) {
     sUserSettings us = NVstore.getUserSettings();
     uint8_t packed = payload.toInt() ? 0x00 : 0x01;
@@ -394,6 +410,22 @@ void DecodeCmd(const char* cmd, String& payload)
   }
   else if(strcmp("SysHourMeters", cmd) == 0) {
     pHourMeter->resetHard();
+  }
+  else if(strcmp("FrostOn", cmd) == 0) {
+    sUserSettings us = NVstore.getUserSettings();
+    us.FrostOn = payload.toInt();
+    if(INBOUNDS(us.FrostOn, 0, 30)) {
+      NVstore.setUserSettings(us);
+      NVstore.save();
+    }
+  }
+  else if(strcmp("FrostRise", cmd) == 0) {
+    sUserSettings us = NVstore.getUserSettings();
+    us.FrostRise = payload.toInt();
+    if(INBOUNDS(us.FrostRise, 1, 30)) {
+      NVstore.setUserSettings(us);
+      NVstore.save();
+    }
   }
 }
 

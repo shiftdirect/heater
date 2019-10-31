@@ -33,6 +33,7 @@
 #include "Clock.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/helpers.h"
+#include "../RTC/RTCStore.h"
 
 // main array to hold information of which timer is active at any particular minute of the week
 // LSBs are used for the timerID + 1
@@ -271,7 +272,9 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
     }
     else {
       DebugPort.println("End of timer interval, stopping heater");
-      requestOff();
+//      if(!RTC_Store.getFrostOn() && !RTC_Store.getCyclicEngaged())
+      if(!RTC_Store.getFrostOn())
+        requestOff();
       retval = 2;
     }
     _activeTimer = newID;

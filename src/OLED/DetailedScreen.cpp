@@ -28,6 +28,7 @@
 #include "../Protocol/Protocol.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/FuelGauge.h"
+#include "../RTC/RTCStore.h"
 
 
 #define MINIFONT miniFontInfo
@@ -217,7 +218,7 @@ CDetailedScreen::keyHandler(uint8_t event)
 
       if(event & key_Centre) {
         int runstate = getHeaterInfo().getRunStateEx();
-        if(runstate) {   // running, including cyclic mode idle
+        if(runstate && !RTC_Store.getFrostOn()) {   // running, including cyclic mode idle
           if(_keyRepeatCount > 5) {
             _keyRepeatCount = -1;        // prevent double handling
             requestOff();

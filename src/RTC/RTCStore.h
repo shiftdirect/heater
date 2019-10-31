@@ -32,6 +32,7 @@ class CRTC_Store {
   bool    _BootInit;       // Byte4[6]
   bool    _CyclicEngaged;  // Byte4[7]
   uint8_t _demandPump;     // Byte5[0..5]
+  bool    _frostOn;        // Byte5[6]
   uint8_t _RunTime;        // Byte6[0..4] 
   uint8_t _GlowTime;       // Byte6[5..7]
   void    _ReadAndUnpackByte4();
@@ -61,6 +62,8 @@ public:
   int getGlowTime();
   int getMaxGlowTime() const { return 8; };
   int getMaxRunTime() const { return 32; };
+  void setFrostOn(bool state);
+  bool getFrostOn();
 };
 
 extern CRTC_Store RTC_Store;

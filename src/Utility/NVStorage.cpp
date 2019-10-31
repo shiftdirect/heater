@@ -379,6 +379,8 @@ sUserSettings::load()
   }
   validatedLoad("thermoWindow", ThermostatWindow, 1.0f, 0.2f, 10.f);
   DebugPort.printf("2) Window = %f\r\n", ThermostatWindow);
+  validatedLoad("frostOn", FrostOn, 0, u8inBounds, 0, 10);
+  validatedLoad("frostRise", FrostRise, 5, u8inBounds, 0, 20);
   validatedLoad("enableWifi", enableWifi, 1, u8inBounds, 0, 1);
   validatedLoad("enableOTA", enableOTA, 0, u8inBounds, 0, 1);
   validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
@@ -444,6 +446,8 @@ sUserSettings::save()
   preferences.putUChar("degF", degF);
   preferences.putUChar("thermoMethod", ThermostatMethod);
   preferences.putFloat("thermoWindow", ThermostatWindow);
+  preferences.putUChar("frostOn", FrostOn);
+  preferences.putUChar("frostRise", FrostRise);
   preferences.putUChar("enableWifi", enableWifi);
   preferences.putUChar("enableOTA", enableOTA);
   preferences.putChar("cyclicStop", cyclic.Stop);

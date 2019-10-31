@@ -28,6 +28,7 @@
 #include "../RTC/Clock.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/NVStorage.h"
+#include "../RTC/RTCStore.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -135,7 +136,7 @@ CClockScreen::keyHandler(uint8_t event)
       if(event & key_Centre) {
         if(NVstore.getUserSettings().menuMode < 2) {
           int runstate = getHeaterInfo().getRunStateEx();
-          if(runstate) {   // running, including cyclic mode idle
+          if(runstate && !RTC_Store.getFrostOn()) {   // running, including cyclic mode idle
             if(_keyRepeatCount > 5) {
               _keyRepeatCount = -1;
               requestOff();         

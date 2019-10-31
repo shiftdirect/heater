@@ -25,6 +25,7 @@
 #include "DebugPort.h"
 #include "../Protocol/Protocol.h"
 #include "../Utility/NVStorage.h"
+#include "../RTC/RTCStore.h"
 
 const int BREATHINTERVAL = 45;
 const int FADEAMOUNT = 3;
@@ -122,7 +123,7 @@ void
 CGPIOin1::_doStartStop(bool active)
 {
   if(active) {
-    if(getHeaterInfo().getRunStateEx())
+    if(getHeaterInfo().getRunStateEx() && !RTC_Store.getFrostOn())
       requestOff();
     else 
       requestOn();

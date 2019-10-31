@@ -1392,3 +1392,26 @@ const uint8_t PROGMEM threshIcon[]  =
 
 const BITMAP_INFO threshIconInfo(9, 9, threshIcon);
 
+// 
+//  Image data for frost
+// 
+
+const uint8_t PROGMEM frostIcon[]  =
+{
+	0x15, 0x00, //    # # #   
+	0x0A, 0x00, //     # #    
+	0xA4, 0xA0, // # #  #  # #
+	0x44, 0x40, //  #   #   # 
+	0xA4, 0xA0, // # #  #  # #
+	0x15, 0x00, //    # # #   
+	0x0E, 0x00, //     ###    
+	0x15, 0x00, //    # # #   
+	0xA4, 0xA0, // # #  #  # #
+	0x44, 0x40, //  #   #   # 
+	0xA4, 0xA0, // # #  #  # #
+	0x0A, 0x00, //     # #    
+	0x15, 0x00, //    # # #   
+};
+
+const BITMAP_INFO frostIconInfo(11, 13, frostIcon);
+

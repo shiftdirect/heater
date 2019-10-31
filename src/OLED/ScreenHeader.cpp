@@ -33,6 +33,7 @@
 #include "../RTC/TimerManager.h"
 #include "../Protocol/SmartError.h"
 #include "../Utility/DataFilter.h"
+#include "../RTC/RTCStore.h"
 
 
 #define MINIFONT miniFontInfo
@@ -329,6 +330,11 @@ CScreenHeader::showBatteryIcon(float voltage)
 int
 CScreenHeader::showTimers()
 {
+  if(RTC_Store.getFrostOn()) {
+    int xPos = X_TIMER_ICON;   
+    _drawBitmap(xPos, Y_TIMER_ICON, frostIconInfo);
+    return 0;
+  }
   int nextTimer = CTimerManager::getNextTimer();   // timer ID and repeat flag info of next scheduled timer
   if(nextTimer) {
     int xPos = X_TIMER_ICON;   
@@ -358,12 +364,21 @@ CScreenHeader::showTimers()
     }
     return 1;
   }
-  _display.fillRect(X_TIMER_ICON-3, Y_TIMER_ICON, TimerIconInfo.width+3, TimerIconInfo.height, BLACK); // erase icon
+  _display.fillRect(X_TIMER_ICON-3, Y_TIMER_ICON, TimerIconInfo.width+3, 13, BLACK); // erase icon
   _display.fillRect(X_TIMER_ICON-5, Y_TIMER_ICON+12, 21, 5, BLACK);  // erase annotation
   return 0;
 }
 
-
+bool 
+CScreenHeader::showFrost()
+{
+  if(RTC_Store.getFrostOn()) {
+    int xPos = X_TIMER_ICON;   
+    _drawBitmap(xPos, Y_TIMER_ICON, frostIconInfo);
+    return true;
+  }
+  return false;
+}
 
 void 
 CScreenHeader::showTime()

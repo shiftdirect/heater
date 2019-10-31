@@ -155,6 +155,20 @@ CRTC_Store::getDesiredPump()
 }
 
 void
+CRTC_Store::setFrostOn(bool state)
+{
+  _frostOn = state;
+  _PackAndSaveByte5();
+}
+
+bool
+CRTC_Store::getFrostOn()
+{
+  _ReadAndUnpackByte5();
+  return _frostOn;
+}
+
+void
 CRTC_Store::resetRunTime()
 {
   _RunTime = 0;
@@ -230,6 +244,7 @@ CRTC_Store::_ReadAndUnpackByte5()
     uint8_t NVval = 0;
     Clock.readData((uint8_t*)&NVval, 1, 5);
     _demandPump = NVval & 0x3f;
+    _frostOn = (NVval & 0x40) != 0;
     _accessed[2] = true;
     DebugPort.printf("RTC_Store - read byte5: pump=%d\r\n", _demandPump);
   }
@@ -239,6 +254,8 @@ void
 CRTC_Store::_PackAndSaveByte5()
 {
   uint8_t NVval = (_demandPump & 0x3f);
+  NVval |= _frostOn ? 0x40 : 0;
+
   Clock.saveData((uint8_t*)&NVval, 1, 5);
 }
 
