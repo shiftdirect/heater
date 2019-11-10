@@ -52,40 +52,36 @@ CHomeMenuSelScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 4) {
-      _showConfirmMessage();
+    _showTitle("Home Menu Actions");
+    
+    _drawBitmap(30, 14, TimeoutIconInfo);
+    switch(_action.onTimeout) {
+      case 0: strcpy(msg, "Default"); break;
+      case 1: strcpy(msg, "Detailed"); break;
+      case 2: strcpy(msg, "Basic"); break;
+      case 3: strcpy(msg, "Clock"); break;
     }
-    else {
-      _showTitle("Home Menu Actions");
-      
-      _drawBitmap(30, 14, TimeoutIconInfo);
-      switch(_action.onTimeout) {
-        case 0: strcpy(msg, "Default"); break;
-        case 1: strcpy(msg, "Detailed"); break;
-        case 2: strcpy(msg, "Basic"); break;
-        case 3: strcpy(msg, "Clock"); break;
-      }
-      _printMenuText(50, 14, msg, _rowSel == 3);
+    _printMenuText(50, 14, msg, _rowSel == 3);
 
-      _drawBitmap(32, 26, StartIconInfo);
-      switch(_action.onStart) {
-        case 0: strcpy(msg, "Default"); break;
-        case 1: strcpy(msg, "Detailed"); break;
-        case 2: strcpy(msg, "Basic"); break;
-        case 3: strcpy(msg, "Clock"); break;
-      }
-      _printMenuText(50, 26, msg, _rowSel == 2);
-
-      _drawBitmap(31, 38, StopIconInfo);
-      switch(_action.onStop) {
-        case 0: strcpy(msg, "Default"); break;
-        case 1: strcpy(msg, "Detailed"); break;
-        case 2: strcpy(msg, "Basic"); break;
-        case 3: strcpy(msg, "Clock"); break;
-      }
-      _printMenuText(50, 38, msg, _rowSel == 1);
+    _drawBitmap(32, 26, StartIconInfo);
+    switch(_action.onStart) {
+      case 0: strcpy(msg, "Default"); break;
+      case 1: strcpy(msg, "Detailed"); break;
+      case 2: strcpy(msg, "Basic"); break;
+      case 3: strcpy(msg, "Clock"); break;
     }
+    _printMenuText(50, 26, msg, _rowSel == 2);
+
+    _drawBitmap(31, 38, StopIconInfo);
+    switch(_action.onStop) {
+      case 0: strcpy(msg, "Default"); break;
+      case 1: strcpy(msg, "Detailed"); break;
+      case 2: strcpy(msg, "Basic"); break;
+      case 3: strcpy(msg, "Clock"); break;
+    }
+    _printMenuText(50, 38, msg, _rowSel == 1);
   }
+
   return true;
 }
 
@@ -93,7 +89,7 @@ bool
 CHomeMenuSelScreen::animate()
 {
   if(!CPasswordScreen::_busy()) {
-    if(_rowSel != 4) {
+    if(_rowSel != SaveConfirm) {
       int yPos = 53;
       int xPos = _display.xCentre();
       const char* pMsg = NULL;
@@ -127,23 +123,16 @@ CHomeMenuSelScreen::animate()
 bool 
 CHomeMenuSelScreen::keyHandler(uint8_t event)
 {
-  sUserSettings us;
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
+
   if(event & keyPressed) {
     // UP press
     if(event & key_Up) {
-      if(_rowSel == 4) {
-        _enableStoringMessage();
-        us = NVstore.getUserSettings();
-        us.HomeMenu = _action;
-        NVstore.setUserSettings(us);
-        saveNV();
-        _rowSel = 0;
-      }
-      else {
-        _scrollChar = 0;
-        _rowSel++;
-        UPPERLIMIT(_rowSel, 3);
-      }
+      _scrollChar = 0;
+      _rowSel++;
+      UPPERLIMIT(_rowSel, 3);
     }
     // DOWN press
     if(event & key_Down) {
@@ -157,7 +146,7 @@ CHomeMenuSelScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
       }
       else {
-        _rowSel = 4;
+        _rowSel = SaveConfirm;
       }
     }
     // LEFT press
@@ -200,6 +189,16 @@ CHomeMenuSelScreen::adjust(int dir)
   }
 }
 
+void
+CHomeMenuSelScreen::_saveNV()
+{
+  sUserSettings us = NVstore.getUserSettings();
+  us.HomeMenu = _action;
+  NVstore.setUserSettings(us);
+  NVstore.save();
+}
+
+
 
 
 CNoHeaterHomeMenuSelScreen::CNoHeaterHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
@@ -214,7 +213,7 @@ CNoHeaterHomeMenuSelScreen::onSelect()
   _action = NVstore.getUserSettings().HomeMenu;
   _dispTimeout = NVstore.getUserSettings().dimTime; 
   _menuTimeout = NVstore.getUserSettings().menuTimeout; 
-  if(_action.onTimeout == 0)
+  if(_action.onTimeout == 0 || _action.onTimeout == 1)
     _action.onTimeout = 2;
 }
 
@@ -232,41 +231,36 @@ CNoHeaterHomeMenuSelScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 4) {
-      _showConfirmMessage();
+    _showTitle("Home Menu Actions");
+    
+    _drawBitmap(22, 14, TimeoutIconInfo);
+    switch(_action.onTimeout) {
+      case 2: strcpy(msg, "Temperature"); break;
+      case 3: strcpy(msg, "Clock"); break;
     }
-    else {
-      _showTitle("Home Menu Actions");
-      
-      _drawBitmap(22, 14, TimeoutIconInfo);
-      switch(_action.onTimeout) {
-        case 2: strcpy(msg, "Temperature"); break;
-        case 3: strcpy(msg, "Clock"); break;
-      }
-      _printMenuText(40, 14, msg, _rowSel == 3);
+    _printMenuText(40, 14, msg, _rowSel == 3);
 
-      // display timeout
-      _drawBitmap(10, 26, DisplayTimeoutIconInfo);
-      if(_dispTimeout) {
-        float mins = float(abs(_dispTimeout)) / 60000.f;
-        sprintf(msg, "%s %0.1f min%s",  (_dispTimeout < 0) ? "Blank" : "Dim", mins, mins < 2 ? "" : "s");
-        _printMenuText(40, 26, msg, _rowSel == 2);
-      }
-      else 
-        _printMenuText(40, 26, "Always on", _rowSel == 2);
-
-      // menu timeout
-      _drawBitmap(10, 38, MenuTimeoutIconInfo);
-      if(_menuTimeout) {
-        float mins = float(abs(_menuTimeout)) / 60000.f;
-        sprintf(msg, "Home %0.1f min%s", mins, mins < 2 ? "" : "s");
-        _printMenuText(40, 38, msg, _rowSel == 1);
-      }
-      else 
-        _printMenuText(40, 38, "Disabled", _rowSel == 1);
-
+    // display timeout
+    _drawBitmap(10, 26, DisplayTimeoutIconInfo);
+    if(_dispTimeout) {
+      float mins = float(abs(_dispTimeout)) / 60000.f;
+      sprintf(msg, "%s %0.1f min%s",  (_dispTimeout < 0) ? "Blank" : "Dim", mins, mins < 2 ? "" : "s");
+      _printMenuText(40, 26, msg, _rowSel == 2);
     }
+    else 
+      _printMenuText(40, 26, "Always on", _rowSel == 2);
+
+    // menu timeout
+    _drawBitmap(10, 38, MenuTimeoutIconInfo);
+    if(_menuTimeout) {
+      float mins = float(abs(_menuTimeout)) / 60000.f;
+      sprintf(msg, "Home %0.1f min%s", mins, mins < 2 ? "" : "s");
+      _printMenuText(40, 38, msg, _rowSel == 1);
+    }
+    else 
+      _printMenuText(40, 38, "Disabled", _rowSel == 1);
   }
+
   return true;
 }
 
@@ -274,7 +268,7 @@ bool
 CNoHeaterHomeMenuSelScreen::animate()
 {
   if(!CPasswordScreen::_busy()) {
-    if(_rowSel != 4) {
+    if(_rowSel != SaveConfirm) {
       int yPos = 53;
       int xPos = _display.xCentre();
       const char* pMsg = NULL;
@@ -308,25 +302,16 @@ CNoHeaterHomeMenuSelScreen::animate()
 bool 
 CNoHeaterHomeMenuSelScreen::keyHandler(uint8_t event)
 {
-  sUserSettings us;
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
+
   if(event & keyPressed) {
     // UP press
     if(event & key_Up) {
-      if(_rowSel == 4) {
-        _enableStoringMessage();
-        us = NVstore.getUserSettings();
-        us.HomeMenu = _action;
-        us.menuTimeout = _menuTimeout;
-        us.dimTime = _dispTimeout;
-        NVstore.setUserSettings(us);
-        saveNV();
-        _rowSel = 0;
-      }
-      else {
-        _scrollChar = 0;
-        _rowSel++;
-        UPPERLIMIT(_rowSel, 3);
-      }
+      _scrollChar = 0;
+      _rowSel++;
+      UPPERLIMIT(_rowSel, 3);
     }
     // DOWN press
     if(event & key_Down) {
@@ -340,7 +325,7 @@ CNoHeaterHomeMenuSelScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
       }
       else {
-        _rowSel = 4;
+        _rowSel = SaveConfirm;
       }
     }
     // LEFT press
@@ -383,3 +368,15 @@ CNoHeaterHomeMenuSelScreen::adjust(int dir)
       break;
   }
 }
+
+void
+CNoHeaterHomeMenuSelScreen::_saveNV()
+{
+  sUserSettings us = NVstore.getUserSettings();
+  us.HomeMenu = _action;
+  us.menuTimeout = _menuTimeout;
+  us.dimTime = _dispTimeout;
+  NVstore.setUserSettings(us);
+  NVstore.save();
+}
+

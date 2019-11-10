@@ -38,7 +38,6 @@ CFuelCalScreen::CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr) : CPa
   _initUI();
   _mlPerStroke = 0.02;
   _LVC = 115;
-  _tOfs = 0;
 }
 
 void 
@@ -48,7 +47,6 @@ CFuelCalScreen::onSelect()
   _initUI();
   _mlPerStroke = NVstore.getHeaterTuning().pumpCal;
   _LVC = NVstore.getHeaterTuning().lowVolts;
-//  _tOfs = NVstore.getHeaterTuning().DS18B20probe[0].offset;
 }
 
 void
@@ -69,43 +67,38 @@ CFuelCalScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 10) {
-      _showConfirmMessage();
+    if(_animateCount < 0) {
+      _display.clearDisplay();
+      _animateCount = 0;
     }
-    else {
-      if(_animateCount < 0) {
-        _display.clearDisplay();
-        _animateCount = 0;
-      }
-//      _printInverted(_display.xCentre(), 0, " Special Features ", true, eCentreJustify);
-      _showTitle("Special Features");
-      // fuel calibration
-      int yPos = Line1;
-      _printMenuText(col, yPos, "mL/stroke : ", false, eRightJustify);
-      sprintf(msg, "%.03f", _mlPerStroke);
-      _printMenuText(col, yPos, msg, _rowSel == 1);
-      // low voltage cutout
-      yPos = Line2;
-      _printMenuText(col, yPos, "L.V.C. < ", false, eRightJustify);
-      if(_LVC) 
-        sprintf(msg, "%.1fV", float(_LVC) * 0.1);
-      else
-        strcpy(msg, "OFF");
-      _printMenuText(col, yPos, msg, _rowSel == 2);
-      // navigation line
-      yPos = 53;
-      int xPos = _display.xCentre();
 
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(xPos, yPos, " \021     Exit     \020 ", true, eCentreJustify);
-          break;
-        default:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          _printMenuText(xPos, 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
-          _printMenuText(xPos, 56, "Save", false, eCentreJustify);
-          break;
-      }
+    _showTitle("Special Features");
+    // fuel calibration
+    int yPos = Line1;
+    _printMenuText(col, yPos, "mL/stroke : ", false, eRightJustify);
+    sprintf(msg, "%.03f", _mlPerStroke);
+    _printMenuText(col, yPos, msg, _rowSel == 1);
+    // low voltage cutout
+    yPos = Line2;
+    _printMenuText(col, yPos, "L.V.C. < ", false, eRightJustify);
+    if(_LVC) 
+      sprintf(msg, "%.1fV", float(_LVC) * 0.1);
+    else
+      strcpy(msg, "OFF");
+    _printMenuText(col, yPos, msg, _rowSel == 2);
+    // navigation line
+    yPos = 53;
+    int xPos = _display.xCentre();
+
+    switch(_rowSel) {
+      case 0:
+        _printMenuText(xPos, yPos, " \021     Exit     \020 ", true, eCentreJustify);
+        break;
+      default:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        _printMenuText(xPos, 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
+        _printMenuText(xPos, 56, "Save", false, eCentreJustify);
+        break;
     }
   }
 
@@ -122,31 +115,26 @@ CFuelCalScreen::animate()
         _display.fillRect(0, Line3-3, BatteryIconInfo.width, 35, BLACK);
         _drawBitmap(6, Line1-3, FuelIconSmallInfo);
         _drawBitmap(0, Line2-1 , BatteryIconInfo);
-//        _drawBitmap(5, Line3-3, miniThermoIconInfo);
         break;
       case 2:
         _display.fillRect(6, Line1-3, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1-2, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 4, Line2+2, 2, 5, BLACK);   // deplete battery
-//        _display.fillRect(7, Line3+3, 2, 2, WHITE);    // grow thermometer
         break;
       case 4:
         _display.fillRect(6, Line1-2, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1-1, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 7, Line2+2, 2, 5, BLACK);   // deplete battery
-//        _display.fillRect(7, Line3+2, 2, 1, WHITE);    // grow thermometer
         break;
       case 6:
         _display.fillRect(6, Line1-1, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 10, Line2+2, 2, 5, BLACK);   // deplete battery
-//        _display.fillRect(7, Line3+1, 2, 1, WHITE);    // grow thermometer
         break;
       case 8:
         _display.fillRect(6, Line1, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
         _drawBitmap(6, Line1+1, FuelIconSmallInfo);    // drip fuel
         _display.fillRect(BatteryIconInfo.width - 13, Line2+2, 2, 5, BLACK);   // deplete battery
-//        _display.fillRect(7, Line3, 2, 1, WHITE);    // grow thermometer
         break;
     }
 
@@ -161,7 +149,9 @@ CFuelCalScreen::animate()
 bool 
 CFuelCalScreen::keyHandler(uint8_t event)
 {
-  sHeaterTuning tuning;
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
 
   if(event & keyRepeat) {
     if(event & key_Left) {
@@ -184,9 +174,6 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 3:
           _adjust(-1);
           break;
-        case 10:
-          _rowSel = 0;   // abort save
-          break;
       }
     }
     // press RIGHT to select next screen
@@ -199,9 +186,6 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _adjust(+1);
-          break;
-        case 10:
-          _rowSel = 0;   // abort save
           break;
       }
     }
@@ -217,20 +201,7 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _rowSel++;
-//          UPPERLIMIT(_rowSel, 3);
           UPPERLIMIT(_rowSel, 2);
-          break;
-        case 10:    // confirmed save
-          _display.clearDisplay();
-          _animateCount = -1;
-          _enableStoringMessage();
-          tuning = NVstore.getHeaterTuning();
-          tuning.pumpCal = _mlPerStroke;
-          tuning.lowVolts = _LVC;
-//          tuning.DS18B20probe[0].offset = _tOfs;
-          NVstore.setHeaterTuning(tuning);
-          saveNV();
-          _rowSel = 0;
           break;
       }
     }
@@ -245,7 +216,7 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 3:
           _animateCount = -1;
           _display.clearDisplay();          
-          _rowSel = 10;
+          _rowSel = SaveConfirm;
           break;
       }
     }
@@ -286,10 +257,16 @@ CFuelCalScreen::_adjust(int dir)
         }
       }
       break;
-/*    case 3:
-      _tOfs += dir * 0.1;
-      BOUNDSLIMIT(_tOfs, -10, 10);
-      break;
-*/
   }
+}
+
+void
+CFuelCalScreen::_saveNV()
+{
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.pumpCal = _mlPerStroke;
+  tuning.lowVolts = _LVC;
+//          tuning.DS18B20probe[0].offset = _tOfs;
+  NVstore.setHeaterTuning(tuning);
+  NVstore.save();
 }

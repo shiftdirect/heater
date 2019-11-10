@@ -28,6 +28,7 @@
 
 CMenuSelScreen::CMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
+  _bReload = false;
 }
 
 void 
@@ -38,7 +39,6 @@ CMenuSelScreen::onSelect()
   _menuMode = NVstore.getUserSettings().menuMode;
   _holdPW = NVstore.getUserSettings().holdPassword;
   _scrollChar = 0;
-  _bReload = false;
 }
 
 void
@@ -56,32 +56,28 @@ CMenuSelScreen::show()
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
     if(_bReload) {
+      _bReload = false;
       _ScreenManager.reqReload();
       return false;
     }
 
-    if(_rowSel == SaveConfirm) {
-      _showConfirmMessage();
+    _showTitle("Menu Options");
+    
+    _drawBitmap(25, 16, MenuIconInfo);
+    switch(_menuMode) {
+      case 0: strcpy(msg, "Standard"); break;
+      case 1: strcpy(msg, "Basic"); break;
+      case 2: strcpy(msg, "No heater"); break;
     }
-    else {
-      _showTitle("Menu Options");
-      
-      _drawBitmap(25, 16, MenuIconInfo);
-      switch(_menuMode) {
-        case 0: strcpy(msg, "Standard"); break;
-        case 1: strcpy(msg, "Basic"); break;
-        case 2: strcpy(msg, "No heater"); break;
-      }
-      _printMenuText(45, 16, msg, _rowSel == 2);
+    _printMenuText(45, 16, msg, _rowSel == 2);
 
-      _drawBitmap(25, 28, passwordIconInfo);
-      if(_holdPW) 
-        strcpy(msg, "Retain 24hrs"); 
-      else
-        strcpy(msg, "Forget"); 
-      _printMenuText(45, 30, msg, _rowSel == 1);
+    _drawBitmap(25, 28, passwordIconInfo);
+    if(_holdPW) 
+      strcpy(msg, "Retain 24hrs"); 
+    else
+      strcpy(msg, "Forget"); 
+    _printMenuText(45, 30, msg, _rowSel == 1);
 
-    }
   }
   return true;
 }
@@ -91,6 +87,7 @@ CMenuSelScreen::animate()
 {
   if(!CPasswordScreen::_busy() && !CPasswordScreen::isPasswordBusy()) {
     if(_bReload) {
+      _bReload = false;
       _ScreenManager.reqReload();
       return false;
     }
@@ -132,41 +129,23 @@ CMenuSelScreen::keyHandler(uint8_t event)
     if(_isPasswordOK()) {
       _rowSel = 1;
     }
+    return true;
   }
 
   else {
     _scrollChar = 0;
-    sUserSettings us;
     if(event & keyPressed) {
       // UP press
       if(event & key_Up) {
-        if(_rowSel == SaveConfirm) {
-          _enableStoringMessage();
-          us = NVstore.getUserSettings();
-          us.menuMode = _menuMode;
-          us.holdPassword = _holdPW;
-          NVstore.setUserSettings(us);
-          NVstore.save();
-          switch(us.menuMode) {
-            case 0: DebugPort.println("Invoking Full menu control mode"); break;
-            case 1: DebugPort.println("Invoking Basic menu mode"); break;
-            case 2: DebugPort.println("Invoking No Heater menu mode"); break;
+        if(_rowSel == 0) {
+          _getPassword();
+          if(_isPasswordOK()) {
+            _rowSel = 1;
           }
-          _holdPassword();
-          _bReload = true;
-          _rowSel = 0;
         }
         else {
-          if(_rowSel == 0) {
-            _getPassword();
-            if(_isPasswordOK()) {
-              _rowSel = 1;
-            }
-          }
-          else {
-            _rowSel++;
-            UPPERLIMIT(_rowSel, 2);
-          }
+          _rowSel++;
+          UPPERLIMIT(_rowSel, 2);
         }
       }
       // DOWN press
@@ -220,4 +199,18 @@ CMenuSelScreen::adjust(int dir)
 }
 
 
-
+void
+CMenuSelScreen::_saveNV()
+{
+  sUserSettings us = NVstore.getUserSettings();
+  us.menuMode = _menuMode;
+  us.holdPassword = _holdPW;
+  NVstore.setUserSettings(us);
+  NVstore.save();
+  switch(us.menuMode) {
+    case 0: DebugPort.println("Invoking Full menu control mode"); break;
+    case 1: DebugPort.println("Invoking Basic menu mode"); break;
+    case 2: DebugPort.println("Invoking No Heater menu mode"); break;
+  }
+  _bReload = true;
+}

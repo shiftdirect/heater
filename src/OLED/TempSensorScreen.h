@@ -43,6 +43,7 @@ class CTempSensorScreen : public CPasswordScreen
   void _initUI();
   void _readNV();
   void _saveNV();
+  void _doSaveAction();
 public:
   CTempSensorScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

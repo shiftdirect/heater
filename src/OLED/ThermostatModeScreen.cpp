@@ -52,7 +52,7 @@ CThermostatModeScreen::CThermostatModeScreen(C128x64_OLED& display, CScreenManag
 void 
 CThermostatModeScreen::onSelect()
 {
-  CPasswordScreen::onSelect();
+  CScreenHeader::onSelect();
   _initUI();
   _window = NVstore.getUserSettings().ThermostatWindow;
   _thermoMode = NVstore.getUserSettings().ThermostatMethod;
@@ -75,59 +75,54 @@ CThermostatModeScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 10) {
-      _showConfirmMessage();
+    _showTitle("Thermostat Mode");
+    _drawBitmap(3, 14, ThermostatIconInfo);
+    float fTemp = _window;
+    if(NVstore.getUserSettings().degF) {
+      fTemp = fTemp * 9 / 5;
+      sprintf(msg, "%.1f`F", fTemp);
     }
     else {
-      _showTitle("Thermostat Mode");
-      _drawBitmap(3, 14, ThermostatIconInfo);
-      float fTemp = _window;
+      sprintf(msg, "%.1f`C", fTemp);
+    }
+    _printMenuText(Column, Line2, msg, _rowSel == 3);
+    const char* modeStr = NULL;
+    switch(_thermoMode) {
+      case 0: modeStr = "Standard"; break;
+      case 1: modeStr = "Deadband"; break;
+      case 2: modeStr = "Linear Hz"; break;
+      case 3: modeStr = "Ext thermostat"; break;
+    }
+    if(modeStr)
+      _printMenuText(Column, Line3, modeStr, _rowSel == 4);
+    if(_cyclicMode.isEnabled()) {
+      float fTemp = _cyclicMode.Stop+1;
       if(NVstore.getUserSettings().degF) {
         fTemp = fTemp * 9 / 5;
-        sprintf(msg, "%.1f`F", fTemp);
+        sprintf(msg, "\352>%.0f`F", fTemp);
       }
       else {
-        sprintf(msg, "%.1f`C", fTemp);
+        sprintf(msg, "\352>%.0f`C", fTemp);
       }
-      _printMenuText(Column, Line2, msg, _rowSel == 3);
-      const char* modeStr = NULL;
-      switch(_thermoMode) {
-        case 0: modeStr = "Standard"; break;
-        case 1: modeStr = "Deadband"; break;
-        case 2: modeStr = "Linear Hz"; break;
-        case 3: modeStr = "Ext thermostat"; break;
-      }
-      if(modeStr)
-        _printMenuText(Column, Line3, modeStr, _rowSel == 4);
-      if(_cyclicMode.isEnabled()) {
-        float fTemp = _cyclicMode.Stop+1;
-        if(NVstore.getUserSettings().degF) {
-          fTemp = fTemp * 9 / 5;
-          sprintf(msg, "\352>%.0f`F", fTemp);
-        }
-        else {
-          sprintf(msg, "\352>%.0f`C", fTemp);
-        }
-      }
-      else {
-        strcpy(msg, "OFF");
-      }
-      _printMenuText(Column, Line1, msg, _rowSel == 1);
-      if(_cyclicMode.isEnabled()) {
-        float fTemp = _cyclicMode.Start;
-        if(NVstore.getUserSettings().degF) {
-          fTemp = fTemp * 9 / 5;
-          sprintf(msg, "\352<%.0f`F", fTemp);
-        }
-        else {
-          sprintf(msg, "\352<%.0f`C", fTemp);
-        }
-      }
-      else {
-        strcpy(msg, "");
-      }
-      _printMenuText(Column + 42, Line1, msg, _rowSel == 2);
     }
+    else {
+      strcpy(msg, "OFF");
+    }
+    _printMenuText(Column, Line1, msg, _rowSel == 1);
+    if(_cyclicMode.isEnabled()) {
+      float fTemp = _cyclicMode.Start;
+      if(NVstore.getUserSettings().degF) {
+        fTemp = fTemp * 9 / 5;
+        sprintf(msg, "\352<%.0f`F", fTemp);
+      }
+      else {
+        sprintf(msg, "\352<%.0f`C", fTemp);
+      }
+    }
+    else {
+      strcpy(msg, "");
+    }
+    _printMenuText(Column + 42, Line1, msg, _rowSel == 2);
   }
 
   return true;
@@ -137,7 +132,7 @@ bool
 CThermostatModeScreen::animate()
 {
   if(!CPasswordScreen::_busy()) {
-    if(_rowSel != 10) {
+    if(_rowSel != SaveConfirm) {
       int yPos = 53;
       int xPos = _display.xCentre();
       const char* pMsg = NULL;
@@ -189,7 +184,10 @@ CThermostatModeScreen::animate()
 bool 
 CThermostatModeScreen::keyHandler(uint8_t event)
 {
-  sUserSettings settings;
+  if(CPasswordScreen::keyHandler(event)) {   // potentially handles save confirm stage 
+    return true;
+  }
+
   if(event & keyPressed) {
     _keyRepeat = 0;  // unlock hold function
     // press LEFT to select previous screen
@@ -206,9 +204,6 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 3:
           _adjust(-1);
           break;
-        case 10:
-          _rowSel = 0;   // abort save
-          break;
       }
     }
     // press RIGHT to select next screen
@@ -224,9 +219,6 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _adjust(+1);
-          break;
-        case 10:
-          _rowSel = 0;   // abort save
           break;
       }
     }
@@ -255,16 +247,6 @@ CThermostatModeScreen::keyHandler(uint8_t event)
             _rowSel++;
           UPPERLIMIT(_rowSel, 4);
           break;
-        case 10:    // confirmed save
-          _enableStoringMessage();
-          settings = NVstore.getUserSettings();
-          settings.ThermostatMethod = _thermoMode;
-          settings.ThermostatWindow = _window;
-          settings.cyclic = _cyclicMode;
-          NVstore.setUserSettings(settings);
-          saveNV();
-          _rowSel = 0;
-          break;
       }
     }
     // CENTRE press
@@ -278,33 +260,33 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
         case 4:
-          _rowSel = 10;
+          _rowSel = SaveConfirm;
           break;
       }
     }
-    _ScreenManager.reqUpdate();
-  }
-  if(event & keyRepeat) {
-    _keyRepeat++;
-    if((event & key_Down) && (keyRepeat >= 4)) {
+    if(event & keyRepeat) {
+      _keyRepeat++;
+      if((event & key_Down) && (keyRepeat >= 4)) {
+        _keyRepeat = -1;
+        if(_rowSel == 0) {
+          _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
+        }
+      }
+      if(_rowSel == 3) {
+        if(event & key_Right) {
+          _adjust(+1);
+          _ScreenManager.reqUpdate();
+        }
+        if(event & key_Left) {
+          _adjust(-1);
+          _ScreenManager.reqUpdate();
+        }
+      }
+    }
+    if(event & keyReleased) {
       _keyRepeat = -1;
-      if(_rowSel == 0) {
-        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
-      }
     }
-    if(_rowSel == 3) {
-      if(event & key_Right) {
-        _adjust(+1);
-        _ScreenManager.reqUpdate();
-      }
-      if(event & key_Left) {
-        _adjust(-1);
-        _ScreenManager.reqUpdate();
-      }
-    }
-  }
-  if(event & keyReleased) {
-    _keyRepeat = -1;
+    _ScreenManager.reqUpdate();
   }
 
   return true;
@@ -332,9 +314,21 @@ CThermostatModeScreen::_adjust(int dir)
 #if USE_JTAG == 0
       wrap = GPIOin.usesExternalThermostat() ? 3 : 2;
 #else
+      //CANNOT USE GPIO WITH JTAG DEBUG
       wrap = 2;
 #endif
       WRAPLIMITS(_thermoMode, 0, wrap);
       break;
   }
+}
+
+void
+CThermostatModeScreen::_saveNV()
+{
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.ThermostatMethod = _thermoMode;
+  settings.ThermostatWindow = _window;
+  settings.cyclic = _cyclicMode;
+  NVstore.setUserSettings(settings);
+  NVstore.save();
 }

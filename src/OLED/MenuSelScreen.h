@@ -31,12 +31,13 @@ class CScreenManager;
 
 class CMenuSelScreen : public CPasswordScreen
 {
-  int _rowSel;
   int _scrollChar;
   int _menuMode;
   uint8_t _holdPW;
   bool _bReload;
   void _initUI();
+protected:
+  void _saveNV();
 public:
   CMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

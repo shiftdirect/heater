@@ -64,56 +64,51 @@ CDS18B20Screen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == SaveConfirm) {
-      _showConfirmMessage();
+    if(_colSel == 0)
+      _showTitle("DS18B20 Sensor Role");
+    else
+      _showTitle("DS18B20 Sensor Offset");
+
+    int baseLine = 16;
+    switch(_nNumSensors) {
+      case 2: baseLine = 28; break;
+      case 3: baseLine = 40; break;
     }
-    else {
-      if(_colSel == 0)
-        _showTitle("DS18B20 Sensor Role");
-      else
-        _showTitle("DS18B20 Sensor Offset");
+    for(int sensor = 0; sensor<_nNumSensors; sensor++) {
 
-      int baseLine = 16;
-      switch(_nNumSensors) {
-        case 2: baseLine = 28; break;
-        case 3: baseLine = 40; break;
+      switch(_sensorRole[sensor]) {
+        case 0: strcpy(msg, "Pri"); break;
+        case 1: strcpy(msg, "Sec"); break;
+        case 2: strcpy(msg, "Ter"); break;
+        default: strcpy(msg, " ? "); break;
       }
-      for(int sensor = 0; sensor<_nNumSensors; sensor++) {
+      _printMenuText(border, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 0);
 
-        switch(_sensorRole[sensor]) {
-          case 0: strcpy(msg, "Pri"); break;
-          case 1: strcpy(msg, "Sec"); break;
-          case 2: strcpy(msg, "Ter"); break;
-          default: strcpy(msg, " ? "); break;
-        }
-        _printMenuText(border, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 0);
-
-        OneWireBus_ROMCode romCode;
-        if(!getTempSensor().getDS18B20().getRomCodeIdx(sensor, romCode)) {
-          strcpy(msg, "missing?") ;
-        }
-        else {
-          char* buffer = msg;
-          for (int j = 5; j >= 0; j--) {
-            sprintf(buffer, "%02X%s", romCode.fields.serial_number[j], j ? ":" : "");
-            buffer += 3;
-          }
-        }
-        {
-          CTransientFont AF(_display, &miniFontInfo);
-          _printMenuText(27, baseLine+2-sensor*12, msg);
-        }
-
-        if(_colSel == 0) {
-          float temperature;
-          getTempSensor().getDS18B20().getTemperatureIdx(sensor, temperature, false);
-          sprintf(msg, "%.01f`C", temperature + _Offset[sensor]);
-        }
-        else {
-          sprintf(msg, "%+.01f", _Offset[sensor]);
-        }
-        _printMenuText(90, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 1);
+      OneWireBus_ROMCode romCode;
+      if(!getTempSensor().getDS18B20().getRomCodeIdx(sensor, romCode)) {
+        strcpy(msg, "missing?") ;
       }
+      else {
+        char* buffer = msg;
+        for (int j = 5; j >= 0; j--) {
+          sprintf(buffer, "%02X%s", romCode.fields.serial_number[j], j ? ":" : "");
+          buffer += 3;
+        }
+      }
+      {
+        CTransientFont AF(_display, &miniFontInfo);
+        _printMenuText(27, baseLine+2-sensor*12, msg);
+      }
+
+      if(_colSel == 0) {
+        float temperature;
+        getTempSensor().getDS18B20().getTemperatureIdx(sensor, temperature, false);
+        sprintf(msg, "%.01f`C", temperature + _Offset[sensor]);
+      }
+      else {
+        sprintf(msg, "%+.01f", _Offset[sensor]);
+      }
+      _printMenuText(90, baseLine-sensor*12, msg, _rowSel == (sensor+1) && _colSel == 1);
     }
   }
   return true;

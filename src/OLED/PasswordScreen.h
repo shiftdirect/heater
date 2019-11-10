@@ -43,6 +43,8 @@ protected:
   void _enableStoringMessage();
   void _initUI();
   bool _busy();
+  virtual void _saveNV() {};
+  int  _rowSel;
 public:
   CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr);
   void onSelect();

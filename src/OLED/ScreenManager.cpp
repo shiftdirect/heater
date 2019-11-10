@@ -48,6 +48,7 @@
 #include "MQTTScreen.h"
 #include "DS18B20Screen.h"
 #include "TempSensorScreen.h"
+#include "FrostScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -461,6 +462,7 @@ CScreenManager::_loadScreens()
   menuloop.clear();
   if(NVstore.getUserSettings().menuMode == 0) {
     menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
+    menuloop.push_back(new CFrostScreen(*_pDisplay, *this)); // frost mode screen
     menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
     menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen

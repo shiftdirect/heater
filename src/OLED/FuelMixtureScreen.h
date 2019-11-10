@@ -31,13 +31,13 @@ class CScreenManager;
 class CFuelMixtureScreen : public CPasswordScreen {
   float adjPump[2];
   uint16_t adjFan[2];
-  int  _rowSel;
   int  _colSel;
   int _animateCount;
   void _adjustSetting(int dir);
   void _initUI();
   void _load();
-
+protected:
+  void _saveNV();
 public:
   CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

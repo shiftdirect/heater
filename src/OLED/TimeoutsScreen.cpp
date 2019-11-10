@@ -56,37 +56,33 @@ CTimeoutsScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 4) {
-      _showConfirmMessage();
-    }
-    else {
-      _showTitle("Time Intervals");
-      
-      // data frame refresh rate
-      _drawBitmap(15, 13, RefreshIconInfo);
-      sprintf(msg, "%dms", _frameRate);
-      _printMenuText(40, 14, msg, _rowSel == 3);
+    _showTitle("Time Intervals");
+    
+    // data frame refresh rate
+    _drawBitmap(15, 13, RefreshIconInfo);
+    sprintf(msg, "%dms", _frameRate);
+    _printMenuText(40, 14, msg, _rowSel == 3);
 
-      // display timeout
-      _drawBitmap(10, 26, DisplayTimeoutIconInfo);
-      if(_dispTimeout) {
-        float mins = float(abs(_dispTimeout)) / 60000.f;
-        sprintf(msg, "%s %0.1f min%s",  (_dispTimeout < 0) ? "Blank" : "Dim", mins, mins < 2 ? "" : "s");
-        _printMenuText(40, 26, msg, _rowSel == 2);
-      }
-      else 
-        _printMenuText(40, 26, "Always on", _rowSel == 2);
-
-      // menu timeout
-      _drawBitmap(10, 38, MenuTimeoutIconInfo);
-      if(_menuTimeout) {
-        float mins = float(abs(_menuTimeout)) / 60000.f;
-        sprintf(msg, "Home %0.1f min%s", mins, mins < 2 ? "" : "s");
-        _printMenuText(40, 38, msg, _rowSel == 1);
-      }
-      else 
-        _printMenuText(40, 38, "Disabled", _rowSel == 1);
+    // display timeout
+    _drawBitmap(10, 26, DisplayTimeoutIconInfo);
+    if(_dispTimeout) {
+      float mins = float(abs(_dispTimeout)) / 60000.f;
+      sprintf(msg, "%s %0.1f min%s",  (_dispTimeout < 0) ? "Blank" : "Dim", mins, mins < 2 ? "" : "s");
+      _printMenuText(40, 26, msg, _rowSel == 2);
     }
+    else 
+      _printMenuText(40, 26, "Always on", _rowSel == 2);
+
+    // menu timeout
+    _drawBitmap(10, 38, MenuTimeoutIconInfo);
+    if(_menuTimeout) {
+      float mins = float(abs(_menuTimeout)) / 60000.f;
+      sprintf(msg, "Home %0.1f min%s", mins, mins < 2 ? "" : "s");
+      _printMenuText(40, 38, msg, _rowSel == 1);
+    }
+    else 
+      _printMenuText(40, 38, "Disabled", _rowSel == 1);
+  
   }
   return true;
 }
@@ -95,7 +91,7 @@ bool
 CTimeoutsScreen::animate()
 {
   if(!CPasswordScreen::_busy()) {
-    if(_rowSel != 4) {
+    if(_rowSel != SaveConfirm) {
       int yPos = 53;
       int xPos = _display.xCentre();
       const char* pMsg = NULL;
@@ -128,25 +124,18 @@ CTimeoutsScreen::animate()
 bool 
 CTimeoutsScreen::keyHandler(uint8_t event)
 {
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
+
   if(event & keyPressed) {
     _repeatCount = 0;
+
     // UP press
     if(event & key_Up) {
-      if(_rowSel == 4) {
-        sUserSettings settings = NVstore.getUserSettings();
-        settings.dimTime = _dispTimeout;
-        settings.menuTimeout = _menuTimeout;
-        settings.FrameRate = _frameRate;
-        NVstore.setUserSettings(settings);
-        NVstore.save();
-        _enableStoringMessage();
-        _rowSel = 0;
-      }
-      else {
-        _scrollChar = 0;
-        _rowSel++;
-        UPPERLIMIT(_rowSel, 3);
-      }
+      _scrollChar = 0;
+      _rowSel++;
+      UPPERLIMIT(_rowSel, 3);
     }
     // UP press
     if(event & key_Down) {
@@ -160,7 +149,7 @@ CTimeoutsScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
       }
       else {
-        _rowSel = 4;
+        _rowSel = SaveConfirm;
       }
     }
   }
@@ -224,4 +213,15 @@ CTimeoutsScreen::adjust(int dir)
       UPPERLIMIT(_frameRate, 1500);
       break;
   }
+}
+
+void
+CTimeoutsScreen::_saveNV()
+{
+  sUserSettings settings = NVstore.getUserSettings();
+  settings.dimTime = _dispTimeout;
+  settings.menuTimeout = _menuTimeout;
+  settings.FrameRate = _frameRate;
+  NVstore.setUserSettings(settings);
+  NVstore.save();
 }

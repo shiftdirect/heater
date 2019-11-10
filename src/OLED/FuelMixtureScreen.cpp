@@ -169,6 +169,10 @@ CFuelMixtureScreen::animate()
 bool 
 CFuelMixtureScreen::keyHandler(uint8_t event)
 {
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
+
   if(event & keyPressed) {
     // press CENTRE
     if(event & key_Centre) {
@@ -182,10 +186,7 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
         case 4:
           _animateCount = -1;
           _display.clearDisplay();
-          _rowSel = 5;  // enter save confirm mode
-          break;
-        case 5:
-          _rowSel = 0;
+          _rowSel = SaveConfirm;  // enter save confirm mode
           break;
       }
     }
@@ -201,9 +202,6 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
         case 4:
           _adjustSetting(-1);
           break;
-        case 5:
-          _rowSel = 0;
-          break;
       }
     }
     // press RIGHT 
@@ -217,9 +215,6 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
         case 3:
         case 4:
           _adjustSetting(+1);
-          break;
-        case 5:
-          _rowSel = 0;
           break;
       }
     }
@@ -242,17 +237,6 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
             _colSel = 0;
             UPPERLIMIT(_rowSel, 4);
             break;
-          case 5:
-            _display.clearDisplay();
-            _animateCount = -1;
-            _enableStoringMessage();
-            setPumpMin(adjPump[0]);
-            setPumpMax(adjPump[1]);
-            setFanMin(adjFan[0]);
-            setFanMax(adjFan[1]);
-            saveNV();
-            _rowSel = 0;
-            break;
         }
       }
     }
@@ -265,9 +249,6 @@ CFuelMixtureScreen::keyHandler(uint8_t event)
         case 4:
           _rowSel--;
           _colSel = 0;
-          break;
-        case 5:
-          _rowSel = 0;
           break;
       }
     }
@@ -322,4 +303,14 @@ CFuelMixtureScreen::_adjustSetting(int dir)
   UPPERLIMIT(adjFan[0], 5000);
   LOWERLIMIT(adjFan[1], 1000);
   UPPERLIMIT(adjFan[1], 5000);
+}
+
+void
+CFuelMixtureScreen::_saveNV()
+{
+  setPumpMin(adjPump[0]);
+  setPumpMax(adjPump[1]);
+  setFanMin(adjFan[0]);
+  setFanMax(adjFan[1]);
+  saveNV();
 }

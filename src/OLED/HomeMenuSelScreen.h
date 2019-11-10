@@ -31,10 +31,11 @@ class CScreenManager;
 
 class CHomeMenuSelScreen : public CPasswordScreen
 {
-  int _rowSel;
   int _scrollChar;
   sHomeMenuActions _action;
   void _initUI();
+protected:
+  void _saveNV();
 public:
   CHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
@@ -46,12 +47,13 @@ public:
 
 class CNoHeaterHomeMenuSelScreen : public CPasswordScreen
 {
-  int _rowSel;
   int _scrollChar;
   sHomeMenuActions _action;
   long _dispTimeout;
   long _menuTimeout;
   void _initUI();
+protected:
+  void _saveNV();
 public:
   CNoHeaterHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

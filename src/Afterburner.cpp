@@ -125,7 +125,7 @@
 
 const int FirmwareRevision = 31;
 const int FirmwareSubRevision = 7;
-const char* FirmwareDate = "30 Oct 2019";
+const char* FirmwareDate = "10 Nov 2019";
 
 
 #ifdef ESP32
@@ -184,6 +184,7 @@ CKeyPad KeyPad;
 CScreenManager ScreenManager;
 ABTelnetSpy DebugPort;
 #if USE_JTAG == 0
+//CANNOT USE GPIO WITH JTAG DEBUG
 CGPIOin GPIOin;
 CGPIOout GPIOout;
 CGPIOalg GPIOalg;
@@ -334,6 +335,7 @@ void setup() {
   // initially, ensure the GPIO outputs are not activated during startup
   // (GPIO2 tends to be one with default chip startup)
 #if USE_JTAG == 0
+  //CANNOT USE GPIO WITH JTAG DEBUG
   pinMode(GPIOout1_pin, OUTPUT);  
   pinMode(GPIOout2_pin, OUTPUT);  
   digitalWrite(GPIOout1_pin, LOW);
@@ -451,9 +453,7 @@ void setup() {
   bBTconnected = false;
   Bluetooth.begin();
 
-#if USE_JTAG == 0
   setupGPIO(); 
-#endif
 
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
   // create a watchdog timer
@@ -1125,6 +1125,7 @@ bool getExternalThermostatModeActive()
 #if USE_JTAG == 0
   return GPIOin.usesExternalThermostat() && (NVstore.getUserSettings().ThermostatMethod == 3);
 #else
+  //CANNOT USE GPIO WITH JTAG DEBUG
   return false;
 #endif
 }
@@ -1134,6 +1135,7 @@ bool getExternalThermostatOn()
 #if USE_JTAG == 0
   return GPIOin.getState(1);
 #else
+  //CANNOT USE GPIO WITH JTAG DEBUG
   return false;
 #endif
 }
@@ -1143,6 +1145,7 @@ const char* getExternalThermostatHoldTime()
 #if USE_JTAG == 0
   return GPIOin.getExtThermHoldTime();
 #else
+  //CANNOT USE GPIO WITH JTAG DEBUG
   return "00:00";
 #endif
 }
@@ -1593,6 +1596,7 @@ bool isCyclicActive()
 void setupGPIO()
 {
 #if USE_JTAG == 1
+  //CANNOT USE GPIO WITH JTAG DEBUG
   return;
 #else
   if(BoardRevision == 10 || BoardRevision == 20 || BoardRevision == 21 || BoardRevision == 30) {
@@ -1654,6 +1658,7 @@ void setupGPIO()
 bool toggleGPIOout(int channel) 
 {
 #if USE_JTAG == 0
+  //CANNOT USE GPIO WITH JTAG DEBUG
   if(channel == 0) {
     if(NVstore.getUserSettings().GPIO.out1Mode == CGPIOout1::User) {
       setGPIOout(channel, !getGPIOout(channel));  // toggle selected GPIO output 
@@ -1673,6 +1678,7 @@ bool toggleGPIOout(int channel)
 bool setGPIOout(int channel, bool state)
 {
 #if USE_JTAG == 0
+  //CANNOT USE GPIO WITH JTAG DEBUG
   if(channel == 0) {
     if(GPIOout.getMode1() != CGPIOout1::Disabled) {
       DebugPort.printf("setGPIO: Output #%d = %d\r\n", channel+1, state);
@@ -1698,6 +1704,7 @@ bool getGPIOout(int channel)
   DebugPort.printf("getGPIO: Output #%d = %d\r\n", channel+1, retval);
   return retval;
 #else
+  //CANNOT USE GPIO WITH JTAG DEBUG
   return false;
 #endif
 }
@@ -1730,12 +1737,15 @@ void ShowOTAScreen(int percent, eOTAmodes updateType)
 
 void feedWatchdog()
 {
+#if USE_JTAG == 0
+    // BEST NOT USE WATCHDOG WITH JTAG DEBUG :-)
   uint64_t timeRem = timerRead(watchdogTimer);
   if(timeRem > 500000)  // 500ms
     DebugPort.printf("WD time = %lld\r\n", timeRem);  // print longer WD intervals
 
   timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
   timerAlarmWrite(watchdogTimer, 15000000, false); //set time in uS must be fed within this time or reboot     
+#endif
 }
 
 void doJSONwatchdog(int topup)
@@ -1779,6 +1789,7 @@ void doStreaming()
   Bluetooth.check();    // check for Bluetooth activity
 
 #if USE_JTAG == 0
+  //CANNOT USE GPIO WITH JTAG DEBUG
   GPIOin.manage();
   GPIOout.manage(); 
   GPIOalg.manage();

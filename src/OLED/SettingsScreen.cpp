@@ -142,10 +142,11 @@ CSettingsScreen::animate()
 bool 
 CSettingsScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {
+  if(CPasswordScreen::keyHandler(event)) {  // handles password collection 
     if(_isPasswordOK()) {
       _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop);
     }
+    return true;
   }
 
   else {

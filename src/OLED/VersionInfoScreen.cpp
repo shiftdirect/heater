@@ -131,7 +131,7 @@ CVersionInfoScreen::show()
       }
       else {
         _showTitle("Factory Default");
-        if(_rowSel == 10) {
+        if(_rowSel == SaveConfirm) {
           // factory default confirmation screen
           _printMenuText(_display.xCentre(), 35, "Press UP to", false, eCentreJustify);
           _printMenuText(_display.xCentre(), 43, "confirm save", false, eCentreJustify);
@@ -188,31 +188,27 @@ CVersionInfoScreen::animate()
 bool 
 CVersionInfoScreen::keyHandler(uint8_t event)
 {
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
+
   if(event & keyPressed) {
+
+    if(_rowSel == 20) {      // firmware update confirm
+      if(event & key_Up) {
+        isUpdateAvailable(false);   // make firmware update happen
+      }
+      _rowSel = 0;
+      return true;
+    }
+
     // UP press
     if(event & key_Up) {
-      if(_rowSel == 20) {
-        isUpdateAvailable(false);   // make firmware update happen
-        _rowSel = 0;
-      }
-      else if(_rowSel == 10) {
-        wifiFactoryDefault();
-        BoardRevisionReset();
-        NVstore.init();
-        NVstore.save();
-        _enableStoringMessage();
-        _rowSel = 11;
-      }
-      else {
-        _rowSel++;
-        UPPERLIMIT(_rowSel, 3);
-      }
+      _rowSel++;
+      UPPERLIMIT(_rowSel, 3);
     }
     // DOWN press
     if(event & key_Down) {
-      if(_rowSel == 20) {      // firmware update cancel
-        _rowSel = 0;
-      }
       _rowSel--;
       LOWERLIMIT(_rowSel, 0);
     }
@@ -226,11 +222,8 @@ CVersionInfoScreen::keyHandler(uint8_t event)
     }
     // CENTRE press
     if(event & key_Centre) {
-      if(_rowSel == 20) {      // firmware update cancel
-        _rowSel = 0;
-      }
-      else if(_rowSel == 3) {  // factory enable selection
-        _rowSel = 10;
+      if(_rowSel == 3) {  // factory enable selection
+        _rowSel = SaveConfirm;
       }
       else if(_rowSel == 1) {  // firmware update selection
         _rowSel = 20;
@@ -246,3 +239,17 @@ CVersionInfoScreen::keyHandler(uint8_t event)
   return true;
 }
 
+void 
+CVersionInfoScreen::_saveNV()
+{
+  wifiFactoryDefault();
+  BoardRevisionReset();
+  NVstore.init();
+  NVstore.save();
+  _rowSel = 11;
+
+  const char* content[2];
+  content[0] = "Factory reset";
+  content[1] = "completed";
+  _ScreenManager.showRebootMsg(content, 5000);
+}

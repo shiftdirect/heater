@@ -28,6 +28,7 @@
 #include "../Utility/BoardDetect.h"
 
 #if USE_JTAG == 0
+//CANNOT USE GPIO WITH JTAG DEBUG
 extern CGPIOout GPIOout;
 extern CGPIOin GPIOin;
 extern CGPIOalg GPIOalg;
@@ -88,6 +89,7 @@ CGPIOInfoScreen::animate()
       break;
   }
 #if USE_JTAG == 0
+      //CANNOT USE GPIO WITH JTAG DEBUG
   _drawBitmap(40, 16, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
 #endif
 
@@ -103,11 +105,13 @@ CGPIOInfoScreen::animate()
       break;
   }
 #if USE_JTAG == 0
+      //CANNOT USE GPIO WITH JTAG DEBUG
   _drawBitmap(40, 28, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
 #endif
 
   int bulbmode = 0;
 #if USE_JTAG == 0
+      //CANNOT USE GPIO WITH JTAG DEBUG
   bulbmode = GPIOout.getState(0);
 #endif
   static bool iconstate = false;
@@ -134,6 +138,7 @@ CGPIOInfoScreen::animate()
   }
 
 #if USE_JTAG == 0
+      //CANNOT USE GPIO WITH JTAG DEBUG
   bulbmode = GPIOout.getState(1);
 #endif
   switch(NVstore.getUserSettings().GPIO.out2Mode) {
@@ -156,6 +161,7 @@ CGPIOInfoScreen::animate()
     }
     else {
 #if USE_JTAG == 0
+      //CANNOT USE GPIO WITH JTAG DEBUG
       sprintf(msg, "%d%%", GPIOalg.getValue() * 100 / 4096);
       _printMenuText(23, Line1, msg);
 #endif      

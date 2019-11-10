@@ -76,31 +76,25 @@ CHeaterSettingsScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 4) {
-      _showConfirmMessage();
-    }
-    else {
-//      _printInverted(_display.xCentre(), 0, " Heater Settings ", true, eCentreJustify);
-      _showTitle("Heater Settings");
-      _printMenuText(97, Line3, "System voltage:", false, eRightJustify);
-      _printMenuText(97, Line2, "Fan sensor:", false, eRightJustify);
-      _printMenuText(97, Line1, "Glowplug power:", false, eRightJustify);
-      sprintf(msg, "%dV", _sysVoltage);
-      _printMenuText(Column, Line3, msg, _rowSel == 3);
-      // navigation line
-      int yPos = 53;
-      int xPos = _display.xCentre();
+    _showTitle("Heater Settings");
+    _printMenuText(97, Line3, "System voltage:", false, eRightJustify);
+    _printMenuText(97, Line2, "Fan sensor:", false, eRightJustify);
+    _printMenuText(97, Line1, "Glowplug power:", false, eRightJustify);
+    sprintf(msg, "%dV", _sysVoltage);
+    _printMenuText(Column, Line3, msg, _rowSel == 3);
+    // navigation line
+    int yPos = 53;
+    int xPos = _display.xCentre();
 
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(xPos, yPos, " \021     Exit     \020 ", true, eCentreJustify);
-          break;
-        default:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          _printMenuText(xPos, 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
-          _printMenuText(xPos, 56, "Save", false, eCentreJustify);
-          break;
-      }
+    switch(_rowSel) {
+      case 0:
+        _printMenuText(xPos, yPos, " \021     Exit     \020 ", true, eCentreJustify);
+        break;
+      default:
+        _display.drawFastHLine(0, 52, 128, WHITE);
+        _printMenuText(xPos, 56, "\030\031Sel          \033\032 Adj", false, eCentreJustify);
+        _printMenuText(xPos, 56, "Save", false, eCentreJustify);
+        break;
     }
   }
 
@@ -113,10 +107,10 @@ CHeaterSettingsScreen::animate()
 { 
   char msg[16];
 
-  if(isPasswordBusy() || (_rowSel == 4)) {  // Password screen activity
+  if(isPasswordBusy() || (_rowSel == SaveConfirm)) {  // Password screen activity
     _printMenuText(Column, Line2, "    ");
     _printMenuText(Column, Line1, "    ");
-    if(_rowSel == 4)
+    if(_rowSel == SaveConfirm)
       _printMenuText(_display.xCentre(), 43, "Confirm save", false, eCentreJustify);
   }
   else {
@@ -155,6 +149,10 @@ CHeaterSettingsScreen::animate()
 bool 
 CHeaterSettingsScreen::keyHandler(uint8_t event)
 {
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
+
   if(event & keyPressed) {
     // press LEFT to select previous screen
     if(event & key_Left) {
@@ -166,9 +164,6 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _adjust(-1);
-          break;
-        case 4:
-          _rowSel = 0;   // abort save
           break;
       }
     }
@@ -182,9 +177,6 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
           _adjust(+1);
-          break;
-        case 4:
-          _rowSel = 0;   // abort save
           break;
       }
     }
@@ -202,14 +194,6 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
           _rowSel++;
           UPPERLIMIT(_rowSel, 3);
           break;
-        case 4:    // confirmed save
-          _enableStoringMessage();
-          setSystemVoltage(float(_sysVoltage));
-          setFanSensor(_fanSensor);
-          setGlowDrive(_glowDrive);
-          saveNV();
-          _rowSel = 0;
-          break;
       }
     }
     // CENTRE press
@@ -221,7 +205,7 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _rowSel = 4;
+          _rowSel = SaveConfirm;
           break;
       }
     }
@@ -246,4 +230,13 @@ CHeaterSettingsScreen::_adjust(int dir)
       _sysVoltage = (_sysVoltage == 12) ? 24 : 12;
       break;
   }
+}
+
+void
+CHeaterSettingsScreen::_saveNV()
+{
+  setSystemVoltage(float(_sysVoltage));
+  setFanSensor(_fanSensor);
+  setGlowDrive(_glowDrive);
+  saveNV();
 }

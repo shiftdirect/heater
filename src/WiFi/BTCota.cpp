@@ -67,7 +67,7 @@ void initOTA(){
 		DebugPort.println("Start updating " + type);
     DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen();
-#if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
+#if USE_SW_WATCHDOG == 1
     feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
 	})

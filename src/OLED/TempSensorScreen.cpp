@@ -65,61 +65,56 @@ CTempSensorScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == SaveConfirm) {
-      _showConfirmMessage();
-    }
-    else {
-      if(_colSel == 0)
-        _showTitle("Temp Sensor Role");
-      else
-        _showTitle("Temp Sensor Offset");
+    if(_colSel == 0)
+      _showTitle("Temp Sensor Role");
+    else
+      _showTitle("Temp Sensor Offset");
 
-      // force BME280 as primary if the only sensor
-      if(!_nDS18B20 && _bHasBME280)
-        _bPrimary = true;
+    // force BME280 as primary if the only sensor
+    if(!_nDS18B20 && _bHasBME280)
+      _bPrimary = true;
 
-      strcpy(msg, "Nul");
+    strcpy(msg, "Nul");
 
-      if(_bHasBME280) {
-        if(!_bPrimary && _nDS18B20) {
-          strcpy(msg, "Lst");
-        }
-        else {
-          strcpy(msg, "Pri");
-        }
-      }
-      int baseLine = 36;
-      _printMenuText(border, baseLine, msg, _rowSel == 1 && _colSel == 0);
-
-      _printMenuText(27, baseLine, "BME280");
-      if(_colSel == 0) {
-        float temperature;
-        getTempSensor().getBME280().getTemperature(temperature, false);
-        sprintf(msg, "%.01f`C", temperature + _Offset);
+    if(_bHasBME280) {
+      if(!_bPrimary && _nDS18B20) {
+        strcpy(msg, "Lst");
       }
       else {
-        sprintf(msg, "%+.01f", _Offset);
+        strcpy(msg, "Pri");
       }
-      _printMenuText(90, baseLine, msg, _rowSel == 1 && _colSel == 1);
-
-      if(_nDS18B20) {
-        if(_bPrimary) {
-          strcpy(msg, "Nxt");   // BME280 is primary
-        }
-        else {
-          strcpy(msg, "Pri");   // DS18B20(s) are primary
-        }
-        int baseLine = 24;
-        _printMenuText(border, baseLine, msg, _rowSel == 2 && _colSel == 0);
-
-        _printMenuText(27, baseLine, "DS18B20");
-        if(_nDS18B20 == 1) {
-          sprintf(msg, "%+.01f", _OffsetDS18B20);
-          _printMenuText(90, baseLine, msg, _rowSel == 2 && _colSel == 1);
-        }
-      }
-
     }
+    int baseLine = 36;
+    _printMenuText(border, baseLine, msg, _rowSel == 1 && _colSel == 0);
+
+    _printMenuText(27, baseLine, "BME280");
+    if(_colSel == 0) {
+      float temperature;
+      getTempSensor().getBME280().getTemperature(temperature, false);
+      sprintf(msg, "%.01f`C", temperature + _Offset);
+    }
+    else {
+      sprintf(msg, "%+.01f", _Offset);
+    }
+    _printMenuText(90, baseLine, msg, _rowSel == 1 && _colSel == 1);
+
+    if(_nDS18B20) {
+      if(_bPrimary) {
+        strcpy(msg, "Nxt");   // BME280 is primary
+      }
+      else {
+        strcpy(msg, "Pri");   // DS18B20(s) are primary
+      }
+      int baseLine = 24;
+      _printMenuText(border, baseLine, msg, _rowSel == 2 && _colSel == 0);
+
+      _printMenuText(27, baseLine, "DS18B20");
+      if(_nDS18B20 == 1) {
+        sprintf(msg, "%+.01f", _OffsetDS18B20);
+        _printMenuText(90, baseLine, msg, _rowSel == 2 && _colSel == 1);
+      }
+    }
+
   }
   return true;
 }
@@ -167,109 +162,98 @@ CTempSensorScreen::animate()
 bool 
 CTempSensorScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {
+  if(CPasswordScreen::keyHandler(event)) {   // manage password coolection and NV save confirm
     if(_isPasswordOK()) {
       _rowSel = 1;
       _keyHold = -1;
     }
+    return true;
   }
 
-  else {
-    sUserSettings us;
-    if(event & keyPressed) {
-      _keyHold = 0;
-      // DOWN press
-      if(event & key_Down) {
-        if(_rowSel == SaveConfirm)
-          _rowSel = 0;
-        _rowSel--;
-        LOWERLIMIT(_rowSel, 0);
-      }
+  sUserSettings us;
+  if(event & keyPressed) {
+    _keyHold = 0;
+    // DOWN press
+    if(event & key_Down) {
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
     }
+  }
 
 
-    if(event & keyRepeat) {
-      if(_keyHold >= 0) {
-        _keyHold++;
-        if(_keyHold == 2) {
-          if(event & key_Up) {
-          }
-          if(event & key_Left) {
-            _colSel = 0;
-            _scrollChar = 0;
-          }
-          if(event & key_Right) {
-            if(_nDS18B20 == 1 || _rowSel == 1)
-            _colSel = 1;
-            _scrollChar = 0;
-          }
-          if(event & key_Centre) {
-            if(_colSel == 1)
-              _Offset = 0;
-          }
-          _keyHold = -1;
-        }
-      }
-    }
-
-
-    if(event & keyReleased) {
-      if(_keyHold == 0) {
-        // UP release
+  if(event & keyRepeat) {
+    if(_keyHold >= 0) {
+      _keyHold++;
+      if(_keyHold == 2) {
         if(event & key_Up) {
-          if(_rowSel == SaveConfirm) {
-            _enableStoringMessage();
-            _saveNV();
-            NVstore.save();
-            _rowSel = 0;
-          }
-          else {
-            if(_rowSel == 1 && _colSel == 1 && _nDS18B20 != 1)
-              _colSel = 0;
-            if(_rowSel == 0) {
-              _getPassword();
-              if(_isPasswordOK()) {
-                _rowSel = 1;
-              }
-            }
-            else {
-              _rowSel++;
-              if(_rowSel == 3 && _nDS18B20 > 1)
-                _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::DS18B20UI);  // force return to main menu
-
-              UPPERLIMIT(_rowSel, _nDS18B20 ? 2 : 1);
-            }
-          }
         }
-        // LEFT press
         if(event & key_Left) {
-          if(_rowSel == 0)
-            _ScreenManager.prevMenu();
-          else 
-            adjust(-1);
+          _colSel = 0;
+          _scrollChar = 0;
         }
-        // RIGHT press
         if(event & key_Right) {
-          if(_rowSel == 0)
-            _ScreenManager.nextMenu();
-          else 
-            adjust(+1);
+          if(_nDS18B20 == 1 || _rowSel == 1)
+          _colSel = 1;
+          _scrollChar = 0;
         }
-        // CENTRE press
         if(event & key_Centre) {
-          if(_rowSel == 0) {
-            _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+          if(_colSel == 1)
+            _Offset = 0;
+        }
+        _keyHold = -1;
+      }
+    }
+  }
+
+
+  if(event & keyReleased) {
+    if(_keyHold == 0) {
+      // UP release
+      if(event & key_Up) {
+        if(_rowSel == 1 && _colSel == 1 && _nDS18B20 != 1)
+          _colSel = 0;
+        if(_rowSel == 0) {
+          _getPassword();
+          if(_isPasswordOK()) {
+            _rowSel = 1;
           }
-          else  {
-            _rowSel = SaveConfirm;
-          }
+        }
+        else {
+          _rowSel++;
+          if(_rowSel == 3 && _nDS18B20 > 1)
+            _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::DS18B20UI);  // force return to main menu
+
+          UPPERLIMIT(_rowSel, _nDS18B20 ? 2 : 1);
         }
       }
-      _keyHold = -1;
+      // LEFT release
+      if(event & key_Left) {
+        if(_rowSel == 0)
+          _ScreenManager.prevMenu();
+        else 
+          adjust(-1);
+      }
+      // RIGHT release
+      if(event & key_Right) {
+        if(_rowSel == 0)
+          _ScreenManager.nextMenu();
+        else 
+          adjust(+1);
+      }
+      // CENTRE release
+      if(event & key_Centre) {
+        if(_rowSel == 0) {
+          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+        }
+        else  {
+          _rowSel = SaveConfirm;
+        }
+      }
     }
-
-    _ScreenManager.reqUpdate();
+    _keyHold = -1;
   }
+
+  _ScreenManager.reqUpdate();
 
   return true;
 }
@@ -306,8 +290,8 @@ CTempSensorScreen::_readNV()
   _OffsetDS18B20 = tuning.DS18B20probe[0].offset;
 }
 
-void
-CTempSensorScreen::_saveNV() 
+void 
+CTempSensorScreen::_saveNV()
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
 
@@ -316,4 +300,5 @@ CTempSensorScreen::_saveNV()
   tuning.DS18B20probe[0].offset = _OffsetDS18B20;
 
   NVstore.setHeaterTuning(tuning);
+  NVstore.save();
 }

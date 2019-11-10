@@ -31,7 +31,6 @@ class CScreenManager;
 
 class CGPIOSetupScreen : public CPasswordScreen
 {
-  int _rowSel;
   void _adjust(int dir);
   sGPIOparams _GPIOparams;
   unsigned long _ExtHold;
@@ -39,6 +38,8 @@ class CGPIOSetupScreen : public CPasswordScreen
   int _scrollChar;
   int _repeatCount;
   void _initUI();
+protected:
+  void _saveNV();
 public:
   CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

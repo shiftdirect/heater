@@ -31,13 +31,14 @@ class CScreenManager;
 
 class CTimeoutsScreen : public CPasswordScreen
 {
-  int _rowSel;
   uint16_t _frameRate;
   long _dispTimeout;
   long _menuTimeout;
   int _repeatCount;
   int _scrollChar;
   void _initUI();
+protected:
+  void _saveNV();  
 public:
   CTimeoutsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

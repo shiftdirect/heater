@@ -55,7 +55,7 @@ public:
   enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
   enum eUITuningMenus { MixtureUI, HeaterSettingsUI, FuelCalUI };
-  enum eUIUserSettingsMenus { ExThermostatUI, HomeMenuUI, TimeIntervalsUI, TempSensorUI, GPIOUI };
+  enum eUIUserSettingsMenus { ExThermostatUI, FrostUI, HomeMenuUI, TimeIntervalsUI, TempSensorUI, GPIOUI };
   enum eUIBranchMenus { SetClockUI, InheritSettingsUI, FontDumpUI, HtrSettingsUI, DS18B20UI };
   enum eUISystemSettingsMenus { SysVerUI, SysHoursUI, SysWifiUI, SysBTUI };
 public:

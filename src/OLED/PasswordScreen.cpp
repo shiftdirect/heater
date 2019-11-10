@@ -66,6 +66,7 @@ CPasswordScreen::_initUI()
   __initPassword(false);
 
   _SaveTime = 0;
+  _rowSel = 0;
 }
 
 void 
@@ -93,6 +94,11 @@ CPasswordScreen::show()
       return true;
     }
   }
+  else if(_rowSel == SaveConfirm) {
+    _showConfirmMessage();
+    return true;
+  }
+
   return false;
 }
 
@@ -191,6 +197,21 @@ CPasswordScreen::keyHandler(uint8_t event)
     }
     return true;
   }
+
+  if(_rowSel == SaveConfirm) {
+    if(event & keyPressed) {
+      _rowSel = 0;
+      if(event & key_Up) {
+        _enableStoringMessage();
+        _saveNV();
+        if(__Expiry)
+          _holdPassword();  // extend password hold time (if enabled)
+      }
+      onSelect();
+      return true;
+    }
+  }
+
   return false;
 }
 

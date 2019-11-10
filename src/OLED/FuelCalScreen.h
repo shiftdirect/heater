@@ -30,13 +30,13 @@ class CScreenManager;
 
 class CFuelCalScreen : public CPasswordScreen
 {
-  int _rowSel;
   void _adjust(int dir);
   float _mlPerStroke;
-  float _tOfs;
   uint8_t _LVC;
   int _animateCount;
   void _initUI();
+protected:
+  void _saveNV();
 public:
   CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

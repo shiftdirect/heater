@@ -30,13 +30,14 @@ class CScreenManager;
 
 class CHeaterSettingsScreen : public CPasswordScreen
 {
-  int _rowSel;
   void _adjust(int dir);
   int _sysVoltage;
   int _fanSensor;
   int _glowDrive;
   int _animateCount;
   void _initUI();
+protected:
+  void _saveNV();
 public:
   CHeaterSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

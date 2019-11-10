@@ -2,7 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
+ * Copyright (C) 2019  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
  * 
  */
 
-#ifndef __THERMOSTATMODESCREEN_H__
-#define __THERMOSTATMODESCREEN_H__
+#ifndef __FROSTSCREEN_H__
+#define __FROSTSCREEN_H__
 
 #include <stdint.h>
 #include "PasswordScreen.h"
@@ -29,24 +29,22 @@
 class C128x64_OLED;
 class CScreenManager;
 
-class CThermostatModeScreen : public CPasswordScreen
+class CFrostScreen : public CPasswordScreen
 {
-  int _keyRepeat;
-  void _adjust(int dir);
-  float _window;
-  int _thermoMode;
-  sCyclicThermostat _cyclicMode;
-  int _animateCount;
+//  int _rowSel;
   int _scrollChar;
-protected:
+  uint8_t _frostOn;
+  uint8_t _frostRise;
   void _initUI();
+protected:
   void _saveNV();
 public:
-  CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CFrostScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);
   void onSelect();
+  void adjust(int dir);
 };
 
 #endif

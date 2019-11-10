@@ -95,110 +95,105 @@ CGPIOSetupScreen::show()
 
   if(!CPasswordScreen::show()) {  // for showing "saving settings"
 
-    if(_rowSel == 10) {
-      _showConfirmMessage();
+    _showTitle("GPIO Configuration");
+    _drawBitmap(0, Line3, InputIconInfo);
+    _drawBitmap(11, Line3, _1IconInfo);
+    {
+      const char* msgText = NULL;
+      switch(_GPIOparams.in1Mode) {
+        case CGPIOin1::Disabled:  msgText = " --- "; break;
+        case CGPIOin1::Start:     msgText = "Start"; break;
+        case CGPIOin1::Run:       msgText = "Run  "; break;
+        case CGPIOin1::StartStop: msgText = animated ? "Start" : "Stop "; break;
+        case CGPIOin1::Stop:      msgText = "Stop "; break;
+      }
+      if(msgText)
+        _printMenuText(Column1, Line3, msgText, _rowSel == 4);
     }
-    else {
-      _showTitle("GPIO Configuration");
-      _drawBitmap(0, Line3, InputIconInfo);
-      _drawBitmap(11, Line3, _1IconInfo);
-      {
-        const char* msgText = NULL;
-        switch(_GPIOparams.in1Mode) {
-          case CGPIOin1::Disabled:  msgText = " --- "; break;
-          case CGPIOin1::Start:     msgText = "Start"; break;
-          case CGPIOin1::Run:       msgText = "Run  "; break;
-          case CGPIOin1::StartStop: msgText = animated ? "Start" : "Stop "; break;
-          case CGPIOin1::Stop:      msgText = "Stop "; break;
-        }
-        if(msgText)
-          _printMenuText(Column1, Line3, msgText, _rowSel == 4);
+    _drawBitmap(0, Line2, InputIconInfo);
+    _drawBitmap(11, Line2, _2IconInfo);
+    {
+      const char* msgText = NULL;
+      switch(_GPIOparams.in2Mode) {
+        case CGPIOin2::Disabled:    msgText = " --- "; break;
+        case CGPIOin2::Stop:        msgText = "Stop "; break;
+        case CGPIOin2::Thermostat:  msgText = "\352T"; break;
       }
-      _drawBitmap(0, Line2, InputIconInfo);
-      _drawBitmap(11, Line2, _2IconInfo);
-      {
-        const char* msgText = NULL;
-        switch(_GPIOparams.in2Mode) {
-          case CGPIOin2::Disabled:    msgText = " --- "; break;
-          case CGPIOin2::Stop:        msgText = "Stop "; break;
-          case CGPIOin2::Thermostat:  msgText = "\352T"; break;
+      if(msgText)
+        _printMenuText(Column1, Line2, msgText, _rowSel == 2);
+      
+      if(_GPIOparams.in2Mode == CGPIOin2::Thermostat) {
+        _drawBitmap(Column1 + 13, Line2-2, TimerIconInfo);
+        const char* modeStr = "No";
+        switch(_ExtHold) {
+          case 60000: modeStr = "1m"; break;
+          case 120000: modeStr = "2m"; break;
+          case 300000: modeStr = "5m"; break;
+          case 600000: modeStr = "10m"; break;
+          case 900000: modeStr = "15m"; break;
+          case 1200000: modeStr = "20m"; break;
+          case 1800000: modeStr = "30m"; break;
+          case 3600000: modeStr = "1hr"; break;
         }
-        if(msgText)
-          _printMenuText(Column1, Line2, msgText, _rowSel == 2);
-        
-        if(_GPIOparams.in2Mode == CGPIOin2::Thermostat) {
-          _drawBitmap(Column1 + 13, Line2-2, TimerIconInfo);
-          const char* modeStr = "No";
-          switch(_ExtHold) {
-            case 60000: modeStr = "1m"; break;
-            case 120000: modeStr = "2m"; break;
-            case 300000: modeStr = "5m"; break;
-            case 600000: modeStr = "10m"; break;
-            case 900000: modeStr = "15m"; break;
-            case 1200000: modeStr = "20m"; break;
-            case 1800000: modeStr = "30m"; break;
-            case 3600000: modeStr = "1hr"; break;
+        _printMenuText(Column1 + 29, Line2, modeStr, _rowSel == 3);
+      }
+    }
+
+    _drawBitmap(70, Line3, OutputIconInfo);
+    _drawBitmap(80, Line3, _1IconInfo);
+    {
+      const char* msgText = NULL;
+      switch(_GPIOparams.out1Mode) {
+        case CGPIOout1::Disabled: msgText = "---"; break;
+        case CGPIOout1::Status:   msgText = "Status"; break;
+        case CGPIOout1::User:     msgText = "User"; break;
+        case CGPIOout1::Thresh:   
+          if(_rowSel == 6) {
+            sprintf(msg, "  %d`C", s8abs(_GPIOparams.thresh[0]));
+            _printMenuText(Column2, Line3, msg, false);
+            _printMenuText(Column2, Line3, _GPIOparams.thresh[0] >= 0 ? ">" : "<", true);
           }
-          _printMenuText(Column1 + 29, Line2, modeStr, _rowSel == 3);
-        }
+          else {
+            sprintf(msg, "%s %d`C", _GPIOparams.thresh[0] >= 0 ? ">" : "<", s8abs(_GPIOparams.thresh[0]));
+            _printMenuText(Column2, Line3, msg, _rowSel == 8);
+          }
+          break;
       }
+      if(msgText)
+        _printMenuText(Column2, Line3, msgText, _rowSel == 6);
+    }
+    _drawBitmap(70, Line2, OutputIconInfo);
+    _drawBitmap(80, Line2, _2IconInfo);
+    {
+      const char* msgText = NULL;
+      switch(_GPIOparams.out2Mode) {
+        case CGPIOout2::Disabled: msgText = "---"; break;
+        case CGPIOout2::User:     msgText = "User"; break;
+        case CGPIOout2::Thresh:   
+          if(_rowSel == 5) {
+            sprintf(msg, "  %d`C", s8abs(_GPIOparams.thresh[1]));
+            _printMenuText(Column2, Line2, msg, false);
+            _printMenuText(Column2, Line2, _GPIOparams.thresh[1] >= 0 ? ">" : "<", true);
+          }
+          else {
+            sprintf(msg, "%s %d`C", _GPIOparams.thresh[1] >= 0 ? ">" : "<", s8abs(_GPIOparams.thresh[1]));
+            _printMenuText(Column2, Line2, msg, _rowSel == 7);
+          }
+          break;
+      }
+      if(msgText)
+        _printMenuText(Column2, Line2, msgText, _rowSel == 5);
+    }
 
-      _drawBitmap(70, Line3, OutputIconInfo);
-      _drawBitmap(80, Line3, _1IconInfo);
-      {
-        const char* msgText = NULL;
-        switch(_GPIOparams.out1Mode) {
-          case CGPIOout1::Disabled: msgText = "---"; break;
-          case CGPIOout1::Status:   msgText = "Status"; break;
-          case CGPIOout1::User:     msgText = "User"; break;
-          case CGPIOout1::Thresh:   
-            if(_rowSel == 6) {
-              sprintf(msg, "  %dC", s8abs(_GPIOparams.thresh[0]));
-              _printMenuText(Column2, Line3, msg, false);
-              _printMenuText(Column2, Line3, _GPIOparams.thresh[0] >= 0 ? ">" : "<", true);
-            }
-            else {
-              sprintf(msg, "%s %dC", _GPIOparams.thresh[0] >= 0 ? ">" : "<", s8abs(_GPIOparams.thresh[0]));
-              _printMenuText(Column2, Line3, msg, _rowSel == 8);
-            }
-            break;
-        }
-        if(msgText)
-          _printMenuText(Column2, Line3, msgText, _rowSel == 6);
+    if(getBoardRevision() == BRD_V2_FULLGPIO || getBoardRevision() == BRD_V1_FULLGPIO) {
+      _drawBitmap(0, Line1-1, algIconInfo);  
+      const char* msgText = NULL;
+      switch(_GPIOparams.algMode) {
+        case CGPIOalg::Disabled: msgText = "Disabled"; break;
+        case CGPIOalg::HeatDemand: msgText = "Enabled"; break;
       }
-      _drawBitmap(70, Line2, OutputIconInfo);
-      _drawBitmap(80, Line2, _2IconInfo);
-      {
-        const char* msgText = NULL;
-        switch(_GPIOparams.out2Mode) {
-          case CGPIOout2::Disabled: msgText = "---"; break;
-          case CGPIOout2::User:     msgText = "User"; break;
-          case CGPIOout2::Thresh:   
-            if(_rowSel == 5) {
-              sprintf(msg, "  %d`C", s8abs(_GPIOparams.thresh[1]));
-              _printMenuText(Column2, Line2, msg, false);
-              _printMenuText(Column2, Line2, _GPIOparams.thresh[1] >= 0 ? ">" : "<", true);
-            }
-            else {
-              sprintf(msg, "%s %d`C", _GPIOparams.thresh[1] >= 0 ? ">" : "<", s8abs(_GPIOparams.thresh[1]));
-              _printMenuText(Column2, Line2, msg, _rowSel == 7);
-            }
-            break;
-        }
-        if(msgText)
-          _printMenuText(Column2, Line2, msgText, _rowSel == 5);
-      }
-
-      if(getBoardRevision() == BRD_V2_FULLGPIO || getBoardRevision() == BRD_V1_FULLGPIO) {
-        _drawBitmap(0, Line1-1, algIconInfo);  
-        const char* msgText = NULL;
-        switch(_GPIOparams.algMode) {
-          case CGPIOalg::Disabled: msgText = "Disabled"; break;
-          case CGPIOalg::HeatDemand: msgText = "Enabled"; break;
-        }
-        if(msgText)
-          _printMenuText(23, Line1, msgText, _rowSel == 1);
-      }
+      if(msgText)
+        _printMenuText(23, Line1, msgText, _rowSel == 1);
     }
   }
 
@@ -211,7 +206,7 @@ CGPIOSetupScreen::animate()
   CPasswordScreen::animate();
   
   if(!CPasswordScreen::_busy()) {
-    if(_rowSel != 10) {
+    if(_rowSel != SaveConfirm) {
       int yPos = 53;
       int xPos = _display.xCentre();
       const char* pMsg = NULL;
@@ -314,8 +309,10 @@ CGPIOSetupScreen::animate()
 bool 
 CGPIOSetupScreen::keyHandler(uint8_t event)
 {
+  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+    return true;
+  }
 
-  sUserSettings us;
   if(event & keyPressed) {
     _repeatCount = 0;
   }
@@ -376,9 +373,6 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
             _scrollChar = 0;
             _adjust(-1);
             break;
-          case 10:
-            _rowSel = 0;   // abort save
-            break;
         }
       }
       // press RIGHT to select next screen
@@ -398,24 +392,16 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
             _scrollChar = 0;
             _adjust(+1);
             break;
-          case 10:
-            _rowSel = 0;   // abort save
-            break;
         }
       }
       if(event & key_Down) {
-        if(_rowSel == 10) {
-          _rowSel = 0;   // abort save
-        }
-        else {
-          _scrollChar = 0;
-          _rowSel--;
-          if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
-            _rowSel--;   // force skip if not set to external thermostat
-          if((_rowSel == 1) && ((getBoardRevision() == BRD_V2_GPIO_NOALG) || (getBoardRevision() == BRD_V3_GPIO_NOALG)))  // GPIO but NO analog support
-            _rowSel--;   // force skip if analog input is not supported by PCB
-          LOWERLIMIT(_rowSel, 0);
-        }
+        _scrollChar = 0;
+        _rowSel--;
+        if((_rowSel == 3) && (_GPIOparams.in2Mode != CGPIOin2::Thermostat))        
+          _rowSel--;   // force skip if not set to external thermostat
+        if((_rowSel == 1) && ((getBoardRevision() == BRD_V2_GPIO_NOALG) || (getBoardRevision() == BRD_V3_GPIO_NOALG)))  // GPIO but NO analog support
+          _rowSel--;   // force skip if analog input is not supported by PCB
+        LOWERLIMIT(_rowSel, 0);
       }
       // UP press
       if(event & key_Up) {
@@ -434,18 +420,6 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
               _rowSel++;   // force skip if not set to external thermostat
             UPPERLIMIT(_rowSel, 6);
             break;
-          case 10:    // confirmed save
-            _enableStoringMessage();
-            us = NVstore.getUserSettings();
-            us.GPIO = _GPIOparams;
-            us.ExtThermoTimeout = _ExtHold;
-            NVstore.setUserSettings(us);
-            saveNV();
-
-            setupGPIO();
-            
-            _rowSel = 0;
-            break;
         }
       }
       // CENTRE press
@@ -460,7 +434,7 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
           case 4:
           case 5:
           case 6:
-            _rowSel = 10;
+            _rowSel = SaveConfirm;
             break;
           case 7:
             _rowSel = 5;
@@ -551,3 +525,15 @@ CGPIOSetupScreen::_adjust(int dir)
 }
 
 
+void
+CGPIOSetupScreen::_saveNV()
+{
+  sUserSettings us = NVstore.getUserSettings();
+  us.GPIO = _GPIOparams;
+  us.ExtThermoTimeout = _ExtHold;
+  NVstore.setUserSettings(us);
+  NVstore.save();
+
+  setupGPIO();
+}
+  
