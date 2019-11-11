@@ -19,7 +19,6 @@
  * 
  */
 
-//#include "128x64OLED.h"
 #include "ThermostatModeScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
@@ -266,12 +265,6 @@ CThermostatModeScreen::keyHandler(uint8_t event)
     }
     if(event & keyRepeat) {
       _keyRepeat++;
-      if((event & key_Down) && (keyRepeat >= 4)) {
-        _keyRepeat = -1;
-        if(_rowSel == 0) {
-          _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::FontDumpUI);
-        }
-      }
       if(_rowSel == 3) {
         if(event & key_Right) {
           _adjust(+1);

@@ -33,7 +33,6 @@
 #include "FuelCalScreen.h"
 #include "SettingsScreen.h"
 #include "ThermostatModeScreen.h"
-#include "FontDumpScreen.h"
 #include "TimerChartScreen.h"
 #include "InheritSettingsScreen.h"
 #include "GPIOInfoScreen.h"
@@ -508,7 +507,6 @@ CScreenManager::_loadScreens()
   menuloop.clear();
   menuloop.push_back(new CSetClockScreen(*_pDisplay, *this));         // clock set branch screen
   menuloop.push_back(new CInheritSettingsScreen(*_pDisplay, *this));  // inherit OEM settings branch screen
-  menuloop.push_back(new CFontDumpScreen(*_pDisplay, *this)); // font dump branch screen
   menuloop.push_back(new CSettingsScreen(*_pDisplay, *this));         //  Tuning info
   menuloop.push_back(new CDS18B20Screen(*_pDisplay, *this));
   _Screens.push_back(menuloop);

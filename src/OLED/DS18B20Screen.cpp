@@ -152,120 +152,104 @@ CDS18B20Screen::keyHandler(uint8_t event)
       _rowSel = 1;
       _keyHold = -1;
     }
+    return true;
   }
 
-  else {
-    sUserSettings us;
-    if(event & keyPressed) {
-      _keyHold = 0;
-      // DOWN press
-      if(event & key_Down) {
-        _testCancel();
-        if(_rowSel == 0 && getTempSensor().getBME280().getCount()) {
-          _ScreenManager.returnMenu();
-        }
-        if(_rowSel == SaveConfirm)
-          _rowSel = 0;
-        _rowSel--;
-        LOWERLIMIT(_rowSel, 0);
+  sUserSettings us;
+  if(event & keyPressed) {
+    _keyHold = 0;
+    // DOWN press
+    if(event & key_Down) {
+      _testCancel();
+      if(_rowSel == 0 && getTempSensor().getBME280().getCount()) {
+        _ScreenManager.returnMenu();
       }
+      if(_rowSel == SaveConfirm)
+        _rowSel = 0;
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
     }
+  }
 
 
-    if(event & keyRepeat) {
-      if(_keyHold >= 0) {
-        _keyHold++;
-        if(_keyHold == 2) {
-          if(event & key_Up) {
-            // rescan the one wire bus
-            getTempSensor().getDS18B20().find();
-            _nNumSensors = getTempSensor().getDS18B20().getNumSensors();
-            _readNV();
-          }
-          if(event & key_Left) {
-            _colSel = 0;
-            _scrollChar = 0;
-          }
-          if(event & key_Right) {
-            _testCancel();
-            _colSel = 1;
-            _scrollChar = 0;
-          }
-          if(event & key_Centre) {
-            if(_colSel == 0)
-              _sensorRole[_rowSel-1] = -1;
-            else
-              _Offset[_rowSel-1] = 0;
-          }
-          _keyHold = -1;
-        }
-      }
-    }
-
-
-    if(event & keyReleased) {
-      if(_keyHold == 0) {
-        // UP release
+  if(event & keyRepeat) {
+    if(_keyHold >= 0) {
+      _keyHold++;
+      if(_keyHold == 2) {
         if(event & key_Up) {
-          if(_rowSel == SaveConfirm) {
-            _enableStoringMessage();
-            _saveNV();
-            NVstore.save();
-            getTempSensor().getDS18B20().mapSensor(-1);   // reset existing mapping
-            getTempSensor().getDS18B20().mapSensor(0, NVstore.getHeaterTuning().DS18B20probe[0].romCode);
-            getTempSensor().getDS18B20().mapSensor(1, NVstore.getHeaterTuning().DS18B20probe[1].romCode);
-            getTempSensor().getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
-            getTempSensor().getDS18B20().mapSensor(-2);   // report mapping
-            _rowSel = 0;
+          // rescan the one wire bus
+          getTempSensor().getDS18B20().find();
+          _nNumSensors = getTempSensor().getDS18B20().getNumSensors();
+          _readNV();
+        }
+        if(event & key_Left) {
+          _colSel = 0;
+          _scrollChar = 0;
+        }
+        if(event & key_Right) {
+          _testCancel();
+          _colSel = 1;
+          _scrollChar = 0;
+        }
+        if(event & key_Centre) {
+          if(_colSel == 0)
+            _sensorRole[_rowSel-1] = -1;
+          else
+            _Offset[_rowSel-1] = 0;
+        }
+        _keyHold = -1;
+      }
+    }
+  }
+
+
+  if(event & keyReleased) {
+    if(_keyHold == 0) {
+      // UP release
+      if(event & key_Up) {
+          if(_rowSel == 0) {
+            _getPassword();
+            if(_isPasswordOK()) {
+              _rowSel = 1;
+            }
           }
           else {
-            if(_rowSel == 0) {
-              _getPassword();
-              if(_isPasswordOK()) {
-                _rowSel = 1;
-              }
-            }
-            else {
-              _testCancel();
-              _rowSel++;
-              UPPERLIMIT(_rowSel, 3);
-            }
+            _testCancel();
+            _rowSel++;
+            UPPERLIMIT(_rowSel, 3);
           }
+      }
+      // LEFT press
+      if(event & key_Left) {
+        if(_rowSel == 0)
+          _ScreenManager.prevMenu();
+        else 
+          adjust(-1);
+      }
+      // RIGHT press
+      if(event & key_Right) {
+        if(_rowSel == 0)
+          _ScreenManager.nextMenu();
+        else 
+          adjust(+1);
+      }
+      // CENTRE press
+      if(event & key_Centre) {
+        if(_rowSel == 0) {
+          if(getTempSensor().getBME280().getCount())
+            _ScreenManager.returnMenu();
+          else
+            _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
         }
-        // LEFT press
-        if(event & key_Left) {
-          if(_rowSel == 0)
-            _ScreenManager.prevMenu();
-          else 
-            adjust(-1);
-        }
-        // RIGHT press
-        if(event & key_Right) {
-          if(_rowSel == 0)
-            _ScreenManager.nextMenu();
-          else 
-            adjust(+1);
-        }
-        // CENTRE press
-        if(event & key_Centre) {
-          if(_rowSel == 0) {
-//            _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
-//            _ScreenManager.selectMenu(CScreenManager::SystemSettingsLoop, CScreenManager::TempSensorUI);  // force return to user settings menu
-            if(getTempSensor().getBME280().getCount())
-              _ScreenManager.returnMenu();
-            else
-              _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
-          }
-          else  {
-            _rowSel = SaveConfirm;
-          }
+        else  {
+          _rowSel = SaveConfirm;
         }
       }
-      _keyHold = -1;
     }
-
-    _ScreenManager.reqUpdate();
+    _keyHold = -1;
   }
+
+  _ScreenManager.reqUpdate();
 
   return true;
 }
@@ -378,4 +362,12 @@ CDS18B20Screen::_saveNV()
     }
   }
   NVstore.setHeaterTuning(tuning);
+  NVstore.save();
+
+  getTempSensor().getDS18B20().mapSensor(-1);   // reset existing mapping
+  getTempSensor().getDS18B20().mapSensor(0, NVstore.getHeaterTuning().DS18B20probe[0].romCode);
+  getTempSensor().getDS18B20().mapSensor(1, NVstore.getHeaterTuning().DS18B20probe[1].romCode);
+  getTempSensor().getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
+  getTempSensor().getDS18B20().mapSensor(-2);   // report mapping
+
 }

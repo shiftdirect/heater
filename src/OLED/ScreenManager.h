@@ -56,7 +56,7 @@ public:
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
   enum eUITuningMenus { MixtureUI, HeaterSettingsUI, FuelCalUI };
   enum eUIUserSettingsMenus { ExThermostatUI, FrostUI, HomeMenuUI, TimeIntervalsUI, TempSensorUI, GPIOUI };
-  enum eUIBranchMenus { SetClockUI, InheritSettingsUI, FontDumpUI, HtrSettingsUI, DS18B20UI };
+  enum eUIBranchMenus { SetClockUI, InheritSettingsUI, HtrSettingsUI, DS18B20UI };
   enum eUISystemSettingsMenus { SysVerUI, SysHoursUI, SysWifiUI, SysBTUI };
 public:
   CScreenManager();

@@ -157,7 +157,6 @@ void heaterOff();
 void updateFilteredData();
 bool HandleMQTTsetup(char rxVal);
 void showMainmenu();
-void showMQTTmenu();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus

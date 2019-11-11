@@ -28,7 +28,7 @@
 
 // Bluetooth access via HC-05 Module, using a UART
 
-
+#if USE_HC05_BLUETOOTH == 1
 CBluetoothHC05::CBluetoothHC05(int keyPin, int sensePin)
 {
   // extra control pins required to fully drive a HC05 module 
@@ -377,3 +377,5 @@ CBluetoothHC05::decodeMACresponse(char* pResponse, int len)
 		*--pDest = 0;  // step back and replace last colon with the null terminator!
 	}
 }
+
+#endif 

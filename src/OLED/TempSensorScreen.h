@@ -31,7 +31,7 @@ class CScreenManager;
 
 class CTempSensorScreen : public CPasswordScreen
 {
-  int _rowSel, _colSel;
+  int  _colSel;
   int  _keyHold;
   int _scrollChar;
 //  int  _nNumSensors;

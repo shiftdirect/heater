@@ -35,7 +35,8 @@ public:
   bool show();
   bool keyHandler(uint8_t event);
 private:
-  int  _rowSel, _colSel;
+  int  _rowSel;
+  int  _colSel;
   void _initUI();
 };
 

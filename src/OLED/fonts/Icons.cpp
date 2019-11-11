@@ -447,43 +447,6 @@ const uint8_t verticalRepeatIcon [] PROGMEM = {
 };
 const BITMAP_INFO verticalRepeatIconInfo(5, 11, verticalRepeatIcon);
 
-// 'timerID1', 15x15px
-const uint8_t timerID1Icon [] PROGMEM = {
-  0x07, 0xc0, //      #####
-  0x09, 0x20, //     #  #  #
-  0x11, 0x10, //    #   #   #
-  0x21, 0x08, //   #    #    #
-  0x2d, 0x08, //   # ## #    #
-  0x25, 0xe8, //   #  # #### #
-  0x24, 0x08, //   #  #      #
-  0x24, 0x08, //   #  #      #
-  0x10, 0x10, //    #       #
-  0x08, 0x20, //     #     #
-  0x07, 0xc0, //      #####
-  0x00, 0x00, //
-  0x00, 0x00  //
-};
-const BITMAP_INFO TimerId1IconInfo(15, 13, timerID1Icon);
-
-// 'timerID2', 15x15px
-const uint8_t timerID2Icon [] PROGMEM = {
-  0x00, 0x00, //
-  0x00, 0x00, //
-  0x07, 0xc0, //      #####
-  0x09, 0x20, //     #  #  #
-  0x11, 0x10, //    #   #   #
-  0x21, 0x08, //   #    #    #
-  0x2d, 0x08, //   # ## #    #
-  0x25, 0xe8, //   #  # #### #
-  0x28, 0x08, //   # #       #
-  0x2c, 0x08, //   # ##      #
-  0x10, 0x10, //    #       #
-  0x08, 0x20, //     #     #
-  0x07, 0xc0, //      #####
-  0x00, 0x00, //
-  0x00, 0x00  //
-};
-const BITMAP_INFO TimerId2IconInfo(15, 15, timerID2Icon);
 
 // 'timer', 15x15px
 const uint8_t timerIcon [] PROGMEM = {
@@ -558,61 +521,7 @@ const uint8_t PROGMEM verticalLargeRepeatIcon [] =
 };
 const BITMAP_INFO VerticalRepeatLargeIconInfo(5, 15, verticalLargeRepeatIcon);
 
-const uint8_t PROGMEM GPIO1OFFIcon[]  =
-{
-	0x3E, 0x00, //   #####  
-	0x41, 0x00, //  #     # 
-	0x88, 0x80, // #   #   #
-	0x98, 0x80, // #  ##   #
-	0x88, 0x80, // #   #   #
-	0x88, 0x80, // #   #   #
-	0x9C, 0x80, // #  ###  #
-	0x41, 0x00, //  #     # 
-	0x3E, 0x00, //   #####  
-};
-const BITMAP_INFO GPIO1OffIconInfo(9, 9, GPIO1OFFIcon);
 
-const uint8_t PROGMEM GPIO1ONIcon[]  =
-{
-	0x3E, 0x00, //   #####  
-	0x7F, 0x00, //  ####### 
-	0xF7, 0x80, // #### ####
-	0xE7, 0x80, // ###  ####
-	0xF7, 0x80, // #### ####
-	0xF7, 0x80, // #### ####
-	0xE3, 0x80, // ###   ###
-	0x7F, 0x00, //  ####### 
-	0x3E, 0x00, //   #####  
-};
-const BITMAP_INFO GPIO1OnIconInfo(9, 9, GPIO1ONIcon);
-
-const uint8_t PROGMEM GPIO2OFFIcon[]  =
-{
-	0x3E, 0x00, //   #####  
-	0x41, 0x00, //  #     # 
-	0x9C, 0x80, // #  ###  #
-	0x84, 0x80, // #    #  #
-	0x9C, 0x80, // #  ###  #
-	0x90, 0x80, // #  #    #
-	0x9C, 0x80, // #  ###  #
-	0x41, 0x00, //  #     # 
-	0x3E, 0x00, //   #####  
-};
-const BITMAP_INFO GPIO2OffIconInfo(9, 9, GPIO2OFFIcon);
-
-const uint8_t PROGMEM GPIO2ONIcon[]  =
-{
-	0x3E, 0x00, //   #####  
-	0x7F, 0x00, //  ####### 
-	0xE3, 0x80, // ###   ###
-	0xFB, 0x80, // ##### ###
-	0xE3, 0x80, // ###   ###
-	0xEF, 0x80, // ### #####
-	0xE3, 0x80, // ###   ###
-	0x7F, 0x00, //  ####### 
-	0x3E, 0x00, //   #####  
-};
-const BITMAP_INFO GPIO2OnIconInfo(9, 9, GPIO2ONIcon);
 
 const uint8_t PROGMEM CrossIcon[]  =
 {

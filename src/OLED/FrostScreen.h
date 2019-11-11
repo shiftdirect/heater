@@ -31,7 +31,6 @@ class CScreenManager;
 
 class CFrostScreen : public CPasswordScreen
 {
-//  int _rowSel;
   int _scrollChar;
   uint8_t _frostOn;
   uint8_t _frostRise;

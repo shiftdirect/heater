@@ -180,8 +180,6 @@ CBasicScreen::show()
 
   if(bShowLargeTemp) {
     float fTemp = getTemperatureSensor(0);  // Primary system sensor - the one used for thermostat modes
-//    float fTemp = getTemperatureSensor(0);  // DHT22 or DS18B20
-  //  fTemp = getTemperatureSensor(1);  // BMP180
     if(fTemp > -80) {
       if(NVstore.getUserSettings().degF) {
         fTemp = fTemp * 9 / 5 + 32;

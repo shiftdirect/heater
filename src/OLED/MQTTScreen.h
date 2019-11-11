@@ -36,7 +36,8 @@ public:
   bool animate();
   bool keyHandler(uint8_t event);
 private:
-  int  _rowSel, _colSel;
+  int  _rowSel;
+  int  _colSel;
   int  _repeatCount;
   void _initUI();
 };
