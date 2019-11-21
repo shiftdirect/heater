@@ -23,12 +23,12 @@
 #define __MQTTSCREEN_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CMQTTScreen : public CScreen {
+class CMQTTScreen : public CUIEditScreen {
 public:
   CMQTTScreen(C128x64_OLED& display, CScreenManager& mgr);
   void onSelect();
@@ -36,10 +36,7 @@ public:
   bool animate();
   bool keyHandler(uint8_t event);
 private:
-  int  _rowSel;
-  int  _colSel;
   int  _repeatCount;
-  void _initUI();
 };
 
 #endif

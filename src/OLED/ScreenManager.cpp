@@ -564,21 +564,7 @@ CScreenManager::checkUpdate()
       //   Clock
       // return to those upon timeout, otherwise return to Basic Control screen
       if((_rootMenu > 2) || ((_rootMenu == 0) && NVstore.getUserSettings().menuMode)) {
-        uint8_t userHomeMenu = NVstore.getUserSettings().HomeMenu.onTimeout;
-        if(userHomeMenu) {  // allow user to override defualt screen
-          userHomeMenu--;
-          DebugPort.print("Screen Manager: Menu timeout, falling back to user preferred screen: "); 
-          switch(userHomeMenu) {
-            case 0: DebugPort.println("Detailed control menu"); break;
-            case 1: DebugPort.println("Basic control menu"); break;
-            case 2: DebugPort.println("Clock menu"); break;
-          }
-          _rootMenu = _subMenu = userHomeMenu;  
-        }
-        else {
-          _rootMenu = _subMenu = 1;
-          DebugPort.println("Screen Manager: Menu timeout, falling back to Basic control screen"); 
-        }
+        selectHomeMenu();
       }
       _enterScreen();
     }
@@ -850,4 +836,24 @@ CScreenManager::showSplash()
 
   // Show initial display buffer contents on the screen --
   _pDisplay->display();
+}
+
+void
+CScreenManager::selectHomeMenu() 
+{
+  uint8_t userHomeMenu = NVstore.getUserSettings().HomeMenu.onTimeout;
+  if(userHomeMenu) {  // allow user to override defualt screen
+    userHomeMenu--;
+    DebugPort.print("Screen Manager: Menu timeout, falling back to user preferred screen: "); 
+    switch(userHomeMenu) {
+      case 0: DebugPort.println("Detailed control menu"); break;
+      case 1: DebugPort.println("Basic control menu"); break;
+      case 2: DebugPort.println("Clock menu"); break;
+    }
+    _rootMenu = _subMenu = userHomeMenu;  
+  }
+  else {
+    _rootMenu = _subMenu = 1;
+    DebugPort.println("Screen Manager: Menu timeout, falling back to Basic control screen"); 
+  }
 }

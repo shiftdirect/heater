@@ -23,17 +23,16 @@
 #define __HOMEMENUSELSCREEN_H__
 
 #include <stdint.h>
-#include "PasswordScreen.h"
+#include "UIEditScreen.h"
 #include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CHomeMenuSelScreen : public CPasswordScreen
+class CHomeMenuSelScreen : public CUIEditScreen
 {
   int _scrollChar;
   sHomeMenuActions _action;
-  void _initUI();
 protected:
   void _saveNV();
 public:
@@ -45,13 +44,12 @@ public:
   void adjust(int dir);
 };
 
-class CNoHeaterHomeMenuSelScreen : public CPasswordScreen
+class CNoHeaterHomeMenuSelScreen : public CUIEditScreen
 {
   int _scrollChar;
   sHomeMenuActions _action;
   long _dispTimeout;
   long _menuTimeout;
-  void _initUI();
 protected:
   void _saveNV();
 public:

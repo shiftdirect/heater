@@ -29,8 +29,6 @@ class C128x64_OLED;
 class CScreenManager;
 
 class CSettingsScreen : public CPasswordScreen {
-  int _animateCount;
-  void _initUI();
 public:
   CSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

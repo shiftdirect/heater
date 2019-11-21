@@ -18,34 +18,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-
-#ifndef __THERMOSTATMODESCREEN_H__
-#define __THERMOSTATMODESCREEN_H__
+#ifndef __UIEDITSCREEN_H__
+#define __UIEDITSCREEN_H__
 
 #include <stdint.h>
-#include "UIEditScreen.h"
-#include "../Utility/NVStorage.h"
+#include "ScreenHeader.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CThermostatModeScreen : public CUIEditScreen
-{
-  int _keyRepeat;
-  void _adjust(int dir);
-  float _window;
-  int _thermoMode;
-  sCyclicThermostat _cyclicMode;
-  int _scrollChar;
+class CUIEditScreen : public CScreen {
+  unsigned long _SaveTime;
+  bool _bReqSave;
+  bool __expireSave();
 protected:
   void _initUI();
-  void _saveNV();
+  bool _saveBusy();
+  void _confirmSave();
+  void _enableStoringMessage();
+  virtual void _saveNV() {};
+  int  _rowSel;
+  int  _colSel;
+  int  _animateCount;
 public:
-  CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CUIEditScreen(C128x64_OLED& display, CScreenManager& mgr);
+  virtual void onSelect();
   bool show();
-  bool animate();
   bool keyHandler(uint8_t event);
-  void onSelect();
+  bool animate();
 };
 
 #endif

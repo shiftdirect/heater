@@ -40,11 +40,8 @@
 
 static uint8_t condensed[7][120];
 
-CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreen(display, mgr) 
+CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CUIEditScreen(display, mgr) 
 {
-  _rowSel = 0;
-  _colSel = 0;
-  _SaveTime = 0;
   _instance = instance;
 }
 

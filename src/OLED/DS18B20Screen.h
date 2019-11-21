@@ -31,7 +31,6 @@ class CScreenManager;
 
 class CDS18B20Screen : public CPasswordScreen
 {
-  int  _colSel;
   int  _keyHold;
   int  _scrollChar;
   int  _nNumSensors;

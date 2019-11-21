@@ -31,6 +31,7 @@ class CScreenManager;
 class CInheritSettingsScreen : public CPasswordScreen {
   int _nAdoptSettings;
   void _initUI();
+  void _copySettings();
 public:
   CInheritSettingsScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();

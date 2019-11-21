@@ -26,21 +26,15 @@
 
 
 
-CHomeMenuSelScreen::CHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CHomeMenuSelScreen::CHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
 }
 
 void 
 CHomeMenuSelScreen::onSelect()
 {
-  CScreenHeader::onSelect();
-  _rowSel = 0;
+  CUIEditScreen::onSelect();
   _action = NVstore.getUserSettings().HomeMenu;
-}
-
-void
-CHomeMenuSelScreen::_initUI()
-{
 }
 
 bool 
@@ -50,7 +44,7 @@ CHomeMenuSelScreen::show()
 
   _display.clearDisplay();
 
-  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+  if(!CUIEditScreen::show()) {  // for showing "saving settings"
 
     _showTitle("Home Menu Actions");
     
@@ -88,42 +82,41 @@ CHomeMenuSelScreen::show()
 bool 
 CHomeMenuSelScreen::animate()
 {
-  if(!CPasswordScreen::_busy()) {
-    if(_rowSel != SaveConfirm) {
-      int yPos = 53;
-      int xPos = _display.xCentre();
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 1:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    Menu to switch to when the heater stops.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 2:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    Menu to switch to when the heater starts.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 3:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    Menu to return to after no keypad activity.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-      }
-      return true;
-    }
+  if(_saveBusy()) {
+    return false;
   }
-  return false;
+
+  int yPos = 53;
+  int xPos = _display.xCentre();
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 1:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    Menu to switch to when the heater stops.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 2:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    Menu to switch to when the heater starts.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 3:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    Menu to return to after no keypad activity.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+  }
+  return true;
 }
 
 
 bool 
 CHomeMenuSelScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+  if(CUIEditScreen::keyHandler(event)) {  // handle confirm save
     return true;
   }
 
@@ -146,7 +139,8 @@ CHomeMenuSelScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
       }
       else {
-        _rowSel = SaveConfirm;
+        _confirmSave();   // enter save confirm mode
+        _rowSel = 0;
       }
     }
     // LEFT press
@@ -201,25 +195,19 @@ CHomeMenuSelScreen::_saveNV()
 
 
 
-CNoHeaterHomeMenuSelScreen::CNoHeaterHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CNoHeaterHomeMenuSelScreen::CNoHeaterHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
 }
 
 void 
 CNoHeaterHomeMenuSelScreen::onSelect()
 {
-  CScreenHeader::onSelect();
-  _rowSel = 0;
+  CUIEditScreen::onSelect();
   _action = NVstore.getUserSettings().HomeMenu;
   _dispTimeout = NVstore.getUserSettings().dimTime; 
   _menuTimeout = NVstore.getUserSettings().menuTimeout; 
   if(_action.onTimeout == 0 || _action.onTimeout == 1)
     _action.onTimeout = 2;
-}
-
-void
-CNoHeaterHomeMenuSelScreen::_initUI()
-{
 }
 
 bool 
@@ -229,7 +217,7 @@ CNoHeaterHomeMenuSelScreen::show()
 
   _display.clearDisplay();
 
-  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+  if(!CUIEditScreen::show()) {  // for showing "saving settings"
 
     _showTitle("Home Menu Actions");
     
@@ -267,42 +255,41 @@ CNoHeaterHomeMenuSelScreen::show()
 bool 
 CNoHeaterHomeMenuSelScreen::animate()
 {
-  if(!CPasswordScreen::_busy()) {
-    if(_rowSel != SaveConfirm) {
-      int yPos = 53;
-      int xPos = _display.xCentre();
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 1:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    No keypad activity returns to the home menu.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 2:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 3:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    Menu to return to after no keypad activity.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-      }
-      return true;
-    }
+  if(_saveBusy()) {
+    return false;
   }
-  return false;
+
+  int yPos = 53;
+  int xPos = _display.xCentre();
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 1:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    No keypad activity returns to the home menu.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 2:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 3:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    Menu to return to after no keypad activity.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+  }
+  return true;
 }
 
 
 bool 
 CNoHeaterHomeMenuSelScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+  if(CUIEditScreen::keyHandler(event)) {  // handle confirm save
     return true;
   }
 
@@ -325,7 +312,8 @@ CNoHeaterHomeMenuSelScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
       }
       else {
-        _rowSel = SaveConfirm;
+        _confirmSave();   // enter save confirm mode
+        _rowSel = 0;
       }
     }
     // LEFT press

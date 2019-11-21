@@ -34,8 +34,8 @@ public:
       uint8_t Byte0;              //  [0] always 0x76
       uint8_t Len;                //  [1] always 0x16 == 22
       uint8_t Command;            //  [2] transient commands: 00: NOP, 0xa0 START, 0x05: STOP
-      uint8_t ActualTemperature;  //  [3] 1degC / digit
-      uint8_t DesiredDemand;      //  [4] typ. 1degC / digit, but also gets used for Fixed Hx demand too!
+      int8_t  ActualTemperature;  //  [3] 1deg6C / digit
+      int8_t  DesiredDemand;      //  [4] typ. 1degC / digit, but also gets used for Fixed Hx demand too!
       uint8_t MinPumpFreq;        //  [5] 0.1Hz/digit
       uint8_t MaxPumpFreq;        //  [6] 0.1Hz/digit
       uint8_t MinFanRPM_MSB;      //  [7] 16 bit - big endian MSB
@@ -45,8 +45,8 @@ public:
       uint8_t OperatingVoltage;   // [11] 120, 240 : 0.1V/digit
       uint8_t FanSensor;          // [12] SN-1 or SN-2
       uint8_t OperatingMode;      // [13] 0x32:Thermostat, 0xCD:Fixed
-      uint8_t MinTemperature;     // [14] Minimum settable temperature
-      uint8_t MaxTemperature;     // [15] Maximum settable temperature
+      int8_t  MinTemperature;     // [14] Minimum settable temperature
+      int8_t  MaxTemperature;     // [15] Maximum settable temperature
       uint8_t GlowDrive;          // [16] power to supply to glow plug
       uint8_t Prime;              // [17] 00: normal, 0x5A: fuel prime
       uint8_t Unknown1_MSB;       // [18] always 0x01
@@ -141,14 +141,14 @@ public:
   float getPump_Fixed() const { return float(Heater.FixedPumpFreq) * 0.1f; };   // Fixed mode pump frequency
   void setPump_Prime(bool on) { Controller.Prime = on ? 0x5A : 0; };
   // temperature set/get
-  void setHeaterDemand(uint8_t degC) { Controller.DesiredDemand = degC; };
-  void setTemperature_Min(uint8_t degC) { Controller.MinTemperature = degC; };
-  void setTemperature_Max(uint8_t degC) { Controller.MaxTemperature = degC; };
-  void setTemperature_Actual(uint8_t degC) { Controller.ActualTemperature = degC; };
-  uint8_t getHeaterDemand() const { return Controller.DesiredDemand; };
-  uint8_t getTemperature_Min() const { return Controller.MinTemperature; };
-  uint8_t getTemperature_Max() const { return Controller.MaxTemperature; };
-  uint8_t getTemperature_Actual() const { return Controller.ActualTemperature; };
+  void setHeaterDemand(int8_t degC) { Controller.DesiredDemand = degC; };
+  void setTemperature_Min(int8_t degC) { Controller.MinTemperature = degC; };
+  void setTemperature_Max(int8_t degC) { Controller.MaxTemperature = degC; };
+  void setTemperature_Actual(int8_t degC) { Controller.ActualTemperature = degC; };
+  int8_t getHeaterDemand() const { return Controller.DesiredDemand; };
+  int8_t getTemperature_Min() const { return Controller.MinTemperature; };
+  int8_t getTemperature_Max() const { return Controller.MaxTemperature; };
+  int8_t getTemperature_Actual() const { return Controller.ActualTemperature; };
   void setThermostatModeProtocol(unsigned on);
   bool isThermostat() const { return Controller.OperatingMode == 0x32; };
   // glow plug
@@ -159,7 +159,7 @@ public:
   void setGlowDrive(uint8_t val) { Controller.GlowDrive = val; };
   uint8_t getGlowDrive() const { return Controller.GlowDrive; };
   // heat exchanger
-  uint16_t getTemperature_HeatExchg() const; // temperature of heat exchanger
+  int16_t getTemperature_HeatExchg() const; // temperature of heat exchanger
   void setTemperature_HeatExchg(uint16_t degC); // temperature of heat exchanger
 
   void DebugReport(const char* hdr, const char* ftr);

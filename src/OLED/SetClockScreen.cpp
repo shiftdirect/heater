@@ -36,7 +36,7 @@
 #include "../Utility/NVStorage.h"
 
 
-CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
   _initUI();
 }
@@ -51,9 +51,8 @@ CSetClockScreen::onSelect()
 void
 CSetClockScreen::_initUI()
 {
-  _rowSel = 0;
+  CUIEditScreen::_initUI();
   _nextT = millis();
-  _SaveTime = 0;
   _12hr = NVstore.getUserSettings().clock12hr;
 }
 
@@ -66,6 +65,11 @@ CSetClockScreen::showTime(int)
 bool 
 CSetClockScreen::show()
 {
+
+  if(CUIEditScreen::show()) {
+    return true;
+  }
+
   long deltaT = millis() - _nextT;
   if(deltaT >= 0) {
     _nextT += 1000;
@@ -90,80 +94,71 @@ CSetClockScreen::show()
       }
     }
 
-    if(_SaveTime) {
-      _showStoringMessage();
-      long tDelta = millis() - _SaveTime;
-      if(tDelta > 0) {
-        _SaveTime = 0;
-      }
+    yPos = 20;
+    xPos = 6;
+    // date
+    if(_rowSel==0) {
+      xPos = 18;
+      _printMenuText(xPos, yPos, _working.dowStr());
+      xPos = 20;
+    }          
+
+    sprintf(str, "%d", _working.day());
+    xPos += 20 + 12;
+    _printMenuText(xPos, yPos, str, _rowSel==1, eRightJustify);
+    xPos += 4;
+    _printMenuText(xPos, yPos, _working.monthStr(), _rowSel==2);
+    xPos += 22;
+    sprintf(str, "%d", _working.year());
+    _printMenuText(xPos, yPos, str, _rowSel==3);
+    // time
+    yPos = 32;
+    xPos = 8;
+    int hr = _working.hour();
+    if(_12hr) {
+      if(hr == 0)
+        hr = 12;
+      if(hr > 12)
+        hr -= 12;
+    }
+    sprintf(str, "%02d", hr);
+    _printMenuText(xPos, yPos, str, _rowSel==4);
+    xPos += 16;
+    _printMenuText(xPos, yPos, ":");
+    xPos += 8;
+    sprintf(str, "%02d", _working.minute());
+    _printMenuText(xPos, yPos, str, _rowSel==5);
+    xPos += 16;
+    _printMenuText(xPos, yPos, ":");
+    sprintf(str, "%02d", _working.second());
+    xPos += 8;
+    _printMenuText(xPos, yPos, str, _rowSel==6);
+    xPos += 20;
+    const char* annuc = "24hr";
+    switch(_12hr) {
+      case 1: annuc = "AM"; break;
+      case 2: annuc = "PM"; break;
+    }
+    _printMenuText(xPos, yPos, annuc, _rowSel == 7);
+    xPos += 28;
+    if(_rowSel>=1)
+      _printMenuText(_display.width()-border, yPos, "SET", _rowSel==8, eRightJustify);
+
+    // navigation line
+    xPos = _display.xCentre();
+    if(_rowSel == 0) {
+      yPos = 53;
+      _printMenuText(_display.width(), yPos, "\030Edit", false, eRightJustify);
+      _printMenuText(xPos, yPos, " Exit ", true, eCentreJustify);
     }
     else {
-      yPos = 20;
-      xPos = 6;
-      // date
-      if(_rowSel==0) {
-        xPos = 18;
-        _printMenuText(xPos, yPos, _working.dowStr());
-        xPos = 20;
-      }          
-
-      sprintf(str, "%d", _working.day());
-      xPos += 20 + 12;
-      _printMenuText(xPos, yPos, str, _rowSel==1, eRightJustify);
-      xPos += 4;
-      _printMenuText(xPos, yPos, _working.monthStr(), _rowSel==2);
-      xPos += 22;
-      sprintf(str, "%d", _working.year());
-      _printMenuText(xPos, yPos, str, _rowSel==3);
-      // time
-      yPos = 32;
-      xPos = 8;
-      int hr = _working.hour();
-      if(_12hr) {
-        if(hr == 0)
-          hr = 12;
-        if(hr > 12)
-          hr -= 12;
-      }
-      sprintf(str, "%02d", hr);
-      _printMenuText(xPos, yPos, str, _rowSel==4);
-      xPos += 16;
-      _printMenuText(xPos, yPos, ":");
-      xPos += 8;
-      sprintf(str, "%02d", _working.minute());
-      _printMenuText(xPos, yPos, str, _rowSel==5);
-      xPos += 16;
-      _printMenuText(xPos, yPos, ":");
-      sprintf(str, "%02d", _working.second());
-      xPos += 8;
-      _printMenuText(xPos, yPos, str, _rowSel==6);
-      xPos += 20;
-      const char* annuc = "24hr";
-      switch(_12hr) {
-        case 1: annuc = "AM"; break;
-        case 2: annuc = "PM"; break;
-      }
-      _printMenuText(xPos, yPos, annuc, _rowSel == 7);
-      xPos += 28;
-      if(_rowSel>=1)
-        _printMenuText(_display.width()-border, yPos, "SET", _rowSel==8, eRightJustify);
-
-      // navigation line
-      xPos = _display.xCentre();
-      if(_rowSel == 0) {
-        yPos = 53;
-        _printMenuText(_display.width(), yPos, "\030Edit", false, eRightJustify);
-        _printMenuText(xPos, yPos, " Exit ", true, eCentreJustify);
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      _printMenuText(xPos, 56, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
+      if(_rowSel == 8) {
+        _printMenuText(xPos, 56, "Save", false, eCentreJustify);
       }
       else {
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        _printMenuText(xPos, 56, "\033\032 Sel         \030\031 Adj", false, eCentreJustify);
-        if(_rowSel == 8) {
-          _printMenuText(xPos, 56, "Save", false, eCentreJustify);
-        }
-        else {
-          _printMenuText(xPos, 56, "Abort", false, eCentreJustify);
-        }
+        _printMenuText(xPos, 56, "Abort", false, eCentreJustify);
       }
     }
   }    
@@ -184,7 +179,7 @@ CSetClockScreen::keyHandler(uint8_t event)
       else {
         if(_rowSel == 8) {  // set the RTC!
           Clock.set(_working);
-          _SaveTime = millis() + 1500;
+          _enableStoringMessage();
         }
         // always save the 12/24hr selection on any OK
         sUserSettings us = NVstore.getUserSettings();

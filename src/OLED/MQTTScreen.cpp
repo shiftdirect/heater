@@ -42,7 +42,7 @@ static const int LIMIT_AWAY = 0;
 static const int LIMIT_LEFT = 1;
 static const int LIMIT_RIGHT = 2;
 
-CMQTTScreen::CMQTTScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+CMQTTScreen::CMQTTScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
   _initUI();
 }
@@ -53,13 +53,6 @@ CMQTTScreen::onSelect()
   CScreen::onSelect();
   _initUI();
 }
-
-void
-CMQTTScreen::_initUI()
-{
-  _rowSel = 0;
-  _colSel = 0;
-}  
 
 
 bool 

@@ -26,23 +26,17 @@
 
 
 
-CFrostScreen::CFrostScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CFrostScreen::CFrostScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
 }
 
 void 
 CFrostScreen::onSelect()
 {
-  CScreenHeader::onSelect();
-  _rowSel = 0;
+  CUIEditScreen::onSelect();
   _frostOn = NVstore.getUserSettings().FrostOn;
   _frostRise = NVstore.getUserSettings().FrostRise;
   _scrollChar = 0;
-}
-
-void
-CFrostScreen::_initUI()
-{
 }
 
 bool 
@@ -52,25 +46,30 @@ CFrostScreen::show()
 
   _display.clearDisplay();
 
-  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+  if(CUIEditScreen::show())   // for showing "saving settings"
+    return true;
 
-    _showTitle("Frost Mode");
-    
-    _drawBitmap(25, 20, frostIconInfo);
-    _drawBitmap(45, 16, StartIconInfo);
-    if(_frostOn == 0) {
-      strcpy(msg, "Disabled"); 
+  _showTitle("Frost Mode");
+  
+  _drawBitmap(25, 20, frostIconInfo);
+  _drawBitmap(45, 16, StartIconInfo);
+  if(_frostOn == 0) {
+    strcpy(msg, "Disabled"); 
+  }
+  else {
+    sprintf(msg, "< %d`C", _frostOn); 
+  }
+  _printMenuText(57, 16, msg, _rowSel == 2);
+
+  if(_frostOn) {
+    _drawBitmap(45, 30, StopIconInfo);
+    if(_frostRise) {
+      sprintf(msg, "> %d`C", _frostOn+_frostRise); 
     }
     else {
-      sprintf(msg, "< %d`C", _frostOn); 
+      strcpy(msg, "User stop");
     }
-    _printMenuText(57, 16, msg, _rowSel == 2);
-
-    if(_frostOn) {
-      _drawBitmap(45, 30, StopIconInfo);
-      sprintf(msg, "> %d`C", _frostOn+_frostRise); 
-      _printMenuText(57, 30, msg, _rowSel == 1);
-    }
+    _printMenuText(57, 30, msg, _rowSel == 1);
   }
   return true;
 }
@@ -78,55 +77,38 @@ CFrostScreen::show()
 bool 
 CFrostScreen::animate()
 {
-  if(!CPasswordScreen::_busy() && !CPasswordScreen::isPasswordBusy()) {
-    if(_rowSel != SaveConfirm) {
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 2:
-          pMsg = "                    Define auto start temeprature for frost mode.                    "; 
-          break;
-        case 1:
-          pMsg = "                    Define auto stop temeprature for frost mode.                    ";
-          break;
-      }
-      if(pMsg != NULL) {
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        _scrollMessage(56, pMsg, _scrollChar);
-      }
-      return true;
-    }
+  if(_saveBusy()) {
+    return false;
   }
-  return false;
+
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 2:
+      pMsg = "                    Define auto start temperature for frost mode.                    "; 
+      break;
+    case 1:
+      pMsg = "                    Define auto stop temperature for frost mode.                    ";
+      break;
+  }
+  if(pMsg != NULL) {
+    _display.drawFastHLine(0, 52, 128, WHITE);
+    _scrollMessage(56, pMsg, _scrollChar);
+  }
+  return true;
 }
 
 
 bool 
 CFrostScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {   // handles save confirm
+  if(CUIEditScreen::keyHandler(event)) {   // handles save confirm
     return true;
   }
-//  sUserSettings us;
+
   if(event & keyPressed) {
-    // special key handling for save confirm
-/*    if(_rowSel == SaveConfirm) {
-      if(event & key_Up) {
-        _enableStoringMessage();
-        us = NVstore.getUserSettings();
-        us.FrostOn = _frostOn;
-        us.FrostRise = _frostRise;
-        NVstore.setUserSettings(us);
-        NVstore.save();
-        _holdPassword();
-      }
-      _rowSel = 0;
-      onSelect();
-    }
-    // normal key handling
-    else {*/
     // UP press
     if(event & key_Up) {
       _scrollChar = 0;
@@ -154,7 +136,8 @@ CFrostScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
       }
       else {
-        _rowSel = SaveConfirm;
+        _confirmSave();
+        _rowSel = 0;
       }
     }
     // LEFT press
@@ -184,7 +167,7 @@ CFrostScreen::adjust(int dir)
   switch(_rowSel) {
     case 1:
       _frostRise += dir;
-      BOUNDSLIMIT(_frostRise, 1, 30);
+      BOUNDSLIMIT(_frostRise, 0, 30);
       break;
     case 2:
       _frostOn += dir;

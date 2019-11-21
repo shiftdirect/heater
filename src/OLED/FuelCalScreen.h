@@ -33,8 +33,6 @@ class CFuelCalScreen : public CPasswordScreen
   void _adjust(int dir);
   float _mlPerStroke;
   uint8_t _LVC;
-  int _animateCount;
-  void _initUI();
 protected:
   void _saveNV();
 public:

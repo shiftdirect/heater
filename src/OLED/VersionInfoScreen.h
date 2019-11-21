@@ -23,16 +23,14 @@
 #define __VERSIONINFOSCREEN_H__
 
 #include <stdint.h>
-#include "PasswordScreen.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
 
-class CVersionInfoScreen : public CPasswordScreen
+class CVersionInfoScreen : public CUIEditScreen
 {
-  void _initUI();
-  int _animateCount;
 protected:
   void _saveNV();
 public:

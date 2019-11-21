@@ -178,12 +178,17 @@ const uint8_t miniFontBitmaps[] PROGMEM =
 	0x28,   //    # # 
 	0xf8,   //  #####
 
+  // @88 '-' (3 pixels wide)
+	0x20,   //    #  
+	0x20,   //    #  
+	0x20,   //    #  
 };
 
 // Character descriptors for a 3x5 font
 // { [Char width in bits], [Char height in bits], [Offset into tahoma_16ptCharBitmaps in bytes] }
 const FONT_CHAR_INFO miniFontDescriptors[] PROGMEM =
 {
+	{3, 5, 88}, 		// '-' 
 	{1, 5, 0},      // '.' 
 	{0, 0, 0},      // '/' 
 	{3, 5, 1},      // '0' 
@@ -268,7 +273,7 @@ const FONT_CHAR_INFO miniFontDescriptors[] PROGMEM =
 const FONT_INFO miniFontInfo =
 {
 	5,    //  Character height
-	'.',  //  Start character
+	'-',  //  Start character
   'z',  // End character
 	1,    //  Width, in pixels, of space character
 	miniFontDescriptors, //  Character descriptor array

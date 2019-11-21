@@ -55,13 +55,6 @@ CSettingsScreen::onSelect()
   _initUI();
 }
 
-void 
-CSettingsScreen::_initUI()
-{
-  // ensure standard entry to screen - especially after a dimming timeout
-  _animateCount = 0;
-}
-
 bool 
 CSettingsScreen::show()
 {
@@ -149,45 +142,46 @@ CSettingsScreen::keyHandler(uint8_t event)
     return true;
   }
 
-  else {
-
-    if(event & keyPressed) {
-      // press LEFT 
-      if(event & key_Left) {
-        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
-      }
-      // press RIGHT 
-      if(event & key_Right) {
-        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
-      }
-      // press UP 
-      if(event & key_Up) {
-        if(hasOEMcontroller()) {
-          if(event & key_Centre)
-            _reqOEMWarning();
-          else {
-            _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::InheritSettingsUI);
-          }
-        }
+  if(event & keyPressed) {
+    // press LEFT 
+    if(event & key_Left) {
+      _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
+    }
+    // press RIGHT 
+    if(event & key_Right) {
+      _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
+    }
+    // press UP 
+    if(event & key_Up) {
+      if(hasOEMcontroller()) {
+        if(event & key_Centre)
+          _reqOEMWarning();
         else {
-          _getPassword();
+          _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::InheritSettingsUI);
         }
       }
-      if(event & key_Centre) {
-        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
-      }
-      // press DOWN
-      if(event & key_Down) {
-        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
-//        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);
-//        _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::ExThermostatUI);
-      }
-      // THREE FINGER SALUTE!
-      if((event & (key_Left|key_Right|key_Centre)) == (key_Left|key_Right|key_Centre)) {
-        for(;;);  // force watchdog reboot!
+      else {
+        _getPassword();
+        if(_isPasswordOK()) {
+          _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop);
+        }
       }
     }
+    if(event & key_Centre) {
+      _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
+    }
+    // press DOWN
+    if(event & key_Down) {
+      _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
+//        _ScreenManager.selectMenu(CScreenManager::BranchMenu, CScreenManager::ExperimentalUI);
+//        _ScreenManager.selectMenu(CScreenManager::UserSettingsLoop, CScreenManager::ExThermostatUI);
+    }
+    // THREE FINGER SALUTE!
+    if((event & (key_Left|key_Right|key_Centre)) == (key_Left|key_Right|key_Centre)) {
+      for(;;);  // force watchdog reboot!
+    }
   }
+
   _ScreenManager.reqUpdate();
   return true;
 }

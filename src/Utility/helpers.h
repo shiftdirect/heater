@@ -30,7 +30,7 @@ struct sGPIO;
 
 extern void forceBootInit();
 
-extern void  requestOn();
+extern int   requestOn(bool checkTemp=true);
 extern void  requestOff();
 extern bool  reqDemandDelta(int delta);
 extern bool  reqDemand(uint8_t newTemp, bool save=true);

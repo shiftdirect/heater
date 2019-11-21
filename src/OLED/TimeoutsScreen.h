@@ -23,20 +23,19 @@
 #define __OTHEROPTIONSCREEN_H__
 
 #include <stdint.h>
-#include "PasswordScreen.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
 
-class CTimeoutsScreen : public CPasswordScreen
+class CTimeoutsScreen : public CUIEditScreen
 {
   uint16_t _frameRate;
   long _dispTimeout;
   long _menuTimeout;
   int _repeatCount;
   int _scrollChar;
-  void _initUI();
 protected:
   void _saveNV();  
 public:

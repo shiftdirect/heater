@@ -39,24 +39,11 @@ static const int LIMIT_AWAY = 0;
 static const int LIMIT_LEFT = 1;
 static const int LIMIT_RIGHT = 2;
 
-CMenuTrunkScreen::CMenuTrunkScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+CMenuTrunkScreen::CMenuTrunkScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
   _initUI();
 }
 
-void
-CMenuTrunkScreen::onSelect()
-{
-  CScreen::onSelect();
-//  _initUI();
-}
-
-void
-CMenuTrunkScreen::_initUI()
-{
-  _rowSel = 0;
-  _colSel = 0;
-}
 
 bool 
 CMenuTrunkScreen::show()
@@ -89,6 +76,10 @@ CMenuTrunkScreen::keyHandler(uint8_t event)
   if(event & keyPressed) {
     // press CENTRE
     if(event & key_Centre) {
+      if(_rowSel == 0) {
+        _ScreenManager.clearDisplay();
+        _ScreenManager.selectHomeMenu();
+      }
       _rowSel = 0;
     }
     // press LEFT 

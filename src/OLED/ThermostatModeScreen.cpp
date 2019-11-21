@@ -40,7 +40,7 @@ static const int Line2 = 27;
 static const int Line1 = 40;
 static const int Column = 40;
 
-CThermostatModeScreen::CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CThermostatModeScreen::CThermostatModeScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
   _initUI();
   _window = 10;
@@ -51,7 +51,7 @@ CThermostatModeScreen::CThermostatModeScreen(C128x64_OLED& display, CScreenManag
 void 
 CThermostatModeScreen::onSelect()
 {
-  CScreenHeader::onSelect();
+  CUIEditScreen::onSelect();
   _initUI();
   _window = NVstore.getUserSettings().ThermostatWindow;
   _thermoMode = NVstore.getUserSettings().ThermostatMethod;
@@ -61,8 +61,7 @@ CThermostatModeScreen::onSelect()
 void
 CThermostatModeScreen::_initUI()
 {
-  _rowSel = 0;
-  _animateCount = 0;
+  CUIEditScreen::_initUI();
   _keyRepeat = -1;
 }
 
@@ -72,7 +71,7 @@ CThermostatModeScreen::show()
   char msg[20];
   _display.clearDisplay();
 
-  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+  if(!CUIEditScreen::show()) {  // for showing "saving settings"
 
     _showTitle("Thermostat Mode");
     _drawBitmap(3, 14, ThermostatIconInfo);
@@ -130,60 +129,59 @@ CThermostatModeScreen::show()
 bool 
 CThermostatModeScreen::animate()
 {
-  if(!CPasswordScreen::_busy()) {
-    if(_rowSel != SaveConfirm) {
-      int yPos = 53;
-      int xPos = _display.xCentre();
-      const char* pMsg = NULL;
-      switch(_rowSel) {
+  if(_saveBusy()) {
+    return false;
+  }
+
+  int yPos = 53;
+  int xPos = _display.xCentre();
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 1:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    Heater shuts down over set point.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 2:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    Heater restarts below setpoint.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 3:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    User defined window for custom thermostat modes.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 4:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      switch(_thermoMode) {
         case 0:
-          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+          pMsg = "                   Use heater's standard thermostat control.                    ";
           break;
         case 1:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    Heater shuts down over set point.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
+          pMsg = "                   The user defined window sets the thermostat's hysteresis.                    ";
           break;
         case 2:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    Heater restarts below setpoint.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
+          pMsg = "                   The pump rate is adjusted linearly across the set point window.                    ";
           break;
         case 3:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    User defined window for custom thermostat modes.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 4:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_thermoMode) {
-            case 0:
-              pMsg = "                   Use heater's standard thermostat control.                    ";
-              break;
-            case 1:
-              pMsg = "                   The user defined window sets the thermostat's hysteresis.                    ";
-              break;
-            case 2:
-              pMsg = "                   The pump rate is adjusted linearly across the set point window.                    ";
-              break;
-            case 3:
-              pMsg = "                   The heater runs according to GPIO input #2: Open:minimum, Closed:maximum.                    ";
-              break;
-          }
-          if(pMsg)
-            _scrollMessage(56, pMsg, _scrollChar);
+          pMsg = "                   The heater runs according to GPIO input #2: Open:minimum, Closed:maximum.                    ";
           break;
       }
-      return true;
-    }
+      if(pMsg)
+        _scrollMessage(56, pMsg, _scrollChar);
+      break;
   }
-  return false;
+  return true;
 }
 
 bool 
 CThermostatModeScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {   // potentially handles save confirm stage 
+  if(CUIEditScreen::keyHandler(event)) {   // potentially handles save confirm stage 
     return true;
   }
 
@@ -259,7 +257,8 @@ CThermostatModeScreen::keyHandler(uint8_t event)
         case 2:
         case 3:
         case 4:
-          _rowSel = SaveConfirm;
+          _confirmSave();   // enter save confirm mode
+          _rowSel = 0;
           break;
       }
     }

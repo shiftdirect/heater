@@ -45,6 +45,7 @@ CBasicScreen::CBasicScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen
 {
   _showSetModeTime = 0;
   _showModeTime = 0;
+  _showAbortTime = 0;
   _feedbackType = 0;
   _nModeSel = 0;
   _bShowOtherSensors = 0;
@@ -64,113 +65,130 @@ CBasicScreen::show()
   //   Selection between Fixed or Thermostat mode
   //   Current heat demand setting
   //   Run state of heater
-  
-  if(_showModeTime) {
-    const int border = 3;
-    // Show selection between Fixed or Thermostat mode
-    long tDelta = millis() - _showModeTime;
+
+  if(_showAbortTime) {
+    long tDelta = millis() - _showAbortTime;
     if(tDelta < 0) {
-
-      yPos = _display.height() - _display.textHeight() - border;  // bottom of screen, with room for box
-
-      // display "Fixed Hz" at lower right, allowing space for a selection surrounding box
-      strcpy(msg, "Fixed Hz");
-      xPos = _display.width() - border;     // set X position to finish short of RHS
-      _printMenuText(xPos, yPos, msg, _nModeSel == 1, eRightJustify);
-
-      // display "Thermostat" at lower left, allowing space for a selection surrounding box
-      strcpy(msg, "Thermostat");
-      xPos = border;
-      _printMenuText(xPos, yPos, msg, _nModeSel == 0);
-
-      // setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
-    }
-    else {
-      // cancel selection mode, apply whatever is boxed
-      _showModeTime = 0;
-      _showSetModeTime = millis() + 5000;  // then make the new mode setting be shown
-      _bShowOtherSensors = 0;
-      _feedbackType = 0;
-      _ScreenManager.reqUpdate();
-    }
-  }
-  if((_showModeTime == 0) && _showSetModeTime) {
-    showHeaderDetail(true);
-    long tDelta = millis() - _showSetModeTime;  
-    if(tDelta < 0) {
-      switch(_feedbackType) {
-        case 0:
-          // Show current heat demand setting
-
-          if(getThermostatModeActive()) {
-            if(getExternalThermostatModeActive()) {
-              sprintf(msg, "External @ %.1fHz", getHeaterInfo().getPump_Fixed());
-            }
-            else {
-              float fTemp = getTemperatureDesired();
-              if(NVstore.getUserSettings().degF) {
-                fTemp = fTemp * 9 / 5 + 32;
-                sprintf(msg, "Setpoint = %.0f`F", fTemp);
-              }
-              else {
-                sprintf(msg, "Setpoint = %.0f`C", fTemp);
-              }
-            }
-          }
-          else {
-            sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
-          }
-          break;
-        case 1:
-        case 2:
-          sprintf(msg, "GPIO output #%d %s", _feedbackType, getGPIOout(_feedbackType-1) ? "ON" : "OFF");
-          break;
+      switch(_abortreason) {
+        case -1: strcpy(msg, "Ignored - too warm!"); break;
+        case -2: strcpy(msg, "Suspended - too warm!"); break;
+        case -3: strcpy(msg, "Ignored - low voltage!"); break;
       }
       // centre message at bottom of screen
       _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
-
-      int numSensors = getTempSensor().getNumSensors();
-      if(_bShowOtherSensors && numSensors > 1) {
-        bShowLargeTemp = false;
-        CTransientFont AF(_display, &arial_8ptFontInfo);
-        int yPos = numSensors == 4 ? 14 : 23;
-        if(getTempSensor().getTemperature(1, fTemp)) {
-          CTempSense::format(msg, fTemp);
-        }
-        else {
-          strcpy(msg, "---");
-        }
-        _printMenuText(50, yPos, "External:", false, eRightJustify);
-        _printMenuText(54, yPos, msg);
-
-        yPos += 13;
-        if(numSensors > 2) {
-          if(getTempSensor().getTemperature(2, fTemp)) {
-            CTempSense::format(msg, fTemp);
-          }
-          else {
-            strcpy(msg, "---");
-          }
-          _printMenuText(50, yPos, (numSensors == 3) ? "Aux:" : "Aux1:", false, eRightJustify);
-          _printMenuText(54, yPos, msg);
-        }
-
-        yPos += 13;
-        if(numSensors > 3) {
-          if(getTempSensor().getTemperature(3, fTemp)) {
-            CTempSense::format(msg, fTemp);
-          }
-          else {
-            strcpy(msg, "---");
-          }
-          _printMenuText(50, yPos, "Aux2:", false, eRightJustify);
-          _printMenuText(54, yPos, msg);
-        }
-      }
-
     }
     else {
-      _showSetModeTime = 0;
+      _showAbortTime = 0;
+    }
+  }
+  else {
+    if(_showModeTime) {
+      const int border = 3;
+      // Show selection between Fixed or Thermostat mode
+      long tDelta = millis() - _showModeTime;
+      if(tDelta < 0) {
+
+        yPos = _display.height() - _display.textHeight() - border;  // bottom of screen, with room for box
+
+        // display "Fixed Hz" at lower right, allowing space for a selection surrounding box
+        strcpy(msg, "Fixed Hz");
+        xPos = _display.width() - border;     // set X position to finish short of RHS
+        _printMenuText(xPos, yPos, msg, _nModeSel == 1, eRightJustify);
+
+        // display "Thermostat" at lower left, allowing space for a selection surrounding box
+        strcpy(msg, "Thermostat");
+        xPos = border;
+        _printMenuText(xPos, yPos, msg, _nModeSel == 0);
+
+        // setThermostatMode(_nModeSel == 0 ? 1 : 0);    // set the new mode
+      }
+      else {
+        // cancel selection mode, apply whatever is boxed
+        _showModeTime = 0;
+        _showSetModeTime = millis() + 5000;  // then make the new mode setting be shown
+        _bShowOtherSensors = 0;
+        _feedbackType = 0;
+        _ScreenManager.reqUpdate();
+      }
+    }
+    if((_showModeTime == 0) && _showSetModeTime) {
+      showHeaderDetail(true);
+      long tDelta = millis() - _showSetModeTime;  
+      if(tDelta < 0) {
+        switch(_feedbackType) {
+          case 0:
+            // Show current heat demand setting
+
+            if(getThermostatModeActive()) {
+              if(getExternalThermostatModeActive()) {
+                sprintf(msg, "External @ %.1fHz", getHeaterInfo().getPump_Fixed());
+              }
+              else {
+                float fTemp = getTemperatureDesired();
+                if(NVstore.getUserSettings().degF) {
+                  fTemp = fTemp * 9 / 5 + 32;
+                  sprintf(msg, "Setpoint = %.0f`F", fTemp);
+                }
+                else {
+                  sprintf(msg, "Setpoint = %.0f`C", fTemp);
+                }
+              }
+            }
+            else {
+              sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
+            }
+            break;
+          case 1:
+          case 2:
+            sprintf(msg, "GPIO output #%d %s", _feedbackType, getGPIOout(_feedbackType-1) ? "ON" : "OFF");
+            break;
+        }
+        // centre message at bottom of screen
+        _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
+
+        int numSensors = getTempSensor().getNumSensors();
+        if(_bShowOtherSensors && numSensors > 1) {
+          bShowLargeTemp = false;
+          CTransientFont AF(_display, &arial_8ptFontInfo);
+          int yPos = numSensors == 4 ? 14 : 23;
+          if(getTempSensor().getTemperature(1, fTemp)) {
+            CTempSense::format(msg, fTemp);
+          }
+          else {
+            strcpy(msg, "---");
+          }
+          _printMenuText(50, yPos, "External:", false, eRightJustify);
+          _printMenuText(54, yPos, msg);
+
+          yPos += 13;
+          if(numSensors > 2) {
+            if(getTempSensor().getTemperature(2, fTemp)) {
+              CTempSense::format(msg, fTemp);
+            }
+            else {
+              strcpy(msg, "---");
+            }
+            _printMenuText(50, yPos, (numSensors == 3) ? "Aux:" : "Aux1:", false, eRightJustify);
+            _printMenuText(54, yPos, msg);
+          }
+
+          yPos += 13;
+          if(numSensors > 3) {
+            if(getTempSensor().getTemperature(3, fTemp)) {
+              CTempSense::format(msg, fTemp);
+            }
+            else {
+              strcpy(msg, "---");
+            }
+            _printMenuText(50, yPos, "Aux2:", false, eRightJustify);
+            _printMenuText(54, yPos, msg);
+          }
+        }
+
+      }
+      else {
+        _showSetModeTime = 0;
+      }
     }
   }
   if((_showModeTime == 0) && (_showSetModeTime == 0)) {
@@ -279,7 +297,10 @@ CBasicScreen::keyHandler(uint8_t event)
             // standby, request ON
             if(repeatCount > 3) {
               repeatCount = -1;
-              requestOn();
+              _abortreason = requestOn();
+              if(_abortreason) {
+                _showAbortTime = millis() + 5000;
+              }
             }
           }
         }

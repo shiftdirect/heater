@@ -39,36 +39,16 @@ static const int LIMIT_AWAY = 0;
 static const int LIMIT_LEFT = 1;
 static const int LIMIT_RIGHT = 2;
 
-CBTScreen::CBTScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+CBTScreen::CBTScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
-  _initUI();
-}
-
-void
-CBTScreen::onSelect()
-{
-  CScreen::onSelect();
-  _initUI();
-}
-
-void
-CBTScreen::_initUI()
-{
-  _rowSel = 0;
-  _colSel = 0;
 }
 
 bool 
 CBTScreen::show()
 {
-//  CScreenHeader::show(false);
-  CScreen::show();
-
-  int yPos = 18;
-
   _showTitle("Bluetooth info");
 
-  yPos = 35;
+  int yPos = 35;
   _printMenuText(0, yPos, "MAC:");
   _printMenuText(25, yPos, getBluetoothClient().getMAC());
 

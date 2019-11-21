@@ -53,7 +53,7 @@ static const int Line1 = 40;
 static const int Column1 = 19;
 static const int Column2 = 88;
 
-CGPIOSetupScreen::CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CGPIOSetupScreen::CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
   _initUI();
   _GPIOparams.in1Mode = CGPIOin1::Disabled;
@@ -69,19 +69,12 @@ CGPIOSetupScreen::CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr) :
 void 
 CGPIOSetupScreen::onSelect()
 {
-  CPasswordScreen::onSelect();
-  _initUI();
+  CUIEditScreen::onSelect();
   _GPIOparams = NVstore.getUserSettings().GPIO;
   _ExtHold = NVstore.getUserSettings().ExtThermoTimeout;
   _repeatCount = -1;
 }
 
-void
-CGPIOSetupScreen::_initUI()
-{
-  _rowSel = 0;
-  _animateCount = 0;
-}
 
 bool 
 CGPIOSetupScreen::show()
@@ -93,7 +86,7 @@ CGPIOSetupScreen::show()
   static bool animated = false;
   animated = !animated;
 
-  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+  if(!CUIEditScreen::show()) {  // for showing "saving settings"
 
     _showTitle("GPIO Configuration");
     _drawBitmap(0, Line3, InputIconInfo);
@@ -203,113 +196,110 @@ CGPIOSetupScreen::show()
 bool 
 CGPIOSetupScreen::animate()
 {
-  CPasswordScreen::animate();
-  
-  if(!CPasswordScreen::_busy()) {
-    if(_rowSel != SaveConfirm) {
-      int yPos = 53;
-      int xPos = _display.xCentre();
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 1:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_GPIOparams.algMode) {
-            case CGPIOalg::Disabled:   pMsg = "                   Analogue input is ignored.                    "; break;
-            case CGPIOalg::HeatDemand: pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    "; break;
-          }
-          if(pMsg)
-            _scrollMessage(56, pMsg, _scrollChar);
-          break;
+  if(_saveBusy()) {
+    return false;
+  }
 
-        case 2:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_GPIOparams.in2Mode) {
-            case CGPIOin2::Disabled:   pMsg = "                   Input 2: DISABLED.                    "; break;
-            case CGPIOin2::Stop:       pMsg = "                   Input 2: Stops heater upon closure.                    "; break;
-            case CGPIOin2::Thermostat: pMsg = "                   Input 2: External thermostat. Max fuel when closed, min fuel when open.                    "; break;
-          }
-          if(pMsg)
-            _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 3:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                   Input 2: External thermostat heater control. Start heater upon closure, stop after open for specified period.                    "; 
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 4:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_GPIOparams.in1Mode) {
-            case CGPIOin1::Disabled:  pMsg = "                   Input 1: DISABLED.                    "; break;
-            case CGPIOin1::Start:     pMsg = "                   Input 1: Starts heater upon closure.                    "; break;
-            case CGPIOin1::Run:       pMsg = "                   Input 1: Starts heater when held closed, stops when opened.                    "; break;
-            case CGPIOin1::StartStop: pMsg = "                   Input 1: Starts or Stops heater upon closure.                    "; break;
-            case CGPIOin1::Stop:      pMsg = "                   Input 1: Stops heater upon closure.                    "; break;
-          }
-          if(pMsg)
-            _scrollMessage(56, pMsg, _scrollChar);
-          break;
+  int yPos = 53;
+  int xPos = _display.xCentre();
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 1:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      switch(_GPIOparams.algMode) {
+        case CGPIOalg::Disabled:   pMsg = "                   Analogue input is ignored.                    "; break;
+        case CGPIOalg::HeatDemand: pMsg = "                   Input 1 enables reading of analogue input to set temperature.                    "; break;
+      }
+      if(pMsg)
+        _scrollMessage(56, pMsg, _scrollChar);
+      break;
 
-        case 5:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_GPIOparams.out2Mode) {
-            case CGPIOout2::Disabled: pMsg = "                   Output 2: DISABLED.                    "; break;
-            case CGPIOout2::User:     pMsg = "                   Output 2: User controlled.                    "; break;
-            case CGPIOout2::Thresh:   
-              if(_GPIOparams.thresh[1] >= 0)
-                pMsg = "                   Output 2: Active if over temperature. Hold LEFT to set under. Hold RIGHT to set over.                   "; 
-              else
-                pMsg = "                   Output 2: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
-              break;
-          }
-          if(pMsg)
-            _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 6:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          switch(_GPIOparams.out1Mode) {
-            case CGPIOout1::Disabled: pMsg = "                   Output 1: DISABLED.                    "; break;
-            case CGPIOout1::Status:   pMsg = "                   Output 1: LED status indicator.                    "; break;
-            case CGPIOout1::User:     pMsg = "                   Output 1: User controlled.                    "; break;
-            case CGPIOout1::Thresh:   
-              if(_GPIOparams.thresh[0] >= 0)
-                pMsg = "                   Output 1: Active if over temperature. Hold LEFT to set under. Hold RIGHT to set over.                   "; 
-              else
-                pMsg = "                   Output 1: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
-              break;
-          }
-          if(pMsg)
-            _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 7:
-          _display.drawFastHLine(0, 52, 128, WHITE);
+    case 2:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      switch(_GPIOparams.in2Mode) {
+        case CGPIOin2::Disabled:   pMsg = "                   Input 2: DISABLED.                    "; break;
+        case CGPIOin2::Stop:       pMsg = "                   Input 2: Stops heater upon closure.                    "; break;
+        case CGPIOin2::Thermostat: pMsg = "                   Input 2: External thermostat. Max fuel when closed, min fuel when open.                    "; break;
+      }
+      if(pMsg)
+        _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 3:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                   Input 2: External thermostat heater control. Start heater upon closure, stop after open for specified period.                    "; 
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 4:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      switch(_GPIOparams.in1Mode) {
+        case CGPIOin1::Disabled:  pMsg = "                   Input 1: DISABLED.                    "; break;
+        case CGPIOin1::Start:     pMsg = "                   Input 1: Starts heater upon closure.                    "; break;
+        case CGPIOin1::Run:       pMsg = "                   Input 1: Starts heater when held closed, stops when opened.                    "; break;
+        case CGPIOin1::StartStop: pMsg = "                   Input 1: Starts or Stops heater upon closure.                    "; break;
+        case CGPIOin1::Stop:      pMsg = "                   Input 1: Stops heater upon closure.                    "; break;
+      }
+      if(pMsg)
+        _scrollMessage(56, pMsg, _scrollChar);
+      break;
+
+    case 5:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      switch(_GPIOparams.out2Mode) {
+        case CGPIOout2::Disabled: pMsg = "                   Output 2: DISABLED.                    "; break;
+        case CGPIOout2::User:     pMsg = "                   Output 2: User controlled.                    "; break;
+        case CGPIOout2::Thresh:   
           if(_GPIOparams.thresh[1] >= 0)
-            pMsg = "                   Output 2: Active if over temperature. CENTRE to accept. Hold LEFT to set under.                   "; 
+            pMsg = "                   Output 2: Active if over temperature. Hold LEFT to set under. Hold RIGHT to set over.                   "; 
           else
-            pMsg = "                   Output 2: Active if under temperature. CENTRE to accept. Hold RIGHT to set over.                   ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 8:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          if(_GPIOparams.thresh[0] >= 0)
-            pMsg = "                   Output 1: Active if over temperature. Centre to accept. Hold LEFT to set under.                   "; 
-          else
-            pMsg = "                   Output 1: Active if under temperature. Centre to accept. Hold RIGHT to set over.                   ";
-          _scrollMessage(56, pMsg, _scrollChar);
+            pMsg = "                   Output 2: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
           break;
       }
-      return true;
-    }
+      if(pMsg)
+        _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 6:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      switch(_GPIOparams.out1Mode) {
+        case CGPIOout1::Disabled: pMsg = "                   Output 1: DISABLED.                    "; break;
+        case CGPIOout1::Status:   pMsg = "                   Output 1: LED status indicator.                    "; break;
+        case CGPIOout1::User:     pMsg = "                   Output 1: User controlled.                    "; break;
+        case CGPIOout1::Thresh:   
+          if(_GPIOparams.thresh[0] >= 0)
+            pMsg = "                   Output 1: Active if over temperature. Hold LEFT to set under. Hold RIGHT to set over.                   "; 
+          else
+            pMsg = "                   Output 1: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
+          break;
+      }
+      if(pMsg)
+        _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 7:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      if(_GPIOparams.thresh[1] >= 0)
+        pMsg = "                   Output 2: Active if over temperature. CENTRE to accept. Hold LEFT to set under.                   "; 
+      else
+        pMsg = "                   Output 2: Active if under temperature. CENTRE to accept. Hold RIGHT to set over.                   ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 8:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      if(_GPIOparams.thresh[0] >= 0)
+        pMsg = "                   Output 1: Active if over temperature. Centre to accept. Hold LEFT to set under.                   "; 
+      else
+        pMsg = "                   Output 1: Active if under temperature. Centre to accept. Hold RIGHT to set over.                   ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
   }
-  return false;
+  return true;
 }
 
 bool 
 CGPIOSetupScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+  if(CUIEditScreen::keyHandler(event)) {  // handle confirm save
     return true;
   }
 
@@ -434,7 +424,8 @@ CGPIOSetupScreen::keyHandler(uint8_t event)
           case 4:
           case 5:
           case 6:
-            _rowSel = SaveConfirm;
+            _confirmSave();   // enter save confirm mode
+            _rowSel = 0;
             break;
           case 7:
             _rowSel = 5;

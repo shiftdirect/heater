@@ -23,19 +23,17 @@
 #define __SETCLOCKSCREEN_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "UIEditScreen.h"
 #include "../RTC/BTCDateTime.h"
 
 class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CSetClockScreen : public CScreen {
-  int  _rowSel;
+class CSetClockScreen : public CUIEditScreen {
   unsigned long _nextT;
   BTCDateTime _working;
   int _12hr;
-  unsigned long _SaveTime;
 
   void _adjTimeDate(int dir);
   void _initUI();

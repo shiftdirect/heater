@@ -39,7 +39,7 @@ CTempSensorScreen::CTempSensorScreen(C128x64_OLED& display, CScreenManager& mgr)
 void 
 CTempSensorScreen::onSelect()
 {
-  CScreenHeader::onSelect();
+  CPasswordScreen::onSelect();
   _initUI();
   _bHasBME280 = getTempSensor().getBME280().getCount() != 0;
   _nDS18B20 = getTempSensor().getDS18B20().getNumSensors();
@@ -50,8 +50,7 @@ CTempSensorScreen::onSelect()
 void
 CTempSensorScreen::_initUI()
 {
-  _rowSel = 0;
-  _colSel = 0;
+  CPasswordScreen::_initUI();
   _keyHold = -1;
   _scrollChar = 0;
 }
@@ -122,51 +121,54 @@ CTempSensorScreen::show()
 bool 
 CTempSensorScreen::animate()
 {
-  if(!CPasswordScreen::_busy() && !CPasswordScreen::isPasswordBusy()) {
-    if(_rowSel != SaveConfirm) {
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 1:
-          if(_colSel == 0)
-            pMsg = "                    Hold Right to adjust probe offset.                    "; 
-          else
-            pMsg = "                    Hold Left to select probe's priority.                    "; 
-          break;
-        case 2:
-          if(_nDS18B20 > 1)
-            pMsg = "                    Press UP to adjust DS18B20 priorities.                    ";
-          else if(_nDS18B20 == 1) {
-            if(_colSel == 0)
-              pMsg = "                    Hold Right to adjust probe offset.                    "; 
-            else
-              pMsg = "                    Hold Left to select probe's priority.                    "; 
-          }
-          break;
-        case 3:
-          break;
-      }
-      if(pMsg != NULL) {
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        _scrollMessage(56, pMsg, _scrollChar);
-      }
-      return true;
-    }
+  if(_saveBusy() || isPasswordBusy()) {
+    return false;
   }
-  return false;
+
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 1:
+      if(_colSel == 0)
+        pMsg = "                    Hold Right to adjust probe offset.                    "; 
+      else
+        pMsg = "                    Hold Left to select probe's priority.                    "; 
+      break;
+    case 2:
+      if(_nDS18B20 > 1)
+        pMsg = "                    Press UP to adjust DS18B20 priorities.                    ";
+      else if(_nDS18B20 == 1) {
+        if(_colSel == 0)
+          pMsg = "                    Hold Right to adjust probe offset.                    "; 
+        else
+          pMsg = "                    Hold Left to select probe's priority.                    "; 
+      }
+      break;
+    case 3:
+      break;
+  }
+  if(pMsg != NULL) {
+    _display.drawFastHLine(0, 52, 128, WHITE);
+    _scrollMessage(56, pMsg, _scrollChar);
+  }
+  return true;
 }
 
 
 bool 
 CTempSensorScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {   // manage password coolection and NV save confirm
+  if(CPasswordScreen::keyHandler(event)) {   // manage password collection and NV save confirm
     if(_isPasswordOK()) {
       _rowSel = 1;
       _keyHold = -1;
     }
+    return true;
+  }
+
+  if(CUIEditScreen::keyHandler(event)) {
     return true;
   }
 
@@ -246,7 +248,8 @@ CTempSensorScreen::keyHandler(uint8_t event)
           _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
         }
         else  {
-          _rowSel = SaveConfirm;
+          _confirmSave();   // enter save confirm mode
+          _rowSel = 0;
         }
       }
     }

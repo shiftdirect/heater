@@ -49,13 +49,6 @@ CFuelCalScreen::onSelect()
   _LVC = NVstore.getHeaterTuning().lowVolts;
 }
 
-void
-CFuelCalScreen::_initUI()
-{
-  _rowSel = 0;
-  _animateCount = 0;
-}
-
 bool 
 CFuelCalScreen::show()
 {
@@ -109,6 +102,10 @@ CFuelCalScreen::show()
 bool 
 CFuelCalScreen::animate()
 { 
+  if(_saveBusy()) {
+    return false;
+  }
+
   if(_animateCount >= 0) {
     switch(_animateCount) {
       case 0:
@@ -149,7 +146,7 @@ CFuelCalScreen::animate()
 bool 
 CFuelCalScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+  if(CUIEditScreen::keyHandler(event)) {  // handles save confirm
     return true;
   }
 
@@ -216,7 +213,8 @@ CFuelCalScreen::keyHandler(uint8_t event)
         case 3:
           _animateCount = -1;
           _display.clearDisplay();          
-          _rowSel = SaveConfirm;
+          _confirmSave();
+          _rowSel = 0;
           break;
       }
     }

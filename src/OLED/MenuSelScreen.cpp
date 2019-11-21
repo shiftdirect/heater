@@ -34,16 +34,10 @@ CMenuSelScreen::CMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPa
 void 
 CMenuSelScreen::onSelect()
 {
-  CScreenHeader::onSelect();
-  _rowSel = 0;
+  CPasswordScreen::onSelect();
   _menuMode = NVstore.getUserSettings().menuMode;
   _holdPW = NVstore.getUserSettings().holdPassword;
   _scrollChar = 0;
-}
-
-void
-CMenuSelScreen::_initUI()
-{
 }
 
 bool 
@@ -85,40 +79,39 @@ CMenuSelScreen::show()
 bool 
 CMenuSelScreen::animate()
 {
-  if(!CPasswordScreen::_busy() && !CPasswordScreen::isPasswordBusy()) {
-    if(_bReload) {
-      _bReload = false;
-      _ScreenManager.reqReload();
-      return false;
-    }
-    if(_rowSel != SaveConfirm) {
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 2:
-          switch(_menuMode) {
-            case 0: pMsg = "                    Standard, complete menu allows full access to features.                    "; break;
-            case 1: pMsg = "                    Basic simplified menu.                    "; break;
-            case 2: pMsg = "                    No heater mode.                    "; break;
-          }
-          break;
-        case 1:
-          if(_holdPW)
-            pMsg = "                    Retain password for 24 hours after correct entry.                    ";
-          else
-            pMsg = "                    Forget password after each entry.                    ";
-          break;
-      }
-      if(pMsg != NULL) {
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        _scrollMessage(56, pMsg, _scrollChar);
-      }
-      return true;
-    }
+  if(_saveBusy() || isPasswordBusy()) {
+    return false;
   }
-  return false;
+
+  if(_bReload) {
+    _bReload = false;
+    _ScreenManager.reqReload();
+    return false;
+  }
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(_display.xCentre(), 53, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 2:
+      switch(_menuMode) {
+        case 0: pMsg = "                    Standard, complete menu allows full access to features.                    "; break;
+        case 1: pMsg = "                    Basic simplified menu.                    "; break;
+        case 2: pMsg = "                    No heater mode.                    "; break;
+      }
+      break;
+    case 1:
+      if(_holdPW)
+        pMsg = "                    Retain password for 24 hours after correct entry.                    ";
+      else
+        pMsg = "                    Forget password after each entry.                    ";
+      break;
+  }
+  if(pMsg != NULL) {
+    _display.drawFastHLine(0, 52, 128, WHITE);
+    _scrollMessage(56, pMsg, _scrollChar);
+  }
+  return true;
 }
 
 
@@ -132,54 +125,58 @@ CMenuSelScreen::keyHandler(uint8_t event)
     return true;
   }
 
-  else {
-    _scrollChar = 0;
-    if(event & keyPressed) {
-      // UP press
-      if(event & key_Up) {
-        if(_rowSel == 0) {
-          _getPassword();
-          if(_isPasswordOK()) {
-            _rowSel = 1;
-          }
-        }
-        else {
-          _rowSel++;
-          UPPERLIMIT(_rowSel, 2);
+  if(CUIEditScreen::keyHandler(event)) {
+    return true;
+  }
+
+  _scrollChar = 0;
+  if(event & keyPressed) {
+    // UP press
+    if(event & key_Up) {
+      if(_rowSel == 0) {
+        _getPassword();
+        if(_isPasswordOK()) {
+          _rowSel = 1;
         }
       }
-      // DOWN press
-      if(event & key_Down) {
-        _rowSel--;
-        LOWERLIMIT(_rowSel, 0);
-      }
-      // CENTRE press
-      if(event & key_Centre) {
-        if(_rowSel == 0) {
-          _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
-        }
-        else {
-          _rowSel = SaveConfirm;
-        }
-      }
-      // LEFT press
-      if(event & key_Left) {
-        if(_rowSel == 0)
-          _ScreenManager.prevMenu();
-        else 
-          adjust(-1);
-      }
-      // RIGHT press
-      if(event & key_Right) {
-        if(_rowSel == 0)
-          _ScreenManager.nextMenu();
-        else 
-          adjust(+1);
+      else {
+        _rowSel++;
+        UPPERLIMIT(_rowSel, 2);
       }
     }
-
-    _ScreenManager.reqUpdate();
+    // DOWN press
+    if(event & key_Down) {
+      _rowSel--;
+      LOWERLIMIT(_rowSel, 0);
+    }
+    // CENTRE press
+    if(event & key_Centre) {
+      if(_rowSel == 0) {
+        _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
+      }
+      else {
+        _confirmSave();   // enter save confirm mode
+        _rowSel = 0;
+      }
+    }
+    // LEFT press
+    if(event & key_Left) {
+      if(_rowSel == 0)
+        _ScreenManager.prevMenu();
+      else 
+        adjust(-1);
+    }
+    // RIGHT press
+    if(event & key_Right) {
+      if(_rowSel == 0)
+        _ScreenManager.nextMenu();
+      else 
+        adjust(+1);
+    }
   }
+
+  _ScreenManager.reqUpdate();
+
 
   return true;
 }

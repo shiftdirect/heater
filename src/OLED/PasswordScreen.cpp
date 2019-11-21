@@ -36,15 +36,8 @@
 
 long CPasswordScreen::__Expiry = 0;
 
-CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreenHeader(display, mgr) 
+CPasswordScreen::CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
-  _initUI();
-}
-
-void
-CPasswordScreen::onSelect()
-{
-  CScreenHeader::onSelect();
   _initUI();
 }
 
@@ -63,10 +56,8 @@ CPasswordScreen::__initPassword(bool get)
 void
 CPasswordScreen::_initUI()
 {
+  CUIEditScreen::_initUI();
   __initPassword(false);
-
-  _SaveTime = 0;
-  _rowSel = 0;
 }
 
 void 
@@ -81,44 +72,19 @@ bool
 CPasswordScreen::show()
 {
   CPasswordScreen::animate();  // precautionary, in case derived class forgets to call
-  
-  if(_SaveTime) {
-    _display.clearDisplay();
-    _showStoringMessage();
+
+  if(CUIEditScreen::show())
     return true;
-  }
-  else if(_bGetPassword) {
+  
+  if(_bGetPassword) {
     if(!_bPasswordOK) {
       _display.clearDisplay();
       _showPassword();
       return true;
     }
   }
-  else if(_rowSel == SaveConfirm) {
-    _showConfirmMessage();
-    return true;
-  }
-
+  
   return false;
-}
-
-bool 
-CPasswordScreen::animate()
-{
-  if(_SaveTime) {
-    long tDelta = millis() - _SaveTime;
-    if(tDelta > 0) {
-      _SaveTime = 0;
-      _ScreenManager.reqUpdate();
-    }
-  }
-  return false;
-}
-
-bool
-CPasswordScreen::_busy()
-{
-  return _SaveTime != 0;
 }
 
 void
@@ -133,11 +99,10 @@ CPasswordScreen::_holdPassword()
 bool 
 CPasswordScreen::isPasswordBusy() 
 { 
-//  return (_SaveTime != 0) || _bGetPassword; 
   if(__Expiry)
     return false;
 
-  return _busy() || _bGetPassword;   
+  return _bGetPassword;   
 }
 
 bool 
@@ -173,13 +138,13 @@ CPasswordScreen::keyHandler(uint8_t event)
       // press LEFT 
       if(event & key_Left) {
         _PWcol--;
-        LOWERLIMIT(_PWcol, 0);
+        WRAPLOWERLIMIT(_PWcol, 0, 3);
       }
 
       // press RIGHT 
       if(event & key_Right) {
         _PWcol++;
-        UPPERLIMIT(_PWcol, 5);
+        WRAPUPPERLIMIT(_PWcol, 3, 0);
       }
 
       // press UP 
@@ -196,20 +161,6 @@ CPasswordScreen::keyHandler(uint8_t event)
       _ScreenManager.reqUpdate();
     }
     return true;
-  }
-
-  if(_rowSel == SaveConfirm) {
-    if(event & keyPressed) {
-      _rowSel = 0;
-      if(event & key_Up) {
-        _enableStoringMessage();
-        _saveNV();
-        if(__Expiry)
-          _holdPassword();  // extend password hold time (if enabled)
-      }
-      onSelect();
-      return true;
-    }
   }
 
   return false;
@@ -246,13 +197,6 @@ CPasswordScreen::_showPassword()
     }
   }
   return _bGetPassword;
-}
-
-void 
-CPasswordScreen::_enableStoringMessage()
-{
-  _SaveTime = millis() + 1500;
-  _ScreenManager.reqUpdate();
 }
 
 

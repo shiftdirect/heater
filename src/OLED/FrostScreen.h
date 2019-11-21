@@ -23,18 +23,17 @@
 #define __FROSTSCREEN_H__
 
 #include <stdint.h>
-#include "PasswordScreen.h"
+#include "UIEditScreen.h"
 #include "../Utility/NVStorage.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CFrostScreen : public CPasswordScreen
+class CFrostScreen : public CUIEditScreen
 {
   int _scrollChar;
   uint8_t _frostOn;
   uint8_t _frostRise;
-  void _initUI();
 protected:
   void _saveNV();
 public:

@@ -27,24 +27,18 @@
 
 
 
-CTimeoutsScreen::CTimeoutsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CTimeoutsScreen::CTimeoutsScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
 }
 
 void 
 CTimeoutsScreen::onSelect()
 {
-  CScreenHeader::onSelect();
-  _rowSel = 0;
+  CUIEditScreen::onSelect();
   _repeatCount = -1;
   _frameRate = NVstore.getUserSettings().FrameRate; 
   _dispTimeout = NVstore.getUserSettings().dimTime; 
   _menuTimeout = NVstore.getUserSettings().menuTimeout; 
-}
-
-void
-CTimeoutsScreen::_initUI()
-{
 }
 
 bool 
@@ -54,7 +48,7 @@ CTimeoutsScreen::show()
 
   _display.clearDisplay();
 
-  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+  if(!CUIEditScreen::show()) {  // for showing "saving settings"
 
     _showTitle("Time Intervals");
     
@@ -90,41 +84,40 @@ CTimeoutsScreen::show()
 bool 
 CTimeoutsScreen::animate()
 {
-  if(!CPasswordScreen::_busy()) {
-    if(_rowSel != SaveConfirm) {
-      int yPos = 53;
-      int xPos = _display.xCentre();
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 1:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    No keypad activity returns to the home menu.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 2:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-        case 3:
-          _display.drawFastHLine(0, 52, 128, WHITE);
-          pMsg = "                    Define the polling rate of the bluewire communications.                    ";
-          _scrollMessage(56, pMsg, _scrollChar);
-          break;
-      }
-      return true;
-    }
+  if(_saveBusy()) {
+    return false;
   }
-  return false;
+
+  int yPos = 53;
+  int xPos = _display.xCentre();
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(xPos, yPos, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 1:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    No keypad activity returns to the home menu.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 2:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    No keypad activity either dims or blanks the display. Hold Left or Right to toggle Dim/Blank mode.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+    case 3:
+      _display.drawFastHLine(0, 52, 128, WHITE);
+      pMsg = "                    Define the polling rate of the bluewire communications.                    ";
+      _scrollMessage(56, pMsg, _scrollChar);
+      break;
+  }
+  return true;
 }
 
 bool 
 CTimeoutsScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+  if(CUIEditScreen::keyHandler(event)) {  // handle confirm save
     return true;
   }
 
@@ -149,7 +142,8 @@ CTimeoutsScreen::keyHandler(uint8_t event)
         _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
       }
       else {
-        _rowSel = SaveConfirm;
+        _confirmSave();   // enter save confirm mode
+        _rowSel = 0;
       }
     }
   }

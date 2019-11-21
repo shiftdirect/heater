@@ -23,17 +23,14 @@
 #define __TIMERCHARTSCREEN_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 class CProtocol;
 
-class CTimerChartScreen : public CScreen {
-  int  _rowSel;
-  int  _colSel;
+class CTimerChartScreen : public CUIEditScreen {
   int  _instance;
-  unsigned long _SaveTime;
   void cursor();
 
 public:

@@ -30,6 +30,8 @@ class CBasicScreen : public CScreenHeader
 {
   unsigned long _showSetModeTime;
   unsigned long _showModeTime;
+  unsigned long _showAbortTime;
+  int _abortreason;
   uint8_t _bShowOtherSensors;
   uint8_t _feedbackType;
   uint8_t _nModeSel;

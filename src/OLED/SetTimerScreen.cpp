@@ -37,7 +37,7 @@
 
 const char* briefDOW[] = { "S", "M", "T", "W", "T", "F", "S" };
 
-CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CScreen(display, mgr) 
+CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CUIEditScreen(display, mgr) 
 {
   _initUI();
   _ConflictTime = 0;
@@ -48,22 +48,18 @@ CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int
 void 
 CSetTimerScreen::onSelect()
 {
-  CScreen::onSelect();
+  CUIEditScreen::onSelect();
   _initUI();
   NVstore.getTimerInfo(_timerID, _timerInfo);
-}
-
-void 
-CSetTimerScreen::_initUI()
-{
-  _rowSel = 0;
-  _colSel = 0;
-  _SaveTime = 0;
 }
 
 bool 
 CSetTimerScreen::show()
 {
+  if(CUIEditScreen::show()) {
+    return true;
+  }
+
   CScreen::show();
 
   _display.clearDisplay();
@@ -77,14 +73,7 @@ CSetTimerScreen::show()
   sprintf(str, "Set Timer #%d", _timerID + 1);
   _showTitle(str);
 
-  if(_SaveTime) {
-    _showStoringMessage();
-    long tDelta = millis() - _SaveTime;
-    if(tDelta > 0) {
-      _SaveTime = 0;
-    }
-  }
-  else if(_ConflictTime) {
+  if(_ConflictTime) {
     long tDelta = millis() - _ConflictTime;
     if(tDelta > 0) 
       _ConflictTime = 0;
@@ -248,8 +237,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
             _colSel = 4;   // select enable/disable 
           }
           else {
-            _SaveTime = millis() + 1500;
-            _ScreenManager.reqUpdate();
+            _enableStoringMessage();
             _rowSel = 0;
             _colSel = 0;
           }

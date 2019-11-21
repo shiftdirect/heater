@@ -50,22 +50,15 @@
 //           UP > _rowSel=11 - defaults installed, present DONE screen, REBOOT after 5 seconds 
 
 
-CVersionInfoScreen::CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CVersionInfoScreen::CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
 }
 
 void 
 CVersionInfoScreen::onSelect()
 {
-  CScreenHeader::onSelect();
-  _rowSel = 0;
-  _animateCount = 0;
+  CUIEditScreen::onSelect();
   checkFOTA();
-}
-
-void
-CVersionInfoScreen::_initUI()
-{
 }
 
 bool 
@@ -73,7 +66,7 @@ CVersionInfoScreen::show()
 {
   _display.clearDisplay();
 
-  if(!CPasswordScreen::show()) {  // for showing "saving settings"
+  if(!CUIEditScreen::show()) {  // for showing "saving settings"
 
     if(_rowSel < 2) {
       // standard version information screens,
@@ -157,6 +150,8 @@ CVersionInfoScreen::show()
 bool
 CVersionInfoScreen::animate()
 {
+  CUIEditScreen::animate();
+
   if(_rowSel <= 1 && isUpdateAvailable()) {
     // show ascending up arrow if firmware update is available on web server
     _animateCount++;
@@ -188,7 +183,7 @@ CVersionInfoScreen::animate()
 bool 
 CVersionInfoScreen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
+  if(CUIEditScreen::keyHandler(event)) {  // handle confirm save
     return true;
   }
 

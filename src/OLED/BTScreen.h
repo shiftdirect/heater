@@ -23,21 +23,17 @@
 #define __BTSCREEN_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CBTScreen : public CScreen {
+class CBTScreen : public CUIEditScreen {
 public:
   CBTScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void onSelect();
   bool show();
   bool keyHandler(uint8_t event);
-private:
-  int  _rowSel;
-  int  _colSel;
-  void _initUI();
+protected:
 };
 
 #endif

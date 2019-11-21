@@ -167,10 +167,10 @@ CProtocol::setGlowPlug_Voltage(uint16_t voltsx10)    // glow plug voltage
   Heater.GlowPlugVoltage_LSB = (voltsx10 >> 0) & 0xff;
 }
 
-uint16_t 
+int16_t 
 CProtocol::getTemperature_HeatExchg() const // temperature of heat exchanger
 {
-  uint16_t retval;
+  int16_t retval;
   retval = Heater.HeatExchgTemp_MSB;
   retval <<= 8;
   retval |= Heater.HeatExchgTemp_LSB;

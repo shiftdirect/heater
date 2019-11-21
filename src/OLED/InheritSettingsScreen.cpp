@@ -57,8 +57,6 @@ CInheritSettingsScreen::_initUI()
 bool 
 CInheritSettingsScreen::show()
 {
-  CScreenHeader::show(false);
-
   _display.writeFillRect(0, 16, 96, 12, WHITE);
   _printInverted(3, 18, "Inherit Settings", true);
 
@@ -98,32 +96,39 @@ CInheritSettingsScreen::keyHandler(uint8_t event)
 {
   if(CPasswordScreen::keyHandler(event)) {
     if(_isPasswordOK()) {
-      setPumpMin(getHeaterInfo().getPump_Min());
-      setPumpMax(getHeaterInfo().getPump_Max());
-      setFanMin(getHeaterInfo().getFan_Min());
-      setFanMax(getHeaterInfo().getFan_Max());
-      setFanSensor(getHeaterInfo().getFan_Sensor());
-      setSystemVoltage(getHeaterInfo().getSystemVoltage());
-      saveNV();
-      _enableStoringMessage();
-      _nAdoptSettings = 0;  // will cause return to main menu after storing message expires
+      _copySettings();
     }
+    return true;
   }
 
-  else {
-    if(event & keyPressed) {
-      // press RIGHT 
-      if(event & key_Right) {
-        if(hasOEMLCDcontroller()) {  // inheritance only valid for LCD controllers
-          _getPassword();
-          _ScreenManager.reqUpdate();
-          return true;
+  if(event & keyPressed) {
+    // press RIGHT 
+    if(event & key_Right) {
+      if(hasOEMLCDcontroller()) {  // inheritance only valid for LCD controllers
+        _getPassword();
+        if(_isPasswordOK()) {
+          _copySettings();
         }
+        _ScreenManager.reqUpdate();
+        return true;
       }
-      _nAdoptSettings = 0;  // will cause return to main menu 
     }
+    _nAdoptSettings = 0;  // will cause return to main menu 
   }
   _ScreenManager.reqUpdate();
   return true;
 }
 
+void
+CInheritSettingsScreen::_copySettings()
+{
+  setPumpMin(getHeaterInfo().getPump_Min());
+  setPumpMax(getHeaterInfo().getPump_Max());
+  setFanMin(getHeaterInfo().getFan_Min());
+  setFanMax(getHeaterInfo().getFan_Max());
+  setFanSensor(getHeaterInfo().getFan_Sensor());
+  setSystemVoltage(getHeaterInfo().getSystemVoltage());
+  saveNV();
+  _enableStoringMessage();
+  _nAdoptSettings = 0;  // will cause return to main menu after storing message expires
+}

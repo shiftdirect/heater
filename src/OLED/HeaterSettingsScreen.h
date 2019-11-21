@@ -34,8 +34,6 @@ class CHeaterSettingsScreen : public CPasswordScreen
   int _sysVoltage;
   int _fanSensor;
   int _glowDrive;
-  int _animateCount;
-  void _initUI();
 protected:
   void _saveNV();
 public:

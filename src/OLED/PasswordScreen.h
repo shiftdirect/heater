@@ -22,12 +22,13 @@
 #define __PASSWORDSCREEN_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+//#include "ScreenHeader.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CPasswordScreen : public CScreenHeader {
+class CPasswordScreen : public CUIEditScreen {
   int  _PWdig[4];
   bool _bGetPassword;
   bool _bPasswordOK;
@@ -40,17 +41,13 @@ protected:
   void _holdPassword();
   void _getPassword();
   bool _isPasswordOK();
-  void _enableStoringMessage();
   void _initUI();
-  bool _busy();
   virtual void _saveNV() {};
-  int  _rowSel;
+//  int  _rowSel;
 public:
   CPasswordScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void onSelect();
   bool show();
   bool keyHandler(uint8_t event);
-  bool animate();
   bool isPasswordBusy();
 };
 

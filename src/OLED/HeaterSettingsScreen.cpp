@@ -56,16 +56,9 @@ CHeaterSettingsScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _initUI();
-  _fanSensor = getHeaterInfo().getFan_Sensor();
-  _glowDrive = getHeaterInfo().getGlow_Drive();
-  _sysVoltage = int(getHeaterInfo().getSystemVoltage());
-}
-
-void
-CHeaterSettingsScreen::_initUI()
-{
-  _rowSel = 0;
-  _animateCount = 0;
+  _fanSensor = NVstore.getHeaterTuning().fanSensor; 
+  _glowDrive = NVstore.getHeaterTuning().glowDrive; 
+  _sysVoltage = NVstore.getHeaterTuning().sysVoltage / 10; 
 }
 
 bool 
@@ -105,43 +98,40 @@ CHeaterSettingsScreen::show()
 bool 
 CHeaterSettingsScreen::animate()
 { 
-  char msg[16];
 
-  if(isPasswordBusy() || (_rowSel == SaveConfirm)) {  // Password screen activity
-    _printMenuText(Column, Line2, "    ");
-    _printMenuText(Column, Line1, "    ");
-    if(_rowSel == SaveConfirm)
-      _printMenuText(_display.xCentre(), 43, "Confirm save", false, eCentreJustify);
+  if(isPasswordBusy() || _saveBusy()) {  // Password screen activity
+    return false;
+  }
+
+  char msg[16];
+  _animateCount++;
+  WRAPUPPERLIMIT(_animateCount, 9, 0);
+
+  if(_rowSel == 1) {
+    _display.drawRect(Column-border, Line1-border, 34, 8+2*border, BLACK);
+    _display.drawRoundRect(Column-border, Line1-border, 34, 8+2*border, radius, WHITE);
   }
   else {
-    _animateCount++;
-    WRAPUPPERLIMIT(_animateCount, 9, 0);
-
-    if(_rowSel == 1) {
-      _display.drawRect(Column-border, Line1-border, 34, 8+2*border, BLACK);
-      _display.drawRoundRect(Column-border, Line1-border, 34, 8+2*border, radius, WHITE);
-    }
-    else {
-      _printMenuText(Column, Line1, "     ");
-    }
-
-    if(_animateCount < 4) 
-      sprintf(msg, "PF-%d ", _glowDrive);
-    else
-      sprintf(msg, "(%dW)", plugPowers[_glowDrive-1]);
-    _printMenuText(Column, Line1, msg);
-
-    int xPos = Column;
-    _printMenuText(xPos, Line2, "    ", _rowSel == 2); // erase, but create selection loop
-    if(_animateCount < 4) {
-      sprintf(msg, "SN-%d", _fanSensor);
-      _printMenuText(Column, Line2, msg);
-    }
-    else {
-      sprintf(msg, "(\365%d)", _fanSensor);  // \365 is division character
-      _printMenuText(xPos, Line2, msg);  
-    }
+    _printMenuText(Column, Line1, "     ");
   }
+
+  if(_animateCount < 4) 
+    sprintf(msg, "PF-%d ", _glowDrive);
+  else
+    sprintf(msg, "(%dW)", plugPowers[_glowDrive-1]);
+  _printMenuText(Column, Line1, msg);
+
+  int xPos = Column;
+  _printMenuText(xPos, Line2, "    ", _rowSel == 2); // erase, but create selection loop
+  if(_animateCount < 4) {
+    sprintf(msg, "SN-%d", _fanSensor);
+    _printMenuText(Column, Line2, msg);
+  }
+  else {
+    sprintf(msg, "(\365%d)", _fanSensor);  // \365 is division character
+    _printMenuText(xPos, Line2, msg);  
+  }
+
   return true;
 }
 
@@ -152,6 +142,11 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
   if(CPasswordScreen::keyHandler(event)) {  // handle confirm save
     return true;
   }
+
+  if(CUIEditScreen::keyHandler(event)) {  // handle save confirm
+    return true;
+  }
+
 
   if(event & keyPressed) {
     // press LEFT to select previous screen
@@ -205,7 +200,8 @@ CHeaterSettingsScreen::keyHandler(uint8_t event)
         case 1:
         case 2:
         case 3:
-          _rowSel = SaveConfirm;
+          _confirmSave();   // enter save confirm mode
+          _rowSel = 0;
           break;
       }
     }

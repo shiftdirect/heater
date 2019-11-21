@@ -41,7 +41,7 @@ static const int LIMIT_AWAY = 0;
 static const int LIMIT_LEFT = 1;
 static const int LIMIT_RIGHT = 2;
 
-CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CScreen(display, mgr) 
+CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditScreen(display, mgr) 
 {
   _initUI();
 }
@@ -56,8 +56,8 @@ CWiFiScreen::onSelect()
 void
 CWiFiScreen::_initUI()
 {
-  _rowSel = 0;
-  _colSel = 0;
+  CUIEditScreen::_initUI();
+
   _OTAsel = NVstore.getUserSettings().enableOTA;
   _bShowMAC = false;
 

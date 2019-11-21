@@ -957,7 +957,7 @@ void manageFrostMode()
       }
     }
     uint8_t rise = NVstore.getUserSettings().FrostRise;
-    if(deltaT > rise) {
+    if(rise && (deltaT > rise)) {  // if rsie is set to 0, user must shut off heater
       if(RTC_Store.getFrostOn()) {
         DebugPort.printf("FROST MODE: Stopping heater, > %d`C\r\n", engage+rise);
         heaterOff();
@@ -1015,14 +1015,26 @@ bool validateFrame(const CProtocol& frame, const char* name)
 }
 
 
-void requestOn()
+int requestOn(bool checkTemp)
 {
   if(bHasHtrData && (0 == SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue()))) {
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
     RTC_Store.setFrostOn(false);  // cancel frost mode
     if(!preemptCyclicMode()) {    // only start if below cyclic threshold when enabled
-      heaterOn();
+      if(!checkTemp || getTemperatureSensor() < getDemandDegC())  { // skip start if warmer than desired
+        heaterOn();
+        return 0;
+      }
+      else {
+        return -1;   // too warm
+      }
     }
+    else {
+      return -2;   // immediate cyclic suspend
+    }
+  }
+  else {
+    return -3;   // LVC
   }
 }
 

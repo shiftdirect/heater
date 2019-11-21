@@ -35,7 +35,6 @@ class CMenuSelScreen : public CPasswordScreen
   int _menuMode;
   uint8_t _holdPW;
   bool _bReload;
-  void _initUI();
 protected:
   void _saveNV();
 public:

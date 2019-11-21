@@ -125,8 +125,8 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     m_TxFrame.setPump_Max(NVstore.getHeaterTuning().getPmax());
 
     float tActual = getTemperatureSensor();
-    uint8_t u8Temp = (uint8_t)(tActual + 0.5);
-    m_TxFrame.setTemperature_Actual(u8Temp);  // use current temp, for now
+    int8_t s8Temp = (int8_t)(tActual + 0.5);
+    m_TxFrame.setTemperature_Actual(s8Temp);  // use current temp, for now
     m_TxFrame.setHeaterDemand(getDemandDegC());
     m_TxFrame.setThermostatModeProtocol(1);  // assume using thermostat control for now
 
@@ -151,12 +151,12 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
         case 3:  // GPIO controlled thermostat mode
           if(getExternalThermostatModeActive()) {
             if(getExternalThermostatOn()) { 
-              u8Temp = m_TxFrame.getTemperature_Max();  // input active (contact closure) - max burn
+              s8Temp = m_TxFrame.getTemperature_Max();  // input active (contact closure) - max burn
             }
             else {
-              u8Temp = m_TxFrame.getTemperature_Min();  // input not active (contact open) - min burn
+              s8Temp = m_TxFrame.getTemperature_Min();  // input not active (contact open) - min burn
             }
-            m_TxFrame.setHeaterDemand(u8Temp);
+            m_TxFrame.setHeaterDemand(s8Temp);
             m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
             m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
             break;
@@ -166,8 +166,8 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           // V
         case 0:  // conventional heater controlled thermostat mode
           m_TxFrame.setThermostatModeProtocol(1);  // using heater thermostat control
-          u8Temp = (uint8_t)(tActual + 0.5);
-          m_TxFrame.setTemperature_Actual(u8Temp);
+          s8Temp = (int8_t)(tActual + 0.5);
+          m_TxFrame.setTemperature_Actual(s8Temp);
 #ifdef DEBUG_THERMOSTAT
           DebugPort.printf("Conventional thermostat mode: tActual = %d\r\n", u8Temp); 
 #endif
@@ -175,16 +175,16 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 
         case 1:  // heater controlled thermostat mode - BUT actual temp is tweaked via a changed window
           m_TxFrame.setThermostatModeProtocol(1);  // using heater thermostat control
-          u8Temp = (uint8_t)(tActual + 0.5);  // use rounded actual unless within window
+          s8Temp = (int8_t)(tActual + 0.5);  // use rounded actual unless within window
           if(fabs(tDelta) < Window) {
             // hold at desired if inside window
-            u8Temp = getDemandDegC();   
+            s8Temp = getDemandDegC();   
           }
           else if(fabs(tDelta) <= 1.0) {
             // force outside if delta is <= 1 but greater than window
-            u8Temp = getDemandDegC() + ((tDelta > 0) ? 1 : -1); 
+            s8Temp = getDemandDegC() + ((tDelta > 0) ? 1 : -1); 
           }
-          m_TxFrame.setTemperature_Actual(u8Temp);  
+          m_TxFrame.setTemperature_Actual(s8Temp);  
 #ifdef DEBUG_THERMOSTAT
           DebugPort.printf("Heater controlled windowed thermostat mode: tActual=%d\r\n", u8Temp); 
 #endif
@@ -205,8 +205,8 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           LOWERLIMIT(fTemp, m_TxFrame.getTemperature_Min());
           UPPERLIMIT(fTemp, m_TxFrame.getTemperature_Max());
           // apply modifed desired temperature (works in conjunction with thermostatmode = 0!)
-          u8Temp = (uint8_t)(fTemp + 0.5);
-          m_TxFrame.setHeaterDemand(u8Temp);
+          s8Temp = (int8_t)(fTemp + 0.5);
+          m_TxFrame.setHeaterDemand(s8Temp);
           m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
           m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
 #ifdef DEBUG_THERMOSTAT

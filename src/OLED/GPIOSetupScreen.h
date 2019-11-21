@@ -23,21 +23,19 @@
 #define __GPIOSETUPSCREEN_H__
 
 #include <stdint.h>
-#include "PasswordScreen.h"
+#include "UIEditScreen.h"
 #include "../Utility/BTC_GPIO.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CGPIOSetupScreen : public CPasswordScreen
+class CGPIOSetupScreen : public CUIEditScreen
 {
   void _adjust(int dir);
   sGPIOparams _GPIOparams;
   unsigned long _ExtHold;
-  int _animateCount;
   int _scrollChar;
   int _repeatCount;
-  void _initUI();
 protected:
   void _saveNV();
 public:

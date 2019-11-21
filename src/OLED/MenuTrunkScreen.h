@@ -23,21 +23,16 @@
 #define __MENUTRUNKSCREEN_H__
 
 #include <stdint.h>
-#include "Screen.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CMenuTrunkScreen : public CScreen {
+class CMenuTrunkScreen : public CUIEditScreen {
 public:
   CMenuTrunkScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void onSelect();
   bool show();
   bool keyHandler(uint8_t event);
-private:
-  int  _rowSel;
-  int  _colSel;
-  void _initUI();
 };
 
 #endif

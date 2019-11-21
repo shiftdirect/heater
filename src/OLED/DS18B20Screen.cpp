@@ -40,8 +40,7 @@ CDS18B20Screen::CDS18B20Screen(C128x64_OLED& display, CScreenManager& mgr) : CPa
 void 
 CDS18B20Screen::onSelect()
 {
-  CScreenHeader::onSelect();
-  _initUI();
+  CPasswordScreen::onSelect();
   _nNumSensors = getTempSensor().getDS18B20().getNumSensors();
   _readNV();
 }
@@ -49,8 +48,7 @@ CDS18B20Screen::onSelect()
 void
 CDS18B20Screen::_initUI()
 {
-  _rowSel = 0;
-  _colSel = 0;
+  CPasswordScreen::_initUI();
   _keyHold = -1;
   _scrollChar = 0;
 }
@@ -117,41 +115,44 @@ CDS18B20Screen::show()
 bool 
 CDS18B20Screen::animate()
 {
-  if(!CPasswordScreen::_busy() && !CPasswordScreen::isPasswordBusy()) {
-    if(_rowSel != SaveConfirm) {
-      const char* pMsg = NULL;
-      switch(_rowSel) {
-        case 0:
-          _printMenuText(_display.xCentre(), 52, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
-          break;
-        case 1:
-        case 2:
-        case 3:
-          if(_colSel == 0)
-            pMsg = "                    Hold Right to adjust probe offset.                    "; 
-          else
-            pMsg = "                    Hold Left to select probe's role.                    "; 
-          break;
-      }
-      if(pMsg != NULL) {
-        _display.drawFastHLine(0, 52, 128, WHITE);
-        _scrollMessage(56, pMsg, _scrollChar);
-      }
-      return true;
-    }
+  if(_saveBusy() || isPasswordBusy()) {
+    return false;
   }
-  return false;
+
+  const char* pMsg = NULL;
+  switch(_rowSel) {
+    case 0:
+      _printMenuText(_display.xCentre(), 52, " \021  \030Edit  Exit   \020 ", true, eCentreJustify);
+      break;
+    case 1:
+    case 2:
+    case 3:
+      if(_colSel == 0)
+        pMsg = "                    Hold Right to adjust probe offset.                    "; 
+      else
+        pMsg = "                    Hold Left to select probe's role.                    "; 
+      break;
+  }
+  if(pMsg != NULL) {
+    _display.drawFastHLine(0, 52, 128, WHITE);
+    _scrollMessage(56, pMsg, _scrollChar);
+  }
+  return true;
 }
 
 
 bool 
 CDS18B20Screen::keyHandler(uint8_t event)
 {
-  if(CPasswordScreen::keyHandler(event)) {
+  if(CPasswordScreen::keyHandler(event)) {  // handle password collection
     if(_isPasswordOK()) {
       _rowSel = 1;
       _keyHold = -1;
     }
+    return true;
+  }
+
+  if(CUIEditScreen::keyHandler(event)) {  // handle save confirm
     return true;
   }
 
@@ -164,8 +165,6 @@ CDS18B20Screen::keyHandler(uint8_t event)
       if(_rowSel == 0 && getTempSensor().getBME280().getCount()) {
         _ScreenManager.returnMenu();
       }
-      if(_rowSel == SaveConfirm)
-        _rowSel = 0;
       _rowSel--;
       LOWERLIMIT(_rowSel, 0);
     }
@@ -207,17 +206,17 @@ CDS18B20Screen::keyHandler(uint8_t event)
     if(_keyHold == 0) {
       // UP release
       if(event & key_Up) {
-          if(_rowSel == 0) {
-            _getPassword();
-            if(_isPasswordOK()) {
-              _rowSel = 1;
-            }
+        if(_rowSel == 0) {
+          _getPassword();
+          if(_isPasswordOK()) {
+            _rowSel = 1;
           }
-          else {
-            _testCancel();
-            _rowSel++;
-            UPPERLIMIT(_rowSel, 3);
-          }
+        }
+        else {
+          _testCancel();
+          _rowSel++;
+          UPPERLIMIT(_rowSel, _nNumSensors);
+        }
       }
       // LEFT press
       if(event & key_Left) {
@@ -242,7 +241,8 @@ CDS18B20Screen::keyHandler(uint8_t event)
             _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);  // force return to main menu
         }
         else  {
-          _rowSel = SaveConfirm;
+          _confirmSave();
+          _rowSel = 0;
         }
       }
     }

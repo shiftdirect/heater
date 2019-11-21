@@ -23,12 +23,12 @@
 #define __WIFISCREEN_H__
 
 #include <stdint.h>
-#include "ScreenHeader.h"
+#include "UIEditScreen.h"
 
 class C128x64_OLED;
 class CScreenManager;
 
-class CWiFiScreen : public CScreen {
+class CWiFiScreen : public CUIEditScreen {
 public:
   CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr);
   void onSelect();
@@ -36,8 +36,6 @@ public:
   bool animate();
   bool keyHandler(uint8_t event);
 private:
-  int  _rowSel;
-  int  _colSel;
   int  _OTAsel;
   int  _repeatCount;
   bool _bShowMAC;
