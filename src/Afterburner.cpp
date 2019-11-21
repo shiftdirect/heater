@@ -893,7 +893,11 @@ void loop()
 
   BlueWireData.reset();   // ensure we flush any used data
 
-  vTaskDelay(1);  // give up for now - allow power lowering...
+// 21/11/19 vTaskDelay() causes E-07 errors when OEM controller is attached.
+// may look at a specific freertos task to handle the blue wire....
+  if(!bHasOEMController) {
+    vTaskDelay(1);  // give up for now - allow power lowering...
+  }
 
 }  // loop
 
