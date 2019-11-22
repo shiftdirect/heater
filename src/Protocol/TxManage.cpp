@@ -48,6 +48,9 @@ extern void DebugReportFrame(const char* hdr, const CProtocol&, const char* ftr)
 //            _____________________________________________________________________
 //   Tx Data                          |||||||||||||||
 
+unsigned long CTxManage::m_nStartTime = 0;
+int CTxManage::m_nTxGatePin = 0;
+
 CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) : 
   m_BlueWireSerial(serial),
   m_TxFrame(CProtocol::CtrlMode)
@@ -58,12 +61,30 @@ CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) :
   m_nStartTime = 0;
   m_nTxGatePin = TxGatePin;
   _rawCommand = 0;
+  m_HWTimer = NULL;
 }
+
+// static function used for the tx gate termination 
+void CTxManage::GateTerminate()
+{
+  digitalWrite(m_nTxGatePin, LOW);   // default to receive mode
+  m_nStartTime = 0;                  // cancel, we are DONE
+}
+
 
 void CTxManage::begin()
 {
   pinMode(m_nTxGatePin, OUTPUT);
   digitalWrite(m_nTxGatePin, LOW);   // default to receive mode
+
+  // use a hardware timer to terminate the Tx gate shortly after the completion of the 24 byte transmit packet
+  m_HWTimer = timerBegin(2, 80, true);
+  //set time in uS of Tx gate from when actual tx data bytes are loaded 
+  // 240 bits @ 25000bps is 9.6ms, we'll use 9.7ms for a bit of tolerance
+  timerAlarmWrite(m_HWTimer, 10000-300, false); 
+  timerAttachInterrupt(m_HWTimer, &GateTerminate, true);     
+  timerAlarmDisable(m_HWTimer); //disable interrupt for now
+  timerSetAutoReload(m_HWTimer, false);
 }
 
 void
@@ -231,37 +252,33 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 void
 CTxManage::Start(unsigned long timenow)
 {
-  if(timenow == 0)  // avoid a black hole if millis() has wrapped to zero
-    timenow++;
-
-  m_nStartTime = timenow;
+  m_nStartTime = timenow + m_nStartTime;   // create a dwell period if an OEM controller is present after it's data exchange
+  m_nStartTime |=  1;                      // avoid a black hole if millis() has wrapped to zero
   m_bTxPending = true;
 }
 
 // generate a Tx Gate, then send the TxFrame to the Blue wire
-// Note the serial data is ISR driven, we need to hold off
-// for a while to let teh buffewred dat clear before closing the Tx Gate.
+// Note the serial data is ISR driven, we supply all 24 bytes to the Tx buffer which is then drained automatically
+// the Tx Gate is closed shortly after the last byte is completed.
 bool
 CTxManage::CheckTx(unsigned long timenow)
 {
-  if(m_nStartTime) {
+  if(m_nStartTime && m_bTxPending) {
 
     long diff = timenow - m_nStartTime;
 
-    if(diff > m_nStartDelay) {
+    if(diff >= 0) {   // dwell since OEM exchange has expired ?
       // begin front porch of Tx gating pulse
       digitalWrite(m_nTxGatePin, HIGH);
     }
-    if(m_bTxPending && (diff > (m_nStartDelay + m_nFrontPorch))) {
-      // front porch expired, perform serial transmission
+    if(diff >= m_nFrontPorch) {
+      // front porch expired, start actual serial transmission
       // Tx gate remains held high
+      // it is then brought low by the timer alarm callback, which also cancels m_nStartTime
       m_bTxPending = false;
       m_BlueWireSerial.write(m_TxFrame.Data, 24);  // write native binary values
-    }
-    if(diff > (m_nStartDelay + m_nFrameTime)) {
-      // conclude Tx gating after (emperical) delay
-      digitalWrite(m_nTxGatePin, LOW);
-      m_nStartTime = 0;                          // cancel, we are DONE
+      timerWrite(m_HWTimer, 0);       //reset tx gate timeout  
+      timerAlarmEnable(m_HWTimer);    // timeout will cause cessation of the Tx gate
     }
   }
   return m_nStartTime == 0;   // returns true when done

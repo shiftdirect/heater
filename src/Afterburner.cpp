@@ -116,6 +116,7 @@
 #include <SPIFFS.h>
 #include <nvs.h>
 #include "Utility/MQTTsetup.h"
+#include <FreeRTOS.h>
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
@@ -221,9 +222,6 @@ bool bHaveWebClient = false;
 bool bBTconnected = false;
 long BootTime;
 
-hw_timer_t *watchdogTimer = NULL;
-hw_timer_t *JSONwatchdog = NULL;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //               Bluetooth instantiation
 //
@@ -286,12 +284,38 @@ void parentKeyHandler(uint8_t event)
   ScreenManager.keyHandler(event);   // call into the Screen Manager
 }
 
-
 void interruptReboot()
 {     
   ets_printf("Software watchdog reboot......\r\n");
   esp_restart();
 }
+
+unsigned long WatchdogTick = -1;
+unsigned long JSONWatchdogTick = -1;
+
+void WatchdogTask(void * param)
+{
+  for(;;) {
+    if(WatchdogTick >= 0) {
+      if(WatchdogTick == 0) {
+        interruptReboot();
+      }
+      else {
+        WatchdogTick--;
+      }
+    }
+    if(JSONWatchdogTick >= 0) {
+      if(JSONWatchdogTick == 0) {
+        interruptReboot();
+      }
+      else {
+        JSONWatchdogTick--;
+      }
+    }
+    vTaskDelay(10);
+  }
+}
+
 
 //**************************************************************************************************
 //**                                                                                              **
@@ -455,17 +479,17 @@ void setup() {
   setupGPIO(); 
 
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
-  // create a watchdog timer
-  watchdogTimer = timerBegin(0, 80, true); //timer 0, divisor 80     
-  timerAlarmWrite(watchdogTimer, 15000000, false); //set time in uS must be fed within this time or reboot     
-  timerAttachInterrupt(watchdogTimer, &interruptReboot, true);     
-  timerAlarmEnable(watchdogTimer); //enable interrupt
+  // create a high priority FreeRTOS task as a watchdog monitor
+  TaskHandle_t wdTask;
+  xTaskCreate(WatchdogTask,
+             "watchdogTask",
+             2000,
+             NULL,
+             configMAX_PRIORITIES-1,
+             &wdTask);
 #endif
-
-  JSONwatchdog = timerBegin(1, 80, true);
-  timerAlarmWrite(JSONwatchdog, 60000000, false); //set time in uS must be fed within this time or reboot     
-  timerAttachInterrupt(JSONwatchdog, &interruptReboot, true);     
-  timerAlarmDisable(JSONwatchdog); //disable interrupt for now
+  JSONWatchdogTick = -1;
+  WatchdogTick = -1;
 
   FilteredSamples.ipVolts.setRounding(0.1);
   FilteredSamples.GlowAmps.setRounding(0.01);
@@ -607,9 +631,7 @@ void loop()
 
     case CommStates::Idle:
 
-#if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
-      feedWatchdog(); //reset timer (feed watchdog)  
-#endif
+      feedWatchdog(); // feed watchdog
       
       doStreaming();   // do wifi, BT tx etc when NOT in midst of handling blue wire
                        // this especially avoids E-07 faults due to larger data transfers
@@ -1752,28 +1774,22 @@ void ShowOTAScreen(int percent, eOTAmodes updateType)
 
 void feedWatchdog()
 {
-#if USE_JTAG == 0
+#if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
     // BEST NOT USE WATCHDOG WITH JTAG DEBUG :-)
-  uint64_t timeRem = timerRead(watchdogTimer);
-  if(timeRem > 500000)  // 500ms
-    DebugPort.printf("WD time = %lld\r\n", timeRem);  // print longer WD intervals
-
-  timerWrite(watchdogTimer, 0); //reset timer (feed watchdog)  
-  timerAlarmWrite(watchdogTimer, 15000000, false); //set time in uS must be fed within this time or reboot     
+  WatchdogTick = 1500;
+#else
+  WatchdogTick = -1;
 #endif
 }
 
 void doJSONwatchdog(int topup)
 {
-  if(topup) {
-    timerWrite(JSONwatchdog, 0); //reset timer (feed watchdog)  
-    uint64_t deathtime = topup * 1000000;
-    timerAlarmWrite(JSONwatchdog, deathtime, false); //set time in uS must be fed within this time or reboot     
-    timerAlarmEnable(JSONwatchdog); //enable interrupt
-  }
-  else {
-    timerAlarmDisable(JSONwatchdog); //disable interrupt
-  }
+ if(topup) {
+   JSONWatchdogTick = topup * 100;
+ }
+ else {
+   JSONWatchdogTick = -1;
+ }
 }
 
 

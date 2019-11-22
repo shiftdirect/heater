@@ -25,7 +25,7 @@ class CTxManage
 {
   const int m_nStartDelay = 20; 
   const int m_nFrameTime = 14;  
-  const int m_nFrontPorch = 2;  
+  const int m_nFrontPorch = 0;  
 
 public:
   CTxManage(int TxGatePin, HardwareSerial& serial);
@@ -37,6 +37,7 @@ public:
   bool CheckTx(unsigned long timenow);
   void begin();
   const CProtocol& getFrame() const { return m_TxFrame; };
+  static void GateTerminate();
 
 private:
   HardwareSerial& m_BlueWireSerial;
@@ -44,9 +45,11 @@ private:
   bool m_bOnReq;
   bool m_bOffReq;
   bool m_bTxPending;
-  int  m_nTxGatePin;
+  static int  m_nTxGatePin;
   uint8_t _rawCommand;
-  unsigned long m_nStartTime;
+  static unsigned long m_nStartTime;
+  hw_timer_t *m_HWTimer;
+
 
 };
 

@@ -766,9 +766,7 @@ void onUploadProgression()
 
     // handle file fragments of form upload
     else if (upload.status == UPLOAD_FILE_WRITE) {
-#if USE_SW_WATCHDOG == 1
       feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
-#endif
       int sts = BrowserUpload.fragment(upload);
       if(sts < 0) {
         sprintf(JSON, "{\"progress\":%d}", sts);
