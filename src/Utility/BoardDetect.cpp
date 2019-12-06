@@ -56,8 +56,9 @@
 //      unmodified V2.0    LOW       HIGH      LOW     - digital only (V2 PCB)
 //      modified   V2.0    LOW       LOW       HIGH    - full GPIO (V2 or V3 PCB)
 //                 V2.1    LOW       LOW       HIGH    - digital only (modified V2 PCB)
-//         No GPIO V2.0    HIGH      LOW       HIGH    - no GPIO (V2 or V3 PCB, 0R in C6) 
+//         No GPIO V2.0    HIGH      LOW       HIGH    - no GPIO (V2 PCB, 0R in C6) 
 //                 V2.1    LOW       LOW       LOW     - digital only (V3 PCB, 0R in C6)
+//         No GPIO V3.x    HIGH      HIGH      LOW     - no GPIO (V3.x PCB, 0R in C6)
 //
 //
 //  ****************************************************************************************
@@ -124,6 +125,11 @@ int BoardDetect()
   else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == HIGH)) {  
     revision = BRD_V2_NOGPIO;
     DebugPort.println("Board detect: digital input test reveals V2.2 PCB - no GPIO (V2.0 userID) ");
+  }
+  // V3.x PCB, pin 33 grounded via 0R instead of 100n cap, digio transistors not fitted dig in pins pull high
+  else if((pin33 == LOW) && (pin26 == HIGH) && (pin25 == HIGH)) {  
+    revision = BRD_V2_NOGPIO;
+    DebugPort.println("Board detect: digital input test reveals V3.x PCB - no GPIO (V2.0 userID) ");
   }
   // modified V2 PCB or new V2.1PCB, pins 25 & 33 swapped, Alg routed to usuable pin 33 // cap, dig inputs pulled low by transistors
   else if((pin33 == HIGH) && (pin26 == LOW) && (pin25 == LOW)) {   

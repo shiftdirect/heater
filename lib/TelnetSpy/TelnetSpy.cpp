@@ -545,7 +545,13 @@ void TelnetSpy::handle() {
 		return;
 	}
 	if (!listening) {
-		if (WiFi.status() != WL_CONNECTED) {
+
+    wifi_mode_t currentMode = WiFi.getMode();
+    bool isAPEnabled = ((currentMode & WIFI_MODE_AP) != 0);
+    bool isSTAconnected = WiFi.status() == WL_CONNECTED;
+
+//		if (WiFi.status() != WL_CONNECTED && !isAPEnabled) {
+		if (!isSTAconnected && !isAPEnabled) {
 			return;
 		}
 		telnetServer = new WiFiServer(port);

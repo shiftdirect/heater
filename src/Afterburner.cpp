@@ -1043,7 +1043,8 @@ bool validateFrame(const CProtocol& frame, const char* name)
 
 int requestOn(bool checkTemp)
 {
-  if(bHasHtrData && (0 == SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue()))) {
+  bool LVCOK = SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue()) != 2;
+  if(bHasHtrData && LVCOK) {
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
     RTC_Store.setFrostOn(false);  // cancel frost mode
     if(!preemptCyclicMode()) {    // only start if below cyclic threshold when enabled

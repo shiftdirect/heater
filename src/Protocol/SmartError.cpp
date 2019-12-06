@@ -130,8 +130,12 @@ CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
   // Native NV values here are x10 integers
 
   // loom compenstaion, allow 1V drop for 10A current (bit naive but better than no compensation)
-  float cableComp = glowI * 0.1;             
-  float threshLVC = NVstore.getHeaterTuning().getLVC() - cableComp;  // NVstore
+  float cableComp = glowI * 0.1;     
+  float usrLVC = NVstore.getHeaterTuning().getLVC();     
+  if(usrLVC == 0) {
+    return 0;
+  }
+  float threshLVC = usrLVC - cableComp;  // NVstore
   
   // test low voltage cutout
   if(ipVolts < threshLVC) {
@@ -144,6 +148,7 @@ CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
 
   // warning threshold
   float threshWarn = threshLVC + 0.5;   // nominally create a warning threshold, 0.5V over LVC threhsold
+/*  
   float alertlimit;                     // but always introduce it if below system voltage
   if(NVstore.getHeaterTuning().sysVoltage == 120) {
     alertlimit = 12.0 - cableComp;
@@ -154,6 +159,7 @@ CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
   if(threshWarn < alertlimit) {
     threshWarn = alertlimit;
   }
+*/
 
   if(ipVolts < threshWarn) {
     return 1;  // LVC OK, but below warning threshold, return code = 1
