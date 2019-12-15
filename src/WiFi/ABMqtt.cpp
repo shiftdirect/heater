@@ -24,6 +24,9 @@
 
 #if USE_MQTT == 1
 
+//#define BLOCK_MQTT_RECON
+
+
 #include <Arduino.h>
 #include "ABMqtt.h"
 #include "../../lib/async-mqtt-client/src/AsyncMqttClient.h"
@@ -189,8 +192,10 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
 bool mqttInit() 
 {
 #ifdef USE_RTOS_MQTTTIMER      
+#ifndef BLOCK_MQTT_RECON
   if(mqttReconnectTimer==NULL)  
-    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(20000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(6000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+#endif
 #else
   mqttReconnect = 0;
 #endif
@@ -282,9 +287,11 @@ void doMQTT()
 #endif
 
 #ifdef USE_RTOS_MQTTTIMER
+#ifndef BLOCK_MQTT_RECON
     if (!MQTTclient.connected() && WiFi.isConnected() && !xTimerIsTimerActive(mqttReconnectTimer)) {
-      xTimerStart(mqttReconnectTimer, 0);
+       xTimerStart(mqttReconnectTimer, 0);
     }
+#endif
 #else
     if (!MQTTclient.connected() && WiFi.isConnected() && mqttReconnect==0) {
       mqttReconnect = millis() + 5000;

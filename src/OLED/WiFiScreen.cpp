@@ -61,7 +61,7 @@ CWiFiScreen::_initUI()
   _OTAsel = NVstore.getUserSettings().enableOTA;
   _bShowMAC = false;
 
-  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
     if(isWifiAP()) {
       if(isWifiConfigPortal()) {
         _colSel = 1;  // " WiFi: CFG AP only "

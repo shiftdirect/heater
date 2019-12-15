@@ -23,7 +23,7 @@
 
 // Place Holder Config File - User config vars and defines to be moved here
 
-#define USE_JTAG 0
+#define USE_JTAG 1
 
 //////////////////////////////////////////////////////////////////////////////
 // Configure bluetooth options
@@ -42,6 +42,7 @@
 //     HC-05 works OK with WiFi
 //
 #define USE_WIFI      1
+#define USE_AP_ALWAYS 1
 #define USE_OTA       1
 #define USE_WEBSERVER 1
 #define USE_MQTT      1

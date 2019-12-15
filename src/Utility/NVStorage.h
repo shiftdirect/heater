@@ -287,8 +287,9 @@ struct sUserSettings : public CESP32_NVStorage {
   uint8_t FrostOn;
   uint8_t FrostRise;
   uint8_t useThermostat;
-  uint8_t enableWifi;
+//  uint8_t enableWifi;
   uint8_t enableOTA;
+  uint8_t wifiMode;  
   uint16_t FrameRate;
   sCyclicThermostat cyclic;
   sHomeMenuActions HomeMenu;
@@ -307,7 +308,8 @@ struct sUserSettings : public CESP32_NVStorage {
     retval &= ThermostatMethod <= 3;  // only modes 0, 1 or 2, 3
     retval &= INBOUNDS(ThermostatWindow, 0.2f, 10.f);
     retval &= useThermostat < 2;
-    retval &= (enableWifi == 0) || (enableWifi == 1);
+//    retval &= (enableWifi == 0) || (enableWifi == 1);
+    retval &= INBOUNDS(wifiMode, 0, 3);
     retval &= (enableOTA == 0) || (enableOTA == 1);
     retval &= GPIO.in1Mode < 4;
     retval &= GPIO.in2Mode < 3;
@@ -329,7 +331,8 @@ struct sUserSettings : public CESP32_NVStorage {
     FrostOn = 0;
     FrostRise = 5;
     useThermostat = 1;
-    enableWifi = 1;
+//    enableWifi = 1;
+    wifiMode = 1;
     enableOTA = 0;
     GPIO.in1Mode = CGPIOin1::Disabled;
     GPIO.in2Mode = CGPIOin2::Disabled;
@@ -358,7 +361,8 @@ struct sUserSettings : public CESP32_NVStorage {
     FrostOn = rhs.FrostOn;
     FrostRise = rhs.FrostRise;
     useThermostat = rhs.useThermostat;
-    enableWifi = rhs.enableWifi;
+//    enableWifi = rhs.enableWifi;
+    wifiMode = rhs.wifiMode;
     enableOTA = rhs.enableOTA;
     GPIO.in1Mode = rhs.GPIO.in1Mode;
     GPIO.in2Mode = rhs.GPIO.in2Mode;

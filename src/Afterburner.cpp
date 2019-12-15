@@ -436,13 +436,15 @@ void setup() {
 
   sCredentials creds = NVstore.getCredentials();  // local AP credentials
 
-  if(NVstore.getUserSettings().enableWifi) {
-    initWifi(WiFi_TriggerPin, creds.SSID, creds.APpassword);
+//  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
+    initWifi(creds.SSID, creds.APpassword);   // SSID and passowrd the the ESP32's inbuilt AP
 #if USE_OTA == 1
     if(NVstore.getUserSettings().enableOTA) {
       initOTA();
     }
 #endif // USE_OTA
+    initFOTA();
 #if USE_WEBSERVER == 1
     initWebServer();
 #endif // USE_WEBSERVER
@@ -1798,7 +1800,8 @@ void doStreaming()
 {
 #if USE_WIFI == 1
 
-  if(NVstore.getUserSettings().enableWifi) {
+//  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
     doWiFiManager();
 #if USE_OTA == 1
     DoOTA();

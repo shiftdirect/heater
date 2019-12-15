@@ -11,6 +11,7 @@
 #include <HTTPClient.h>
 #include <Update.h>
 #include "../../ArduinoJson/ArduinoJson.h"
+#include "../../asyncHTTPrequest/src/asyncHTTPrequest.h"
 
 extern void forceBootInit();
 
@@ -328,3 +329,237 @@ void esp32FOTA::onFail( std::function<void()> func ) {
   _onFail = func;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void FOTAconnectCallback(void* arg, AsyncClient * c) 
+{
+  esp32FOTA* pInstance = (esp32FOTA*)arg;
+  if(pInstance) {
+    Serial.printf("ESPFOTA Connected. Sending Data\r\n");
+    String resp;
+
+    resp = "GET ";
+    resp += pInstance->getURI(); 
+    resp += " HTTP/1.1\r\n"
+
+            "Host: ";
+    resp += pInstance->getHost();
+    resp += "\r\n"
+//            "www.mrjones.id.au"  "\r\n"
+            "Connection: close\r\n\r\n";
+
+/*    c->write(("GET " + pInstance->getURI() + " HTTP/1.1\r\n"
+            "Host: " + pInstance->getHost() + "\r\n"
+//            "www.mrjones.id.au"  "\r\n"
+            "Connection: close\r\n\r\n")
+            .c_str());*/
+    c->write(resp.c_str());
+  }
+}
+
+void FOTAdataCallback(void* arg, AsyncClient* c, void* data, size_t len) 
+{
+  esp32FOTA* pInstance = (esp32FOTA*)arg;
+  if(pInstance == NULL) {
+    c->close();
+    return;
+  }
+
+  Serial.printf("FOTA received with length: %d\r\n", len);
+
+  char JSONMessage[1500];
+  memset(JSONMessage, 0, 1500);
+  char* pData = (char*)data;
+  for (int i = 0; i < len && i < 1499; i++) {
+    JSONMessage[i] = pData[i];
+  }
+
+  Serial.printf("%s\r\n", JSONMessage);
+
+  pInstance->decodeResponse(JSONMessage);
+
+  c->close();
+}
+
+bool esp32FOTA::decodeResponse(String payload) 
+{
+  int str_len = payload.length() + 1;
+  char* JSONMessage = new char[str_len];
+  payload.toCharArray(JSONMessage, str_len);
+  
+  bool retval = decodeResponse(JSONMessage);
+
+  delete[] JSONMessage;
+
+  return retval;
+}
+
+bool esp32FOTA::decodeResponse(char* resp)
+{
+  StaticJsonBuffer<300> JSONBuffer;                         //Memory pool
+  JsonObject &parsed = JSONBuffer.parseObject(resp); //Parse message
+
+  if (!parsed.success())
+  { //Check for errors in parsing
+//      delete[] JSONMessage;
+    Serial.println("FOTA Parsing failed\r\n");
+    // delay(5000);
+    //   return false;
+  }
+
+  const char *pltype = parsed["type"];
+  int plversion = parsed["version"];
+  const char *plhost = parsed["host"];
+  _port = parsed["port"];
+  const char *plbin = parsed["bin"];
+
+  String jshost(plhost);
+  String jsbin(plbin);
+
+  _host = jshost;
+  _bin = jsbin;
+
+  String fwtype(pltype);
+
+  if (plversion > _firwmareVersion && fwtype == _firwmareType)
+  {
+      _newVersion = plversion;
+      return true;
+  }
+  else
+  {
+      _newVersion = 0;
+      return false;
+  }
+}
+
+
+bool esp32FOTA::setURL(const char* URL, const char* expectedProtocol)
+{
+  String url(URL);
+
+  // check for : (http: or https:
+  int index = url.indexOf(':');
+  if(index < 0) {
+    log_e("failed to parse protocol");
+    return false;
+  }
+
+  _webprotocol = url.substring(0, index);
+  if (_webprotocol != expectedProtocol) {
+    log_w("unexpected protocol: %s, expected %s", _protocol.c_str(), expectedProtocol);
+    return false;
+  }
+
+  url.remove(0, (index + 3)); // remove http:// or https://
+
+  index = url.indexOf('/');
+  String host = url.substring(0, index);
+  url.remove(0, index); // remove host part
+
+/*  // get Authorization
+  index = host.indexOf('@');
+  if(index >= 0) {
+    // auth info
+    String auth = host.substring(0, index);
+    host.remove(0, index + 1); // remove auth part including @
+    _base64Authorization = base64::encode(auth);
+  }*/
+
+  // get port
+  _webport = 80;
+  index = host.indexOf(':');
+  if(index >= 0) {
+    _webhost = host.substring(0, index); // hostname
+    host.remove(0, (index + 1)); // remove hostname + :
+    _webport = host.toInt(); // get port
+  } else {
+    _webhost = host;
+  }
+  
+  _webURI = url;
+  log_d("host: %s port: %d url: %s", _webhost.c_str(), _webport, _webURI.c_str());
+  Serial.printf("host: %s port: %d url: %s", _webhost.c_str(), _webport, _webURI.c_str());
+  return true;
+}
+
+/*void esp32FOTA::setupAsync(const char* host)
+{
+  setURL(host, "http");
+
+  static const char* shost = host;
+  _webclient.onError([](void* arg, AsyncClient * c, int8_t error) {
+    Serial.printf("ESPFOTA Error %s\r\n", c->errorToString(error));
+    c->close();
+  });
+  _webclient.onTimeout([](void* arg, AsyncClient * c, uint32_t tm) {
+    Serial.printf("ESPFOTA Timeout\r\n");
+  });
+//   _webclient.onConnect([](void* arg, AsyncClient * c) {
+//     Serial.printf("ESPFOTA Connected. Sending Data\r\n");
+//     c->write(("GET /?format=json HTTP/1.1\r\n"
+//               "Host: " + 
+//               String(shost) + "\r\n"
+//               "Connection: close\r\n\r\n")
+//               .c_str());
+//   });
+  // _webclient.onData([](void* arg, AsyncClient* c, void* data, size_t len) {
+  //   Serial.printf("FOTA received with length: %d\r\n", len);
+  //   Serial.printf("%s\r\n", (char*)data);
+  //   c->close();
+  // });
+  _webclient.onConnect(FOTAconnectCallback, this);
+  _webclient.onData(FOTAdataCallback, this);
+}*/
+
+// void esp32FOTA::poll(const char* host) 
+// {
+//   _webclient.connect(host, 80);
+// }
+
+
+asyncHTTPrequest request;
+
+void FOTArequestCB(void* optParm, asyncHTTPrequest* pRequest, int readyState){
+    if(readyState == 4){  // resposnse
+        String JSONinfo(pRequest->responseText());
+        Serial.println(JSONinfo);
+        Serial.println();
+//        pRequest->close();
+        esp32FOTA* pFOTA = (esp32FOTA*) optParm;
+        if(pFOTA) pFOTA->decodeResponse(JSONinfo);
+//        delete pRequest;
+    }
+    if(readyState == 1) {  // connected
+      pRequest->send();
+    }
+}
+    
+void esp32FOTA::setupAsync(const char* host) 
+{
+  request.setDebug(true);
+  request.onReadyStateChange(FOTArequestCB, this);
+}
+
+void esp32FOTA::poll(const char* host) 
+{
+  asyncHTTPrequest* pRequest = &request/*new asyncHTTPrequest*/;
+  // pRequest->setDebug(true);
+  // pRequest->onReadyStateChange(FOTArequestCB, this);
+  if(pRequest->readyState() == 0 || pRequest->readyState() == 4) {
+    bool bOK = pRequest->open("GET", host);
+  }
+}

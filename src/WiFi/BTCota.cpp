@@ -51,6 +51,10 @@ void hard_restart() {
   while(true);
 }
 
+void initFOTA(){
+  FOTA.setupAsync("");
+}
+
 void initOTA(){
 	ArduinoOTA.setHostname("AfterburnerOTA");
 
@@ -98,21 +102,25 @@ void initOTA(){
 	});
 
 	ArduinoOTA.begin();
+
 }
+
+//#define OLD_FOTA
 
 void DoOTA()
 {
   ArduinoOTA.handle();
 
+#ifdef OLD_FOTA
   // manage Firmware OTA
   // this is where the controller contacts a web server to discover if new firmware is available
   // if so, it can download and implant using OTA and become effective next reboot!
   long tDelta = millis() - FOTAtime;
   if(tDelta > 0) {  
-//    FOTAtime = millis() + 6000;  // 6 seconds
+    FOTAtime = millis() + 6000;  // 6 seconds
 //    FOTAtime = millis() + 60000;  // 60 seconds
 //    FOTAtime = millis() + 600000;  // 10 minutes
-    FOTAtime = millis() + 3600000;  // 1 hour
+//    FOTAtime = millis() + 3600000;  // 1 hour
     if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
       FOTA.onProgress(onWebProgress);        // important - keeps watchdog fed
       FOTA.onComplete(CheckFirmwareCRC);     // upload complete, but not yet verified
@@ -137,6 +145,28 @@ void DoOTA()
       }
     }
   }
+#else
+  // manage Firmware OTA
+  // this is where the controller contacts a web server to discover if new firmware is available
+  // if so, it can download and implant using OTA and become effective next reboot!
+  long tDelta = millis() - FOTAtime;
+  if(tDelta > 0) {  
+//    FOTA.setURL("http://www.mrjones.id.au/afterburner/fota/fota.json", "http");
+//    FOTA.setupAsync("http://www.mrjones.id.au/afterburner/fota/fota.json");
+    FOTAtime = millis() + 6000;  // 6 seconds
+//    FOTAtime = millis() + 60000;  // 60 seconds
+//    FOTAtime = millis() + 600000;  // 10 minutes
+//    FOTAtime = millis() + 3600000;  // 1 hour
+//    if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
+static bool flipflop = false;
+    flipflop = !flipflop;
+    if(flipflop)
+      FOTA.poll("http://www.mrjones.id.au/afterburner/fota/fotatest.json");
+    else 
+      FOTA.poll("http://210.8.241.226/afterburner/fota/fotatest.json");
+//    }
+  }
+#endif
 };
 
 int isUpdateAvailable(bool test)

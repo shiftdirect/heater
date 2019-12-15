@@ -30,8 +30,6 @@
 #include "../Utility/NVStorage.h"
 #include "../../lib/WiFiManager-dev/WiFiManager.h"
 
-//#define USE_AP  
-
 // function to control the behaviour upon reboot if no wifi manager credentials exist
 // or connection fails
 void prepBootIntoConfigPortal(bool state);
@@ -43,7 +41,6 @@ WiFiManager wm;
 
 bool isPortalAP         = false;   // true if config portal is running
 bool isSTA              = false;   // true if connected to an access point
-int TRIG_PIN;                      // pin that triggers the configuration portal when set to LOW
 unsigned restartServer = 0;        // set to time of portal reconfig - will cause reboot a while later
 char MACstr[2][20];                // MACstr[0] STA, MACstr[1] = AP
 int wifiButtonState = 0;
@@ -52,12 +49,9 @@ unsigned long WifiReconnectHoldoff = 0;
 extern CScreenManager ScreenManager;
 
 
-bool initWifi(int initpin,const char *failedssid, const char *failedpassword) 
+bool initWifi(const char *failedssid, const char *failedpassword) 
 {
   
-  TRIG_PIN = initpin;
-  pinMode(TRIG_PIN, INPUT_PULLUP);
-
   // report the MAC addresses - note individual values for STA and AP modes
   uint8_t MAC[6];
   esp_read_mac(MAC, ESP_MAC_WIFI_STA);
@@ -121,8 +115,10 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
     DebugPort.println("Now promoting to STA+AP mode..."); 
     retval = true;
   }
-#ifdef USE_AP  
-  startAP = true;
+#if USE_AP_ALWAYS == 1
+  if(NVstore.getUserSettings().wifiMode & 0x01) {  // Own AP enabled
+    startAP = true;
+  }
 #endif
   if(startAP) {
     //  for STA+AP mode we *must* use the same RF channel as STA
@@ -149,7 +145,7 @@ bool initWifi(int initpin,const char *failedssid, const char *failedpassword)
 // call from main sketch loop()
 void doWiFiManager()
 {
-  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
     wm.process();
 
     if(WiFi.status() != WL_CONNECTED) {
@@ -177,60 +173,14 @@ void doWiFiManager()
       WifiReconnectHoldoff = 0;
     }
 
-#if USE_PORTAL_TRIGGER_PIN == 1
-    // manage handling of pin to enter WiFManager config portal
-    // we typically use the BOOT pin for this (pins.h)
-    //
-    // Quick Press (< 1 sec)      - enable config portal
-    // > 1 second (< 5 sec) press - disable config portal
-    // > 5 second press           - erase credentials, enable config portal
-    static bool pinDown = false;
-    static long pinTime = 0;
-    unsigned long tDelta;
-
-    if(digitalRead(TRIG_PIN) == LOW) {
-      if(!pinDown) {
-        pinTime = millis();
-        ScreenManager.reqUpdate();
-      }
-      pinDown = true;
-      // track hold duration - change OLED Wifi annotation according to length of press
-      tDelta = millis() - pinTime;
-      if(tDelta > 5000)
-        wifiButtonState = 3;        // we will show 'ERS' on OLED!
-      else if(tDelta > 1000)
-        wifiButtonState = 2;        // we will show 'HTR' on OLED!
-      else
-        wifiButtonState = 1;        // we will show 'CFG' on OLED!
-    } 
-    else {
-      if(pinDown) {
-        pinDown = false;
-        tDelta = millis() - pinTime;
-        DebugPort.printf("Wifi config button tDelta = %ld\r\n", tDelta);
-        // > 5 second press?
-        if(tDelta > 5000) {    
-          wifiEnterConfigPortal(true, true);  // very long press - clear credentials, reboot into portal
-        }
-        // > 1 second press?
-        else if(tDelta > 1000) {    
-          wifiEnterConfigPortal(false);   // long press - reboot into web server
-        }
-        // > 50ms press?
-        else if(tDelta > 50) {
-          wifiEnterConfigPortal(true);    // quick press - reboot into portal
-        }
-        // consider as contact bounce if < 50ms!
-      }
-    }
-#endif
   }
 }
 
 void wifiDisable(long rebootDelay) 
 {
   sUserSettings settings = NVstore.getUserSettings();
-  settings.enableWifi = 0;
+//  settings.enableWifi = 0;
+  settings.wifiMode = 0;
   NVstore.setUserSettings(settings);
   NVstore.save(); 
 
@@ -249,7 +199,7 @@ void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay)
 	wm.disconnect();
 
   sUserSettings settings = NVstore.getUserSettings();
-  settings.enableWifi = 1;
+  settings.wifiMode = 1;
   NVstore.setUserSettings(settings);
   NVstore.save(); 
 
@@ -286,7 +236,8 @@ void wifiFactoryDefault()
   wm.resetSettings();
   prepBootIntoConfigPortal(false);
   sUserSettings settings = NVstore.getUserSettings();
-  settings.enableWifi = 1;
+//  settings.enableWifi = 1;
+  settings.wifiMode = 1;
   NVstore.setUserSettings(settings);
   NVstore.save(); 
 }
@@ -305,7 +256,7 @@ void APstartedCallback(WiFiManager*)
 
 const char* getWifiAPAddrStr()
 { 
-  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
     IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
     static char APIPaddr[16];
     sprintf(APIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
@@ -317,7 +268,7 @@ const char* getWifiAPAddrStr()
   
 const char* getWifiSTAAddrStr()
 { 
-  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
     IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
     static char STAIPaddr[16];
     sprintf(STAIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
@@ -339,7 +290,7 @@ const char* getWifiSTAMACStr()
 
 String getSSID()
 {
-  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
     wifi_config_t conf;
     esp_wifi_get_config(WIFI_IF_STA, &conf);
     return String(reinterpret_cast<const char*>(conf.sta.ssid));
@@ -350,7 +301,7 @@ String getSSID()
 
 bool isWifiConnected()
 {
-  if(NVstore.getUserSettings().enableWifi) 
+  if(NVstore.getUserSettings().wifiMode) 
     return WiFi.status() == WL_CONNECTED;
   else 
     return false;
@@ -358,7 +309,7 @@ bool isWifiConnected()
 
 bool isWifiAP()
 {
-  if(NVstore.getUserSettings().enableWifi) {
+  if(NVstore.getUserSettings().wifiMode) {
     int mode = WiFi.getMode();
     return !isSTA && ((mode & WIFI_MODE_AP) != 0);   
   }

@@ -156,6 +156,7 @@ static void _handle_async_event(lwip_event_packet_t * e){
         // do nothing when arg is NULL
         //ets_printf("event arg == NULL: 0x%08x\n", e->recv.pcb);
     } else if(e->event == LWIP_TCP_CLEAR){
+//        ets_printf("-X: 0x%08x\n", e->recv.pcb);
         _remove_events_with_arg(e->arg);
     } else if(e->event == LWIP_TCP_RECV){
         //ets_printf("-R: 0x%08x\n", e->recv.pcb);
@@ -374,6 +375,10 @@ typedef struct {
 static err_t _tcp_output_api(struct tcpip_api_call_data *api_call_msg){
     tcp_api_call_t * msg = (tcp_api_call_t *)api_call_msg;
     msg->err = ERR_CONN;
+    if(msg->closed_slot >= 16 || msg->closed_slot < -1) {
+      Serial.printf("CLOSED SLOTS BOUNDS!! _tcp_output_api (%d)\r\n", msg->closed_slot);
+      return msg->err;
+    }
     if(msg->closed_slot == -1 || !_closed_slots[msg->closed_slot]) {
         msg->err = tcp_output(msg->pcb);
     }
@@ -394,6 +399,10 @@ static esp_err_t _tcp_output(tcp_pcb * pcb, int8_t closed_slot) {
 static err_t _tcp_write_api(struct tcpip_api_call_data *api_call_msg){
     tcp_api_call_t * msg = (tcp_api_call_t *)api_call_msg;
     msg->err = ERR_CONN;
+    if(msg->closed_slot >= 16 || msg->closed_slot < -1) {
+      Serial.printf("CLOSED SLOTS BOUNDS!! _tcp_write_api (%d)\r\n", msg->closed_slot);
+      return msg->err;
+    }
     if(msg->closed_slot == -1 || !_closed_slots[msg->closed_slot]) {
         msg->err = tcp_write(msg->pcb, msg->write.data, msg->write.size, msg->write.apiflags);
     }
@@ -417,6 +426,10 @@ static esp_err_t _tcp_write(tcp_pcb * pcb, int8_t closed_slot, const char* data,
 static err_t _tcp_recved_api(struct tcpip_api_call_data *api_call_msg){
     tcp_api_call_t * msg = (tcp_api_call_t *)api_call_msg;
     msg->err = ERR_CONN;
+    if(msg->closed_slot >= 16 || msg->closed_slot < -1) {
+      Serial.printf("CLOSED SLOTS BOUNDS!! _tcp_recv_api (%d)\r\n", msg->closed_slot);
+      return msg->err;
+    }
     if(msg->closed_slot == -1 || !_closed_slots[msg->closed_slot]) {
         msg->err = 0;
         tcp_recved(msg->pcb, msg->received);
@@ -439,6 +452,10 @@ static esp_err_t _tcp_recved(tcp_pcb * pcb, int8_t closed_slot, size_t len) {
 static err_t _tcp_close_api(struct tcpip_api_call_data *api_call_msg){
     tcp_api_call_t * msg = (tcp_api_call_t *)api_call_msg;
     msg->err = ERR_CONN;
+    if(msg->closed_slot >= 16 || msg->closed_slot < -1) {
+      Serial.printf("CLOSED SLOTS BOUNDS!! _tcp_close_api (%d)\r\n", msg->closed_slot);
+      return msg->err;
+    }
     if(msg->closed_slot == -1 || !_closed_slots[msg->closed_slot]) {
         msg->err = tcp_close(msg->pcb);
     }
@@ -459,6 +476,10 @@ static esp_err_t _tcp_close(tcp_pcb * pcb, int8_t closed_slot) {
 static err_t _tcp_abort_api(struct tcpip_api_call_data *api_call_msg){
     tcp_api_call_t * msg = (tcp_api_call_t *)api_call_msg;
     msg->err = ERR_CONN;
+    if(msg->closed_slot >= 16 || msg->closed_slot < -1) {
+      Serial.printf("CLOSED SLOTS BOUNDS!! _tcp_abort_api (%d)\r\n", msg->closed_slot);
+      return msg->err;
+    }
     if(msg->closed_slot == -1 || !_closed_slots[msg->closed_slot]) {
         tcp_abort(msg->pcb);
     }
@@ -834,6 +855,10 @@ void AsyncClient::_allocate_closed_slot(){
 }
 
 void AsyncClient::_free_closed_slot(){
+    if(_closed_slot >= 16 || _closed_slot < -1) {
+      Serial.printf("CLOSED SLOTS BOUNDS!! free_closed_slot (%d)\r\n", _closed_slot);
+      return;
+    }
     if (_closed_slot != -1) {
         _closed_slots[_closed_slot] = _closed_index;
         _closed_slot = -1;

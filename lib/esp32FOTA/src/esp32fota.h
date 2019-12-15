@@ -10,6 +10,8 @@
 
 //#include <Arduino.h>
 #include <functional>
+#include "../../AsyncTCP/src/AsyncTCP.h"
+#include "../../asyncHTTPrequest/src/asyncHTTPrequest.h"
 
 class esp32FOTA
 {
@@ -24,6 +26,16 @@ public:
   void onSuccess( std::function<void()> func );
   void onFail( std::function<void()> func );
   int  getNewVersion() { return _newVersion; };
+
+  bool setURL(const char* URL, const char* expectedProtocol);
+  void setupAsync(const char* host);
+  void poll(const char* host);
+  bool decodeResponse(String payload);
+  bool decodeResponse(char* resp);
+
+  const char* getURI() { return _webURI.c_str(); };
+  const char* getHost() { return _webhost.c_str(); };
+
 private:
   String getHeaderValue(String header, String headerName);
   String getDeviceID();
@@ -36,6 +48,11 @@ private:
   std::function<bool(int)> _onComplete;
   std::function<void()> _onSuccess;
   std::function<void()> _onFail;
+  AsyncClient _webclient;
+  String _webhost;
+  String _webURI;
+  String _webprotocol;
+  int    _webport;
 };
 
 #endif

@@ -122,13 +122,13 @@ CBluetoothHC05::begin()
     else {
       DebugPort.println("OK");
     }
-    DebugPort.print("  Lowering power consumption...");
+/*    DebugPort.print("  Lowering power consumption...");
     if(!ATCommand("AT+IPSCAN=1024,1,1024,1\r\n")) {
       DebugPort.println("FAILED");
     }
     else {
       DebugPort.println("OK");
-    }
+    }*/
     DebugPort.print("  Getting MAC address...");
     int len = 32;
     char response[32];

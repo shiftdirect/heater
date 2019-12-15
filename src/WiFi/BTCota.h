@@ -23,6 +23,7 @@
 #define __BTC_OTA_H
 
 void initOTA();
+void initFOTA();
 void DoOTA();
 bool CheckFirmwareCRC(int size);
 
