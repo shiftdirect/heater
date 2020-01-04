@@ -1,4 +1,4 @@
-// ABMqtt.h
+// ABMQTT.h
 /*
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 

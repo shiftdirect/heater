@@ -52,6 +52,8 @@ extern CScreenManager ScreenManager;
 bool initWifi(const char *failedssid, const char *failedpassword) 
 {
   
+  WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
+
   // report the MAC addresses - note individual values for STA and AP modes
   uint8_t MAC[6];
   esp_read_mac(MAC, ESP_MAC_WIFI_STA);

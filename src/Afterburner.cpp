@@ -85,7 +85,7 @@
   This example code is in the public domain.
 */
 
-#include "WiFi/ABMqtt.h"
+#include "WiFi/ABMQTT.h"
 #include "cfg/BTCConfig.h"
 #include "cfg/pins.h"
 #include "RTC/Timers.h"
