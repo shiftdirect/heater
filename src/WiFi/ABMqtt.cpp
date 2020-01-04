@@ -194,7 +194,7 @@ bool mqttInit()
 #ifdef USE_RTOS_MQTTTIMER      
 #ifndef BLOCK_MQTT_RECON
   if(mqttReconnectTimer==NULL)  
-    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(6000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(20000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
 #endif
 #else
   mqttReconnect = 0;

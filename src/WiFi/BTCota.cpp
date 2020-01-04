@@ -32,7 +32,7 @@
 #include "esp_ota_ops.h"
 
 //#define TESTFOTA
-
+//#define SYNCHRONOUS_FOTA
 
 bool CheckFirmwareCRC(int filesize);
 void onSuccess();
@@ -105,31 +105,34 @@ void initOTA(){
 
 }
 
-//#define OLD_FOTA
-
 void DoOTA()
 {
   ArduinoOTA.handle();
 
-#ifdef OLD_FOTA
   // manage Firmware OTA
   // this is where the controller contacts a web server to discover if new firmware is available
   // if so, it can download and implant using OTA and become effective next reboot!
   long tDelta = millis() - FOTAtime;
   if(tDelta > 0) {  
-    FOTAtime = millis() + 6000;  // 6 seconds
+//    FOTAtime = millis() + 6000;  // 6 seconds
 //    FOTAtime = millis() + 60000;  // 60 seconds
 //    FOTAtime = millis() + 600000;  // 10 minutes
-//    FOTAtime = millis() + 3600000;  // 1 hour
-    if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
+    FOTAtime = millis() + 3600000;  // 1 hour
+#ifdef SYNCHRONOUS_FOTA
+    if ((WiFi.status() == WL_CONNECTED)) // bug workaround in FOTA where execHTTPcheck does not return false in this condition
+    {   
+#endif
       FOTA.onProgress(onWebProgress);        // important - keeps watchdog fed
       FOTA.onComplete(CheckFirmwareCRC);     // upload complete, but not yet verified
       FOTA.onSuccess(onSuccess);
 #ifdef TESTFOTA
-      FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fotatest.json";
+      FOTA.setCheckURL("http://www.mrjones.id.au/afterburner/fota/fotatest.json");
 #else
-      FOTA.checkURL = "http://www.mrjones.id.au/afterburner/fota/fota.json";
+      FOTA.setCheckURL("http://www.mrjones.id.au/afterburner/fota/fota.json");
 #endif
+
+#ifdef SYNCHRONOUS_FOTA
+      // Synchronous polling - very prone to flakey Internet, causing watchdog reboots
       DebugPort.println("Checking for new firmware...");
       if(FOTA.execHTTPcheck()) {
         DebugPort.println("New firmware available on web server!");
@@ -143,48 +146,46 @@ void DoOTA()
       else {
         FOTAauth = 0;      // cancel
       }
-    }
-  }
+    }  // Wifi (STA) Connected
+
 #else
-  // manage Firmware OTA
-  // this is where the controller contacts a web server to discover if new firmware is available
-  // if so, it can download and implant using OTA and become effective next reboot!
-  long tDelta = millis() - FOTAtime;
-  if(tDelta > 0) {  
-//    FOTA.setURL("http://www.mrjones.id.au/afterburner/fota/fota.json", "http");
-//    FOTA.setupAsync("http://www.mrjones.id.au/afterburner/fota/fota.json");
-    FOTAtime = millis() + 6000;  // 6 seconds
-//    FOTAtime = millis() + 60000;  // 60 seconds
-//    FOTAtime = millis() + 600000;  // 10 minutes
-//    FOTAtime = millis() + 3600000;  // 1 hour
-//    if ((WiFi.status() == WL_CONNECTED)) {   // bug workaround in FOTA where execHTTPcheck does not return false in this condition
-static bool flipflop = false;
-    flipflop = !flipflop;
-    if(flipflop)
-      FOTA.poll("http://www.mrjones.id.au/afterburner/fota/fotatest.json");
-    else 
-      FOTA.poll("http://210.8.241.226/afterburner/fota/fotatest.json");
-//    }
+
+      // Asynchronous polling - not prone to flakey Internet
+      FOTA.execAsyncHTTPcheck();  // version number is collected asynchronously, setting FOTAauth if newer
+
+#endif
+
+  }  // tDelta > 0
+  
+#ifndef SYNCHRONOUS_FOTA
+  // version number is collected asynchronously after initiating the update check
+  if(FOTA.getNewVersion()) {
+    if(FOTAauth == 2) {  // user has authorised update (was == 1 before auth.)
+      FOTA.execOTA();    // go ahead and do the update, reading new file from web server
+      FOTAauth = 0;      // and we're done.
+    }
+    else {
+      FOTAauth = 1;   // flag that new firmware is available
+    }
   }
 #endif
 };
 
+
 int isUpdateAvailable(bool test)
 {
   if(test) {
-//    return FOTAauth == 1;
-    if(FOTAauth == 1) {
+    if(FOTAauth >= 1) {
       return FOTA.getNewVersion();
     }
     else {
       return 0;
     }
   }
-  else
-  {
-    FOTAauth = 2;
-    FOTAtime = millis();  // force immediate update test
-    return true;
+  else {  // used to initiate update
+    if(FOTAauth == 1)
+      FOTAauth = 2;
+    return FOTA.getNewVersion();
   }
   
 }
@@ -193,6 +194,7 @@ void checkFOTA()
 {
   FOTAtime = millis();
 }
+
 
 const int CRCbufsize = 1024;
 uint8_t CRCReadBuff[CRCbufsize];   

@@ -828,11 +828,17 @@ CScreenManager::showSplash()
   uint8_t splash[1024];
   loadSplashScreen(splash);
   _pDisplay->drawBitmap(0, 0, splash, 128, 64, WHITE);
-//  _pDisplay->drawBitmap(0, 0, DieselSplash, 128, 64, WHITE);
-  _pDisplay->setCursor(90, 56);
-  CTransientFont AF(*_pDisplay, &segoeUI_Italic_7ptFontInfo);  // temporarily use a midi font
   _pDisplay->setTextColor(WHITE);
-  _pDisplay->print(getVersionStr());
+  {
+    CTransientFont AF(*_pDisplay, &segoeUI_Italic_7ptFontInfo);  // temporarily use a midi font
+    _pDisplay->setCursor(90, 56);
+    _pDisplay->print(getVersionStr());
+  }
+  {
+    CTransientFont AF(*_pDisplay, &arial_8ptBoldFontInfo);
+    _pDisplay->setCursor(10, 54);
+    _pDisplay->print(getVersionStr(true));  // prints "BETA" if minor version defined
+  }
 
   // Show initial display buffer contents on the screen --
   _pDisplay->display();

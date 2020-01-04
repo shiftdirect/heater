@@ -23,7 +23,7 @@
 
 // Place Holder Config File - User config vars and defines to be moved here
 
-#define USE_JTAG 1
+#define USE_JTAG 0
 
 //////////////////////////////////////////////////////////////////////////////
 // Configure bluetooth options

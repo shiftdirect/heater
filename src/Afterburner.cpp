@@ -126,7 +126,8 @@
 
 const int FirmwareRevision = 31;
 const int FirmwareSubRevision = 7;
-const char* FirmwareDate = "10 Nov 2019";
+const int FirmwareMinorRevision = 4;
+const char* FirmwareDate = "4 Jan 2020";
 
 
 #ifdef ESP32
@@ -1754,9 +1755,20 @@ float getVersion()
   return float(FirmwareRevision) * 0.1f + float(FirmwareSubRevision) * .001f;
 }
 
-const char* getVersionStr() {
+const char* getVersionStr(bool beta) {
   static char vStr[32];
-  sprintf(vStr, "V%.1f.%d", float(FirmwareRevision) * 0.1f, FirmwareSubRevision);
+  if(beta) {
+    if(FirmwareMinorRevision)
+      return "BETA";
+    else
+      return "";
+  }
+  else {
+    if(FirmwareMinorRevision)
+      sprintf(vStr, "V%.1f.%d.%d", float(FirmwareRevision) * 0.1f, FirmwareSubRevision, FirmwareMinorRevision);
+    else
+      sprintf(vStr, "V%.1f.%d", float(FirmwareRevision) * 0.1f, FirmwareSubRevision);
+  }
   return vStr;
 }
 
