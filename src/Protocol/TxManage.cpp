@@ -252,7 +252,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 void
 CTxManage::Start(unsigned long timenow)
 {
-  m_nStartTime = timenow + m_nStartTime;   // create a dwell period if an OEM controller is present after it's data exchange
+  m_nStartTime = timenow + m_nStartDelay;   // create a dwell period if an OEM controller is present after it's data exchange
   m_nStartTime |=  1;                      // avoid a black hole if millis() has wrapped to zero
   m_bTxPending = true;
 }
@@ -267,7 +267,8 @@ CTxManage::CheckTx(unsigned long timenow)
 
     long diff = timenow - m_nStartTime;
 
-    if(diff >= 0) {   // dwell since OEM exchange has expired ?
+    // dwell since OEM exchange has expired ?
+    if(diff >= 0) {
       // begin front porch of Tx gating pulse
       digitalWrite(m_nTxGatePin, HIGH);
     }
