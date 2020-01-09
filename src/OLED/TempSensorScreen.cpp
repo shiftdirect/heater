@@ -108,10 +108,20 @@ CTempSensorScreen::show()
       _printMenuText(border, baseLine, msg, _rowSel == 2 && _colSel == 0);
 
       _printMenuText(27, baseLine, "DS18B20");
-      if(_nDS18B20 == 1) {
-        sprintf(msg, "%+.01f", _OffsetDS18B20);
-        _printMenuText(90, baseLine, msg, _rowSel == 2 && _colSel == 1);
+      if(_nDS18B20 > 1) {
+        sprintf(msg, "x%d", _nDS18B20);
+        _printMenuText(72, baseLine, msg);
       }
+      if(_colSel == 0) {
+        // get temperature of primary DS18B20
+        float temperature;
+        getTempSensor().getDS18B20().getTemperature(0, temperature, false);
+        sprintf(msg, "%.01f`C", temperature + _OffsetDS18B20);
+      }
+      else {
+        sprintf(msg, "%+.01f", _OffsetDS18B20);
+      }
+      _printMenuText(90, baseLine, msg, _rowSel == 2 && _colSel == 1);
     }
 
   }
