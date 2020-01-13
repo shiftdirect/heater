@@ -126,7 +126,7 @@
 
 const int FirmwareRevision = 31;
 const int FirmwareSubRevision = 7;
-const int FirmwareMinorRevision = 5;
+const int FirmwareMinorRevision = 6;
 const char* FirmwareDate = "9 Jan 2020";
 
 
