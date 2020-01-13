@@ -152,6 +152,7 @@ void checkDisplayUpdate();
 void checkDebugCommands();
 void manageCyclicMode();
 void manageFrostMode();
+void manageHumidity();
 bool preemptCyclicMode();
 void doStreaming();
 void heaterOn();
@@ -877,6 +878,7 @@ void loop()
 
             manageCyclicMode();
             manageFrostMode();
+            manageHumidity();
           }
         }
         else {
@@ -991,6 +993,21 @@ void manageFrostMode()
         DebugPort.printf("FROST MODE: Stopping heater, > %d`C\r\n", engage+rise);
         heaterOff();
         RTC_Store.setFrostOn(false);  // cancel active frost mode
+      }
+    }
+  }
+}
+
+void manageHumidity()
+{
+  uint8_t humidity = NVstore.getUserSettings().humidityStart;
+  if(humidity) {
+    float reading;
+    if(getTempSensor().getHumidity(reading)) {
+      uint8_t testval = (uint8_t)reading;
+      if(testval > humidity) {
+        DebugPort.printf("HUMIDITY MODE: Starting heater, > %d%%\r\n", humidity);
+        requestOn();
       }
     }
   }

@@ -94,6 +94,8 @@ public:
   CBME280Sensor();
   bool begin(int ID);
   bool getTemperature(float& tempReading, bool filtered) ;
+  bool getAltitude(float& reading);
+  bool getHumidity(float& reading);
   const char* getID();
   int getCount() const { return _count; };
 };
@@ -117,6 +119,8 @@ public:
   bool getTemperatureBME280(float& tempReading) ;      // index is sensor discovery order on one-wire bus
   bool getTemperatureDS18B20Idx(int sensIdx, float& tempReading) ;      // index is sensor discovery order on one-wire bus
   int  getNumSensors() const;
+  bool getAltitude(float& reading);
+  bool getHumidity(float& reading);
   CBME280Sensor& getBME280() { return BME280; };
   CDS18B20SensorSet& getDS18B20() { return DS18B20; };
   static void format(char* msg, float fTemp);

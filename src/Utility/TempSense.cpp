@@ -437,6 +437,20 @@ CBME280Sensor::getTemperature(float& tempReading, bool filtered)
   return true;
 }
 
+bool
+CBME280Sensor::getAltitude(float& reading)
+{
+  reading = _bme.readAltitude(1013.25);  //use  standard atmosphere as reference
+  return true;
+}
+
+bool
+CBME280Sensor::getHumidity(float& reading)
+{
+  reading = _bme.readHumidity();
+  return true;
+}
+
 const char* 
 CBME280Sensor::getID()
 {
@@ -595,4 +609,28 @@ CTempSense::format(char* msg, float fTemp)
   else {
     sprintf(msg, "%.1f`C", fTemp);
   }
+}
+
+bool
+CTempSense::getTemperatureBME280(float& reading)
+{
+  return BME280.getTemperature(reading, false);
+}
+
+bool
+CTempSense::getAltitude(float& reading)
+{
+  if(BME280.getCount())
+    return BME280.getAltitude(reading);
+  else
+    return false;
+}
+
+bool
+CTempSense::getHumidity(float& reading)
+{
+  if(BME280.getCount())
+    return BME280.getHumidity(reading);
+  else
+    return false;
 }

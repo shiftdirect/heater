@@ -432,6 +432,7 @@ sUserSettings::load()
   validatedLoad("menuMode", menuMode, 0, u8inBounds, 0, 2);
   validatedLoad("Clock12hr", clock12hr, 0, u8inBounds, 0, 1);
   validatedLoad("holdPassword", holdPassword, 0, u8inBounds, 0, 1);
+  validatedLoad("humidityStart", humidityStart, 0, u8inBounds, 0, 100);
   preferences.end();    
 }
 
@@ -471,6 +472,7 @@ sUserSettings::save()
   preferences.putUChar("menuMode", menuMode);
   preferences.putUChar("Clock12hr", clock12hr);
   preferences.putUChar("holdPassword", holdPassword);
+  preferences.putUChar("humidityStart", humidityStart);
   preferences.end();    
 }
 

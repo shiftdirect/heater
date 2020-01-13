@@ -51,8 +51,8 @@ public:
       uint8_t Prime;              // [17] 00: normal, 0x5A: fuel prime
       uint8_t Unknown1_MSB;       // [18] always 0x01
       uint8_t Unknown1_LSB;       // [19] always 0x2c  "300 secs = max run without burn detected"?
-      uint8_t Unknown2_MSB;       // [20] always 0x0d
-      uint8_t Unknown2_LSB;       // [21] always 0xac  "3500 ?"
+      uint8_t Altitude_MSB;       // [20] 
+      uint8_t Altitude_LSB;       // [21] 
       uint8_t CRC_MSB;            // [22]
       uint8_t CRC_LSB;            // [23]
     } Controller;
@@ -161,6 +161,8 @@ public:
   // heat exchanger
   int16_t getTemperature_HeatExchg() const; // temperature of heat exchanger
   void setTemperature_HeatExchg(uint16_t degC); // temperature of heat exchanger
+  // altitude
+  void setAltitude(float altitude);
 
   void DebugReport(const char* hdr, const char* ftr);
 

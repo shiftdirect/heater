@@ -253,7 +253,7 @@ CFuelMixtureScreen::_adjustSetting(int dir)
   }
   BOUNDSLIMIT(adjPump[0], 0.5f, 10.f);
   BOUNDSLIMIT(adjPump[1], 0.5f, 10.f);
-  BOUNDSLIMIT(adjFan[0], 1000, 5000);
+  BOUNDSLIMIT(adjFan[0], 500, 5000);
   BOUNDSLIMIT(adjFan[1], 1000, 5000);
 }
 

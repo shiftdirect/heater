@@ -145,6 +145,14 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     m_TxFrame.setPump_Min(NVstore.getHeaterTuning().getPmin());
     m_TxFrame.setPump_Max(NVstore.getHeaterTuning().getPmax());
 
+    float altitude;
+    if(getTempSensor().getAltitude(altitude)) {  // if a BME280 is fitted
+      m_TxFrame.setAltitude(altitude);
+    }
+    else {
+      m_TxFrame.setAltitude(3500);  // default height - yes it is weird, but that's what the simple controllers send!
+    }
+
     float tActual = getTemperatureSensor();
     int8_t s8Temp = (int8_t)(tActual + 0.5);
     m_TxFrame.setTemperature_Actual(s8Temp);  // use current temp, for now

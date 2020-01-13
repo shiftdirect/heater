@@ -46,8 +46,10 @@
 #include "MenuTrunkScreen.h"
 #include "MQTTScreen.h"
 #include "DS18B20Screen.h"
+#include "BME280Screen.h"
 #include "TempSensorScreen.h"
 #include "FrostScreen.h"
+#include "HumidityScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -459,19 +461,22 @@ CScreenManager::_loadScreens()
 
   // create User Settings screens loop 
   menuloop.clear();
-  if(NVstore.getUserSettings().menuMode == 0) {
+  if(NVstore.getUserSettings().menuMode == 0) {  // standard heater control menu set
     menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
     menuloop.push_back(new CFrostScreen(*_pDisplay, *this)); // frost mode screen
+    if(getTempSensor().getBME280().getCount()) {
+      menuloop.push_back(new CHumidityScreen(*_pDisplay, *this)); // humidity settings screen
+    }
     menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
     menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
       menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }
-  else if(NVstore.getUserSettings().menuMode == 1) {
+  else if(NVstore.getUserSettings().menuMode == 1) {  // "no fiddle" menu set
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
   }
-  else if(NVstore.getUserSettings().menuMode == 2) {
+  else if(NVstore.getUserSettings().menuMode == 2) {  // no heater menu set
     menuloop.push_back(new CNoHeaterHomeMenuSelScreen(*_pDisplay, *this)); // No Heater Home menu settings screen
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
     if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
@@ -489,10 +494,13 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
     menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
     menuloop.push_back(new CBTScreen(*_pDisplay, *this));
-    if(getTempSensor().getBME280().getCount())
+    if(getTempSensor().getBME280().getCount()) {
       menuloop.push_back(new CTempSensorScreen(*_pDisplay, *this));
-    else
+      menuloop.push_back(new CBME280Screen(*_pDisplay, *this));
+    }
+    else {
       menuloop.push_back(new CDS18B20Screen(*_pDisplay, *this));
+    }
     _Screens.push_back(menuloop);
   }
   

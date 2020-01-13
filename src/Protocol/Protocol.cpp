@@ -231,6 +231,15 @@ CProtocol::getVoltage_Supply() const
 }
 
 void 
+CProtocol::setAltitude(float altitude)
+{
+  int16_t alt = (int16_t)altitude;
+  Controller.Altitude_MSB = (alt >> 8) & 0xff;
+  Controller.Altitude_LSB = (alt >> 0) & 0xff;
+}
+
+
+void 
 CProtocol::Init(int FrameMode)
 {
   if(FrameMode == CtrlMode) { 
@@ -252,8 +261,8 @@ CProtocol::Init(int FrameMode)
     Controller.Prime = 0;             // 00: normal, 0x5A: fuel prime
     Controller.Unknown1_MSB = 0x01;   // always 0x01
     Controller.Unknown1_LSB = 0x2c;   // always 0x2c  16bit: "300 secs = max run without burn detected" ??
-    Controller.Unknown2_MSB = 0x0d;   // always 0x0d
-    Controller.Unknown2_LSB = 0xac;   // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
+    Controller.Altitude_MSB = 0x0d;   // basic controllers always 0x0d
+    Controller.Altitude_LSB = 0xac;   // basic controllersalways 0xac  16bit: "3500" 
     setCRC();
   }
   else if(FrameMode == HeatMode){

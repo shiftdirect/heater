@@ -1324,3 +1324,23 @@ const uint8_t PROGMEM frostIcon[]  =
 
 const BITMAP_INFO frostIconInfo(11, 13, frostIcon);
 
+
+const uint8_t PROGMEM humidityIcon[]  =
+{
+	0x20, 0x10, //   #        #   
+	0x50, 0x28, //  # #      # #  
+	0x50, 0x28, //  # #      # #  
+	0x88, 0x44, // #   #    #   # 
+	0x88, 0x44, // #   #    #   # 
+	0x88, 0x82, // #   #   #     #
+	0x70, 0x82, //  ###    #     #
+	0x04, 0x82, //      #  #     #
+	0x0A, 0x44, //     # #  #   # 
+	0x0A, 0x38, //     # #   ###  
+	0x11, 0x00, //    #   #       
+	0x11, 0x00, //    #   #       
+	0x11, 0x00, //    #   #       
+	0x0E, 0x00, //     ###        
+};
+
+const BITMAP_INFO humidityIconInfo(15, 14, humidityIcon);
