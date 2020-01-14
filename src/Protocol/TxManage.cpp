@@ -151,6 +151,7 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     }
     else {
       m_TxFrame.setAltitude(3500);  // default height - yes it is weird, but that's what the simple controllers send!
+//      m_TxFrame.setAltitude(0);  // default height - yes it is weird, but that's what the simple controllers send!
     }
 
     float tActual = getTemperatureSensor();

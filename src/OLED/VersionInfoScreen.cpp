@@ -218,7 +218,7 @@ CVersionInfoScreen::keyHandler(uint8_t event)
     // CENTRE press
     if(event & key_Centre) {
       if(_rowSel == 3) {  // factory enable selection
-        _rowSel = SaveConfirm;
+        _confirmSave();
       }
       else if(_rowSel == 1) {  // firmware update selection
         _rowSel = 20;

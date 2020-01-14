@@ -125,9 +125,9 @@
 #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 7;
-const int FirmwareMinorRevision = 6;
-const char* FirmwareDate = "9 Jan 2020";
+const int FirmwareSubRevision = 9;
+const int FirmwareMinorRevision = 0;
+const char* FirmwareDate = "14 Jan 2020";
 
 
 #ifdef ESP32
@@ -1512,8 +1512,12 @@ void checkDebugCommands()
         mode = 2;
       }
       else if(rxVal == 'i') {
-        DebugPort.println("Test fan bytes");
+        DebugPort.println("Test unknown bytes MSB");
         mode = 3;
+      }
+      else if(rxVal == 'a') {
+        DebugPort.println("Test unknown bytes LSB");
+        mode = 5;
       }
       else if(rxVal == 'c') {
         DebugPort.println("Test Command Byte... ");
@@ -1525,7 +1529,7 @@ void checkDebugCommands()
         mode = 0;
         DefaultBTCParams.Controller.Command = 0;
       }
-      else if(rxVal == ']') {
+      else if(rxVal == ']') { 
         val++;
         bSendVal = true;
       }
@@ -1595,12 +1599,14 @@ void checkDebugCommands()
           DefaultBTCParams.Controller.GlowDrive = val & 0xff;     // always 0x05
           break;
         case 3:
-          DefaultBTCParams.Controller.Unknown2_MSB = (val >> 8) & 0xff;     // always 0x0d
-          DefaultBTCParams.Controller.Unknown2_LSB = (val >> 0) & 0xff;     // always 0xac  16bit: "3500" ??  Ignition fan max RPM????
+          DefaultBTCParams.Controller.Unknown1_MSB = val & 0xff;     
           break;
         case 4:
           DebugPort.printf("Forced controller command = %d\r\n", val&0xff);
           DefaultBTCParams.Controller.Command = val & 0xff;
+          break;
+        case 5:
+          DefaultBTCParams.Controller.Unknown1_LSB = val & 0xff;     
           break;
       }
     }
