@@ -30,9 +30,19 @@ public:
   ABTelnetSpy();
 	size_t write(uint8_t) override;
   void enable(bool);
+  /// getch():
+  //  typical problem we have with terminal software that may or may not send CR/LF
+  // when a user hits ENTER.
+  // This getch method will inject a LF if none was received within a period of time
+  bool getch(char& rxVal);
 protected:
   bool _enabled;
+  unsigned long _CRtimeout;
+  char _pending;
+  const int _LFPERIOD = 100;
 };
+
+
 
 
 #endif // __ABTELNETSPY_H__

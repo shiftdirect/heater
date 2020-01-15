@@ -126,8 +126,8 @@
 
 const int FirmwareRevision = 31;
 const int FirmwareSubRevision = 9;
-const int FirmwareMinorRevision = 0;
-const char* FirmwareDate = "14 Jan 2020";
+const int FirmwareMinorRevision = 1;
+const char* FirmwareDate = "15 Jan 2020";
 
 
 #ifdef ESP32
@@ -1370,14 +1370,14 @@ void checkDebugCommands()
   static String pw1;
   static String pw2;
 
-  // check for test commands received from PC Over USB
-  if(DebugPort.available()) {
+  // check for test commands received over Debug serial port or telnet
+  char rxVal;
+  if(DebugPort.getch(rxVal)) {
+
 #ifdef PROTOCOL_INVESTIGATION    
-    static int mode = 0;
+    static int mode = 0;6
     static int val = 0;
 #endif
-
-    char rxVal = DebugPort.read();
 
     if(bTestBTModule) {
       bTestBTModule = Bluetooth.test(rxVal);
@@ -2030,3 +2030,5 @@ CTempSense& getTempSensor()
 {
   return TempSensor;
 }
+
+

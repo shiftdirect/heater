@@ -96,8 +96,8 @@ CMQTTsetup::HandleMQTTsetup(char rxVal)
         switch(_mode) {
           case 1: DebugPort.printf("Enter MQTT broker's IP address (%s)", _MQTTsetup.host); break;
           case 2: DebugPort.printf("Enter MQTT broker's port (%d)", _MQTTsetup.port); break;
-          case 3: DebugPort.printf("Enter MQTT broker's username (%s)", _MQTTsetup.username); break;
-          case 4: DebugPort.printf("Enter MQTT broker's password (%s)", _MQTTsetup.password); break;
+          case 3: DebugPort.printf("Enter MQTT broker's username (currently '%s', CTRL-X to erase)", _MQTTsetup.username); break;
+          case 4: DebugPort.printf("Enter MQTT broker's password (currently '%s', CTRL-X to erase)", _MQTTsetup.password); break;
           case 5: DebugPort.printf("Enter root topic name (%s)", _MQTTsetup.topicPrefix); break;
           case 6: DebugPort.printf("Enter QoS level (%d)", _MQTTsetup.qos); break;
           case 7: DebugPort.printf("Enable MQTT? (Y)es / (N)o (%s)", _MQTTsetup.enabled ? "YES" : "NO"); break;
@@ -181,14 +181,18 @@ CMQTTsetup::getMQTTstring(char rxVal, int maxidx, char* pTargetString)
 {
   if(rxVal < ' ') {
     if(_idx == 0) strcpy(_buffer, pTargetString);
-    if(rxVal == '\r')
+    if(rxVal == ('x' & 0x1f)) {  // CTRL-X - erase string, return done
+      memset(pTargetString, 0, maxidx+1);
+      return true;
+    }
+    if(rxVal == '\r')   // ignore CR
       return false;
-    if(rxVal == '\n') {
+    if(rxVal == '\n') {  // accept buffered string upon LF, return done
       strncpy(pTargetString, _buffer, maxidx);
       pTargetString[maxidx] = 0;
       return true;
     }
-    if(rxVal == 0x1b) {
+    if(rxVal == 0x1b) {  // abort, no change upon ESC, return done
       return true;
     }
   }
