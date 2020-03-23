@@ -1302,6 +1302,22 @@ const uint8_t PROGMEM threshIcon[]  =
 const BITMAP_INFO threshIconInfo(9, 9, threshIcon);
 
 // 
+//  Image data for onOff
+// 
+
+const uint8_t PROGMEM onOffIcon[]  =
+{
+  0x10,  //    #     
+  0x54,  //  # # #   
+  0x92,  // #  #  # 
+  0x92,  // #  #  #  
+  0x82,  // #     #  
+  0x44,  //  #   #   
+  0x38,  //   ###    
+};
+
+const BITMAP_INFO onOffIconInfo(7, 7, onOffIcon);
+// 
 //  Image data for frost
 // 
 

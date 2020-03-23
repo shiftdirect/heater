@@ -1,18 +1,20 @@
 Afterburner operation checklist
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Modifications performed:
-  Pullup on Debug Rx line
-  Swapped GPIO In#1 with Analogue input
-  5V via blocking diode to GPIO port
   
 OLED intact
 Latest firmware uploaded
 SPIFFS uploaded
+Check temperature sensor
 Keypad functions OK
 Indicator LEDs function
 Web server functions and serves heater control page
 Bluetooth pairs and streams SPP data
+Set time
+Install battery
+
+GPIO units only
+~~~~~~~~~~~~~~~
+Check pressure sensor
 GPIO functions:
   Input x2
   Output x2

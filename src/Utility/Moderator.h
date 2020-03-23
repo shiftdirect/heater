@@ -51,13 +51,42 @@ public:
 	void reset(const char* name);
 };
 
+class sModeratorHoldoff {
+  unsigned long period;
+  unsigned long tripTime;
+public:
+  sModeratorHoldoff() {
+    period = 0;
+    tripTime = 0;
+  }
+  sModeratorHoldoff(const sModeratorHoldoff& rhs) {
+    period = rhs.period;
+    tripTime = rhs.tripTime;
+  }
+  void set(unsigned long per) {
+    period = per;
+    reArm();
+  }
+  void reArm() {
+    tripTime = (millis() + period) | 1;
+  }
+  bool expired() {
+    long tDelta = millis() - tripTime;
+    return tDelta >= 0;
+  }
+  void expire() {
+    tripTime = millis();
+  }
+};
 
 template <class T>
 class TModerator {
   std::map<const char*, T> Memory;
+  std::map<const char*, sModeratorHoldoff> _holdoff;
 public:
   bool shouldSend(const char* name, T value);
-  bool addJson(const char* name, T value, JsonObject& root);
+  void setHoldoff(const char* name, unsigned long period);
+  bool addJson(const char* name, T value, JsonObject& root, unsigned long holdoff=0);
 	void reset();
 	void reset(const char* name);
 };
@@ -69,7 +98,21 @@ bool TModerator<T>::shouldSend(const char* name, T value)
   auto it = Memory.find(name);
   if(it != Memory.end()) {
     retval = it->second != value;
-    it->second = value;
+    if(retval) {
+      // check if a minimum refresh interval has been defined
+      auto holdoff = _holdoff.find(name);
+      if(holdoff != _holdoff.end()) {
+        if(holdoff->second.expired()) {
+          holdoff->second.reArm();
+        }
+        else {
+          retval = false;
+        }
+      }
+    }
+    if(retval) {
+      it->second = value;
+    }
   }
   else {
     Memory[name] = value;
@@ -78,11 +121,26 @@ bool TModerator<T>::shouldSend(const char* name, T value)
 }
 
 template<class T>
-bool TModerator<T>::addJson(const char* name, T value, JsonObject& root) 
+void TModerator<T>::setHoldoff(const char* name, unsigned long period)
 {
+  if(period) {
+    auto it = _holdoff.find(name);
+    if(it == _holdoff.end()) {
+      sModeratorHoldoff holdoff;
+      holdoff.set(period);
+      _holdoff[name] = holdoff;
+    }
+  }
+}
+
+template<class T>
+bool TModerator<T>::addJson(const char* name, T value, JsonObject& root, unsigned long holdoff) 
+{
+  setHoldoff(name, holdoff);
   bool retval = shouldSend(name, value);
-  if(retval)
+  if(retval) {
     root.set(name, value);
+  }
   return retval;
 }
 
@@ -93,15 +151,26 @@ void TModerator<T>::reset()
  	for(auto it = Memory.begin(); it != Memory.end(); ++it) {
     it->second = it->second+100;
   } 
+ 	for(auto it = _holdoff.begin(); it != _holdoff.end(); ++it) {
+     it->second.expire();
+  }
 }
 
 template<class T>
 void TModerator<T>::reset(const char* name)
 {
-  auto it = Memory.find(name);
-  if(it != Memory.end()) {
-    DebugPort.printf("Resetting moderator: \"%s\"", name);
-    it->second = it->second+100;
+  {
+    auto it = Memory.find(name);
+    if(it != Memory.end()) {
+      DebugPort.printf("Resetting moderator: \"%s\"", name);
+      it->second = it->second+100;
+    }
+  }
+  {
+    auto it = _holdoff.find(name);
+    if(it != _holdoff.end()) {
+      it->second.expire();
+    }
   }
 }
 
@@ -123,8 +192,8 @@ public:
     return u32Moderator.addJson(name, value, root); 
   };
   // float values
-  bool addJson(const char* name, float value, JsonObject& root) { 
-    return fModerator.addJson(name, value, root); 
+  bool addJson(const char* name, float value, JsonObject& root, unsigned long holdoff=0) { 
+    return fModerator.addJson(name, value, root, holdoff); 
   };
   // uint8_t values
   bool addJson(const char* name, uint8_t value, JsonObject& root) { 

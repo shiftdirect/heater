@@ -55,6 +55,7 @@ CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) :
   m_BlueWireSerial(serial),
   m_TxFrame(CProtocol::CtrlMode)
 {
+  m_sysUpdate = 0;
   m_bOnReq = false;
   m_bOffReq = false;
   m_bTxPending = false;
@@ -107,6 +108,12 @@ CTxManage::queueRawCommand(uint8_t val)
   _rawCommand = val;
 }
 
+void
+CTxManage::queueSysUpdate() 
+{
+  m_sysUpdate = 10;
+}
+
 void 
 CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 {
@@ -139,7 +146,13 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
   // 0x78 prevents the controller showing bum information when we parrot the OEM controller
   // heater is happy either way, the OEM controller has set the max/min stuff already
   if(isBTCmaster) {
-    m_TxFrame.setActiveMode();   // this allows heater to save the tuning params to EEPROM
+    if(m_sysUpdate) {
+      m_sysUpdate--;
+      m_TxFrame.setActiveMode();   // this allows heater to save the tuning params to EEPROM
+    }
+    else {
+      m_TxFrame.setPassiveMode();    // this prevents the tuning parameters being saved by heater
+    }
     m_TxFrame.setFan_Min(NVstore.getHeaterTuning().Fmin);
     m_TxFrame.setFan_Max(NVstore.getHeaterTuning().Fmax);
     m_TxFrame.setPump_Min(NVstore.getHeaterTuning().getPmin());

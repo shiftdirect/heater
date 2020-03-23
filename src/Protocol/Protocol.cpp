@@ -238,6 +238,13 @@ CProtocol::setAltitude(float altitude)
   Controller.Altitude_LSB = (alt >> 0) & 0xff;
 }
 
+int
+CProtocol::getAltitude() const 
+{
+  int alt = (Controller.Altitude_MSB << 8) | Controller.Altitude_LSB;
+  return alt;
+}
+
 
 void 
 CProtocol::Init(int FrameMode)

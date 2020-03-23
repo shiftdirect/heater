@@ -138,7 +138,7 @@ CGPIOSetupScreen::show()
       const char* msgText = NULL;
       switch(_GPIOparams.out1Mode) {
         case CGPIOout1::Disabled: msgText = "---"; break;
-        case CGPIOout1::Status:   msgText = "Status"; break;
+        case CGPIOout1::Status:   msgText = "stsLED"; break;
         case CGPIOout1::User:     msgText = "User"; break;
         case CGPIOout1::Thresh:   
           if(_rowSel == 6) {
@@ -151,6 +151,7 @@ CGPIOSetupScreen::show()
             _printMenuText(Column2, Line3, msg, _rowSel == 8);
           }
           break;
+        case CGPIOout1::HtrActive: msgText ="OnSts"; break;
       }
       if(msgText)
         _printMenuText(Column2, Line3, msgText, _rowSel == 6);
@@ -173,6 +174,7 @@ CGPIOSetupScreen::show()
             _printMenuText(Column2, Line2, msg, _rowSel == 7);
           }
           break;
+        case CGPIOout2::HtrActive: msgText ="OnSts"; break;
       }
       if(msgText)
         _printMenuText(Column2, Line2, msgText, _rowSel == 5);
@@ -256,6 +258,7 @@ CGPIOSetupScreen::animate()
           else
             pMsg = "                   Output 2: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
           break;
+        case CGPIOout2::HtrActive: pMsg = "                   Output 2: Active if heater is running.                    "; break;
       }
       if(pMsg)
         _scrollMessage(56, pMsg, _scrollChar);
@@ -272,6 +275,7 @@ CGPIOSetupScreen::animate()
           else
             pMsg = "                   Output 1: Active if under temperature. Hold LEFT to set under. Hold RIGHT to set over.                   ";
           break;
+        case CGPIOout1::HtrActive: pMsg = "                   Output 1: Active if heater is running.                    "; break;
       }
       if(pMsg)
         _scrollMessage(56, pMsg, _scrollChar);
@@ -483,13 +487,13 @@ CGPIOSetupScreen::_adjust(int dir)
     case 5:   // outputs mode
       tVal = _GPIOparams.out2Mode;
       tVal += dir;
-      WRAPLIMITS(tVal, 0, 2);
+      WRAPLIMITS(tVal, 0, 3);
       _GPIOparams.out2Mode = (CGPIOout2::Modes)tVal;
       break;
     case 6:   // outputs mode
       tVal = _GPIOparams.out1Mode;
       tVal += dir;
-      WRAPLIMITS(tVal, 0, 3);
+      WRAPLIMITS(tVal, 0, 4);
       _GPIOparams.out1Mode = (CGPIOout1::Modes)tVal;
       break;
     case 7:

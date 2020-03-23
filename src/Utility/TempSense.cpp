@@ -432,7 +432,7 @@ CBME280Sensor::getTemperature(float& tempReading, bool filtered)
   }
 
   CSensor::getTemperature(tempReading, filtered);
-  tempReading += NVstore.getHeaterTuning().BME280probe.offset;;
+//  tempReading += NVstore.getHeaterTuning().BME280probe.offset;;
 
   return true;
 }
@@ -559,16 +559,26 @@ CTempSense::setOffset(int usrIdx, float offset)
 bool
 CTempSense::getTemperature(int usrIdx, float& temperature, bool filtered) 
 {
+  bool bRetVal = false;
+  float offset = 0;
   switch(getSensorType(usrIdx)) {
     case 0:
-      return BME280.getTemperature(temperature, filtered);
+      bRetVal = BME280.getTemperature(temperature, filtered);
+      offset = getOffset(usrIdx);  
+      break;
     case 1:
-      return DS18B20.getTemperature(usrIdx, temperature, filtered);  
+      bRetVal = DS18B20.getTemperature(usrIdx, temperature, filtered);  
+      offset = getOffset(usrIdx);  
+      break;
     case 2:
-      return DS18B20.getTemperature(usrIdx-1, temperature, filtered);  
-    default:
-      return false;
+      bRetVal = DS18B20.getTemperature(usrIdx-1, temperature, filtered);  
+      offset = getOffset(usrIdx-1);  
+      break;
   }
+  if(bRetVal) {
+    temperature += offset;
+  }
+  return bRetVal;
 }
 
 int 

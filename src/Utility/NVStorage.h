@@ -272,6 +272,16 @@ struct sMQTTparams : public CESP32_NVStorage {
     topicPrefix[31] = 0;
     return *this;
   }
+  bool operator!=(const sMQTTparams& rhs) {
+    bool retval = false;
+    retval |= enabled != rhs.enabled;
+    retval |= port != rhs.port;
+    retval |= qos != rhs.qos;
+    retval |= strcmp(host, rhs.host) != 0;
+    retval |= strcmp(password, rhs.password) != 0;
+    retval |= strcmp(topicPrefix, rhs.topicPrefix) != 0;
+    return retval;
+  }
   void load();
   void save();
   bool valid();

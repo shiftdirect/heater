@@ -23,7 +23,7 @@
 #include "NVStorage.h"
 #include "DebugPort.h"
 #include <driver/adc.h>
-
+#include <string.h>
 
 bool 
 sNVStore::valid()
@@ -131,6 +131,10 @@ CHeaterStorage::getMQTTinfo() const
 void
 CHeaterStorage::setMQTTinfo(const sMQTTparams& info)
 {
+  if(_calValues.MQTT != info) {
+    requestMQTTrestart();
+  }
+
   _calValues.MQTT = info;
 }
 
@@ -268,12 +272,17 @@ sHeaterTuning::load()
   validatedLoad("tempOffset0", DS18B20probe[0].offset, 0.0, -10.0, +10.0);
   validatedLoad("tempOffset1", DS18B20probe[1].offset, 0.0, -10.0, +10.0);
   validatedLoad("tempOffset2", DS18B20probe[2].offset, 0.0, -10.0, +10.0);
-  preferences.getBytes("probeSerial0", DS18B20probe[0].romCode.bytes, 8);
-  preferences.getBytes("probeSerial1", DS18B20probe[1].romCode.bytes, 8);
-  preferences.getBytes("probeSerial2", DS18B20probe[2].romCode.bytes, 8);
+  memset(DS18B20probe[0].romCode.bytes, 0, 8);
+  memset(DS18B20probe[1].romCode.bytes, 0, 8);
+  memset(DS18B20probe[2].romCode.bytes, 0, 8);
+  validatedLoad("probeSerial0", DS18B20probe[0].romCode.bytes, 8);
+  validatedLoad("probeSerial1", DS18B20probe[1].romCode.bytes, 8);
+  validatedLoad("probeSerial2", DS18B20probe[2].romCode.bytes, 8);
   validatedLoad("tempOffsetBME", BME280probe.offset, 0.0, -10.0, +10.0);
   validatedLoad("probeBMEPrmy", BME280probe.bPrimary, 0, u8inBounds, 0, 1);
   preferences.end();    
+
+//  save();
 
   // for(int i=0; i<3; i++) {
   //   DebugPort.printf("Rd Probe[%d] %02X:%02X:%02X:%02X:%02X:%02X\r\n",
@@ -291,6 +300,20 @@ sHeaterTuning::load()
 void 
 sHeaterTuning::save()
 {
+  sHeaterTuning currentSettings;
+  currentSettings.load();
+
+  bool requestHeaterUpdate = false;
+  requestHeaterUpdate |= currentSettings.sysVoltage != this->sysVoltage;
+  requestHeaterUpdate |= currentSettings.fanSensor != this->fanSensor;
+  requestHeaterUpdate |= currentSettings.glowDrive != this->glowDrive;
+  requestHeaterUpdate |= currentSettings.Pmin != this->Pmin;
+  requestHeaterUpdate |= currentSettings.Pmax != this->Pmax;
+  requestHeaterUpdate |= currentSettings.Fmin != this->Fmin;
+  requestHeaterUpdate |= currentSettings.Fmax != this->Fmax;
+  if(requestHeaterUpdate) {
+    reqHeaterCalUpdate();
+  }
   // section for heater calibration params
   // **** MAX LENGTH is 15 for names ****
   preferences.begin("Calibration", false);
@@ -302,15 +325,55 @@ sHeaterTuning::save()
   preferences.putUChar("fanSensor", fanSensor);
   preferences.putUChar("glowDrive", glowDrive);
   preferences.putUChar("lowVolts", lowVolts);
-  preferences.putFloat("pumpCal", pumpCal);
-  preferences.putFloat("tempOffset0", DS18B20probe[0].offset);
-  preferences.putFloat("tempOffset1", DS18B20probe[1].offset);
-  preferences.putFloat("tempOffset2", DS18B20probe[2].offset);
+  saveFloat("pumpCal", pumpCal);
+  saveFloat("tempOffset0", DS18B20probe[0].offset);
+  saveFloat("tempOffset1", DS18B20probe[1].offset);
+  saveFloat("tempOffset2", DS18B20probe[2].offset);
+  // preferences.putFloat("pumpCal", pumpCal);
+  // preferences.putFloat("tempOffset0", DS18B20probe[0].offset);
+  // preferences.putFloat("tempOffset1", DS18B20probe[1].offset);
+  // preferences.putFloat("tempOffset2", DS18B20probe[2].offset);
+
+  /*// START TESTO
+  for(int i=0; i<8; i++)
+    DS18B20probe[0].romCode.bytes[i] = i;
+  // END TESTO*/
+
   preferences.putBytes("probeSerial0", DS18B20probe[0].romCode.bytes, 8);
   preferences.putBytes("probeSerial1", DS18B20probe[1].romCode.bytes, 8);
   preferences.putBytes("probeSerial2", DS18B20probe[2].romCode.bytes, 8);
-  preferences.putFloat("tempOffsetBME", BME280probe.offset);
+  // preferences.putFloat("tempOffsetBME", BME280probe.offset);
+  saveFloat("tempOffsetBME", BME280probe.offset);
   preferences.putUChar("probeBMEPrmy", BME280probe.bPrimary);
+
+
+  /*// START TESTO
+  preferences.getBytes("probeSerial0", DS18B20probe[0].romCode.bytes, 8);
+  DebugPort.printf("getBytes %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
+                    DS18B20probe[0].romCode.bytes[0],
+                    DS18B20probe[0].romCode.bytes[1],
+                    DS18B20probe[0].romCode.bytes[2],
+                    DS18B20probe[0].romCode.bytes[3],
+                    DS18B20probe[0].romCode.bytes[4],
+                    DS18B20probe[0].romCode.bytes[5],
+                    DS18B20probe[0].romCode.bytes[6],
+                    DS18B20probe[0].romCode.bytes[7]
+                  );
+
+  uint64_t tVal = preferences.getULong64("probeSerial0", 0xffffffffffffffff);
+  unsigned char* pTst = (unsigned char*)&tVal;
+  DebugPort.printf("getULong %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
+                    pTst[0],
+                    pTst[1],
+                    pTst[2],
+                    pTst[3],
+                    pTst[4],
+                    pTst[5],
+                    pTst[6],
+                    pTst[7]
+                  );
+  // END TESTO*/
+
   preferences.end();    
 
   // for(int i=0; i<3; i++) {
@@ -417,8 +480,8 @@ sUserSettings::load()
     preferences.putUChar("GPIOout1Mode", GPIO.out1Mode);  // set new
     preferences.putUChar("GPIOout2Mode", GPIO.out2Mode);  // set new
   }
-  validatedLoad("GPIOout1Mode", tVal, 0, u8inBounds, 0, 3); GPIO.out1Mode = (CGPIOout1::Modes)tVal;
-  validatedLoad("GPIOout2Mode", tVal, 0, u8inBounds, 0, 2); GPIO.out2Mode = (CGPIOout2::Modes)tVal;
+  validatedLoad("GPIOout1Mode", tVal, 0, u8inBounds, 0, 4); GPIO.out1Mode = (CGPIOout1::Modes)tVal;
+  validatedLoad("GPIOout2Mode", tVal, 0, u8inBounds, 0, 3); GPIO.out2Mode = (CGPIOout2::Modes)tVal;
   validatedLoad("GPIOout1Thresh", GPIO.thresh[0], 0, s8inBounds, -50, 50); 
   validatedLoad("GPIOout2Thresh", GPIO.thresh[1], 0, s8inBounds, -50, 50); 
   validatedLoad("GPIOalgMode", tVal, 0, u8inBounds, 0, 2); GPIO.algMode = (CGPIOalg::Modes)tVal;
@@ -447,7 +510,8 @@ sUserSettings::save()
   preferences.putUChar("thermostat", useThermostat);
   preferences.putUChar("degF", degF);
   preferences.putUChar("thermoMethod", ThermostatMethod);
-  preferences.putFloat("thermoWindow", ThermostatWindow);
+//  preferences.putFloat("thermoWindow", ThermostatWindow);
+  saveFloat("thermoWindow", ThermostatWindow);
   preferences.putUChar("frostOn", FrostOn);
   preferences.putUChar("frostRise", FrostRise);
 //  preferences.putUChar("enableWifi", enableWifi);
@@ -484,9 +548,9 @@ sMQTTparams::load()
   validatedLoad("enabled", enabled, 0, u8inBounds, 0, 1);
   validatedLoad("port", port, 1883, u16inBounds, 0, 0xffff);
   validatedLoad("qos", qos, 0, u8inBounds, 0, 2);
-  validatedLoad("host", host, 127, "");
-  validatedLoad("username", username, 31, "");
-  validatedLoad("password", password, 31, "");
+  validatedLoad("host", host, 127, "broker");
+  validatedLoad("username", username, 31, "username");
+  validatedLoad("password", password, 31, "password");
   validatedLoad("topic", topicPrefix, 31, "Afterburner");
   preferences.end();    
 }

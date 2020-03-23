@@ -229,6 +229,15 @@ CScreenHeader::showWifiIcon()
 {
   if(isWifiConnected() || isWifiAP()) {   // STA or AP mode active
     _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiWideIconInfo, WHITE, BLACK);  // wide icon erases annotations!
+    int8_t RSSI = getWifiRSSI();
+    if(RSSI < -70) {
+      _display.fillRect(X_WIFI_ICON, Y_WIFI_ICON, WifiWideIconInfo.width, 6, BLACK);
+    }
+    else if(RSSI < -55) {
+      _display.fillRect(X_WIFI_ICON, Y_WIFI_ICON, WifiWideIconInfo.width, 3, BLACK);
+      _display.fillRect(X_WIFI_ICON, Y_WIFI_ICON, 1, 4, BLACK);
+      _display.fillRect(X_WIFI_ICON+WifiIconInfo.width-1, Y_WIFI_ICON, 1, 4, BLACK);
+    }
 
     int xPos = X_WIFI_ICON + WifiIconInfo.width + 1;  // x loaction of upload/download arrows
 

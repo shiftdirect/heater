@@ -40,6 +40,7 @@ void resetJSONIPmoderator();
 void resetJSONSysModerator();
 void resetJSONMQTTmoderator();
 void validateTimer(int ID);
+void doJSONreboot(uint16_t code);
 
 template<class T>
 const char* createJSON(const char* name, T value)

@@ -422,10 +422,22 @@ void DecodeCmd(const char* cmd, String& payload)
   else if(strcmp("FrostRise", cmd) == 0) {
     sUserSettings us = NVstore.getUserSettings();
     us.FrostRise = payload.toInt();
-    if(INBOUNDS(us.FrostRise, 1, 30)) {
+    if(INBOUNDS(us.FrostRise, 0, 30)) {
       NVstore.setUserSettings(us);
       NVstore.save();
     }
+  }
+  else if(strcmp("HumidStart", cmd) == 0) {
+    sUserSettings us = NVstore.getUserSettings();
+    us.humidityStart = payload.toInt();
+    if((us.humidityStart == 0) || INBOUNDS(us.humidityStart, 50, 100)) {
+      NVstore.setUserSettings(us);
+      NVstore.save();
+    }
+  }
+  else if(strcmp("Reboot", cmd) == 0) {
+    int16_t code = payload.toInt();
+    doJSONreboot(code);
   }
 }
 

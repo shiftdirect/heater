@@ -162,6 +162,7 @@ String getContentType(String filename) { // convert the file extension to the MI
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
   DebugPort.println("handleFileRead: " + path);
   if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+  path.replace("%20", " ");                             // convert HTML spaces to normal spaces
   String contentType = getContentType(path);            // Get the MIME type
   String pathWithGz = path + ".gz";
   if(SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {  // If the file exists as a compressed archive, or normal
@@ -622,8 +623,10 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
       String ers;
       String rename;
       if(withHTMLanchors == 2) {
-        rename = "<button class='rename' onClick=onRename('" + fn + "')>Rename</button>";
-        ers = "<input class='del' type='button' value='X' onClick=onErase('" + fn + "')>";
+        String htmlNm = fn;
+        htmlNm.replace(" ", "%20");
+        rename = "<button class='rename' onClick=onRename('" + htmlNm + "')>Rename</button>";
+        ers = "<input class='del' type='button' value='X' onClick=onErase('" + htmlNm + "')>";
       }
       if(withHTMLanchors) {
         String fn2;
@@ -638,6 +641,7 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
           fn2.remove(fn2.length()-3, 3);  // strip trailing ".gz"
         }
         if(fn2.length() != 0) {
+          fn2.replace(" ", "%20");
           // create hyperlink if web page file
           fn = "<a href=\"" + fn2 + "\">" + file.name() + "</a>";
         }
@@ -678,6 +682,7 @@ void addTableData(String& HTML, String dta)
 void onErase()
 {
   String filename = server.arg("filename");        // get request argument value by name
+  filename.replace("%20", " ");   // convert HTML spaces to real spaces
 
   if(filename.length() != 0)  {
     DebugPort.printf("onErase: %s ", filename.c_str());
@@ -986,6 +991,8 @@ void onRename()
   DebugPort.println("WEB: POST /reboot");
   String oldname = server.arg("oldname");    // get request argument value by name
   String newname = server.arg("newname");    // get request argument value by name
+  newname.replace("%20", " ");               // convert html spaces to real spaces
+  oldname.replace("%20", " ");
   if(oldname != "" && newname != "") {      
     DebugPort.printf("Renaming %s to %s\r\n", oldname.c_str(), newname.c_str());
     SPIFFS.rename(oldname.c_str(), newname.c_str());

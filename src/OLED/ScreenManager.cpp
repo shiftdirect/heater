@@ -24,6 +24,7 @@
 #include "BasicScreen.h"
 #include "PrimingScreen.h"
 #include "WiFiScreen.h"
+#include "WiFiSTAScreen.h"
 #include "FuelMixtureScreen.h"
 #include "SetClockScreen.h"
 #include "SetTimerScreen.h"
@@ -492,6 +493,7 @@ CScreenManager::_loadScreens()
       menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
     }
     menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
+    menuloop.push_back(new CWiFiSTAScreen(*_pDisplay, *this));
     menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
     menuloop.push_back(new CBTScreen(*_pDisplay, *this));
     if(getTempSensor().getBME280().getCount()) {

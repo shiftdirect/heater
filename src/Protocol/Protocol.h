@@ -163,6 +163,7 @@ public:
   void setTemperature_HeatExchg(uint16_t degC); // temperature of heat exchanger
   // altitude
   void setAltitude(float altitude);
+  int  getAltitude() const;
 
   void DebugReport(const char* hdr, const char* ftr);
 
@@ -210,6 +211,7 @@ public:
   float getGlow_Current() const { return Heater.getGlowPlug_Current(); };
   float getSystemVoltage() const { return Controller.getSystemVoltage(); };
   int   getGlow_Drive() const { return Controller.getGlowDrive(); };
+  int   getAltitude() const { return Controller.getAltitude(); };
 
 //  void  setRefTime();
   void  reportFrames(bool isOEM);

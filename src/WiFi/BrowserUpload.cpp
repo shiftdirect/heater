@@ -63,6 +63,8 @@ sBrowserUpload::begin(String& filename, int filesize)
     }
   }
   else {
+    SrcFile.name.replace("%20", " ");   // convert HTML spaces to real spaces
+
     // SPIFFS UPLOAD START
     DebugPort.printf("Starting SPIFFS upload: %s\r\n", SrcFile.name.c_str());
 

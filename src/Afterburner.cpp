@@ -97,7 +97,7 @@
 #include "Protocol/Protocol.h"
 #include "Protocol/TxManage.h"
 #include "Protocol/SmartError.h"
-#include "Utility/helpers.h"
+#include "Utility/helpers.h" 
 #include "Utility/NVStorage.h"
 #include "Utility/DebugPort.h"
 #include "Utility/macros.h"
@@ -124,10 +124,10 @@
 
 #define RX_DATA_TIMOUT 50
 
-const int FirmwareRevision = 31;
-const int FirmwareSubRevision = 9;
-const int FirmwareMinorRevision = 1;
-const char* FirmwareDate = "15 Jan 2020";
+const int FirmwareRevision = 32;
+const int FirmwareSubRevision = 0;
+const int FirmwareMinorRevision = 0;
+const char* FirmwareDate = "21 Mar 2020";
 
 
 #ifdef ESP32
@@ -367,9 +367,6 @@ void setup() {
   digitalWrite(GPIOout2_pin, LOW);
 #endif
 
-  nvs_stats_t nvs_stats;
-  nvs_get_stats(NULL, &nvs_stats);
-
   // initialise TelnetSpy (port 23) as well as Serial to 115200 
   // Serial is the usual USB connection to a PC
   // DO THIS BEFORE WE TRY AND SEND DEBUG INFO!
@@ -383,6 +380,11 @@ void setup() {
   DebugPort.begin(115200);
   DebugPort.println("_______________________________________________________________");
   
+  DebugPort.printf("Getting NVS stats\r\n");
+
+  nvs_stats_t nvs_stats;
+  while( nvs_get_stats(NULL, &nvs_stats) == ESP_ERR_NVS_NOT_INITIALIZED);
+
   DebugPort.printf("Reset reason: core0:%d, core1:%d\r\n", rtc_get_reset_reason(0), rtc_get_reset_reason(0));
 //  DebugPort.printf("Previous user ON = %d\r\n", bUserON);   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
@@ -481,6 +483,9 @@ void setup() {
   Bluetooth.begin();
 
   setupGPIO(); 
+
+//  pinMode(0, OUTPUT);
+//  digitalWrite(0, LOW);
 
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
   // create a high priority FreeRTOS task as a watchdog monitor
@@ -984,15 +989,18 @@ void manageFrostMode()
       if(heaterState == 0) {
         RTC_Store.setFrostOn(true);        
         DebugPort.printf("FROST MODE: Starting heater, < %d`C\r\n", engage);
+        if(NVstore.getUserSettings().FrostRise == 0)
+          RTC_Store.setCyclicEngaged(true);    // enable cyclic mode if user stop
         heaterOn();
       }
     }
     uint8_t rise = NVstore.getUserSettings().FrostRise;
-    if(rise && (deltaT > rise)) {  // if rsie is set to 0, user must shut off heater
+    if(rise && (deltaT > rise)) {  // if rise is set to 0, user must shut off heater
       if(RTC_Store.getFrostOn()) {
         DebugPort.printf("FROST MODE: Stopping heater, > %d`C\r\n", engage+rise);
         heaterOff();
         RTC_Store.setFrostOn(false);  // cancel active frost mode
+        RTC_Store.setCyclicEngaged(false);   // for cyclic mode
       }
     }
   }
@@ -1271,29 +1279,10 @@ float getTemperatureDesired()
 
 float getTemperatureSensor(int source)
 {
-  static long lasttime = millis();
-  static float tempsave = 0;
-  long tDelta;
-  // NVstore always holds primary sensor as index 0
   float retval;
   TempSensor.getTemperature(source, retval);
   return retval;
 
-//   switch (source) {
-//     case 0:
-//       return FilteredSamples.AmbientTemp.getValue() + NVstore.getHeaterTuning().DS18B20probe[0].offset;
-//     case 1:
-//       BMESensor.getTemperature(tempsave);
-// /*      tDelta = millis() - lasttime;
-//       if(tDelta >= 0) {
-//         bme.takeForcedMeasurement();
-//         tempsave = bme.readTemperature();
-//         lasttime = millis() + 10000;
-//       }*/
-//       return tempsave;
-//     default:
-//       return -100;
-//   }
 }
 
 void  setPumpMin(float val)
@@ -2031,4 +2020,7 @@ CTempSense& getTempSensor()
   return TempSensor;
 }
 
-
+void reqHeaterCalUpdate()
+{
+  TxManage.queueSysUpdate();
+}

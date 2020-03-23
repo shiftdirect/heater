@@ -22,7 +22,7 @@
 #ifndef __BTC_NV_CORE_H__
 #define __BTC_NV_CORE_H__
 
-#include <Preferences.h>
+#include "ABpreferences.h"
 #include <functional>
 
 
@@ -46,15 +46,17 @@ class CNVStorage {
 
 class CESP32_NVStorage {
 protected:
-  Preferences preferences;
+  ABpreferences preferences;
 protected:
   bool validatedLoad(const char* key, int8_t& val, int8_t defVal, std::function<bool(int8_t, int8_t, int8_t)> validator, int8_t min, int8_t max);
   bool validatedLoad(const char* key, uint8_t& val, uint8_t defVal, std::function<bool(uint8_t, uint8_t, uint8_t)> validator, uint8_t min, uint8_t max, uint8_t mask=0xff);
   bool validatedLoad(const char* key, uint16_t& val, uint16_t defVal, std::function<bool(uint16_t, uint16_t, uint16_t)> validator, uint16_t min, uint16_t max);
   bool validatedLoad(const char* key, long& val, long defVal, long min, long max);
-  bool validatedLoad(const char* key, char* val, int maxlen, const char* defVal);
+  bool validatedLoad(const char* key, char* val, int maxlen, const char* defVal);  // string
+  bool validatedLoad(const char* key, uint8_t* val, int len);  // bytes
   bool validatedLoad(const char* key, float& val, float defVal, float min, float max);
   bool validatedLoad(const char* key, uint32_t& val, uint32_t defVal, uint32_t min, uint32_t max);
+  size_t saveFloat(const char* key, float val);
 };
 
 

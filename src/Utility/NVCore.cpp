@@ -24,6 +24,7 @@
 #include "DebugPort.h"
 #include <functional>
 #include <string.h>
+#include <math.h>
 
 #define INBOUNDS(TST, MIN, MAX) (((TST) >= (MIN)) && ((TST) <= (MAX)))
 
@@ -31,17 +32,28 @@
 bool 
 CESP32_NVStorage::validatedLoad(const char* key, char* val, int maxlen, const char* defVal)
 {
-  char probe[128];
   bool retval = true;
-  strcpy(probe, "TestPresence");
-  int len = preferences.getString(key, probe, 127);
-  if(len == 0 || strcmp(probe, "TestPresence") == 0) {
+  if(!preferences.hasString(key)) {
     preferences.putString(key, defVal);
-    DebugPort.printf("CESP32HeaterStorage::validatedLoad<char*> default installed %s=%s", key, defVal);
-    retval = false;
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<char*> default installed %s=%s\r\n", key, defVal);
   }
   preferences.getString(key, val, maxlen);
   val[maxlen] = 0;  // ensure null terminated
+  return retval;
+}
+
+bool 
+CESP32_NVStorage::validatedLoad(const char* key, uint8_t* val, int len)
+{
+  bool retval = true;
+  if(!preferences.hasBytes(key)) {
+    DebugPort.printf("CESP32HeaterStorage::validatedLoad<uint8_t*> default installed for %s\r\n", key);
+    preferences.putBytes(key, val, len);
+  }
+  len = preferences.getBytes(key, val, len);
+  if(len == 0) {
+    retval = false;
+  }
   return retval;
 }
 
@@ -129,17 +141,40 @@ CESP32_NVStorage::validatedLoad(const char* key, uint32_t& val, uint32_t defVal,
 bool
 CESP32_NVStorage::validatedLoad(const char* key, float& val, float defVal, float min, float max)
 {
-  val = preferences.getFloat(key, defVal);
+// preferences.getFloat() does not do a default value for use
+// use some skull duggery via unsigned long to get one installed
+  unsigned long* pUL = (unsigned long*)&defVal;  // point to bytes of float default value as a long
+  unsigned long ULVal = *pUL;     // copy as an unsigned long
+
+  unsigned long tmpVal = preferences.getULong(key, ULVal);
+
+//  pUL = (unsigned long*)&val;   // point to val we exchange, as an usigned long
+  float* ptmpVal = (float*)&tmpVal;  // create a pointer to flaot, that was our UL returned value
+  float* pVal = &val;                // point to our FP exchange value
+  *pVal = *ptmpVal;                  // copy as a float
+
+//  val = preferences.getFloat(key, defVal);
   if(!INBOUNDS(val, min, max)) {
 
     DebugPort.printf("CESP32HeaterStorage::validatedLoad<float> invalid read %s=%f", key, val);
     DebugPort.printf(" validator(%f,%f) reset to %f\r\n", min, max, defVal);
 
     val = defVal;
-    preferences.putFloat(key, val);
+//    preferences.putFloat(key, val);
+    pUL = (unsigned long*)&val;  // point to bytes of float default value as a long
+    ULVal = *pUL;     // copy as an unsigned long
+    preferences.putULong(key, ULVal);
     return false;
   }
   return true;
+}
+
+size_t 
+CESP32_NVStorage::saveFloat(const char* key, float val)
+{
+  unsigned long* pUL = (unsigned long*)&val;  // point to bytes of float default value as a long
+  unsigned long ULVal = *pUL;     // copy as an unsigned long
+  return preferences.putULong(key, ULVal);
 }
 
 bool finBounds(float test, float minLim, float maxLim)

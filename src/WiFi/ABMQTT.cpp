@@ -51,7 +51,8 @@ extern void DecodeCmd(const char* cmd, String& payload);
 AsyncMqttClient MQTTclient;
 char topicnameJSONin[128];
 char topicnameCmd[128];
-CModerator MQTTmoderator;
+CModerator MQTTmoderator;  // for basic MQTT interface
+unsigned long MQTTrestart = 0;
 
 void subscribe(const char* topic);
 
@@ -100,14 +101,10 @@ void onMqttConnect(bool sessionPresent)
   sprintf(statusTopic, "%s/status", NVstore.getMQTTinfo().topicPrefix);
   sprintf(topicnameJSONin, "%s/JSONin", NVstore.getMQTTinfo().topicPrefix);
   sprintf(topicnameCmd, "%s/cmd/#", NVstore.getMQTTinfo().topicPrefix);
-  // subscribe to that topic
-  // DebugPort.printf("MQTT: Subscribing to \"%s\"\r\n", topicnameJSONin);
-  // MQTTclient.subscribe(topicnameJSONin, NVstore.getMQTTinfo().qos);
-  // MQTTclient.subscribe(topicnameCmd, NVstore.getMQTTinfo().qos);
-  // MQTTclient.subscribe(statusTopic, NVstore.getMQTTinfo().qos);
-  subscribe(topicnameJSONin);
-  subscribe(topicnameCmd);
-  subscribe(statusTopic);
+  
+  subscribe(topicnameJSONin);     // subscribe to the JSONin topic
+  subscribe(topicnameCmd);        // subscribe to the basic command topic
+  subscribe(statusTopic);         // subscribe to the status topic
 
   // spit out an "I'm here" message
   MQTTclient.publish(statusTopic, NVstore.getMQTTinfo().qos, true, "online");
@@ -152,7 +149,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }
   else if(strcmp(topic, statusTopic) == 0) {  // check if incoming topic is our general status
     if(strcmp(szPayload, "1") == 0) {
-      MQTTmoderator.reset();
+       // MQTTmoderator.reset();
       MQTTclient.publish(statusTopic, NVstore.getMQTTinfo().qos, true, "online");
     }
   }
@@ -199,9 +196,11 @@ bool mqttInit()
 #else
   mqttReconnect = 0;
 #endif
+  MQTTrestart = 0;
 
   memset(topicnameJSONin, 0, sizeof(topicnameJSONin));
 
+  DebugPort.println("MQTT: Initialising...");
   MQTTclient.disconnect(true);
   long escape = millis() + 10000;
   while(MQTTclient.connected()) {
@@ -274,6 +273,16 @@ void kickMQTT() {
 
 void doMQTT()
 {
+  // manage restart of MQTT
+  if(MQTTrestart) {
+    long tDelta = millis() - MQTTrestart;
+    if(tDelta > 0) {
+      MQTTrestart = 0;
+      mqttInit();
+      // connectToMqtt();
+    }
+  }
+
   // most MQTT is managed via callbacks!!!
   if(NVstore.getMQTTinfo().enabled) {
 #ifndef USE_RTOS_MQTTTIMER
@@ -409,6 +418,11 @@ void subscribe(const char* topic)
 {
   DebugPort.printf("MQTT: Subscribing to \"%s\"\r\n", topic);
   MQTTclient.subscribe(topic, NVstore.getMQTTinfo().qos);
+}
+
+void requestMQTTrestart()
+{
+  MQTTrestart = (millis() + 1000) | 1;
 }
 
 #endif

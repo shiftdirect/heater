@@ -90,6 +90,7 @@ extern int sysUptime();
 extern void doJSONwatchdog(int topup);
 extern void reloadScreens();
 extern CTempSense& getTempSensor() ;
+extern void reqHeaterCalUpdate();
 
 
 void setSSID(const char* name);
@@ -99,5 +100,6 @@ extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 
 extern void updateMQTT();
 extern void refreshMQTT();
+extern void requestMQTTrestart();
 
 #endif

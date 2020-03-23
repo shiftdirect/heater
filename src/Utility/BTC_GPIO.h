@@ -107,6 +107,7 @@ class CGPIOoutBase {
   bool _userState;
   int  _pin;
 protected:
+  void _doActive();
   void _doThresh();
   void _doUser();
   bool _getUserState();
@@ -126,7 +127,8 @@ public:
     Disabled, 
     Status,
     User,
-    Thresh
+    Thresh,
+    HtrActive
   };
   CGPIOout1();
   void begin(int pin, Modes mode);
@@ -152,7 +154,8 @@ public:
   enum Modes { 
     Disabled, 
     User,
-    Thresh
+    Thresh,
+    HtrActive,
   };
   CGPIOout2();
   void begin(int pin, Modes mode);
@@ -207,8 +210,8 @@ struct sGPIOparams {
 };
 
 struct sGPIO {
-  bool outState[2];
-  bool inState[2];
+  uint8_t outState[2];
+  uint8_t inState[2];
   int  algVal;
   sGPIO() {
     outState[0] = outState[1] = false;

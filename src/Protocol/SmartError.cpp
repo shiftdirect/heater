@@ -126,6 +126,8 @@ CSmartError::monitor(uint8_t newRunState)
 int
 CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
 {
+  const unsigned long LVCholdoffTime = 10000;
+  static unsigned long LVCShutdownHoldoff = 0;
   // check for low voltage
   // Native NV values here are x10 integers
 
@@ -139,27 +141,32 @@ CSmartError::checkVolts(float ipVolts, float glowI, bool throwfault)
   
   // test low voltage cutout
   if(ipVolts < threshLVC) {
-    if(throwfault) {     // only throw faults if directed to do so
-      _Error = 2;        // internals error codes are +1 over displayed error code
-      requestOff();      // shut heater down
+    if(LVCShutdownHoldoff == 0) {
+      // initial detection of LVC - introduce a hold off period
+      DebugPort.println("LVC holdoff enagaged");
+      LVCShutdownHoldoff = (millis() + LVCholdoffTime) | 1; // ensure non zero!
+    }
+    else {
+      long tDelta = millis() - LVCShutdownHoldoff;
+      if(tDelta > 0) {
+        LVCShutdownHoldoff = 0;   
+        if(throwfault) {     // only throw faults if directed to do so
+          DebugPort.println("LVC shutting heater down");
+          _Error = 2;        // internals error codes are +1 over displayed error code
+          requestOff();      // shut heater down
+        }
+      }
     }
     return 2;            // Low voltage return value = 2
+  }
+  else {
+    if(LVCShutdownHoldoff)
+      DebugPort.println("LVC holdoff cancelled");
+    LVCShutdownHoldoff = 0;   // disable holdoff, voltage now OK
   }
 
   // warning threshold
   float threshWarn = threshLVC + 0.5;   // nominally create a warning threshold, 0.5V over LVC threhsold
-/*  
-  float alertlimit;                     // but always introduce it if below system voltage
-  if(NVstore.getHeaterTuning().sysVoltage == 120) {
-    alertlimit = 12.0 - cableComp;
-  }
-  else {
-    alertlimit = 24.0 - cableComp;
-  }
-  if(threshWarn < alertlimit) {
-    threshWarn = alertlimit;
-  }
-*/
 
   if(ipVolts < threshWarn) {
     return 1;  // LVC OK, but below warning threshold, return code = 1

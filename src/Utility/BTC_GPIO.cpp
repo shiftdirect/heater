@@ -50,12 +50,14 @@ const char* GPIOout1Names[] = {
   "Disabled",
   "Status",
   "User",
-  "Thresh"
+  "Thresh",
+  "HeaterOn"
 };
 const char* GPIOout2Names[] = {
   "Disabled",
   "User",
-  "Thresh"
+  "Thresh",
+  "HeaterOn"
 };
 
 const char* GPIOalgNames[] = {
@@ -216,7 +218,7 @@ CGPIOin2::_doThermostat(bool active)
 }
 
 const char* 
-CGPIOin2::getExtThermTime()
+CGPIOin2::   getExtThermTime()
 {
   if((_OffHoldoff == 0) || (NVstore.getUserSettings().ThermostatMethod != 3) || (NVstore.getUserSettings().ExtThermoTimeout == 0)) 
     return NULL;
@@ -406,6 +408,12 @@ CGPIOoutBase::_doThresh()
   }
 }
 
+void 
+CGPIOoutBase::_doActive()
+{
+  int runstate = getHeaterInfo().getRunState();  // raw state, not suspend mode enhanced
+  digitalWrite(_pin, runstate ? HIGH : LOW);    // activates output when heater is not in standby
+}
 
 /*********************************************************************************************************
  ** GPIO out manager
@@ -503,7 +511,7 @@ CGPIOout1::begin(int pin, CGPIOout1::Modes mode)
 void 
 CGPIOout1::setMode(CGPIOout1::Modes mode) 
 {
-  if(mode >= Disabled && mode <= Thresh) 
+  if(mode >= Disabled && mode <= HtrActive) 
     _Mode = mode; 
   _prevState = -1;
   if(_getPin())
@@ -523,6 +531,7 @@ CGPIOout1::manage()
     case CGPIOout1::Status: _doStatus(); break;
     case CGPIOout1::User:   _doUser(); break;
     case CGPIOout1::Thresh: _doThresh(); break;
+    case CGPIOout1::HtrActive: _doActive(); break;
   }
 }
 
@@ -579,6 +588,7 @@ CGPIOout1::_doStatus()
         ledcAttachPin(pin, 0);  // attach PWM to GPIO line
         ledcWrite(0, _statusState);
         _breatheDelay = millis() + BREATHINTERVAL; 
+        _ledState = 2;
         break;
       case 2:
         ledcDetachPin(pin);     // detach PWM from IO line
@@ -590,11 +600,13 @@ CGPIOout1::_doStatus()
         _statusState = 255;
         ledcWrite(0, _statusState);
         _breatheDelay = millis() + BREATHINTERVAL; 
+        _ledState = 3;
         break;
       case 4:
         ledcDetachPin(pin);     // detach PWM from IO line
         _breatheDelay += (FLASHPERIOD - ONFLASHINTERVAL);  // extended off
         _setPinState(LOW);
+        _ledState = 4;
         break;
     }  
   }
@@ -631,7 +643,7 @@ CGPIOout1::_doStopMode()   // breath down PWM
     _statusState &= 0xff;
     ledcWrite(0, _statusState);
   }
-  _ledState = 2;
+  _ledState = 3;
 }
 
 void 
@@ -657,7 +669,7 @@ CGPIOout1::_doSuspendMode()  // brief flash
     if(tDelta >= 0)
       stretch = 0;
   }
-  _ledState = stretch ? 1 : 0;
+  _ledState = 4;
 }
 
 uint8_t
@@ -666,6 +678,7 @@ CGPIOout1::getState()
   switch(_Mode) {
     case User: 
     case Thresh:
+    case HtrActive:
       return _getPinState();
     case Status: 
       return _ledState;   // special pulse extender for suspend mode
@@ -695,7 +708,7 @@ CGPIOout2::begin(int pin, Modes mode)
 void 
 CGPIOout2::setMode(CGPIOout2::Modes mode) 
 { 
-  if(mode >= Disabled && mode <= Thresh) 
+  if(mode >= Disabled && mode <= HtrActive) 
     _Mode = mode; 
   int pin = _getPin();
   if(pin)
@@ -714,6 +727,7 @@ CGPIOout2::manage()
     case CGPIOout2::Disabled: break;
     case CGPIOout2::User: _doUser(); break;
     case CGPIOout2::Thresh: _doThresh(); break;
+    case CGPIOout2::HtrActive: _doActive(); break;
   }
 }
 
@@ -724,6 +738,7 @@ CGPIOout2::getState()
   switch (_Mode) {
     case CGPIOout2::User: 
     case CGPIOout2::Thresh: 
+    case CGPIOout2::HtrActive: 
       return _getPinState();
     default:
       return 0;

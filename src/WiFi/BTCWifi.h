@@ -28,8 +28,10 @@ void doWiFiManager();
 bool initWifi(const char *failedssid, const char *failedpassword);
 const char* getWifiAPAddrStr(); 
 const char* getWifiSTAAddrStr(); 
+const char* getWifiGatewayAddrStr();
 const char* getWifiAPMACStr();
 const char* getWifiSTAMACStr();
+int8_t getWifiRSSI();
 String getSSID();
 
 bool isWifiConnected();

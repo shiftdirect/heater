@@ -26,6 +26,7 @@ class CTxManage
   const int m_nStartDelay = 20; 
   const int m_nFrameTime = 14;  
   const int m_nFrontPorch = 0;  
+  int m_sysUpdate;
 
 public:
   CTxManage(int TxGatePin, HardwareSerial& serial);
@@ -38,6 +39,7 @@ public:
   void begin();
   const CProtocol& getFrame() const { return m_TxFrame; };
   static void GateTerminate();
+  void queueSysUpdate();  // use to implant NV settings into heater
 
 private:
   HardwareSerial& m_BlueWireSerial;

@@ -159,5 +159,6 @@ extern const BITMAP_INFO algIconInfo;
 
 extern const BITMAP_INFO passwordIconInfo;
 extern const BITMAP_INFO threshIconInfo;
+extern const BITMAP_INFO onOffIconInfo;
 extern const BITMAP_INFO frostIconInfo;
 extern const BITMAP_INFO humidityIconInfo;

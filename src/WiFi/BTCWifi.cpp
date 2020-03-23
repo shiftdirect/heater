@@ -279,6 +279,38 @@ const char* getWifiSTAAddrStr()
   else 
     return "";
 }
+
+const char* getWifiGatewayAddrStr()
+{ 
+  if(NVstore.getUserSettings().wifiMode) {
+    IPAddress IPaddr = WiFi.gatewayIP();   // use stepping stone - function returns an automatic stack var - LAME!
+    static char GWIPaddr[16];
+    sprintf(GWIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
+    return GWIPaddr;
+  }
+  else 
+    return "";
+}
+
+int8_t getWifiRSSI()
+{
+  if(NVstore.getUserSettings().wifiMode) {
+    static unsigned long updateRSSI = millis() + 2500;
+    static int8_t RSSI = 0;
+    long tDelta = millis() - updateRSSI;
+    if(tDelta > 0) {
+      updateRSSI = millis() + 2500;
+      RSSI = WiFi.RSSI();
+    }
+    return RSSI;
+  }
+  else {
+    return 0;
+  }
+}
+
+  
+
   
 const char* getWifiAPMACStr()
 { 

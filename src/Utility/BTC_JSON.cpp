@@ -142,26 +142,26 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
   float tidyTemp = getTemperatureSensor();
   tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
   if(tidyTemp > -80) {
-	  bSend |= moderator.addJson("TempCurrent", tidyTemp, root); 
+	  bSend |= moderator.addJson("TempCurrent", tidyTemp, root, 5000); 
   }
   if(getTempSensor().getNumSensors() > 1) {
     getTempSensor().getTemperature(1, tidyTemp);
     tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
     if(tidyTemp > -80) {
-	    bSend |= moderator.addJson("Temp2Current", tidyTemp, root); 
+	    bSend |= moderator.addJson("Temp2Current", tidyTemp, root, 5000); 
     }
     if(getTempSensor().getNumSensors() > 2) {
       getTempSensor().getTemperature(2, tidyTemp);
       tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
       if(tidyTemp > -80) {
-	      bSend |= moderator.addJson("Temp3Current", tidyTemp, root); 
+	      bSend |= moderator.addJson("Temp3Current", tidyTemp, root, 5000); 
       }
     }
     if(getTempSensor().getNumSensors() > 3) {
       getTempSensor().getTemperature(3, tidyTemp);
       tidyTemp = int(tidyTemp * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
       if(tidyTemp > -80) {
-	      bSend |= moderator.addJson("Temp4Current", tidyTemp, root); 
+	      bSend |= moderator.addJson("Temp4Current", tidyTemp, root, 5000); 
       }
     }
   }
@@ -170,7 +170,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
   if(NVstore.getUserSettings().menuMode < 2) {
     bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
     bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
-    bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root); 
+    bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root, 5000); 
     bSend |= moderator.addJson("RunState", getHeaterInfo().getRunStateEx(), root);
     bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
     bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
@@ -182,13 +182,13 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("PumpActual", getHeaterInfo().getPump_Actual(), root );
     bSend |= moderator.addJson("FanMin", getHeaterInfo().getFan_Min(), root );
     bSend |= moderator.addJson("FanMax", getHeaterInfo().getFan_Max(), root );
-    bSend |= moderator.addJson("FanRPM", getFanSpeed(), root );
-    bSend |= moderator.addJson("FanVoltage", getHeaterInfo().getFan_Voltage(), root );
+    bSend |= moderator.addJson("FanRPM", getFanSpeed(), root, 2000 );
+    bSend |= moderator.addJson("FanVoltage", getHeaterInfo().getFan_Voltage(), root, 2500 );
     bSend |= moderator.addJson("FanSensor", getHeaterInfo().getFan_Sensor(), root );
-    bSend |= moderator.addJson("InputVoltage", getBatteryVoltage(false), root );
+    bSend |= moderator.addJson("InputVoltage", getBatteryVoltage(false), root, 10000 );
     bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getSystemVoltage(), root );
-    bSend |= moderator.addJson("GlowVoltage", getGlowVolts(), root );
-    bSend |= moderator.addJson("GlowCurrent", getGlowCurrent(), root );
+    bSend |= moderator.addJson("GlowVoltage", getGlowVolts(), root, 5000 );
+    bSend |= moderator.addJson("GlowCurrent", getGlowCurrent(), root, 5000 );
     bSend |= moderator.addJson("BluewireStat", getBlueWireStatStr(), root );
   }
 
@@ -218,9 +218,12 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root);  // threshold of under temp for cyclic mode
     bSend |= moderator.addJson("FrostOn", NVstore.getUserSettings().FrostOn, root);        // temp drops below this, auto start - 0 = disable
     bSend |= moderator.addJson("FrostRise", NVstore.getUserSettings().FrostRise, root);    // temp rise in frost mode till auto off
-    bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root);               // running count of pump strokes
+    bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root, 10000);               // running count of pump strokes
     bSend |= moderator.addJson("PumpCal", NVstore.getHeaterTuning().pumpCal, root);        // mL/stroke
     bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low voltage cutout
+    if(getTempSensor().getBME280().getCount()) {
+      bSend |= moderator.addJson("HumidStart", NVstore.getUserSettings().humidityStart, root);  // BME280 ONLY
+    }
   }
   bSend |= moderator.addJson("TempOffset", getTempSensor().getOffset(0), root);     // degC offset
   bSend |= moderator.addJson("TempType", getTempSensor().getID(0), root);     // BME280 vs DS18B20
@@ -236,6 +239,15 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("Temp4Offset", getTempSensor().getOffset(3), root);     // degC offset
     bSend |= moderator.addJson("Temp4Type", getTempSensor().getID(3), root);     // BME280 vs DS18B20
   }
+  if(getTempSensor().getBME280().getCount()) {
+
+    bSend |= moderator.addJson("Altitude", getHeaterInfo().getAltitude(), root, 60000);     // BME280 ONLY
+    float humidity;
+    getTempSensor().getHumidity(humidity);
+    humidity =  int(humidity * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
+    bSend |= moderator.addJson("Humidity", humidity, root, 30000);     // BME280 ONLY
+  }
+
   if(bSend) {
 		root.printTo(opStr, len);
   }
@@ -285,8 +297,8 @@ bool makeJSONStringGPIO(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("GPmodeIn2", GPIOin2Names[info.in2Mode], root); 
   bSend |= moderator.addJson("GPmodeOut1", GPIOout1Names[info.out1Mode], root); 
   bSend |= moderator.addJson("GPmodeOut2", GPIOout2Names[info.out2Mode], root); 
-  bSend |= moderator.addJson("GPOutThr1", NVstore.getUserSettings().GPIO.thresh[0], root); 
-  bSend |= moderator.addJson("GPOutThr2", NVstore.getUserSettings().GPIO.thresh[1], root); 
+  bSend |= moderator.addJson("GPoutThr1", NVstore.getUserSettings().GPIO.thresh[0], root); 
+  bSend |= moderator.addJson("GPoutThr2", NVstore.getUserSettings().GPIO.thresh[1], root); 
   bSend |= moderator.addJson("GPmodeAnlg", GPIOalgNames[info.algMode], root); 
   bSend |= moderator.addJson("ExtThermoTmout", (uint32_t)NVstore.getUserSettings().ExtThermoTimeout, root); 
   const char* stop = getExternalThermostatHoldTime();
@@ -311,7 +323,8 @@ bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
   sMQTTparams info = NVstore.getMQTTinfo();
 
   bSend |= moderator.addJson("MEn", info.enabled, root); 
-  bSend |= moderator.addJson("MOnline", isMQTTconnected(), root); 
+  uint8_t online = isMQTTconnected() ? 1 : 0;
+  bSend |= moderator.addJson("MOnline", online, root); 
   bSend |= moderator.addJson("MHost", info.host, root); 
   bSend |= moderator.addJson("MPort", info.port, root); 
   bSend |= moderator.addJson("MUser", info.username, root); 
@@ -375,6 +388,8 @@ bool makeJSONStringIP(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("IP_STA", getWifiSTAAddrStr(), root); 
   bSend |= moderator.addJson("IP_STAMAC", getWifiSTAMACStr(), root); 
   bSend |= moderator.addJson("IP_STASSID", getSSID().c_str(), root); 
+  bSend |= moderator.addJson("IP_STAGATEWAY", getWifiGatewayAddrStr(), root); 
+  bSend |= moderator.addJson("IP_STARSSI", getWifiRSSI(), root, 10000); 
   bSend |= moderator.addJson("IP_OTA", NVstore.getUserSettings().enableOTA, root); 
   bSend |= moderator.addJson("BT_MAC", getBluetoothClient().getMAC(), root); 
 
@@ -518,10 +533,12 @@ void resetAllJSONmoderators()
 #else
   initJSONTimermoderator();
 #endif
-  initJSONMQTTmoderator();
-  initJSONIPmoderator();
-  initJSONSysModerator();
+  resetJSONMQTTmoderator(); // initJSONMQTTmoderator();
+  resetJSONIPmoderator(); // initJSONIPmoderator();
+  resetJSONSysModerator(); // initJSONSysModerator();
   GPIOmoderator.reset();
+  // create and send a validation code (then client knows AB is capable of reboot over JSON)
+  doJSONreboot(0);    
 }
 
 void initJSONMQTTmoderator()
@@ -575,3 +592,30 @@ void Expand(std::string& str)
   }
 }
 
+void sendJSONtext(const char* jsonStr)
+{
+    sendWebSocketString( jsonStr );
+    mqttPublishJSON(jsonStr);
+    getBluetoothClient().send( jsonStr );
+}
+
+void doJSONreboot(uint16_t PIN)
+{
+  char jsonStr[20];
+  static uint16_t validate = 0;
+  if(PIN == 0) {
+    validate = random(1, 10000);
+
+    char jsonStr[20];
+    sprintf(jsonStr, "{\"Reboot\":%04d}", validate);
+
+    sendJSONtext( jsonStr );
+  }
+  else if(PIN == validate) {
+    strcpy(jsonStr, "{\"Reboot\":-1}");
+    sendJSONtext( jsonStr );
+
+    delay(1000);
+    ESP.restart();                             // reboot
+  }
+}
