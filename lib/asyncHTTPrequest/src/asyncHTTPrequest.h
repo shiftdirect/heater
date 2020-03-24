@@ -136,7 +136,7 @@ class asyncHTTPrequest {
     void    abort();                                                // Abort the current operation
     void    close();                                                // Close the connection
     
-    int     readyState();                                           // Return the ready state
+    int     readyState() const;                                     // Return the ready state
 
     int     respHeaderCount();                                      // Retrieve count of response headers
     char*   respHeaderName(int index);                              // Return header name by index

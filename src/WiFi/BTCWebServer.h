@@ -34,5 +34,8 @@ bool sendWebSocketString(const char* Str);
 bool isWebSocketClientChange(); 
 void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int withHTMLanchors=0);
 
+void getWebContent(); 
+void getWebContent(const char* filename); 
+
 #endif
 

@@ -41,6 +41,7 @@
 #include <ESPmDNS.h>
 #include "BrowserUpload.h"
 #include <Update.h>
+#include "WebContentDL.h"
 
 extern WiFiManager wm;
 extern const char* stdHeader;
@@ -54,10 +55,11 @@ extern void checkSplashScreenUpdate();
 sBrowserUpload BrowserUpload;
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
+CWebContentDL WebContentDL;
 
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
-bool bUpdateAccessed = false;  // flag used to ensure web update always starts via /update. direct accesses to /updatenow will FAIL
+bool bUpdateAccessed = false;  // flag used to ensure browser update always starts via /update. direct accesses to /updatenow will FAIL
 bool bFormatAccessed = false;
 bool bFormatPerformed = false;
 long _SuppliedFileSize = 0;
@@ -83,6 +85,7 @@ void onUploadProgression();
 void onRename();
 void build404Response(String& content, String file);
 void build500Response(String& content, String file);
+void manageWegContentUpdate();
 
 void initWebServer(void) {
 
@@ -137,6 +140,7 @@ void initWebServer(void) {
 
   DebugPort.println("HTTP server started");
 
+  // initWebPageUpdate();
 }
 
 
@@ -145,6 +149,7 @@ bool doWebServer(void)
 {
 	webSocket.loop();
 	server.handleClient();
+  manageWegContentUpdate();
   return true;
 }
 
@@ -1059,3 +1064,41 @@ content += R"=====(" </i></b> exists, but cannot be streamed?
 )=====";
 }
 
+static int webContentState = 0;
+
+void getWebContent() {
+  webContentState = 1;
+//  WebContentDL.get("index.html.gz");
+  // getWebContent("favicon.ico");
+}
+
+
+void manageWegContentUpdate()
+{
+  switch(webContentState) {
+    case 1:
+      DebugPort.println("Requesting index.html.gz from Afterburner web site");
+      WebContentDL.get("index.html.gz"); 
+      webContentState++;
+      break;   
+    case 2:
+      WebContentDL.process();
+      if(!WebContentDL.busy()) {
+        DebugPort.println("Completed index.html.gz from Afterburner web site");
+        webContentState++;
+      }
+      break;
+    case 3:
+      DebugPort.println("Requesting favicon.ico from Afterburner web site");
+      WebContentDL.get("favicon.ico"); 
+      webContentState++;
+      break;
+    case 4:
+      WebContentDL.process();
+      if(!WebContentDL.busy()) {
+        DebugPort.println("Completed favicon.ico from Afterburner web site");
+        webContentState = 0;
+      }
+      break;
+  }
+}

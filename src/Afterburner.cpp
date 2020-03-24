@@ -1567,6 +1567,9 @@ void checkDebugCommands()
       else if(rxVal == '-') {
         TxManage.queueOffRequest();
       }
+      else if(rxVal == 'h') {
+        getWebContent();
+      }
       else if(rxVal == 'r') {
         ESP.restart();            // reset the esp
       }

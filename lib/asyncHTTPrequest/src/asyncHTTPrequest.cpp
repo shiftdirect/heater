@@ -175,7 +175,7 @@ void    asyncHTTPrequest::close(){
     _client->close();
 }
 //**************************************************************************************************************
-int		asyncHTTPrequest::readyState(){
+int		asyncHTTPrequest::readyState() const {
     return _readyState;
 }
 
