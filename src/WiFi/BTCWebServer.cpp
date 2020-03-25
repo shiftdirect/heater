@@ -55,7 +55,7 @@ extern void checkSplashScreenUpdate();
 sBrowserUpload BrowserUpload;
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
-CWebContentDL WebContentDL;
+CGetWebContent GetWebContent;
 
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
@@ -85,7 +85,17 @@ void onUploadProgression();
 void onRename();
 void build404Response(String& content, String file);
 void build500Response(String& content, String file);
-void manageWegContentUpdate();
+
+
+const char* getWebContent(bool start) {
+  
+  if(isWifiSTA() && start) {
+    GetWebContent.start();
+  }
+
+  return GetWebContent.getFilename();
+}
+
 
 void initWebServer(void) {
 
@@ -149,7 +159,7 @@ bool doWebServer(void)
 {
 	webSocket.loop();
 	server.handleClient();
-  manageWegContentUpdate();
+  GetWebContent.manage();
   return true;
 }
 
@@ -872,7 +882,7 @@ body {
 <body>
 <h1>SPIFFS partition has been formatted</h1>
 <h3>You must now upload the web content.</h3>
-<p>Latest web content can be downloaded from <a href='http://www.mrjones.id.au/afterburner/firmware.html' target='_blank'>http://www.mrjones.id.au/afterburner/firmware.html</a>
+<p>Latest web content can be downloaded from <a href='http://afterburner.mrjones.id.au/firmware.html' target='_blank'>http://afterburner.mrjones.id.au/firmware.html</a>
 <h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>
 <p><button onclick=location.assign('/update')>Upload web content</button> 
 </body>
@@ -1027,7 +1037,7 @@ for (uint8_t i = 0; i < server.args(); i++) {
 content += R"=====(<hr>
 <p>Please check the URL.<br>
 If OK please try uploading the file from the web content.
-<p>Latest web content can be downloaded from <a href="http://www.mrjones.id.au/afterburner/firmware.html" target="_blank">http://www.mrjones.id.au/afterburner/firmware.html</a>
+<p>Latest web content can be downloaded from <a href="http://afterburner.mrjones.id.au/firmware.html" target="_blank">http://afterburner.mrjones.id.au/firmware.html</a>
 <h4 class="throb">Please ensure you unzip the web page content, then upload all the files contained.</h4>
 <p><a href="/update"><button>Upload web content</button></a><br>
 )=====";
@@ -1054,7 +1064,7 @@ content += file;
 content += R"=====(" </i></b> exists, but cannot be streamed?
 <hr>
 <p>Recommended remedy is to re-format the SPIFFS partition, then reload the web content files.
-<br>Latest web content can be downloaded from <a href="http://www.mrjones.id.au/afterburner/firmware.html" target="_blank">http://www.mrjones.id.au/afterburner/firmware.html</a> <i>(opens in new page)</i>.
+<br>Latest web content can be downloaded from <a href="http://afterburner.mrjones.id.au/firmware.html" target="_blank">http://afterburner.mrjones.id.au/firmware.html</a> <i>(opens in new page)</i>.
 <p>To format the SPIFFS partition, press <button class='redbutton' onClick=location.assign('/formatspiffs')>Format SPIFFS</button>
 <p>You will then need to upload each file of the web content by using the subsequent "<b>Upload</b>" button.
 <hr>
@@ -1064,41 +1074,4 @@ content += R"=====(" </i></b> exists, but cannot be streamed?
 )=====";
 }
 
-static int webContentState = 0;
 
-void getWebContent() {
-  webContentState = 1;
-//  WebContentDL.get("index.html.gz");
-  // getWebContent("favicon.ico");
-}
-
-
-void manageWegContentUpdate()
-{
-  switch(webContentState) {
-    case 1:
-      DebugPort.println("Requesting index.html.gz from Afterburner web site");
-      WebContentDL.get("index.html.gz"); 
-      webContentState++;
-      break;   
-    case 2:
-      WebContentDL.process();
-      if(!WebContentDL.busy()) {
-        DebugPort.println("Completed index.html.gz from Afterburner web site");
-        webContentState++;
-      }
-      break;
-    case 3:
-      DebugPort.println("Requesting favicon.ico from Afterburner web site");
-      WebContentDL.get("favicon.ico"); 
-      webContentState++;
-      break;
-    case 4:
-      WebContentDL.process();
-      if(!WebContentDL.busy()) {
-        DebugPort.println("Completed favicon.ico from Afterburner web site");
-        webContentState = 0;
-      }
-      break;
-  }
-}

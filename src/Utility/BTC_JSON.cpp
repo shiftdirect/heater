@@ -409,11 +409,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebSocketString( jsonStr );
-      mqttPublishJSON(jsonStr);
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
     }
   }
   // update extended params
@@ -422,11 +418,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebSocketString( jsonStr );
-      mqttPublishJSON(jsonStr);
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
     }
   }
   // update timer parameters
@@ -437,11 +429,7 @@ void updateJSONclients(bool report)
       if (report) { 
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebSocketString( jsonStr );
-      mqttPublishJSON(jsonStr);
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
       bNewTimerInfo = true;
     }
   }
@@ -460,11 +448,7 @@ void updateJSONclients(bool report)
     if (report) {
       DebugPort.printf("JSON send: %s\r\n", jsonStr);
     }
-    sendWebSocketString( jsonStr );
-    mqttPublishJSON(jsonStr);
-    std::string expand = jsonStr;
-    Expand(expand);
-    getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
   }
 
   // report MQTT params
@@ -473,11 +457,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebSocketString( jsonStr );
-      mqttPublishJSON(jsonStr);
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
     }
   }
 
@@ -487,11 +467,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebSocketString( jsonStr );
-      mqttPublishJSON(jsonStr);
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
     }
   }
 
@@ -501,11 +477,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebSocketString( jsonStr );
-      mqttPublishJSON(jsonStr);
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
     }
   }
   
@@ -514,11 +486,7 @@ void updateJSONclients(bool report)
       if (report) {
         DebugPort.printf("JSON send: %s\r\n", jsonStr);
       }
-      sendWebSocketString( jsonStr );
-      mqttPublishJSON(jsonStr);
-      std::string expand = jsonStr;
-      Expand(expand);
-      getBluetoothClient().send( expand.c_str() );
+      sendJSONtext(jsonStr);
     }
   }
 
@@ -538,7 +506,8 @@ void resetAllJSONmoderators()
   resetJSONSysModerator(); // initJSONSysModerator();
   GPIOmoderator.reset();
   // create and send a validation code (then client knows AB is capable of reboot over JSON)
-  doJSONreboot(0);    
+  doJSONreboot(0);  
+  sendJSONtext("{\"LoadWebContent\":\"Supported\"}");
 }
 
 void initJSONMQTTmoderator()
@@ -596,6 +565,8 @@ void sendJSONtext(const char* jsonStr)
 {
     sendWebSocketString( jsonStr );
     mqttPublishJSON(jsonStr);
+    std::string expand = jsonStr;
+    Expand(expand);
     getBluetoothClient().send( jsonStr );
 }
 

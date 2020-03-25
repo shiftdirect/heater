@@ -16,6 +16,12 @@
 //#include <Arduino.h>
 #include <functional>
 #include "../../asyncHTTPrequest/src/asyncHTTPrequest.h"
+#include "freertos/queue.h"
+
+struct sFOTAqueue{
+  uint8_t len;
+  uint8_t data[255];
+};
 
 class esp32FOTA
 {
@@ -35,6 +41,8 @@ public:
   void execAsyncHTTPcheck();
   bool decodeResponse(String payload);
   bool decodeResponse(char* resp);
+  void process();
+  void queueDLdata(asyncHTTPrequest* request);
 
 private:
   String getHeaderValue(String header, String headerName);
@@ -50,6 +58,8 @@ private:
   std::function<void()> _onSuccess;
   std::function<void()> _onFail;
   asyncHTTPrequest _versionTest;
+  QueueHandle_t _queue;
+  String _pollResponse;
 
 };
 

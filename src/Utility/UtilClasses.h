@@ -177,5 +177,6 @@ enum eOTAmodes {
   eOTAnormal, eOTAbrowser, eOTAWWW
 };
 
+void setHoldoff(unsigned long& holdoff, unsigned long period);
 
 #endif // __UTIL_CLASSES_H__

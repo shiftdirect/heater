@@ -26,6 +26,7 @@
 #include "HourMeter.h"
 #include "macros.h"
 #include "BTC_JSON.h"
+#include "../WiFi/BTCWebServer.h"
 
 
 // a class to track the blue wire receive / transmit states
@@ -439,5 +440,12 @@ void DecodeCmd(const char* cmd, String& payload)
     int16_t code = payload.toInt();
     doJSONreboot(code);
   }
+  else if(strcmp("LoadWebContent", cmd) == 0) {
+    getWebContent(true);
+  }
 }
 
+void setHoldoff(unsigned long& holdoff, unsigned long period)
+{
+  holdoff = (millis() + period) | 1;
+}

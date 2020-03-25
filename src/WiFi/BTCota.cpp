@@ -126,9 +126,9 @@ void DoOTA()
       FOTA.onComplete(CheckFirmwareCRC);     // upload complete, but not yet verified
       FOTA.onSuccess(onSuccess);
 #ifdef TESTFOTA
-      FOTA.setCheckURL("http://www.mrjones.id.au/afterburner/fota/fotatest.json");
+      FOTA.setCheckURL("http://afterburner.mrjones.id.au/fota/fotatest.json");
 #else
-      FOTA.setCheckURL("http://www.mrjones.id.au/afterburner/fota/fota.json");
+      FOTA.setCheckURL("http://afterburner.mrjones.id.au/fota/fota.json");
 #endif
 
 #ifdef SYNCHRONOUS_FOTA
@@ -174,6 +174,8 @@ void DoOTA()
 
 int isUpdateAvailable(bool test)
 {
+  FOTA.process();  // manage any queued responses
+
   if(test) {
     if(FOTAauth >= 1) {
       return FOTA.getNewVersion();

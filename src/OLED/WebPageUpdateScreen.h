@@ -2,8 +2,7 @@
  * This file is part of the "bluetoothheater" distribution 
  * (https://gitlab.com/mrjones.id.au/bluetoothheater) 
  *
- * Copyright (C) 2018  Ray Jones <ray@mrjones.id.au>
- * Copyright (C) 2018  James Clark
+ * Copyright (C) 2020  Ray Jones <ray@mrjones.id.au>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,22 +19,27 @@
  * 
  */
 
-// BTCWebServer.h
+#ifndef __WEBPAGEUPDATESCREEN_H__
+#define __WEBPAGEUPDATESCREEN_H__
 
-#ifndef _BTCWEBSERVER_h
-#define _BTCWEBSERVER_h
+#include <stdint.h>
+#include "UIEditScreen.h"
 
-#include "../../lib/arduinoWebSockets/src/WebSocketsServer.h"
+class C128x64_OLED;
+class CScreenManager;
 
-void initWebServer();
-bool doWebServer();
 
-bool sendWebSocketString(const char* Str);
-bool isWebSocketClientChange(); 
-void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int withHTMLanchors=0);
-
-const char* getWebContent(bool start); 
-void getWebContent(const char* filename); 
+class CWebPageUpdateScreen : public CUIEditScreen
+{
+  std::string _filename;
+  unsigned long _holdoff;
+  const char* _getFileName();
+public:
+  CWebPageUpdateScreen(C128x64_OLED& display, CScreenManager& mgr);
+  bool show();
+  bool animate();
+  bool keyHandler(uint8_t event);
+  void onSelect();
+};
 
 #endif
-
