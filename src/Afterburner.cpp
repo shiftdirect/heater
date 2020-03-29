@@ -117,6 +117,7 @@
 #include <nvs.h>
 #include "Utility/MQTTsetup.h"
 #include <FreeRTOS.h>
+#include "RTC/TimerManager.h"
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
@@ -1128,7 +1129,8 @@ bool reqDemand(uint8_t newDemand, bool save)
   // set and save the demand to NV storage
   // note that we now maintain fixed Hz and Thermostat set points seperately
   if(getThermostatModeActive()) {
-    RTC_Store.setDesiredTemp(newDemand);
+    // RTC_Store.setDesiredTemp(newDemand);
+    CTimerManager::setWorkingTemperature(newDemand);
   }
   else {
     RTC_Store.setDesiredPump(newDemand);
@@ -1142,7 +1144,8 @@ bool reqDemandDelta(int delta)
 {
   uint8_t newDemand;
   if(getThermostatModeActive()) {
-    newDemand = RTC_Store.getDesiredTemp() + delta;
+//    newDemand = RTC_Store.getDesiredTemp() + delta;
+    newDemand = CTimerManager::getWorkingTemperature() + delta;
   }
   else {
     newDemand = RTC_Store.getDesiredPump() + delta;
@@ -1247,7 +1250,8 @@ void forceBootInit()
 
 uint8_t getDemandDegC() 
 {
-  return RTC_Store.getDesiredTemp();
+  return CTimerManager::getWorkingTemperature();
+  // return RTC_Store.getDesiredTemp();
 }
 
 void  setDemandDegC(uint8_t val) 
@@ -1255,7 +1259,8 @@ void  setDemandDegC(uint8_t val)
   uint8_t max = DefaultBTCParams.getTemperature_Max();
   uint8_t min = DefaultBTCParams.getTemperature_Min();
   BOUNDSLIMIT(val, min, max);
-  RTC_Store.setDesiredTemp(val);
+  // RTC_Store.setDesiredTemp(val);
+  CTimerManager::setWorkingTemperature(val);
 }
 
 uint8_t getDemandPump() 
@@ -1271,7 +1276,8 @@ float getTemperatureDesired()
   }
   else {
     if(getThermostatModeActive()) 
-      return RTC_Store.getDesiredTemp();
+//      return RTC_Store.getDesiredTemp();
+      return CTimerManager::getWorkingTemperature();
     else 
       return RTC_Store.getDesiredPump();
   }

@@ -396,12 +396,17 @@ void
 esp32FOTA::execAsyncHTTPcheck() 
 {
   _newVersion = 0;
-  if(_versionTest.readyState() == 0 || _versionTest.readyState() == 4) {
-    Serial.println("Querying firmware update server");
-    _versionTest.onReadyStateChange(FOTA_PollCallback, this);
-    _versionTest.onBuildHeaders(NULL);
-    _versionTest.onData(NULL);
-    _versionTest.open("GET", _checkURL.c_str());
+  if ((WiFi.status() == WL_CONNECTED)) { 
+    if(_versionTest.readyState() == 0 || _versionTest.readyState() == 4) {
+      Serial.println("Querying firmware update server");
+      _versionTest.onReadyStateChange(FOTA_PollCallback, this);
+      _versionTest.onBuildHeaders(NULL);
+      _versionTest.onData(NULL);
+      _versionTest.open("GET", _checkURL.c_str());
+    }
+  }
+  else {
+    Serial.println("Firmware update check skipped = no STA");
   }
 }
 

@@ -83,7 +83,7 @@ CSetTimerScreen::show()
   else {
     // start
     xPos = 18;
-    yPos = 18;
+    yPos = 16;
     _printMenuText(xPos, yPos, "On", false, eRightJustify);
     _printMenuText(xPos+17, yPos, ":");
     xPos += 6;
@@ -95,7 +95,7 @@ CSetTimerScreen::show()
 
     // stop
     xPos = 82;
-    yPos = 18;
+    yPos = 16;
     _printMenuText(xPos, yPos, "Off", false, eRightJustify);
     _printMenuText(xPos+17, yPos, ":");
     xPos += 6;
@@ -110,12 +110,25 @@ CSetTimerScreen::show()
     _printEnabledTimers();
     
     xPos = _display.width() - border;
-    yPos = 35;
+    yPos = 28;
     if(_timerInfo.repeat)
       msg = "Repeat";
     else
       msg = "Once";
     _printMenuText(xPos, yPos, msg, _rowSel==1 && _colSel==5, eRightJustify);
+
+    xPos = 18;
+    yPos = 40;
+    float fTemp = _timerInfo.temperature;
+    if(NVstore.getUserSettings().degF) {
+      fTemp = fTemp * 9 / 5 + 32;
+      sprintf(str, "%.0f`F", fTemp);
+    }
+    else {
+      sprintf(str, "%.0f`C", fTemp);
+    }
+    _printMenuText(_display.xCentre(), yPos, str, _rowSel==1 && _colSel==6, eCentreJustify);
+
 
     // navigation line
     yPos = 53;
@@ -160,7 +173,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
         case 1:
           // select previous field
           _colSel--;
-          WRAPLOWERLIMIT(_colSel, 0, 5);
+          WRAPLOWERLIMIT(_colSel, 0, 6);
           break;
         case 2:
           // select previous day
@@ -178,7 +191,7 @@ CSetTimerScreen::keyHandler(uint8_t event)
         case 1:
           // select next field
           _colSel++;
-          WRAPUPPERLIMIT(_colSel, 5, 0);
+          WRAPUPPERLIMIT(_colSel, 6, 0);
           break;
         case 2:
           // select next day
@@ -335,6 +348,10 @@ CSetTimerScreen::_adjust(int dir)
     case 5:
       _timerInfo.repeat = !_timerInfo.repeat;
       break;
+    case 6:
+      _timerInfo.temperature += dir;
+      BOUNDSLIMIT(_timerInfo.temperature, 8, 35);
+      break;
   }
 }
 
@@ -343,7 +360,7 @@ CSetTimerScreen::_printEnabledTimers()
 {
   const int dayWidth = 10;
   int xPos = border;
-  int yPos = 35;
+  int yPos = 28;
 
   if(_timerInfo.enabled == 0x00 && _rowSel != 2) {
     _printMenuText(xPos, yPos, "Disabled", _colSel==4);

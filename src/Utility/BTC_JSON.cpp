@@ -37,6 +37,7 @@
 #include <string.h>
 #include "HourMeter.h"
 #include "TempSense.h"
+#include "BoardDetect.h"
 
 extern CModerator MQTTmoderator;
 
@@ -285,30 +286,35 @@ bool makeJSONStringGPIO(CModerator& moderator, char* opStr, int len)
 
 	bool bSend = false;  // reset should send flag
 
-  sGPIO info;
-  getGPIOinfo(info);
+  if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO) {          // has GPIO support
 
-  bSend |= moderator.addJson("GPin1", info.inState[0], root); 
-  bSend |= moderator.addJson("GPin2", info.inState[1], root); 
-  bSend |= moderator.addJson("GPout1", info.outState[0], root); 
-  bSend |= moderator.addJson("GPout2", info.outState[1], root); 
-  bSend |= moderator.addJson("GPanlg", info.algVal * 100 / 4096, root); 
-  bSend |= moderator.addJson("GPmodeIn1", GPIOin1Names[info.in1Mode], root); 
-  bSend |= moderator.addJson("GPmodeIn2", GPIOin2Names[info.in2Mode], root); 
-  bSend |= moderator.addJson("GPmodeOut1", GPIOout1Names[info.out1Mode], root); 
-  bSend |= moderator.addJson("GPmodeOut2", GPIOout2Names[info.out2Mode], root); 
-  bSend |= moderator.addJson("GPoutThr1", NVstore.getUserSettings().GPIO.thresh[0], root); 
-  bSend |= moderator.addJson("GPoutThr2", NVstore.getUserSettings().GPIO.thresh[1], root); 
-  bSend |= moderator.addJson("GPmodeAnlg", GPIOalgNames[info.algMode], root); 
-  bSend |= moderator.addJson("ExtThermoTmout", (uint32_t)NVstore.getUserSettings().ExtThermoTimeout, root); 
-  const char* stop = getExternalThermostatHoldTime();
-  if(stop)
-    bSend |= moderator.addJson("ExtThermoStop", stop, root); 
-  else 
-    bSend |= moderator.addJson("ExtThermoStop", "Off", root); 
+    sGPIO info;
+    getGPIOinfo(info);
 
-  if(bSend) {
-		root.printTo(opStr, len);
+    bSend |= moderator.addJson("GPin1", info.inState[0], root); 
+    bSend |= moderator.addJson("GPin2", info.inState[1], root); 
+    bSend |= moderator.addJson("GPout1", info.outState[0], root); 
+    bSend |= moderator.addJson("GPout2", info.outState[1], root); 
+    bSend |= moderator.addJson("GPmodeIn1", GPIOin1Names[info.in1Mode], root); 
+    bSend |= moderator.addJson("GPmodeIn2", GPIOin2Names[info.in2Mode], root); 
+    bSend |= moderator.addJson("GPmodeOut1", GPIOout1Names[info.out1Mode], root); 
+    bSend |= moderator.addJson("GPmodeOut2", GPIOout2Names[info.out2Mode], root); 
+    bSend |= moderator.addJson("GPoutThr1", NVstore.getUserSettings().GPIO.thresh[0], root); 
+    bSend |= moderator.addJson("GPoutThr2", NVstore.getUserSettings().GPIO.thresh[1], root); 
+    if(getBoardRevision() != BRD_V2_GPIO_NOALG && getBoardRevision() != BRD_V3_GPIO_NOALG) {          // has GPIO support
+      bSend |= moderator.addJson("GPanlg", info.algVal * 100 / 4096, root); 
+      bSend |= moderator.addJson("GPmodeAnlg", GPIOalgNames[info.algMode], root); 
+    }
+    bSend |= moderator.addJson("ExtThermoTmout", (uint32_t)NVstore.getUserSettings().ExtThermoTimeout, root); 
+    const char* stop = getExternalThermostatHoldTime();
+    if(stop)
+      bSend |= moderator.addJson("ExtThermoStop", stop, root); 
+    else 
+      bSend |= moderator.addJson("ExtThermoStop", "Off", root); 
+
+    if(bSend) {
+      root.printTo(opStr, len);
+    }
   }
 
   return bSend;

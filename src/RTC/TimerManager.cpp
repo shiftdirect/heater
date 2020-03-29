@@ -44,6 +44,7 @@ int  CTimerManager::_activeTimer = 0;
 int  CTimerManager::_activeDow = 0;
 int  CTimerManager::_nextTimer = 0;
 int  CTimerManager::_nextStart = 0;
+uint8_t CTimerManager::_workingTemperature = 22;
 bool CTimerManager::_timerChanged = false;
 
 #define SET_MAPS() {                         \
@@ -265,17 +266,23 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
     }
 
     if(newID) {
-      DebugPort.println("Start of timer interval, starting heater");
+      sTimer timer;
+      // get timer settings
+      int ID = (newID & 0xf) - 1;
+      NVstore.getTimerInfo(ID, timer);
+      _workingTemperature = timer.temperature;
+      DebugPort.printf("Start of timer interval, starting heater @ %dC\r\n", _workingTemperature);
       requestOn();
       _activeDow = dow;   // dow when timer interval start was detected
       retval = 1;
     }
     else {
-      DebugPort.println("End of timer interval, stopping heater");
 //      if(!RTC_Store.getFrostOn() && !RTC_Store.getCyclicEngaged())
       if(!RTC_Store.getFrostOn())
         requestOff();
       retval = 2;
+      _workingTemperature = RTC_Store.getDesiredTemp();
+      DebugPort.printf("End of timer interval, stopping heater & %dC\r\n", _workingTemperature);
     }
     _activeTimer = newID;
   }
@@ -414,3 +421,22 @@ CTimerManager::createOneShotMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pT
   return false;
 }
 
+// Concept of timer working temperature is that when a timer runs, it installs 
+// the programmed temeprature for that timer as the new set point.
+// When the timer stops, it reverts to the usual user set temperature.
+//
+// BUT, if a timer is running, the working temperature is updated with the new demand
+// and the user temperature is also changed accordingly. 
+// The programmed timer temeprature is not altered and wil lrecur in the future when that time runs.
+uint8_t
+CTimerManager::getWorkingTemperature()
+{
+  return _workingTemperature;
+}
+
+void 
+CTimerManager::setWorkingTemperature(uint8_t newDegC)
+{
+  _workingTemperature = newDegC;
+  RTC_Store.setDesiredTemp(newDegC);
+}
