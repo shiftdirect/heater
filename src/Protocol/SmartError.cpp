@@ -25,6 +25,7 @@
 #include "../Utility/macros.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/DataFilter.h"
+#include "../Utility/FuelGauge.h"
 
 CSmartError::CSmartError()
 {
@@ -181,4 +182,30 @@ uint8_t
 CSmartError::getError()
 {
   return _Error;
+}
+
+int
+CSmartError::checkfuelUsage(bool throwfault)
+{
+  int retval = 0;
+  // const sUserSettings& settings = NVstore.getUserSettings();
+  if(NVstore.getHeaterTuning().maxFuelUsage) {
+    // saved as x10 litres (ala decilitres)
+    uint16_t maxUsage = NVstore.getHeaterTuning().maxFuelUsage;
+    uint16_t actualUsage = (uint16_t)(FuelGauge.Used_mL() * .01);  // convert ml to decilitres
+    uint16_t warnUsage = maxUsage - NVstore.getHeaterTuning().warnFuelUsage;
+
+    if(actualUsage >= warnUsage) {
+      retval = 1;
+    }
+    if(actualUsage >= maxUsage) {
+      retval = 2;
+      if(throwfault) {
+        DebugPort.println("Excess fuel usage shutting heater down");
+        _Error = 13;       // internals error codes are +1 over displayed error code
+        requestOff();      // shut heater down
+      }
+    }
+  }
+  return retval;
 }

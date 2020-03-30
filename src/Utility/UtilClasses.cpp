@@ -27,6 +27,7 @@
 #include "macros.h"
 #include "BTC_JSON.h"
 #include "../WiFi/BTCWebServer.h"
+#include "FuelGauge.h"
 
 
 // a class to track the blue wire receive / transmit states
@@ -104,6 +105,7 @@ CProfile::elapsed(bool reset/* = false*/)
 
 void DecodeCmd(const char* cmd, String& payload) 
 {
+  int val;
   if(strcmp("TempDesired", cmd) == 0) {
     if( !reqDemand(payload.toInt(), false) ) {  // this request is blocked if OEM controller active
       resetJSONmoderator("TempDesired");
@@ -443,6 +445,12 @@ void DecodeCmd(const char* cmd, String& payload)
   else if(strcmp("LoadWebContent", cmd) == 0) {
     getWebContent(true);
   }
+/*  // TESTO hook - make sure removed for production
+  else if(strcmp("testo", cmd) == 0) {
+    val = payload.toInt();
+    FuelGauge.init(val);
+    DebugPort.printf("Set Fuel usage to %d => %f\r\n", val, FuelGauge.Used_mL());
+  }*/
 }
 
 void setHoldoff(unsigned long& holdoff, unsigned long period)

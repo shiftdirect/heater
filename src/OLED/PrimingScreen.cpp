@@ -26,6 +26,7 @@
 #include "fonts/Icons.h"
 #include "../RTC/Clock.h"
 #include "../Utility/FuelGauge.h"
+#include "fonts/Arial.h"
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -65,6 +66,7 @@ CPrimingScreen::_initUI()
   _PrimeCheck = 0;
   _paramSel = 0;
   _colSel = 0;
+  _resetConfirm = false;
 }
 
 bool 
@@ -72,9 +74,19 @@ CPrimingScreen::show()
 {
   CScreenHeader::show(false);
   
-  _display.fillRect(0, 15, 100, 3, BLACK);
+  _display.fillRect(0, 15, 60, 2, BLACK);
+  _display.fillRect(0, 17, 100, 1, BLACK);
 
   CRect extents;
+
+  if(_resetConfirm) {
+    _display.writeFillRect(12, 24, 104, 30, WHITE);
+    int x = _display.xCentre();
+    CTransientFont AF(_display, &arial_8ptBoldFontInfo);
+    _printInverted(x, 27, "Press Up to", true, eCentreJustify);
+    _printInverted(x, 39, "confirm reset ", true, eCentreJustify);
+    return true;
+  }
 
   int yPos = 53;
   // show next/prev menu navigation line
@@ -146,8 +158,10 @@ CPrimingScreen::show()
   }
 
   // fuel pump priming menu
-  int toplinePump = topline+1;
-  int botlinePump = botline+1;
+  // int toplinePump = topline+1;
+  // int botlinePump = botline+1;
+  int toplinePump = topline+2;
+  int botlinePump = botline+2;
   loc.xPos = 66;
   loc.width = BowserIconInfo.width;
   loc.height = BowserIconInfo.height;
@@ -237,6 +251,7 @@ CPrimingScreen::keyHandler(uint8_t event)
           }
           break;
       }
+      _resetConfirm = false;
     }
     // press RIGHT 
     if(event & key_Right) {
@@ -249,7 +264,7 @@ CPrimingScreen::keyHandler(uint8_t event)
           UPPERLIMIT(_paramSel, 3);
           switch(_paramSel) {
             case 3:
-              _colSel = 0;       // select OFF upon entry to priming menu
+              _colSel = -1;   // select fuel gauge reset    // select OFF upon entry to priming menu
               break;
             case 2:
               _colSel = NVstore.getUserSettings().degF ? 1 : 0;
@@ -260,6 +275,7 @@ CPrimingScreen::keyHandler(uint8_t event)
           }
           break;
       }
+      _resetConfirm = false;
     }
     // press UP
     if(event & key_Up) {
@@ -284,7 +300,11 @@ CPrimingScreen::keyHandler(uint8_t event)
             saveNV();
             break;
           case 3: 
-            if(_colSel == 1)
+            if(_resetConfirm) {
+              FuelGauge.reset();
+              _paramSel = _colSel = 0;
+            }
+            else if(_colSel == 1)
               _colSel = 0;
             else {
               _colSel++; 
@@ -295,9 +315,11 @@ CPrimingScreen::keyHandler(uint8_t event)
             break;
         }
       }
+      _resetConfirm = false;
     }
     // press DOWN
     if(event & key_Down) {
+      _resetConfirm = false;
       if(_paramSel == 0) {
         _ScreenManager.selectMenu(CScreenManager::SystemSettingsLoop, CScreenManager::SysVerUI);  // force return to main menu
       }
@@ -326,7 +348,7 @@ CPrimingScreen::keyHandler(uint8_t event)
         }
       }
     }
-    // press UP
+    // press CENTRE
     if(event & key_Centre) {
       if(_paramSel == 3) {
         switch(_colSel) {
@@ -338,13 +360,13 @@ CPrimingScreen::keyHandler(uint8_t event)
             _colSel = 0;
             break;
           case -1:
-            FuelGauge.reset();
-            _paramSel = _colSel = 0;
+            _resetConfirm = !_resetConfirm;
             break;
         }
       }
       else {
         _paramSel = _colSel = 0;
+        _resetConfirm = false;
       }
     }
 

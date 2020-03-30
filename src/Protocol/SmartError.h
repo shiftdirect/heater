@@ -32,6 +32,7 @@ public:
   void monitor(const CProtocol& heaterFrame);
   void monitor(uint8_t runstate);
   int checkVolts(float volts, float plugI, bool throwfault=true);  // 0 = OK, 1 = within 0.5V of LVC, 2 = under LVC
+  int checkfuelUsage(bool throwfault=true);
   uint8_t getError();
 };
 

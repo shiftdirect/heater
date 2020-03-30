@@ -128,7 +128,7 @@
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
 const int FirmwareMinorRevision = 0;
-const char* FirmwareDate = "21 Mar 2020";
+const char* FirmwareDate = "30 Mar 2020";
 
 
 #ifdef ESP32
@@ -907,6 +907,7 @@ void loop()
         // test for low volts shutdown during normal run
         if(INBOUNDS(getHeaterInfo().getRunState(), 1, 5)) {  // check for Low Voltage Cutout
           SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+          SmartError.checkfuelUsage();
         }
 
         // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
@@ -1072,7 +1073,11 @@ bool validateFrame(const CProtocol& frame, const char* name)
 
 int requestOn(bool checkTemp)
 {
-  bool LVCOK = SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue()) != 2;
+  bool fuelOK = 2 != SmartError.checkfuelUsage();
+  if(!fuelOK) {
+    return -4;
+  }
+  bool LVCOK = 2 != SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
   if(bHasHtrData && LVCOK) {
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
     RTC_Store.setFrostOn(false);  // cancel frost mode
@@ -1129,7 +1134,6 @@ bool reqDemand(uint8_t newDemand, bool save)
   // set and save the demand to NV storage
   // note that we now maintain fixed Hz and Thermostat set points seperately
   if(getThermostatModeActive()) {
-    // RTC_Store.setDesiredTemp(newDemand);
     CTimerManager::setWorkingTemperature(newDemand);
   }
   else {
@@ -1144,7 +1148,6 @@ bool reqDemandDelta(int delta)
 {
   uint8_t newDemand;
   if(getThermostatModeActive()) {
-//    newDemand = RTC_Store.getDesiredTemp() + delta;
     newDemand = CTimerManager::getWorkingTemperature() + delta;
   }
   else {
@@ -1251,7 +1254,6 @@ void forceBootInit()
 uint8_t getDemandDegC() 
 {
   return CTimerManager::getWorkingTemperature();
-  // return RTC_Store.getDesiredTemp();
 }
 
 void  setDemandDegC(uint8_t val) 
@@ -1259,7 +1261,6 @@ void  setDemandDegC(uint8_t val)
   uint8_t max = DefaultBTCParams.getTemperature_Max();
   uint8_t min = DefaultBTCParams.getTemperature_Min();
   BOUNDSLIMIT(val, min, max);
-  // RTC_Store.setDesiredTemp(val);
   CTimerManager::setWorkingTemperature(val);
 }
 
@@ -1276,7 +1277,6 @@ float getTemperatureDesired()
   }
   else {
     if(getThermostatModeActive()) 
-//      return RTC_Store.getDesiredTemp();
       return CTimerManager::getWorkingTemperature();
     else 
       return RTC_Store.getDesiredPump();

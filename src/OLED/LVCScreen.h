@@ -19,8 +19,8 @@
  * 
  */
 
-#ifndef __FUELCALSCREEN_H__
-#define __FUELCALSCREEN_H__
+#ifndef __LVCSCREEN_H__
+#define __LVCSCREEN_H__
 
 #include <stdint.h>
 #include "PasswordScreen.h"
@@ -28,16 +28,14 @@
 class C128x64_OLED;
 class CScreenManager;
 
-class CFuelCalScreen : public CPasswordScreen
+class CLVCScreen : public CPasswordScreen
 {
   void _adjust(int dir);
-  float _mlPerStroke;
-  uint16_t _maxUsage;
-  uint16_t _warnUsage;
+  uint8_t _LVC;
 protected:
   void _saveNV();
 public:
-  CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr);
+  CLVCScreen(C128x64_OLED& display, CScreenManager& mgr);
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);

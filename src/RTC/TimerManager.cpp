@@ -270,7 +270,8 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
       // get timer settings
       int ID = (newID & 0xf) - 1;
       NVstore.getTimerInfo(ID, timer);
-      _workingTemperature = timer.temperature;
+      if(timer.temperature)
+        _workingTemperature = timer.temperature;
       DebugPort.printf("Start of timer interval, starting heater @ %dC\r\n", _workingTemperature);
       requestOn();
       _activeDow = dow;   // dow when timer interval start was detected

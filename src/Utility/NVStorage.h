@@ -52,6 +52,8 @@ struct sHeaterTuning : public CESP32_NVStorage {
   uint8_t   glowDrive;
   uint8_t   lowVolts;    // x10
   float     pumpCal;
+  uint16_t  maxFuelUsage;
+  uint16_t  warnFuelUsage;
   sDS18B20ProbeTuning DS18B20probe[3];   // [0],[1],[2] - Primary, Secondary, Tertiary
   sBM280tuning  BME280probe;
 
@@ -84,6 +86,8 @@ struct sHeaterTuning : public CESP32_NVStorage {
     fanSensor = 1;
     glowDrive = 5;
     pumpCal = 0.02;
+    maxFuelUsage = 0;
+    warnFuelUsage = 0;
     lowVolts = 115;
     DS18B20probe[0].offset = 0;
     DS18B20probe[1].offset = 0;
@@ -105,6 +109,8 @@ struct sHeaterTuning : public CESP32_NVStorage {
     fanSensor = rhs.fanSensor;
     glowDrive = rhs.glowDrive;
     pumpCal = rhs.pumpCal;
+    maxFuelUsage = rhs.maxFuelUsage;
+    warnFuelUsage = rhs.warnFuelUsage;
     lowVolts = rhs.lowVolts;
     DS18B20probe[0].offset = rhs.DS18B20probe[0].offset;
     DS18B20probe[1].offset = rhs.DS18B20probe[1].offset;

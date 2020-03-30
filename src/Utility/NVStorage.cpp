@@ -269,6 +269,8 @@ sHeaterTuning::load()
   else
     validatedLoad("lowVolts", lowVolts, 230, u8inBoundsOrZero, 200, 250);
   validatedLoad("pumpCal", pumpCal, 0.02, 0.001, 1);
+  validatedLoad("maxFuelUsage", maxFuelUsage, 0, u16inBounds, 0, 10000);
+  validatedLoad("warnFuelUsage", warnFuelUsage, 5, u16inBounds, 0, 100);
   validatedLoad("tempOffset0", DS18B20probe[0].offset, 0.0, -10.0, +10.0);
   validatedLoad("tempOffset1", DS18B20probe[1].offset, 0.0, -10.0, +10.0);
   validatedLoad("tempOffset2", DS18B20probe[2].offset, 0.0, -10.0, +10.0);
@@ -326,6 +328,8 @@ sHeaterTuning::save()
   preferences.putUChar("glowDrive", glowDrive);
   preferences.putUChar("lowVolts", lowVolts);
   saveFloat("pumpCal", pumpCal);
+  preferences.putUShort("maxFuelUsage", maxFuelUsage);
+  preferences.putUShort("warnFuelUsage", warnFuelUsage);
   saveFloat("tempOffset0", DS18B20probe[0].offset);
   saveFloat("tempOffset1", DS18B20probe[1].offset);
   saveFloat("tempOffset2", DS18B20probe[2].offset);

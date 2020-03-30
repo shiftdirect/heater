@@ -20,7 +20,7 @@
  */
 
 #include "128x64OLED.h"
-#include "FuelCalScreen.h"
+#include "LVCScreen.h"
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../Utility/macros.h"
@@ -29,31 +29,29 @@
 #include "fonts/Icons.h"
 
 static const int Line3 = 14;
-static const int Line2 = 26;
-static const int Line1 = 38;
+static const int Line2 = 20;
+static const int Line1 = 36;
 
 
-CFuelCalScreen::CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
+CLVCScreen::CLVCScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
 {
   _initUI();
-  _mlPerStroke = 0.02;
+  _LVC = 115;
 }
 
 void 
-CFuelCalScreen::onSelect()
+CLVCScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _initUI();
-  _mlPerStroke = NVstore.getHeaterTuning().pumpCal;
-  _maxUsage = NVstore.getHeaterTuning().maxFuelUsage;
-  _warnUsage = NVstore.getHeaterTuning().warnFuelUsage;
+  _LVC = NVstore.getHeaterTuning().lowVolts;
 }
 
 bool 
-CFuelCalScreen::show()
+CLVCScreen::show()
 {
   char msg[20];
-  const int col = 86;
+  const int col = 90;
 
   _display.fillRect(0, 50, 128, 14, BLACK);
   _display.fillRect(col-border, Line3-border, 128-(col-1), 64-Line3-border, BLACK);
@@ -65,33 +63,15 @@ CFuelCalScreen::show()
       _animateCount = 0;
     }
 
-    _showTitle("Fuel usage");
-    // fuel calibration
-    int yPos = Line1;
-    _printMenuText(col, yPos, ":", false, eRightJustify);
-    _printMenuText(col-7, yPos, "mL/stroke", false, eRightJustify);
-    sprintf(msg, "%.03f", _mlPerStroke);
-    _printMenuText(col+2, yPos, msg, _rowSel == 1);
-    
-    // tank calibration
-    _drawBitmap(6, Line3+3, BowserIconInfo);
-    yPos = Line3;
-    _printMenuText(col, yPos, ":", false, eRightJustify);
-    _printMenuText(col-7, yPos, "Maximum", false, eRightJustify);
-    if(_maxUsage != 0)
-      sprintf(msg, "%.1fL", float(_maxUsage) * 0.1f);
+    _showTitle("Low Volt Cutout");
+    // low voltage cutout
+    int yPos = Line2;
+    _printMenuText(col, yPos, "Shutdown < ", false, eRightJustify);
+    if(_LVC) 
+      sprintf(msg, "%.1fV", float(_LVC) * 0.1);
     else
-      strcpy(msg, "Off");
-    _printMenuText(col+2, yPos, msg, _rowSel == 3);
-
-    yPos = Line2;
-    _printMenuText(col, yPos, ":", false, eRightJustify);
-    _printMenuText(col-7, yPos, "Warning", false, eRightJustify);
-    if(_maxUsage != 0)
-      sprintf(msg, "%.1fL", float(_warnUsage) * 0.1f);
-    else 
-      strcpy(msg, "n/a");
-    _printMenuText(col+2, yPos, msg, _rowSel == 2);
+      strcpy(msg, "OFF");
+    _printMenuText(col, yPos, msg, _rowSel == 1);
     // navigation line
     yPos = 53;
     int xPos = _display.xCentre();
@@ -113,7 +93,7 @@ CFuelCalScreen::show()
 
 
 bool 
-CFuelCalScreen::animate()
+CLVCScreen::animate()
 { 
   if(_saveBusy()) {
     return false;
@@ -122,24 +102,20 @@ CFuelCalScreen::animate()
   if(_animateCount >= 0) {
     switch(_animateCount) {
       case 0:
-        _display.fillRect(6, Line1-3, FuelIconSmallInfo.width, FuelIconSmallInfo.height+4, BLACK); // scrub prior drip
-        _drawBitmap(6, Line1-3, FuelIconSmallInfo);
+        _display.fillRect(0, Line3-3, BatteryIconInfo.width, 35, BLACK);
+        _drawBitmap(0, Line2-1 , BatteryIconInfo);
         break;
       case 2:
-        _display.fillRect(6, Line1-3, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
-        _drawBitmap(6, Line1-2, FuelIconSmallInfo);    // drip fuel
+        _display.fillRect(BatteryIconInfo.width - 4, Line2+2, 2, 5, BLACK);   // deplete battery
         break;
       case 4:
-        _display.fillRect(6, Line1-2, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
-        _drawBitmap(6, Line1-1, FuelIconSmallInfo);    // drip fuel
+        _display.fillRect(BatteryIconInfo.width - 7, Line2+2, 2, 5, BLACK);   // deplete battery
         break;
       case 6:
-        _display.fillRect(6, Line1-1, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
-        _drawBitmap(6, Line1, FuelIconSmallInfo);    // drip fuel
+        _display.fillRect(BatteryIconInfo.width - 10, Line2+2, 2, 5, BLACK);   // deplete battery
         break;
       case 8:
-        _display.fillRect(6, Line1, FuelIconSmallInfo.width, FuelIconSmallInfo.height, BLACK); // scrub prior drip
-        _drawBitmap(6, Line1+1, FuelIconSmallInfo);    // drip fuel
+        _display.fillRect(BatteryIconInfo.width - 13, Line2+2, 2, 5, BLACK);   // deplete battery
         break;
     }
 
@@ -152,7 +128,7 @@ CFuelCalScreen::animate()
 
 
 bool 
-CFuelCalScreen::keyHandler(uint8_t event)
+CLVCScreen::keyHandler(uint8_t event)
 {
   if(CUIEditScreen::keyHandler(event)) {  // handles save confirm
     return true;
@@ -175,8 +151,6 @@ CFuelCalScreen::keyHandler(uint8_t event)
           _ScreenManager.prevMenu();
           break;
         case 1:
-        case 2:
-        case 3:
           _adjust(-1);
           break;
       }
@@ -188,8 +162,6 @@ CFuelCalScreen::keyHandler(uint8_t event)
           _ScreenManager.nextMenu();
           break;
         case 1:
-        case 2:
-        case 3:
           _adjust(+1);
           break;
       }
@@ -202,11 +174,8 @@ CFuelCalScreen::keyHandler(uint8_t event)
     if(event & key_Up) {
       switch(_rowSel) {
         case 0:
-        case 1:
-        case 2:
-        case 3:
           _rowSel++;
-          UPPERLIMIT(_rowSel, 3);
+          UPPERLIMIT(_rowSel, 1);
           break;
       }
     }
@@ -217,8 +186,6 @@ CFuelCalScreen::keyHandler(uint8_t event)
           _ScreenManager.selectMenu(CScreenManager::RootMenuLoop);
           break;
         case 1:
-        case 2:
-        case 3:
           _animateCount = -1;
           _display.clearDisplay();          
           _confirmSave();
@@ -233,31 +200,40 @@ CFuelCalScreen::keyHandler(uint8_t event)
 }
 
 void 
-CFuelCalScreen::_adjust(int dir)
+CLVCScreen::_adjust(int dir)
 {
   switch(_rowSel) {
-    case 1:   
-      _mlPerStroke += dir * 0.001;
-      BOUNDSLIMIT(_mlPerStroke, 0.001, 1);
-      break;
-    case 2:
-      _warnUsage += dir;
-      BOUNDSLIMIT(_warnUsage, 0, 100);
-      break;
-    case 3:
-      _maxUsage += dir;
-      BOUNDSLIMIT(_maxUsage, 0, 10000);
+    case 1:
+      if(_LVC == 0) {
+        if(NVstore.getHeaterTuning().sysVoltage == 120)
+          _LVC = dir > 0 ? 115 : 0;
+        else 
+          _LVC = dir > 0 ? 230 : 0;
+      }
+      else {
+        _LVC += dir;
+        if(NVstore.getHeaterTuning().sysVoltage == 120) {
+          if(_LVC < 100)
+            _LVC = 0;
+          else 
+            UPPERLIMIT(_LVC, 125);
+        }
+        else {
+          if(_LVC < 200)
+            _LVC = 0;
+          else 
+            UPPERLIMIT(_LVC, 250);
+        }
+      }
       break;
   }
 }
 
 void
-CFuelCalScreen::_saveNV()
+CLVCScreen::_saveNV()
 {
   sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.pumpCal = _mlPerStroke;
-  tuning.maxFuelUsage = _maxUsage;
-  tuning.warnFuelUsage = _warnUsage;
+  tuning.lowVolts = _LVC;
   NVstore.setHeaterTuning(tuning);
   NVstore.save();
 }

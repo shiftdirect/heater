@@ -73,6 +73,7 @@ CBasicScreen::show()
         case -1: strcpy(msg, "Ignored - too warm!"); break;
         case -2: strcpy(msg, "Suspended - too warm!"); break;
         case -3: strcpy(msg, "Ignored - low voltage!"); break;
+        case -4: strcpy(msg, "Ignored - fuel empty!"); break;
       }
       // centre message at bottom of screen
       _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);

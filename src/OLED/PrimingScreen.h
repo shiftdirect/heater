@@ -33,6 +33,7 @@ class CPrimingScreen : public CScreenHeader {
   unsigned long _PrimeCheck;
   int _paramSel;
   int _colSel;
+  bool _resetConfirm;
   void _stopPump();
   void _initUI();
 public:

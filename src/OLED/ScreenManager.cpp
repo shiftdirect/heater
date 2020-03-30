@@ -52,6 +52,7 @@
 #include "FrostScreen.h"
 #include "HumidityScreen.h"
 #include "WebPageUpdateScreen.h"
+#include "LVCScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
 #include "../cfg/BTCConfig.h"
@@ -445,6 +446,7 @@ CScreenManager::_loadScreens()
   menuloop.push_back(new CFuelMixtureScreen(*_pDisplay, *this));      //  mixture tuning
   menuloop.push_back(new CHeaterSettingsScreen(*_pDisplay, *this));   // heater system tuning
   menuloop.push_back(new CFuelCalScreen(*_pDisplay, *this));          // fuel pump calibration
+  menuloop.push_back(new CLVCScreen(*_pDisplay, *this));          // low volt cutout calibration
   _Screens.push_back(menuloop);
 
   // create branch screens

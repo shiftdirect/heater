@@ -120,13 +120,20 @@ CSetTimerScreen::show()
     xPos = 18;
     yPos = 40;
     float fTemp = _timerInfo.temperature;
-    if(NVstore.getUserSettings().degF) {
-      fTemp = fTemp * 9 / 5 + 32;
-      sprintf(str, "%.0f`F", fTemp);
+    if(fTemp == 0) {
+      strcpy(str, "Current set ");
     }
     else {
-      sprintf(str, "%.0f`C", fTemp);
+      if(NVstore.getUserSettings().degF) {
+        fTemp = fTemp * 9 / 5 + 32;
+        sprintf(str, "%.0f", fTemp);
+      }
+      else {
+        sprintf(str, "%.0f", fTemp);
+      }
     }
+    bool degF = NVstore.getUserSettings().degF;
+    strcat(str, degF ? "`F" : "`C");
     _printMenuText(_display.xCentre(), yPos, str, _rowSel==1 && _colSel==6, eCentreJustify);
 
 
@@ -349,8 +356,12 @@ CSetTimerScreen::_adjust(int dir)
       _timerInfo.repeat = !_timerInfo.repeat;
       break;
     case 6:
-      _timerInfo.temperature += dir;
-      BOUNDSLIMIT(_timerInfo.temperature, 8, 35);
+      if(_timerInfo.temperature <= 8 && dir < 0)
+        _timerInfo.temperature = 0;
+      else {
+        _timerInfo.temperature += dir;
+        BOUNDSLIMIT(_timerInfo.temperature, 8, 35);
+      }
       break;
   }
 }

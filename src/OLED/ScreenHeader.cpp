@@ -141,47 +141,98 @@ CScreenHeader::animate()
   // inserting an update icon if new firmware available from internet web server
   _animateCount++;
   WRAPUPPERLIMIT(_animateCount, 11, 0);
-  int newVer = isUpdateAvailable(true);
-  if(newVer) {
-    int xPos = X_TIMER_ICON - 3;   
-    int yPos = Y_TIMER_ICON;
-    char msg[16];
-    CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
+  int xPos = X_TIMER_ICON - 3;   
+  int yPos = Y_TIMER_ICON;
+  int fuelUsage = SmartError.checkfuelUsage(false);
+  if(fuelUsage) {
+
+    // flash sequence
+    // LOW   _######_____
+    // EMPTY _###_###_###
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
     switch(_animateCount) {
       case 0:
         _display.fillRect(xPos, yPos, TimerIconInfo.width+3, TimerIconInfo.height, BLACK);
-        _display.fillRect(xPos-2, yPos+12, 21, 5, BLACK);  // erase annotation
-        break;        
+        _display.fillRect(xPos-4, yPos+12, 25, 5, BLACK);  // erase annotation
+        break;     
       case 1:
-        _drawBitmap(xPos+6, yPos, UpdateIconInfo);
-        crackVer(msg, newVer);
-        _printMenuText(xPos+19, yPos+12, msg, false, eRightJustify);
+        _drawBitmap(xPos, yPos, BowserIconInfo);
+        yPos += BowserIconInfo.height;
+        _display.fillRect(xPos, yPos-1, BowserIconInfo.width, 1, BLACK);  // erase bottom of pump icon
+        xPos += BowserIconInfo.width/2;
+        if(fuelUsage == 2) 
+          _printMenuText(xPos, yPos, "EMPTY", false, eCentreJustify);
+        else
+          _printMenuText(xPos, yPos, "LOW", false, eCentreJustify);
         break;
-      case 2:
-        _display.fillRect(xPos, yPos, TimerIconInfo.width+3, TimerIconInfo.height, BLACK);
+      case 4:
+      case 8:
+        if(fuelUsage == 2) {
+          _display.fillRect(xPos, yPos, BowserIconInfo.width, BowserIconInfo.height, BLACK);
+          _display.fillRect(xPos-4, yPos+BowserIconInfo.height, 21, 5, BLACK);  // erase annotation
+        }
         break;        
-      case 3:
-        _display.fillRect(xPos-8, yPos+12, 30, 5, BLACK);  // erase version annotation
-      default:
-        showTimers();
+      case 7:
+        if(fuelUsage != 2) {
+          _display.fillRect(xPos, yPos, BowserIconInfo.width, BowserIconInfo.height, BLACK);
+          _display.fillRect(xPos-4, yPos+BowserIconInfo.height, 21, 5, BLACK);  // erase annotation
+        }
+        break;        
+      case 5:
+      case 9:
+        if(fuelUsage == 2) {
+          _drawBitmap(xPos, yPos, BowserIconInfo);
+          yPos += BowserIconInfo.height;
+          _display.fillRect(xPos, yPos-1, BowserIconInfo.width, 1, BLACK);  // erase bottom of pump icon
+          xPos += BowserIconInfo.width/2;
+          _printMenuText(xPos, yPos, "EMPTY", false, eCentreJustify);
+        }
         break;
     }
   }
   else {
-    showTimers();
+    int newVer = isUpdateAvailable(true);
+    if(newVer) {
+      char msg[16];
+      CTransientFont AF(_display, &miniFontInfo);  // temporarily use a mini font
+      switch(_animateCount) {
+        case 0:
+          _display.fillRect(xPos, yPos, TimerIconInfo.width+3, TimerIconInfo.height, BLACK);
+          _display.fillRect(xPos-2, yPos+12, 21, 5, BLACK);  // erase annotation
+          break;        
+        case 1:
+          _drawBitmap(xPos+6, yPos, UpdateIconInfo);
+          crackVer(msg, newVer);
+          _printMenuText(xPos+19, yPos+12, msg, false, eRightJustify);
+          break;
+        case 2:
+          _display.fillRect(xPos, yPos, TimerIconInfo.width+3, TimerIconInfo.height, BLACK);
+          break;        
+        case 3:
+          _display.fillRect(xPos-8, yPos+12, 30, 5, BLACK);  // erase version annotation
+        default:
+          showTimers();
+          break;
+      }
+    }
+    else {
+      showTimers();
+    }
   }
 
   _batteryCount++;
   WRAPUPPERLIMIT(_batteryCount, 5, 0);
-  int xPos = X_BATT_ICON;   
-  int yPos = Y_BATT_ICON;
+  xPos = X_BATT_ICON;   
+  yPos = Y_BATT_ICON;
   switch(_batteryCount) {
     case 0:
       // establish  battery icon flash pattern
       // > 0.5 over LVC - solid
       // < 0.5 over LVC - slow flash
       // < LVC - fast flash
-      _batteryWarn = SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue(), false);
+      _batteryWarn = SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), 
+                                           FilteredSamples.FastGlowAmps.getValue(), 
+                                           false);
       
       showBatteryIcon(getBatteryVoltage(true));
       break;
@@ -265,7 +316,7 @@ CScreenHeader::showWifiIcon()
         _display.fillRect(X_WIFI_ICON+11, Y_WIFI_ICON, 2, 6, BLACK);
         CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
         _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON);
-        _display.print("OTA");
+        _display.print("oTA");
       }
     }
     
@@ -420,7 +471,7 @@ CScreenHeader::showTime()
     CTransientFont AF(_display, &arial_8ptFontInfo);
     if(NVstore.getUserSettings().clock12hr) 
       xPos -= 3;
-    _display.fillRect(xPos, Y_CLOCK, 30, arial_8ptFontInfo.nBitsPerLine, BLACK);
+    _display.fillRect(xPos, Y_CLOCK, 30, 8, BLACK);
     _printMenuText(xPos, Y_CLOCK-2, msg);
     CRect extents;
     extents.xPos = 0;

@@ -160,7 +160,7 @@ const uint8_t miniFontBitmaps[] PROGMEM =
 	0x40,   //   #  
 	0xf8,   //  #####
 
-	// @78 'O' (3 pixels wide)
+	// @78 'o' (3 pixels wide)
 	0x70,   //   ###
 	0x88,   //  #   #
 	0x70,   //   ###
@@ -182,6 +182,36 @@ const uint8_t miniFontBitmaps[] PROGMEM =
 	0x20,   //    #  
 	0x20,   //    #  
 	0x20,   //    #  
+
+  // @91 'N' (3 pixels wide)
+  0xf8,   //  #####
+  0x20,   //    #  
+  0xf8,   //  #####
+
+  // @94 'Y' (3 pixels wide)
+  0xc0,   //  ##   
+  0x38,   //    ###
+  0xc0,   //  ##   
+
+  // @97 'a' (3 pixels wide)
+  0x10,   //     # 
+  0x28,   //    # #
+  0x38,   //    ###
+
+  // @100 'n' (3 pixels wide)
+  0x38,   //    ###
+  0x20,   //    #  
+  0x38,   //    ###
+
+  // @103 'O' (3 pixels wide)
+  0xF8,   //  #####
+  0x88,   //  #   #
+  0xF8,   //  #####
+
+  // @106 'r' (3 pixels wide)
+  0x38,   //    ###
+  0x20,   //    #  
+  0x20,   //    #  
 };
 
 // Character descriptors for a 3x5 font
@@ -221,8 +251,8 @@ const FONT_CHAR_INFO miniFontDescriptors[] PROGMEM =
 	{0, 0, 0},      // 'K' 
 	{3, 5, 48},     // 'L' 
 	{3, 5, 75},     // 'M' 
-	{0, 0, 0},      // 'N' 
-	{3, 5, 78},     // 'O' 
+	{3, 5, 91},     // 'N' 
+	{3, 5, 103},    // 'O' 
 	{3, 5, 51},     // 'P' 
 	{0, 0, 0},      // 'Q' 
 	{3, 5, 66},     // 'R' 
@@ -232,7 +262,7 @@ const FONT_CHAR_INFO miniFontDescriptors[] PROGMEM =
 	{3, 5, 57},     // 'V' 
 	{3, 5, 60},     // 'W' 
 	{0, 0, 0},      // 'X' 
-	{0, 0, 0},      // 'Y' 
+	{3, 5, 94},     // 'Y' 
 	{0, 0, 0},      // 'Z' 
 	{0, 0, 0},      // '[' 
 	{0, 0, 0},      // '\'
@@ -240,7 +270,7 @@ const FONT_CHAR_INFO miniFontDescriptors[] PROGMEM =
 	{0, 0, 0},      // '^' 
 	{0, 0, 0},      // '_' 
 	{2, 5, 31},     // '`'   use for degree symbol
-	{0, 0, 0},      // 'a' 
+	{3, 5, 97},     // 'a' 
 	{0, 0, 0},      // 'b' 
 	{0, 0, 0},      // 'c' 
 	{0, 0, 0},      // 'd' 
@@ -253,11 +283,11 @@ const FONT_CHAR_INFO miniFontDescriptors[] PROGMEM =
 	{0, 0, 0},      // 'k' 
 	{0, 0, 0},      // 'l' 
 	{0, 0, 0},      // 'm' 
-	{0, 0, 0},      // 'n' 
-	{0, 0, 0},      // 'o' 
+	{3, 5, 100},    // 'n' 
+	{3, 5, 78},     // 'O' 
 	{0, 0, 0},      // 'p' 
 	{0, 0, 0},      // 'q' 
-	{0, 0, 0},      // 'r' 
+	{3, 5, 106},    // 'r' 
 	{0, 0, 0},      // 's' 
 	{0, 0, 0},      // 't' 
 	{0, 0, 0},      // 'u' 
