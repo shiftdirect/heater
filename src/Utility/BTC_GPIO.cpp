@@ -42,7 +42,8 @@ const char* GPIOin1Names[] = {
 const char* GPIOin2Names[] = {
   "Disabled",
   "Mom Off",
-  "Ext Thermo"
+  "Ext Thermo",
+  "Fuel Reset"
 };
 
 
@@ -98,11 +99,23 @@ CGPIOin1::manage(bool active)
   }
 }
 
+
+// mode where you can start the heater with a short press
+// stop the heater with a long press
 void 
 CGPIOin1::_doStart(bool active)
 {
-  if(active) {
-    requestOn();
+  if(active && !_prevActive) {
+    _holdoff = millis();
+  }
+  if(!active && _prevActive) {
+    unsigned long tDelta = millis() - _holdoff;
+    if(tDelta > 50) {
+      if(tDelta < 1500)  // longer or shorter than 1.5 seconds?
+        requestOn();    // short press is start
+      else 
+        requestOff();   // long press is stop
+    }
   }
 }
 
@@ -144,7 +157,7 @@ CGPIOin2::CGPIOin2()
 {
   _Mode = Disabled;
   _prevActive = false;
-  _OffHoldoff = 0;
+  _holdoff = 0;
 }
 
 void 
@@ -165,7 +178,9 @@ CGPIOin2::manage(bool active)
     case Disabled:   break;
     case Stop:       _doStop(active); break;
     case Thermostat: _doThermostat(active); break;
+    case FuelReset:  _doFuelReset(active); break;
   }
+  _prevActive = active;
 }
 
 void 
@@ -175,7 +190,6 @@ CGPIOin2::_doStop(bool active)
     if(active) {
       requestOff();
     }
-    _prevActive = active;
   }
 }
 
@@ -191,11 +205,11 @@ CGPIOin2::_doThermostat(bool active)
       requestOn();   // request heater to start upon closure of thermostat input
     }
     if(!active && _prevActive)  {  // initial switch off of thermostat input
-      _OffHoldoff = (millis() + NVstore.getUserSettings().ExtThermoTimeout) | 1;
+      _holdoff = (millis() + NVstore.getUserSettings().ExtThermoTimeout) | 1;
       DebugPort.printf("thermostat contact opened - will stop in %ldms\r\n", NVstore.getUserSettings().ExtThermoTimeout);
     }
     if(active) {
-      _OffHoldoff = 0;
+      _holdoff = 0;
       int runstate = getHeaterInfo().getRunStateEx();
       int errstate = getHeaterInfo().getErrState(); 
       if(runstate == 0 && errstate == 0) {
@@ -203,27 +217,47 @@ CGPIOin2::_doThermostat(bool active)
       }
     }
     else {
-      if(_OffHoldoff) {
-        long tDelta = millis() - _OffHoldoff;
+      if(_holdoff) {
+        long tDelta = millis() - _holdoff;
         if(tDelta >= 0) {
           DebugPort.println("stopping heater due to thermostat contact being open for required dwell");
           requestOff();  // request heater to stop after thermostat input has stayed open for interval
-          _OffHoldoff = 0;
+          _holdoff = 0;
         }
       }
     }
-    _prevActive = active;
   }
   // handling actually performed at Tx Manage for setting the fuel rate
+}
+
+
+void
+CGPIOin2::_doFuelReset(bool active) 
+{
+  if(active) {
+    if(!_prevActive) {
+      _holdoff = millis() + 1000;  // require 1 second hold to reset fuel gauge
+    }
+    if(_holdoff) {
+      long tDelta = millis() - _holdoff;
+      if(tDelta > 0) {            // 1 second has expired
+        resetFuelGauge();
+        _holdoff = 0;
+      } 
+    }
+  }
+  else {
+    _holdoff = 0;                // ensure fresh
+  }
 }
 
 const char* 
 CGPIOin2::   getExtThermTime()
 {
-  if((_OffHoldoff == 0) || (NVstore.getUserSettings().ThermostatMethod != 3) || (NVstore.getUserSettings().ExtThermoTimeout == 0)) 
+  if((_holdoff == 0) || (NVstore.getUserSettings().ThermostatMethod != 3) || (NVstore.getUserSettings().ExtThermoTimeout == 0)) 
     return NULL;
 
-  long tDelta = _OffHoldoff - millis();
+  long tDelta = _holdoff - millis();
   if(tDelta < 0)
     return NULL;
 

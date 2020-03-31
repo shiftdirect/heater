@@ -219,7 +219,7 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root);  // threshold of under temp for cyclic mode
     bSend |= moderator.addJson("FrostOn", NVstore.getUserSettings().FrostOn, root);        // temp drops below this, auto start - 0 = disable
     bSend |= moderator.addJson("FrostRise", NVstore.getUserSettings().FrostRise, root);    // temp rise in frost mode till auto off
-    bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root, 10000);               // running count of pump strokes
+    bSend |= moderator.addJson("PumpCount", RTC_Store.getFuelGauge(), root, 10000);        // running count of pump strokes
     bSend |= moderator.addJson("PumpCal", NVstore.getHeaterTuning().pumpCal, root);        // mL/stroke
     bSend |= moderator.addJson("LowVoltCutout", NVstore.getHeaterTuning().getLVC(), root); // low voltage cutout
     if(getTempSensor().getBME280().getCount()) {

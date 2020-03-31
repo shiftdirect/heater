@@ -94,11 +94,11 @@ CGPIOSetupScreen::show()
     {
       const char* msgText = NULL;
       switch(_GPIOparams.in1Mode) {
-        case CGPIOin1::Disabled:  msgText = " --- "; break;
-        case CGPIOin1::Start:     msgText = "Start"; break;
-        case CGPIOin1::Run:       msgText = "Run  "; break;
-        case CGPIOin1::StartStop: msgText = animated ? "Start" : "Stop "; break;
-        case CGPIOin1::Stop:      msgText = "Stop "; break;
+        case CGPIOin1::Disabled:  msgText = " ---  "; break;
+        case CGPIOin1::Start:     msgText = "Start "; break;
+        case CGPIOin1::Run:       msgText = "Run   "; break;
+        case CGPIOin1::StartStop: msgText = animated ? "Start " : "Stop  "; break;
+        case CGPIOin1::Stop:      msgText = "Stop  "; break;
       }
       if(msgText)
         _printMenuText(Column1, Line3, msgText, _rowSel == 4);
@@ -108,9 +108,10 @@ CGPIOSetupScreen::show()
     {
       const char* msgText = NULL;
       switch(_GPIOparams.in2Mode) {
-        case CGPIOin2::Disabled:    msgText = " --- "; break;
-        case CGPIOin2::Stop:        msgText = "Stop "; break;
-        case CGPIOin2::Thermostat:  msgText = "\352T"; break;
+        case CGPIOin2::Disabled:    msgText = " ---  "; break;
+        case CGPIOin2::Stop:        msgText = "Stop  "; break;
+        case CGPIOin2::Thermostat:  msgText = "\352T "; break;
+        case CGPIOin2::FuelReset:   msgText = "Fuel 0"; break;
       }
       if(msgText)
         _printMenuText(Column1, Line2, msgText, _rowSel == 2);
@@ -225,6 +226,7 @@ CGPIOSetupScreen::animate()
         case CGPIOin2::Disabled:   pMsg = "                   Input 2: DISABLED.                    "; break;
         case CGPIOin2::Stop:       pMsg = "                   Input 2: Stops heater upon closure.                    "; break;
         case CGPIOin2::Thermostat: pMsg = "                   Input 2: External thermostat. Max fuel when closed, min fuel when open.                    "; break;
+        case CGPIOin2::FuelReset:  pMsg = "                   Input 2: 1 second hold resets fuel usage counter.                    "; break;
       }
       if(pMsg)
         _scrollMessage(56, pMsg, _scrollChar);
@@ -461,7 +463,7 @@ CGPIOSetupScreen::_adjust(int dir)
     case 2:
       tVal = _GPIOparams.in2Mode;
       tVal += dir;
-      WRAPLIMITS(tVal, 0, 2);
+      WRAPLIMITS(tVal, 0, 3);
       _GPIOparams.in2Mode = (CGPIOin2::Modes)tVal;
       break;
     case 3:

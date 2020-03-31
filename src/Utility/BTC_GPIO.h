@@ -52,6 +52,7 @@ public:
 private:
   Modes _Mode;
   bool _prevActive;
+  unsigned long _holdoff;
   void _doStart(bool active);
   void _doRun(bool active);
   void _doStartStop(bool active);
@@ -63,7 +64,8 @@ public:
   enum Modes { 
     Disabled, 
     Stop,       // input 2 closure stops heater
-    Thermostat  // input 2 used to max/min heater if closed/open
+    Thermostat,  // input 2 used to max/min heater if closed/open
+    FuelReset
   };
   CGPIOin2();
   void setMode(Modes mode) { _Mode = mode; };
@@ -74,9 +76,10 @@ public:
 private:
   Modes _Mode;
   bool _prevActive;
-  unsigned long _OffHoldoff;
+  unsigned long _holdoff;
   void _doStop(bool active);
   void _doThermostat(bool active);
+  void _doFuelReset(bool active);
 };
 
 class CGPIOin {

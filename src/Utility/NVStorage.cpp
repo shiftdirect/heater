@@ -469,8 +469,8 @@ sUserSettings::load()
     preferences.putUChar("GPIOin1Mode", GPIO.in1Mode);  // set new
     preferences.putUChar("GPIOin2Mode", GPIO.in2Mode);  // set new
   }  
-  validatedLoad("GPIOin1Mode", tVal, 0, u8inBounds, 0, 3); GPIO.in1Mode = (CGPIOin1::Modes)tVal;
-  validatedLoad("GPIOin2Mode", tVal, 0, u8inBounds, 0, 2); GPIO.in2Mode = (CGPIOin2::Modes)tVal;
+  validatedLoad("GPIOin1Mode", tVal, 0, u8inBounds, 0, 4); GPIO.in1Mode = (CGPIOin1::Modes)tVal;
+  validatedLoad("GPIOin2Mode", tVal, 0, u8inBounds, 0, 3); GPIO.in2Mode = (CGPIOin2::Modes)tVal;
   validatedLoad("GPIOoutMode", tVal, 0, u8inBounds, 0, 255); 
   if(tVal <= 2) {
     // migrate old GPIO output mode

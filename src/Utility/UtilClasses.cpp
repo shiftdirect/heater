@@ -445,12 +445,12 @@ void DecodeCmd(const char* cmd, String& payload)
   else if(strcmp("LoadWebContent", cmd) == 0) {
     getWebContent(true);
   }
-/*  // TESTO hook - make sure removed for production
+  // TESTO hook - make sure removed for production
   else if(strcmp("testo", cmd) == 0) {
     val = payload.toInt();
     FuelGauge.init(val);
     DebugPort.printf("Set Fuel usage to %d => %f\r\n", val, FuelGauge.Used_mL());
-  }*/
+  }
 }
 
 void setHoldoff(unsigned long& holdoff, unsigned long period)

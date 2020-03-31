@@ -1073,6 +1073,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
 
 int requestOn(bool checkTemp)
 {
+  DebugPort.println("Start Request!");
   bool fuelOK = 2 != SmartError.checkfuelUsage();
   if(!fuelOK) {
     return -4;
@@ -1101,6 +1102,7 @@ int requestOn(bool checkTemp)
 
 void requestOff()
 {
+  DebugPort.println("Stop Request!");
   heaterOff();
   RTC_Store.setCyclicEngaged(false);   // for cyclic mode
   RTC_Store.setFrostOn(false);  // cancel active frost mode

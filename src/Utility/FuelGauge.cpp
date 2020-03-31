@@ -41,11 +41,13 @@ CFuelGauge::init(float fuelUsed)
   _pumpStrokes = fuelUsed;
   DebugPort.printf("Initialising fuel gauge with %.2f strokes\r\n", _pumpStrokes);
   _lastStoredVal = _pumpStrokes;
+  RTC_Store.setFuelGauge(_pumpStrokes);            // uses RTC registers to store this
 }
 
 void 
 CFuelGauge::reset()
 {
+  DebugPort.println("resetting fuel gauge");
   _pumpStrokes = 0;
   _lastStoredVal = _pumpStrokes;
   RTC_Store.setFuelGauge(_pumpStrokes);      // uses RTC registers to store this

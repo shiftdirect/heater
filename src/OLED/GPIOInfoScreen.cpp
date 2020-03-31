@@ -90,7 +90,7 @@ CGPIOInfoScreen::animate()
   }
 #if USE_JTAG == 0
       //CANNOT USE GPIO WITH JTAG DEBUG
-  _drawBitmap(40, 16, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
+  _drawBitmap(42, 16, GPIOin.getState(0) ? CloseIconInfo : OpenIconInfo);
 #endif
 
   switch(NVstore.getUserSettings().GPIO.in2Mode) {
@@ -103,10 +103,14 @@ CGPIOInfoScreen::animate()
     case CGPIOin2::Thermostat: 
       _printMenuText(23, 27, "\352T"); 
       break;
+    case CGPIOin2::FuelReset: 
+      _drawBitmap(20, 26, BowserIconInfo); 
+      _printMenuText(32, 30, "0"); 
+      break;
   }
 #if USE_JTAG == 0
       //CANNOT USE GPIO WITH JTAG DEBUG
-  _drawBitmap(40, 28, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
+  _drawBitmap(42, 28, GPIOin.getState(1) ? CloseIconInfo : OpenIconInfo);
 #endif
 
   int bulbmode = 0;

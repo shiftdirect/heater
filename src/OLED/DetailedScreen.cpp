@@ -232,7 +232,7 @@ CDetailedScreen::keyHandler(uint8_t event)
         }
       }
       if(event & key_Down) {
-        if(_keyRepeatCount > 1) {    // held Down - togle thermo/fixed mode
+        if(_keyRepeatCount > 1) {    // held Down - toggle thermo/fixed mode
           _keyRepeatCount = -1;      // prevent double handling
           if(reqThermoToggle()) {
             _showTarget = millis() + 3500;
