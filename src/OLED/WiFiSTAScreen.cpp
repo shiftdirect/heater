@@ -53,7 +53,7 @@ CWiFiSTAScreen::show()
     
   if(NVstore.getUserSettings().wifiMode == 0 || !isWifiSTA()) {
     if(NVstore.getUserSettings().wifiMode == 0)
-      _printMenuText(border, yPos, "DISABLED");   
+      _printMenuText(border, yPos, "WiFi DISABLED");   
     else
       _printMenuText(border, yPos, "NOT CONNECTED");   
   }
@@ -76,7 +76,7 @@ CWiFiSTAScreen::show()
     sprintf(RSSIstr, "%ddBm", RSSI);
     _printMenuText(31, yPos, RSSIstr);
 
-    int xPos = 90;
+/*    int xPos = 70;
     _drawBitmap(xPos, yPos, WifiIconInfo, WHITE, BLACK);  // wide icon erases annotations!
     if(RSSI < -70) {
       _display.fillRect(xPos, yPos, WifiIconInfo.width, 6, BLACK);
@@ -85,7 +85,17 @@ CWiFiSTAScreen::show()
       _display.fillRect(xPos, yPos, WifiWideIconInfo.width, 3, BLACK);
       _display.fillRect(xPos, yPos, 1, 4, BLACK);
       _display.fillRect(xPos+WifiIconInfo.width-1, yPos, 1, 4, BLACK);
+    }*/
+
+    const char* modeStr = "";
+    switch(WiFi.getMode()) {
+      case WIFI_MODE_STA:   modeStr = "STA only"; break;
+      case WIFI_MODE_AP:    modeStr = "AP only"; break;
+      case WIFI_MODE_APSTA: modeStr = "STA+AP"; break;
+      default: break;
     }
+    _printMenuText(128, yPos, modeStr, false, eRightJustify);
+
   }
     
   _printMenuText(_display.xCentre(), 53, "\021                  \020", true, eCentreJustify);

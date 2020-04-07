@@ -53,7 +53,7 @@ CWebPageUpdateScreen::show()
   
   int col = _display.xCentre();
   if(_rowSel == 0) {
-    if(isWifiSTA()) {
+    if(isWifiSTAConnected()) {
       _printMenuText(col, 16, "Press Up to update", false, eCentreJustify);
       _printMenuText(col, 26, "web page content  ", false, eCentreJustify);
       _printMenuText(col, 36, "stored in SPIFFS. ", false, eCentreJustify);
@@ -115,7 +115,7 @@ CWebPageUpdateScreen::keyHandler(uint8_t event)
     // UP press
     if(event & key_Up) {
       if(_rowSel == 0) {
-        if(isWifiSTA()) 
+        if(isWifiSTAConnected()) 
           _rowSel = 1;
       }
       else {

@@ -58,7 +58,7 @@ CHumidityScreen::show()
   else {
     sprintf(msg, "> %d%%", _humidityThresh); 
   }
-  _printMenuText(62, 22, msg, _rowSel == 2);
+  _printMenuText(62, 22, msg, _rowSel == 1);
 
  
   return true;

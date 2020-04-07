@@ -278,7 +278,7 @@ CScreenHeader::showBTicon()
 void 
 CScreenHeader::showWifiIcon()
 {
-  if(isWifiConnected() || isWifiAP()) {   // STA or AP mode active
+  if(isWifiSTAConnected() || isWifiAPonly()) {   // STA or AP mode active
     _drawBitmap(X_WIFI_ICON, Y_WIFI_ICON, WifiWideIconInfo, WHITE, BLACK);  // wide icon erases annotations!
     int8_t RSSI = getWifiRSSI();
     if(RSSI < -70) {
@@ -356,7 +356,7 @@ CScreenHeader::showWifiIcon()
           _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON+6);
           _display.print("CFG");
         }
-        else if(isWifiAP()) {
+        else if(isWifiAPonly()) {
           // if AP only, show AP
           CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
           _display.setCursor(X_WIFI_ICON+12, Y_WIFI_ICON+6);

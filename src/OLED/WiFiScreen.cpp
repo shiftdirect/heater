@@ -61,8 +61,8 @@ CWiFiScreen::_initUI()
   _OTAsel = NVstore.getUserSettings().enableOTA;
   _bShowMAC = false;
 
-  if(NVstore.getUserSettings().wifiMode) {
-    if(isWifiAP()) {
+  if(NVstore.getUserSettings().wifiMode) { // non zero => enabled wifi, maybe AP only or STA+AP or STA only
+    if(isWifiAPonly()) {
       if(isWifiConfigPortal()) {
         _colSel = 1;  // " WiFi: CFG AP only "
       }
@@ -71,11 +71,21 @@ CWiFiScreen::_initUI()
       }
     }
     else {
-      if(isWifiConfigPortal()) {
-        _colSel = 3;  // " WiFi: CFG STA+AP "
+      if(NVstore.getUserSettings().wifiMode & 0x02) {  // 0x02 set => STA only preferred
+        if(isWifiConfigPortal()) {
+          _colSel = 5;  // " WiFi: CFG STA only "
+        }
+        else {
+          _colSel = 6;  //  " WiFi: STA only ";
+        }
       }
       else {
-        _colSel = 4;  //  " WiFi: STA+AP ";
+        if(isWifiConfigPortal()) {
+          _colSel = 3;  // " WiFi: CFG STA+AP "
+        }
+        else {
+          _colSel = 4;  //  " WiFi: STA+AP ";
+        }
       }
     }
   }
@@ -108,6 +118,12 @@ CWiFiScreen::show()
       break;
     case 4:
       pTitle = "STA+AP";
+      break;
+    case 5:
+      pTitle = "CFG STA only";
+      break;
+    case 6:
+      pTitle = "STA only";
       break;
   }
     
@@ -184,13 +200,13 @@ CWiFiScreen::keyHandler(uint8_t event)
           _ScreenManager.prevMenu(); 
           break;
         case 1:
-          if(isWifiAP()) {
+          if(isWifiAPonly()) {
             _colSel--;
             WRAPLOWERLIMIT(_colSel, 0, 2);
           }
           else {
             _colSel--;
-            WRAPLOWERLIMIT(_colSel, 0, 4);
+            WRAPLOWERLIMIT(_colSel, 0, 6);
           }
           break;
         case 2:
@@ -206,13 +222,13 @@ CWiFiScreen::keyHandler(uint8_t event)
           _ScreenManager.nextMenu(); 
           break;
         case 1:
-          if(isWifiAP()) {
+          if(isWifiAPonly()) {
             _colSel++;
             WRAPUPPERLIMIT(_colSel, 2, 0);
           }
           else {
             _colSel++;
-            WRAPUPPERLIMIT(_colSel, 4, 0);
+            WRAPUPPERLIMIT(_colSel, 6, 0);
           }
           break;
         case 2:
@@ -265,6 +281,12 @@ CWiFiScreen::keyHandler(uint8_t event)
             break;
           case 4:
             wifiEnterConfigPortal(false, false, 5000);   //  STA+AP: keep credentials, reboot into webserver
+            break;
+          case 5:
+            wifiEnterConfigPortal(true, false, 5000, true);   //  CFG STA only: keep credentials, reboot into portal
+            break;
+          case 6:
+            wifiEnterConfigPortal(false, false, 5000, true);   //  STA only: keep credentials, reboot into webserver
             break;
         }
         _rowSel = 3;  // stop ticker display

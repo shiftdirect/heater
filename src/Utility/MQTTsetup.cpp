@@ -22,6 +22,7 @@
 #include "NVStorage.h"
 #include "DebugPort.h"
 #include "MQTTsetup.h"
+#include "../WiFi/ABMQTT.h"
 
 CMQTTsetup::CMQTTsetup()
 {
@@ -50,7 +51,11 @@ CMQTTsetup::showMQTTmenu(bool init)
   DebugPort.printf("  <2> - set port, currently %d\r\n", _MQTTsetup.port);
   DebugPort.printf("  <3> - set username, currently \"%s\"\r\n", _MQTTsetup.username);
   DebugPort.printf("  <4> - set password, currently \"%s\"\r\n", _MQTTsetup.password);
+#ifdef ALLOW_USER_TOPIC
   DebugPort.printf("  <5> - set root topic, currently \"%s\"\r\n", _MQTTsetup.topicPrefix);
+#else
+  DebugPort.printf("        Fixed unique topic prefix: \"%s\"\r\n", getTopicPrefix());
+#endif
   DebugPort.printf("  <6> - set QoS, currently %d\r\n", _MQTTsetup.qos);
   DebugPort.printf("  <7> - set enabled, currently %s\r\n", _MQTTsetup.enabled ? "ON" : "OFF");
   DebugPort.printf("  <ENTER> - save and exit\r\n");
@@ -91,16 +96,39 @@ CMQTTsetup::HandleMQTTsetup(char rxVal)
       }
       if(rxVal >= '1' && rxVal <= '7') {
         _mode = rxVal - '0';
-        _idx = 0;
         DebugPort.print("\014");
         switch(_mode) {
-          case 1: DebugPort.printf("Enter MQTT broker's IP address (%s)", _MQTTsetup.host); break;
-          case 2: DebugPort.printf("Enter MQTT broker's port (%d)", _MQTTsetup.port); break;
-          case 3: DebugPort.printf("Enter MQTT broker's username (currently '%s', CTRL-X to erase)", _MQTTsetup.username); break;
-          case 4: DebugPort.printf("Enter MQTT broker's password (currently '%s', CTRL-X to erase)", _MQTTsetup.password); break;
-          case 5: DebugPort.printf("Enter root topic name (%s)", _MQTTsetup.topicPrefix); break;
-          case 6: DebugPort.printf("Enter QoS level (%d)", _MQTTsetup.qos); break;
-          case 7: DebugPort.printf("Enable MQTT? (Y)es / (N)o (%s)", _MQTTsetup.enabled ? "YES" : "NO"); break;
+          case 1: 
+            DebugPort.printf("Enter MQTT broker's IP address (%s)", _MQTTsetup.host); 
+            _lineInput.reset(_MQTTsetup.host, 31); 
+            break;
+          case 2: 
+            DebugPort.printf("Enter MQTT broker's port (%d)", _MQTTsetup.port); 
+            _lineInput.reset(_MQTTsetup.port);
+            break;
+          case 3: 
+            DebugPort.printf("Enter MQTT broker's username (currently '%s', CTRL-X to erase)", _MQTTsetup.username); 
+            _lineInput.reset(_MQTTsetup.username, 31);
+            break;
+          case 4: 
+            DebugPort.printf("Enter MQTT broker's password (currently '%s', CTRL-X to erase)", _MQTTsetup.password); 
+            _lineInput.reset(_MQTTsetup.password, 31); 
+            break;
+          case 5: 
+#ifdef ALLOW_USER_TOPIC
+            DebugPort.printf("Enter root topic name (%s)", _MQTTsetup.topicPrefix); 
+            _lineInput.reset(_MQTTsetup.topicPrefix, 31); 
+#else
+            _mode = 0;  // topic prefix is now fixed, based upon our STA MAC
+            showMQTTmenu();
+#endif
+            return true;
+          case 6: 
+            DebugPort.printf("Enter QoS level (%d)", _MQTTsetup.qos); 
+            break;
+          case 7: 
+            DebugPort.printf("Enable MQTT? (Y)es / (N)o (%s)", _MQTTsetup.enabled ? "YES" : "NO"); 
+            break;
         }
         DebugPort.print("... ");
       }
@@ -109,49 +137,28 @@ CMQTTsetup::HandleMQTTsetup(char rxVal)
       }
       return true;
     case 1:  // enter MQTT broker IP
-      if(getMQTTstring(rxVal, 31, _MQTTsetup.host)) {
+      if(_lineInput.handle(rxVal)) {
         bJumptoMQTTmenuRoot = true;
       }
       break;
     case 2:  // enter MQTT broker port
-      if(rxVal < ' ') {
-        if(_idx == 0) sprintf(_buffer, "%d", _MQTTsetup.port);
-        if(rxVal == '\n') {
-          int val = atoi(_buffer);
-          _MQTTsetup.port = val;
-          bJumptoMQTTmenuRoot = true;
-        }
-        if(rxVal == 0x1b) {
-          bJumptoMQTTmenuRoot = true;
-        }
-        break;
-      }
-      DebugPort.print(rxVal);
-      if(isdigit(rxVal)) {
-        if(_idx == 0) memset(_buffer, 0, sizeof(_buffer));
-        _buffer[_idx++] = rxVal;
-        if(_idx == 5) {
-          int val = atoi(_buffer);
-          _MQTTsetup.port = val;
-          bJumptoMQTTmenuRoot = true;
-        }
-      }
-      else {
+      if(_lineInput.handle(rxVal)) {
+        _MQTTsetup.port = _lineInput.getNumeric();
         bJumptoMQTTmenuRoot = true;
       }
       break;
     case 3:  // enter MQTT broker username
-      if(getMQTTstring(rxVal, 31, _MQTTsetup.username)) {
+      if(_lineInput.handle(rxVal)) {
         bJumptoMQTTmenuRoot = true;
       }
       break;
     case 4:  // enter MQTT broker username
-      if(getMQTTstring(rxVal, 31, _MQTTsetup.password)) {
+      if(_lineInput.handle(rxVal)) {
         bJumptoMQTTmenuRoot = true;
       }
       break;
     case 5:  // enter root topic name
-      if(getMQTTstring(rxVal, 31, _MQTTsetup.topicPrefix)) {
+      if(_lineInput.handle(rxVal)) {
         bJumptoMQTTmenuRoot = true;
       }
       break;
@@ -174,38 +181,5 @@ CMQTTsetup::HandleMQTTsetup(char rxVal)
     showMQTTmenu();
   }
   return true;
-}
-
-bool 
-CMQTTsetup::getMQTTstring(char rxVal, int maxidx, char* pTargetString)
-{
-  if(rxVal < ' ') {
-    if(_idx == 0) strcpy(_buffer, pTargetString);
-    if(rxVal == ('x' & 0x1f)) {  // CTRL-X - erase string, return done
-      memset(pTargetString, 0, maxidx+1);
-      return true;
-    }
-    if(rxVal == '\r')   // ignore CR
-      return false;
-    if(rxVal == '\n') {  // accept buffered string upon LF, return done
-      strncpy(pTargetString, _buffer, maxidx);
-      pTargetString[maxidx] = 0;
-      return true;
-    }
-    if(rxVal == 0x1b) {  // abort, no change upon ESC, return done
-      return true;
-    }
-  }
-  else {
-    if(_idx == 0) memset(_buffer, 0, sizeof(_buffer));
-    DebugPort.print(rxVal);
-    _buffer[_idx++] = rxVal;
-    if(_idx == maxidx) {
-      strncpy(pTargetString, _buffer, maxidx);
-      pTargetString[maxidx] = 0;
-      return true;
-    }
-  }
-  return false;
 }
 

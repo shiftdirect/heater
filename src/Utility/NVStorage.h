@@ -225,12 +225,12 @@ struct sJSONoptions {
 
 
 struct sCredentials : public CESP32_NVStorage {
-  char SSID[32];
+  char APSSID[32];
   char APpassword[32];
   char webUpdateUsername[32];
   char webUpdatePassword[32];
   void init() {
-    strcpy(SSID, "Afterburner");
+    strcpy(APSSID, "Afterburner");
     strcpy(APpassword, "thereisnospoon");
     strcpy(webUpdateUsername, "Afterburner");
     strcpy(webUpdatePassword, "BurnBabyBurn");
@@ -239,7 +239,7 @@ struct sCredentials : public CESP32_NVStorage {
   void save();
   bool valid();
   sCredentials& operator=(const sCredentials& rhs) {
-    strcpy(SSID, rhs.SSID);
+    strcpy(APSSID, rhs.APSSID);
     strcpy(APpassword, rhs.APpassword);
     strcpy(webUpdateUsername, rhs.webUpdateUsername);
     strcpy(webUpdatePassword, rhs.webUpdatePassword);
@@ -303,9 +303,8 @@ struct sUserSettings : public CESP32_NVStorage {
   uint8_t FrostOn;
   uint8_t FrostRise;
   uint8_t useThermostat;
-//  uint8_t enableWifi;
   uint8_t enableOTA;
-  uint8_t wifiMode;  
+  uint8_t wifiMode;     // general Wifi is enabled mode, may be AP only or STA+AP,  2 => STA only if possible, or AP only
   uint16_t FrameRate;
   sCyclicThermostat cyclic;
   sHomeMenuActions HomeMenu;
@@ -325,7 +324,6 @@ struct sUserSettings : public CESP32_NVStorage {
     retval &= ThermostatMethod <= 3;  // only modes 0, 1 or 2, 3
     retval &= INBOUNDS(ThermostatWindow, 0.2f, 10.f);
     retval &= useThermostat < 2;
-//    retval &= (enableWifi == 0) || (enableWifi == 1);
     retval &= INBOUNDS(wifiMode, 0, 3);
     retval &= (enableOTA == 0) || (enableOTA == 1);
     retval &= GPIO.in1Mode < 4;
@@ -348,8 +346,7 @@ struct sUserSettings : public CESP32_NVStorage {
     FrostOn = 0;
     FrostRise = 5;
     useThermostat = 1;
-//    enableWifi = 1;
-    wifiMode = 1;
+    wifiMode = 1;   
     enableOTA = 0;
     GPIO.in1Mode = CGPIOin1::Disabled;
     GPIO.in2Mode = CGPIOin2::Disabled;
@@ -379,7 +376,6 @@ struct sUserSettings : public CESP32_NVStorage {
     FrostOn = rhs.FrostOn;
     FrostRise = rhs.FrostRise;
     useThermostat = rhs.useThermostat;
-//    enableWifi = rhs.enableWifi;
     wifiMode = rhs.wifiMode;
     enableOTA = rhs.enableOTA;
     GPIO.in1Mode = rhs.GPIO.in1Mode;

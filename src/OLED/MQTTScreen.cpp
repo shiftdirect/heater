@@ -52,6 +52,8 @@ CMQTTScreen::onSelect()
 {
   CScreen::onSelect();
   _initUI();
+  _IPScrollPos = 0;
+  _UsernameScrollPos = 0;
 }
 
 
@@ -66,31 +68,28 @@ CMQTTScreen::show()
   int yPos = 18;
 
   if(NVstore.getMQTTinfo().enabled) {
-    if(isWifiConnected()) {
+    if(isWifiSTAConnected()) {
       if(isMQTTconnected())
-        _printMenuText(border, yPos, "CONNECTED");  
+        _printMenuText(0, yPos, "CONNECTED");  
       else 
-        _printInverted(border, yPos, " DISCONNECTED ", true);  
+        _printInverted(0, yPos, " DISCONNECTED ", true);  
     }
     else {
-      _printInverted(border, yPos, " NO STA NETWORK ", true);  
+      _printInverted(0, yPos, " STA NOT ACTIVE ", true);  
     }
   }
   else {
-    _printMenuText(border, yPos, "DISABLED");  
+    _printMenuText(0, yPos, "DISABLED");  
   }
   char msg[40];
   sprintf(msg, "QoS:%d", NVstore.getMQTTinfo().qos);
   _printMenuText(_display.width(), yPos, msg, false, eRightJustify);  
+
   yPos += _display.textHeight() + 2;
-  sprintf(msg, "%s:%d", NVstore.getMQTTinfo().host, NVstore.getMQTTinfo().port);
-  _printMenuText(border, yPos, msg);  
   yPos += _display.textHeight() + 2;
-  sprintf(msg, "%s/%s", NVstore.getMQTTinfo().username, NVstore.getMQTTinfo().password);
-  _printMenuText(border, yPos, msg);  
   yPos += _display.textHeight() + 2;
-  sprintf(msg, "%s", NVstore.getMQTTinfo().topicPrefix);
-  _printMenuText(border, yPos, msg);  
+  _printMenuText(0, yPos, getTopicPrefix());  
+
 
   return true;
 }
@@ -98,7 +97,46 @@ CMQTTScreen::show()
 bool
 CMQTTScreen::animate()
 {
-  return false;
+  static bool subrate = false;
+
+  subrate = !subrate;
+
+  String scrollable;
+  int yPos = 18;
+
+  scrollable = "   ";
+  scrollable += NVstore.getMQTTinfo().host;
+  scrollable += ":";
+  scrollable += NVstore.getMQTTinfo().port;
+  scrollable += "   ";
+  if(scrollable.length() < 28) {
+    scrollable.trim();  // will fit OK, remove added padding that makes scrolled string more readable
+  }
+  if(subrate) {
+    _IPScrollPos++;
+    if(_IPScrollPos > ( (int)scrollable.length() - 21) )
+      _IPScrollPos = 0;
+  }
+  yPos += _display.textHeight() + 2;
+  _printMenuText(0, yPos, scrollable.substring(_IPScrollPos, _IPScrollPos+21).c_str());
+
+  scrollable = "   ";
+  scrollable += NVstore.getMQTTinfo().username;
+  scrollable += "/";
+  scrollable += NVstore.getMQTTinfo().password;
+  scrollable += "   ";
+  if(scrollable.length() < 28) {
+    scrollable.trim();  // will fit OK, remove added padding that makes scrolled string more readable
+  }
+  if(subrate) {
+    _UsernameScrollPos++;
+    if(_UsernameScrollPos > ( (int)scrollable.length() - 21) )
+      _UsernameScrollPos = 0;
+  }
+  yPos += _display.textHeight() + 2;
+  _printMenuText(0, yPos, scrollable.substring(_UsernameScrollPos, _UsernameScrollPos+21).c_str());
+  
+  return true;
 }
 
 bool 

@@ -129,16 +129,16 @@ CScreen::_printInverted(int x, int y, const char* str, bool selected, eJUSTIFY j
 }
 
 void
-CScreen::_scrollMessage(int y, const char* str, int& charOffset)
+CScreen::_scrollMessage(int y, const char* str, int& charOffset, bool centred)
 {
-  char msg[20];
-  int maxIndex = strlen(str) - 20;
-  strncpy(msg, &str[charOffset], 19);
-  msg[19] = 0;
-  _printMenuText(_display.xCentre(), y, msg, false, eCentreJustify);
+  char msg[22];
+  int maxIndex = strlen(str) - 21;
+  strncpy(msg, &str[charOffset], 21);
+  msg[21] = 0;
+  _printMenuText(centred ? _display.xCentre() : 0, y, msg, false, centred ? eCentreJustify : eLeftJustify);
 
   charOffset++;
-  if(charOffset >= maxIndex) {
+  if(charOffset > maxIndex) {
     charOffset = 0;
   }
 }

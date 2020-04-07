@@ -105,7 +105,7 @@ void initOTA(){
 
 }
 
-void DoOTA()
+void doOTA()
 {
   ArduinoOTA.handle();
 

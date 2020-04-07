@@ -89,7 +89,7 @@ void build500Response(String& content, String file);
 
 const char* getWebContent(bool start) {
   
-  if(isWifiSTA() && start) {
+  if(isWifiSTAConnected() && start) {
     GetWebContent.start();
   }
 

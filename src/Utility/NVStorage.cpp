@@ -448,7 +448,6 @@ sUserSettings::load()
   DebugPort.printf("2) Window = %f\r\n", ThermostatWindow);
   validatedLoad("frostOn", FrostOn, 0, u8inBounds, 0, 10);
   validatedLoad("frostRise", FrostRise, 5, u8inBounds, 0, 20);
-//  validatedLoad("enableWifi", enableWifi, 1, u8inBounds, 0, 1);
   validatedLoad("enableWifi", wifiMode, 1, u8inBounds, 0, 3);
   validatedLoad("enableOTA", enableOTA, 0, u8inBounds, 0, 1);
   validatedLoad("cyclicStop", cyclic.Stop, 0, s8inBounds, 0, 10);
@@ -518,7 +517,6 @@ sUserSettings::save()
   saveFloat("thermoWindow", ThermostatWindow);
   preferences.putUChar("frostOn", FrostOn);
   preferences.putUChar("frostRise", FrostRise);
-//  preferences.putUChar("enableWifi", enableWifi);
   preferences.putUChar("enableWifi", wifiMode);
   preferences.putUChar("enableOTA", enableOTA);
   preferences.putChar("cyclicStop", cyclic.Stop);
@@ -585,7 +583,7 @@ sCredentials::load()
 {
   // **** MAX LENGTH is 15 for names ****
   preferences.begin("credentials", false);
-  validatedLoad("SSID", SSID, 31, "Afterburner");
+  validatedLoad("SSID", APSSID, 31, "Afterburner");
   validatedLoad("APpassword", APpassword, 31, "thereisnospoon");
   validatedLoad("webUpdateUser", webUpdateUsername, 31, "Afterburner");
   validatedLoad("webUpdatePass", webUpdatePassword, 31, "BurnBabyBurn");
@@ -597,7 +595,7 @@ sCredentials::save()
 {
   // **** MAX LENGTH is 15 for names ****
   preferences.begin("credentials", false);
-  preferences.putString("SSID", SSID);
+  preferences.putString("SSID", APSSID);
   preferences.putString("APpassword", APpassword);
   preferences.putString("webUpdateUser", webUpdateUsername);
   preferences.putString("webUpdatePass", webUpdatePassword);

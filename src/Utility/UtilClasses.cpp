@@ -291,12 +291,14 @@ void DecodeCmd(const char* cmd, String& payload)
       NVstore.setMQTTinfo(info);
     }
   }
+#ifdef ALLOW_USER_TOPIC
   else if(strcmp("MTopic", cmd) == 0) {
     sMQTTparams info = NVstore.getMQTTinfo();
     strncpy(info.topicPrefix, payload.c_str(), 31);
     info.topicPrefix[31] = 0;
     NVstore.setMQTTinfo(info);
   }
+#endif
   else if(strcmp("UploadSize", cmd) == 0) {
     setUploadSize(payload.toInt());
   }

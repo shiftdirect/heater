@@ -96,11 +96,12 @@ void onMqttConnect(bool sessionPresent)
   DebugPort.println("MQTT: Connected to broker.");
 //  DebugPort.printf("Session present: %d\r\n", sessionPresent);
 
-  // create the topicname we use to accept incoming JSON
-  DebugPort.printf("MQTT: topic prefix name \"%s\"\r\n", NVstore.getMQTTinfo().topicPrefix);
-  sprintf(statusTopic, "%s/status", NVstore.getMQTTinfo().topicPrefix);
-  sprintf(topicnameJSONin, "%s/JSONin", NVstore.getMQTTinfo().topicPrefix);
-  sprintf(topicnameCmd, "%s/cmd/#", NVstore.getMQTTinfo().topicPrefix);
+  // apply the topicname we need to subscribe to incoming JSON
+  
+  DebugPort.printf("MQTT: topic prefix name \"%s\"\r\n", getTopicPrefix());
+  sprintf(statusTopic, "%s/status", getTopicPrefix());
+  sprintf(topicnameJSONin, "%s/JSONin", getTopicPrefix());
+  sprintf(topicnameCmd, "%s/cmd/#", getTopicPrefix());
   
   subscribe(topicnameJSONin);     // subscribe to the JSONin topic
   subscribe(topicnameCmd);        // subscribe to the basic command topic
@@ -252,7 +253,7 @@ bool mqttPublishJSON(const char* str)
   if(MQTTclient.connected()) {
     const sMQTTparams params = NVstore.getMQTTinfo();
     char topic[128];
-    sprintf(topic, "%s/JSONout", params.topicPrefix);
+    sprintf(topic, "%s/JSONout", getTopicPrefix());
     MQTTclient.publish(topic, params.qos, false, str);
     return true;
   }
@@ -322,7 +323,7 @@ void pubTopic(const char* name, int value)
     if(MQTTmoderator.shouldSend(name, value)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
-      sprintf(topic, "%s/sts/%s", params.topicPrefix, name);
+      sprintf(topic, "%s/sts/%s", getTopicPrefix(), name);
       char payload[128];
       sprintf(payload, "%d", value);
       MQTTclient.publish(topic, params.qos, false, payload);
@@ -336,7 +337,7 @@ void pubTopic(const char* name, float value)
     if(MQTTmoderator.shouldSend(name, value)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
-      sprintf(topic, "%s/sts/%s", params.topicPrefix, name);
+      sprintf(topic, "%s/sts/%s", getTopicPrefix(), name);
       char payload[128];
       sprintf(payload, "%.1f", value);
       MQTTclient.publish(topic, params.qos, false, payload);
@@ -350,7 +351,7 @@ void pubTopic(const char* name, const char* payload)
     if(MQTTmoderator.shouldSend(name, payload)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
-      sprintf(topic, "%s/sts/%s", params.topicPrefix, name);
+      sprintf(topic, "%s/sts/%s", getTopicPrefix(), name);
       MQTTclient.publish(topic, params.qos, false, payload);
     }
   }
@@ -423,6 +424,26 @@ void subscribe(const char* topic)
 void requestMQTTrestart()
 {
   MQTTrestart = (millis() + 1000) | 1;
+}
+
+const char* getTopicPrefix() 
+{
+#ifdef ALLOW_USER_TOPIC
+
+  return NVstore.getMQTTinfo().topicPrefix;
+
+#else
+
+  static char prefix[32] = "";
+
+  if(strlen(prefix) == 0) {
+    uint8_t MAC[6];
+    esp_read_mac(MAC, ESP_MAC_WIFI_STA);
+    sprintf(prefix, "Afterburner%02X%02X%02X", MAC[3], MAC[4], MAC[5]);
+  }
+  return prefix;
+
+#endif
 }
 
 #endif

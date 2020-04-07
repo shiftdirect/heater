@@ -25,23 +25,23 @@
 #include <WiFi.h>
 
 void doWiFiManager();
-bool initWifi(const char *failedssid, const char *failedpassword);
+bool initWifi();
 const char* getWifiAPAddrStr(); 
 const char* getWifiSTAAddrStr(); 
 const char* getWifiGatewayAddrStr();
 const char* getWifiAPMACStr();
 const char* getWifiSTAMACStr();
 int8_t getWifiRSSI();
-String getSSID();
+String getSTASSID();
 
-bool isWifiConnected();
-bool isWifiAP();
+bool isWifiSTAConnected();
+bool isWifiAPonly();
 bool isWifiSTA();
 bool isWifiConfigPortal();
 bool isWebClientConnected();
 bool hasWebClientSpoken(bool reset = false);
 bool hasWebServerSpoken(bool reset = false);
-void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000);
+void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000, bool STAonly = false);
 void wifiDisable(long rebootDelay = 7000);
 void wifiFactoryDefault();
 int  isWifiButton();

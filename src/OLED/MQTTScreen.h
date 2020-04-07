@@ -37,6 +37,8 @@ public:
   bool keyHandler(uint8_t event);
 private:
   int  _repeatCount;
+  int _IPScrollPos;
+  int _UsernameScrollPos;
 };
 
 #endif

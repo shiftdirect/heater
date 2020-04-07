@@ -49,8 +49,9 @@ unsigned long WifiReconnectHoldoff = 0;
 extern CScreenManager ScreenManager;
 
 
-bool initWifi(const char *failedssid, const char *failedpassword) 
+bool initWifi() 
 {
+  sCredentials creds = NVstore.getCredentials();  // local Soft AP credentials
   
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
 
@@ -83,7 +84,7 @@ bool initWifi(const char *failedssid, const char *failedpassword)
  
   DebugPort.println("Attempting to start STA mode (or config portal) via WifiManager...");
 
-  wm.setHostname(failedssid);
+  wm.setHostname(creds.APSSID);  // define Soft AP name
   wm.setDebugOutput(true);
   wm.setConfigPortalTimeout(20);
   wm.setConfigPortalBlocking(false);
@@ -94,7 +95,7 @@ bool initWifi(const char *failedssid, const char *failedpassword)
 //REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
 // REMOVED    wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0)); 
  
-  bool res = wm.autoConnect(failedssid, failedpassword); // auto generated AP name from chipid
+  bool res = wm.autoConnect(creds.APSSID, creds.APpassword); // User definable AP name & password
   DebugPort.printf("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
 
   int chnl = 1;
@@ -114,19 +115,28 @@ bool initWifi(const char *failedssid, const char *failedpassword)
     DebugPort.printf("  STA IP address: %s\r\n", getWifiSTAAddrStr());
     // must use same radio channel as STA to go to STA+AP, otherwise we drop the STA!
     chnl = WiFi.channel();  
-    DebugPort.println("Now promoting to STA+AP mode..."); 
     retval = true;
   }
-#if USE_AP_ALWAYS == 1
-  if(NVstore.getUserSettings().wifiMode & 0x01) {  // Own AP enabled
-    startAP = true;
+  if(isSTA) {
+    if(NVstore.getUserSettings().wifiMode & 0x02) {  // Check for STA only mode
+      DebugPort.println("  Using STA only mode."); 
+    }
+    else {
+      DebugPort.println("Now promoting to STA+AP mode..."); 
+      startAP = true;
+    }
   }
+#if USE_AP_ALWAYS == 1
+  startAP = true;
+  DebugPort.println("Forcing AP mode on!"); 
 #endif
+
+  // WiFi.softAP(failedssid, failedpassword, chnl);
+  // WiFi.softAP(creds.SSID, creds.APpassword, chnl);
   if(startAP) {
     //  for STA+AP mode we *must* use the same RF channel as STA
     DebugPort.println("Starting AP mode");
-    WiFi.softAP(failedssid, failedpassword, chnl);
-    WiFi.enableAP(true);
+    WiFi.softAP(creds.APSSID, creds.APpassword, chnl);
     DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
     DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
     DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
@@ -139,8 +149,8 @@ bool initWifi(const char *failedssid, const char *failedpassword)
     isPortalAP = true;                   // we started portal, we have to flag it!
   }
 
-//  WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
-
+  // WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
   return retval;
 }
 
@@ -151,7 +161,13 @@ void doWiFiManager()
     wm.process();
 
     if(WiFi.status() != WL_CONNECTED) {
-      if(isSTA) DebugPort.println("STA lost");
+      if(isSTA) {
+        DebugPort.println("STA lost");
+        // ensure inbuilt AP is started if STA is down
+        sCredentials creds = NVstore.getCredentials();  // local AP credentials
+        int chnl = 1;
+        WiFi.softAP(creds.APSSID, creds.APpassword, chnl);  // this will intrinsically enable AP
+      }
       isSTA = false;
       if(WifiReconnectHoldoff) {
         long tDelta = millis() - WifiReconnectHoldoff;
@@ -170,7 +186,19 @@ void doWiFiManager()
       }
     }
     else {
-      if(!isSTA) DebugPort.println("STA established");
+      if(!isSTA) { 
+        // initial regain of STA connection detected
+        DebugPort.println("STA established");
+        if(NVstore.getUserSettings().wifiMode & 0x02) {
+          WiFi.enableAP(false);   // kill inbuilt AP if setup for STA only
+        }
+        else {
+          // ensure inbuilt AP is set to same channel as STA
+          int chnl = WiFi.channel();  
+          sCredentials creds = NVstore.getCredentials();  // local AP credentials
+          WiFi.softAP(creds.APSSID, creds.APpassword, chnl);  // intrinsically enables Soft AP
+        }
+      }
       isSTA = true;
       WifiReconnectHoldoff = 0;
     }
@@ -181,10 +209,10 @@ void doWiFiManager()
 void wifiDisable(long rebootDelay) 
 {
   sUserSettings settings = NVstore.getUserSettings();
-//  settings.enableWifi = 0;
   settings.wifiMode = 0;
   NVstore.setUserSettings(settings);
   NVstore.save(); 
+  NVstore.doSave();   // ensure NV storage
 
   DebugPort.println("*** Disabling WiFi ***");
 
@@ -196,23 +224,29 @@ void wifiDisable(long rebootDelay)
   ScreenManager.showRebootMsg(content, rebootDelay);
 }
 
-void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay) 
+void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay, bool STAonly) 
 {
 	wm.disconnect();
 
   sUserSettings settings = NVstore.getUserSettings();
-  settings.wifiMode = 1;
+  settings.wifiMode = STAonly ? 0x02 : 0x01;
   NVstore.setUserSettings(settings);
   NVstore.save(); 
+  NVstore.doSave();   // ensure NV storage
 
   prepBootIntoConfigPortal(state);  
 
   const char* content[2];
 
-  if(isWifiSTA() && !erase)
-    content[0] = "WiFi Mode \032 STA+AP";
-  else 
+  if(isWifiSTA() && !erase) {
+    if(STAonly)
+      content[0] = "WiFi Mode \032 STA only";
+    else
+      content[0] = "WiFi Mode \032 STA+AP";
+  }
+  else {
     content[0] = "WiFi Mode \032 AP only";
+  }
 
   if(erase) {
     wm.resetSettings();
@@ -238,10 +272,10 @@ void wifiFactoryDefault()
   wm.resetSettings();
   prepBootIntoConfigPortal(false);
   sUserSettings settings = NVstore.getUserSettings();
-//  settings.enableWifi = 1;
   settings.wifiMode = 1;
   NVstore.setUserSettings(settings);
   NVstore.save(); 
+  NVstore.doSave();   // ensure NV storage
 }
 
 // callback is invoked by WiFiManager after new credentials are saved and verified
@@ -258,7 +292,7 @@ void APstartedCallback(WiFiManager*)
 
 const char* getWifiAPAddrStr()
 { 
-  if(NVstore.getUserSettings().wifiMode) {
+  if(NVstore.getUserSettings().wifiMode) { // check that wifi should be active
     IPAddress IPaddr = WiFi.softAPIP();   // use stepping stone - function returns an automatic stack var - LAME!
     static char APIPaddr[16];
     sprintf(APIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
@@ -270,7 +304,7 @@ const char* getWifiAPAddrStr()
   
 const char* getWifiSTAAddrStr()
 { 
-  if(NVstore.getUserSettings().wifiMode) {
+  if(NVstore.getUserSettings().wifiMode) { // check that wifi should be active
     IPAddress IPaddr = WiFi.localIP();    // use stepping stone - function returns an automatic stack var - LAME!
     static char STAIPaddr[16];
     sprintf(STAIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
@@ -282,7 +316,7 @@ const char* getWifiSTAAddrStr()
 
 const char* getWifiGatewayAddrStr()
 { 
-  if(NVstore.getUserSettings().wifiMode) {
+  if(NVstore.getUserSettings().wifiMode) {  // check that wifi should be active
     IPAddress IPaddr = WiFi.gatewayIP();   // use stepping stone - function returns an automatic stack var - LAME!
     static char GWIPaddr[16];
     sprintf(GWIPaddr, "%d.%d.%d.%d", IPaddr[0], IPaddr[1], IPaddr[2], IPaddr[3]);
@@ -294,7 +328,7 @@ const char* getWifiGatewayAddrStr()
 
 int8_t getWifiRSSI()
 {
-  if(NVstore.getUserSettings().wifiMode) {
+  if(NVstore.getUserSettings().wifiMode) {  // check that wifi should be active
     static unsigned long updateRSSI = millis() + 2500;
     static int8_t RSSI = 0;
     long tDelta = millis() - updateRSSI;
@@ -322,9 +356,9 @@ const char* getWifiSTAMACStr()
   return MACstr[0]; 
 }
 
-String getSSID()
+String getSTASSID()
 {
-  if(NVstore.getUserSettings().wifiMode) {
+  if(NVstore.getUserSettings().wifiMode) {  // check that wifi should be active
     wifi_config_t conf;
     esp_wifi_get_config(WIFI_IF_STA, &conf);
     return String(reinterpret_cast<const char*>(conf.sta.ssid));
@@ -333,22 +367,23 @@ String getSSID()
     return "";
 }
 
-bool isWifiConnected()
+bool isWifiSTAConnected()
 {
-  if(NVstore.getUserSettings().wifiMode) 
+  if(NVstore.getUserSettings().wifiMode) {  // non zero => enabled wifi, maybe AP only or STA+AP or STA only
     return WiFi.status() == WL_CONNECTED;
-  else 
-    return false;
+  }
+
+  return false;
 }
 
-bool isWifiAP()
+bool isWifiAPonly()
 {
-  if(NVstore.getUserSettings().wifiMode) {
+  if(NVstore.getUserSettings().wifiMode) { // non zero => enabled wifi, maybe AP only or STA+AP or STA only
     int mode = WiFi.getMode();
     return !isSTA && ((mode & WIFI_MODE_AP) != 0);   
   }
-  else 
-    return false;
+
+  return false;
 }
 
 bool isWifiSTA()

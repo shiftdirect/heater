@@ -24,7 +24,7 @@
 
 void initOTA();
 void initFOTA();
-void DoOTA();
+void doOTA();
 bool CheckFirmwareCRC(int size);
 
 #endif

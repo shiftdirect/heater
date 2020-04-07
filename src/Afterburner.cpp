@@ -118,6 +118,7 @@
 #include "Utility/MQTTsetup.h"
 #include <FreeRTOS.h>
 #include "RTC/TimerManager.h"
+#include "Utility/GetLine.h"
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
@@ -197,7 +198,6 @@ CMQTTsetup MQTTmenu;
 
 
 
-sRxLine PCline;
 long lastRxTime;                     // used to observe inter character delays
 bool bHasOEMController = false;
 bool bHasOEMLCDController = false;
@@ -439,11 +439,9 @@ void setup() {
 
 #if USE_WIFI == 1
 
-  sCredentials creds = NVstore.getCredentials();  // local AP credentials
 
-//  if(NVstore.getUserSettings().enableWifi) {
   if(NVstore.getUserSettings().wifiMode) {
-    initWifi(creds.SSID, creds.APpassword);   // SSID and passowrd the the ESP32's inbuilt AP
+    initWifi();   
 #if USE_OTA == 1
     if(NVstore.getUserSettings().enableOTA) {
       initOTA();
@@ -522,6 +520,8 @@ void setup() {
   pHourMeter = new CHourMeter(persistentRunTime, persistentGlowTime); // persistent vars passed by reference so they can be valid after SW reboots
   pHourMeter->init(bESP32PowerUpInit || RTC_Store.getBootInit());     // ensure persistent memory variable are reset after powerup, or OTA update
   RTC_Store.setBootInit(false);
+
+  reqDemand(RTC_Store.getDesiredTemp());  // bug fix: was not applying saved set point!
 
   // Check for solo DS18B20
   // store it's serial number as the primary sensor
@@ -1366,6 +1366,7 @@ void checkDebugCommands()
   static uint8_t nGetConf = 0;
   static String pw1;
   static String pw2;
+  static CGetLine line;
 
   // check for test commands received over Debug serial port or telnet
   char rxVal;
@@ -1390,6 +1391,7 @@ void checkDebugCommands()
     if(nGetConf) {
       DebugPort.print(rxVal);
       bool bSave = (rxVal == 'y') || (rxVal == 'Y');
+      DebugPort.println("");
       if(!bSave) {
         DebugPort.println(" ABORTED!");
         nGetConf = 0;
@@ -1397,7 +1399,7 @@ void checkDebugCommands()
       }
       switch(nGetConf) {
         case 1: 
-          setSSID(PCline.Line);  
+          setSSID(line.getString());  
           break;
         case 2:
           setAPpassword(pw2.c_str());
@@ -1408,75 +1410,77 @@ void checkDebugCommands()
     }
     else if(nGetString) {
       DebugPort.enable(true);
-      if(rxVal < ' ') {
-        if(rxVal == 0x1b) {  // ESCAPE
-          nGetString = 0;
-          DebugPort.println("\r\nABORTED!");
-          return;
-        }
-        if(rxVal == '\n' || rxVal == '\r') {
-          switch(nGetString) {
-            case 1:  
-              if(PCline.Len <= 31) {
-                nGetConf = 1; 
-                DebugPort.printf("\r\nSet AP SSID to %s? (y/n) - ", PCline.Line);
-              }
-              else {
-                DebugPort.println("\r\nNew name is longer than 31 characters - ABORTING");
-              }
-              nGetString = 0;
-              return;
-            case 2:  
-              pw1 = PCline.Line;
-              PCline.clear();
-              pw2 = NVstore.getCredentials().APpassword;
-              if(pw1 != pw2) {
-                DebugPort.println("\r\nPassword does not match existing - ABORTING");
-                nGetString = 0;
-              }
-              else {
-                nGetString = 3;
-                DebugPort.print("\r\nPlease enter new password - ");
-                DebugPort.enable(false);  // block other debug msgs whilst we get the password
-              }
-              return;
-            case 3:
-              pw1 = PCline.Line;
-              if(PCline.Len <= 31) {
-                nGetString = 4;
-                DebugPort.print("\r\nPlease confirm new password - ");
-                DebugPort.enable(false);  // block other debug msgs whilst we get the password
-              }
-              else {
-                DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
-                nGetString = 0;
-              }
-              PCline.clear();
-              return;
-            case 4:
-              pw2 = PCline.Line;
-              PCline.clear();
-              if(pw1 != pw2) {
-                DebugPort.println("\r\nNew passwords do not match - ABORTING");
-              }
-              else {
-                nGetConf = 2;
-                DebugPort.print("\r\nSet new password (y/n) - ");
-              }
-              nGetString = 0;
-              return;
-          }
-        }
-      }
-      else {
-        if(nGetString == 1)
-          DebugPort.print(rxVal);
-        else 
-          DebugPort.print('*');
-        PCline.append(rxVal);
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
+
+      if(rxVal == 0x1b) {  // ESCAPE
+        nGetString = 0;
+        DebugPort.println("\r\nABORTED!");
         return;
       }
+
+      if(line.handle(rxVal)) {
+        switch(nGetString) {
+          case 1:  
+            if(line.getLen() <= 31) {
+              nGetConf = 1; 
+              DebugPort.printf("\r\nSet AP SSID to %s? (y/n) - ", line.getString());
+            }
+            else {
+              DebugPort.println("\r\nNew name is longer than 31 characters - ABORTING");
+            }
+            nGetString = 0;
+            return;
+          case 2:
+            pw1 = line.getString();
+            pw2 = NVstore.getCredentials().APpassword;
+            if(pw1 != pw2) {
+              DebugPort.println("\r\nPassword does not match existing - ABORTING");
+              nGetString = 0;
+            }
+            else {
+              nGetString = 3;
+              DebugPort.print("\r\nPlease enter new password - ");
+              DebugPort.enable(false);  // block other debug msgs whilst we get the password
+            }
+            line.reset();
+            line.maskEntry();
+            return;
+          case 3:
+            pw1 = line.getString();
+            if(line.getLen() < 8) {
+              // ABORT - too short
+              DebugPort.println("\r\nNew password must be at least 8 characters - ABORTING");
+              nGetString = 0;
+            }
+            else if(line.getLen() > 31) {
+              // ABORT - too long!
+              DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
+              nGetString = 0;
+            }
+            else {
+              nGetString = 4;
+              DebugPort.print("\r\nPlease confirm new password - ");
+              DebugPort.enable(false);  // block other debug msgs whilst we get the password
+            }
+            line.reset();
+            line.maskEntry();
+            return;
+          case 4:
+            pw2 = line.getString();
+            line.reset();
+            if(pw1 != pw2) {
+              DebugPort.println("\r\nNew passwords do not match - ABORTING");
+            }
+            else {
+              nGetConf = 2;
+              DebugPort.print("\r\nSet new password (y/n) - ");
+            }
+            nGetString = 0;
+            return;
+        }
+      }
+      DebugPort.enable(false);
+      return;
+
     }
 
     rxVal = toLowerCase(rxVal);
@@ -1486,10 +1490,10 @@ void checkDebugCommands()
 #endif
     if(rxVal == '\n') {    // "End of Line"
 #ifdef PROTOCOL_INVESTIGATION    
-      String convert(PCline.Line);
+      String convert(line.getString());
       val = convert.toInt();
       bSendVal = true;
-      PCline.clear();
+      line.reset();
 #endif
     }
     else {
@@ -1498,7 +1502,7 @@ void checkDebugCommands()
       }
 #ifdef PROTOCOL_INVESTIGATION    
       else if(isDigit(rxVal)) {
-        PCline.append(rxVal);
+        line.handle(rxVal);
       }
       else if(rxVal == 'p') {
         DebugPort.println("Test Priming Byte... ");
@@ -1549,9 +1553,9 @@ void checkDebugCommands()
       }
       else if(rxVal == 'n') {
         DebugPort.print("Please enter new SSID name for Access Point - ");
+        line.reset();
         nGetString = 1;
         DebugPort.enable(false);  // block other debug msgs whilst we get strings
-        PCline.clear();
       }
       else if(rxVal == 'm') {
         MQTTmenu.setActive();
@@ -1562,9 +1566,10 @@ void checkDebugCommands()
       }
       else if(rxVal == 'p') {
         DebugPort.print("Please enter current AP password - ");
+        line.reset();
+        line.maskEntry();
         nGetString = 2;
         DebugPort.enable(false);  // block other debug msgs whilst we get strings
-        PCline.clear();
       }
       else if(rxVal == 's') {
         CommState.toggleReporting();
@@ -1835,11 +1840,10 @@ void doStreaming()
 {
 #if USE_WIFI == 1
 
-//  if(NVstore.getUserSettings().enableWifi) {
   if(NVstore.getUserSettings().wifiMode) {
     doWiFiManager();
 #if USE_OTA == 1
-    DoOTA();
+    doOTA();
 #endif // USE_OTA 
 #if USE_WEBSERVER == 1
     bHaveWebClient = doWebServer();
@@ -1970,8 +1974,8 @@ void resetFuelGauge()
 void setSSID(const char* name)
 {
   sCredentials creds = NVstore.getCredentials();
-  strncpy(creds.SSID, name, 31);
-  creds.SSID[31] = 0;
+  strncpy(creds.APSSID, name, 31);
+  creds.APSSID[31] = 0;
   NVstore.setCredentials(creds);
   NVstore.save();
   NVstore.doSave();   // ensure NV storage
@@ -2006,7 +2010,7 @@ void showMainmenu()
   DebugPort.printf("  <W> - toggle reporting of blue wire timeout/recycling event, currently %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
   DebugPort.printf("  <O> - toggle reporting of OEM resync event, currently %s\r\n", bReportOEMresync ? "ON" : "OFF");        
   DebugPort.printf("  <S> - toggle reporting of state machine transits %s\r\n", CommState.isReporting() ? "ON" : "OFF");        
-  DebugPort.printf("  <N> - change AP SSID, currently \"%s\"\r\n", NVstore.getCredentials().SSID);
+  DebugPort.printf("  <N> - change AP SSID, currently \"%s\"\r\n", NVstore.getCredentials().APSSID);
   DebugPort.println("  <P> - change AP password");
   DebugPort.println("  <M> - configure MQTT");
   DebugPort.println("  <+> - request heater turns ON");

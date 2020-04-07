@@ -336,7 +336,7 @@ bool makeJSONStringMQTT(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("MUser", info.username, root); 
   bSend |= moderator.addJson("MPasswd", info.password, root); 
   bSend |= moderator.addJson("MQoS", info.qos, root); 
-  bSend |= moderator.addJson("MTopic", info.topicPrefix, root); 
+  bSend |= moderator.addJson("MTopic", getTopicPrefix(), root); 
 
   if(bSend) {
 		root.printTo(opStr, len);
@@ -393,7 +393,7 @@ bool makeJSONStringIP(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("IP_APMAC", getWifiAPMACStr(), root); 
   bSend |= moderator.addJson("IP_STA", getWifiSTAAddrStr(), root); 
   bSend |= moderator.addJson("IP_STAMAC", getWifiSTAMACStr(), root); 
-  bSend |= moderator.addJson("IP_STASSID", getSSID().c_str(), root); 
+  bSend |= moderator.addJson("IP_STASSID", getSTASSID().c_str(), root); 
   bSend |= moderator.addJson("IP_STAGATEWAY", getWifiGatewayAddrStr(), root); 
   bSend |= moderator.addJson("IP_STARSSI", getWifiRSSI(), root, 10000); 
   bSend |= moderator.addJson("IP_OTA", NVstore.getUserSettings().enableOTA, root); 
