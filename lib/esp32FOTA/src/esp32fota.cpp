@@ -388,7 +388,9 @@ esp32FOTA::setCheckURL(const char* host)
 void 
 esp32FOTA::setupAsync(const char* host) 
 {
-  // _versionTest.setDebug(true);
+#ifdef DEBUG_ASYNC_FOTA
+  _versionTest.setDebug(true);
+#endif
 }
 
 // Asynchronous update check - performs more reliably with flakey Internet connections
@@ -399,6 +401,7 @@ esp32FOTA::execAsyncHTTPcheck()
   if ((WiFi.status() == WL_CONNECTED)) { 
     if(_versionTest.readyState() == 0 || _versionTest.readyState() == 4) {
       Serial.println("Querying firmware update server");
+      _versionTest.setTimeout(10);
       _versionTest.onReadyStateChange(FOTA_PollCallback, this);
       _versionTest.onBuildHeaders(NULL);
       _versionTest.onData(NULL);

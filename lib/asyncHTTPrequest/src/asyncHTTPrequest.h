@@ -30,8 +30,14 @@
 #endif
 
 #include <Arduino.h>
+#ifdef ESP32
 //#include <ESPAsyncTCP.h>
 #include "../../AsyncTCP/src/AsyncTCP.h"
+#include "freertos/queue.h"
+#define _seize xSemaphoreTakeRecursive(threadLock,portMAX_DELAY)
+#define _release xSemaphoreGiveRecursive(threadLock)
+#endif
+
 #include <pgmspace.h>
 #include "xbuf.h"
 
@@ -190,6 +196,9 @@ class asyncHTTPrequest {
     onBuildHeadersCB  _onBuildHeadersCB;        // optional callback to add extra HTTP headers
     void*           _onBuildHeadersCBarg;       // associated user argument
 
+    #ifdef ESP32
+    SemaphoreHandle_t threadLock;
+    #endif
 
     // request and response String buffers and header list (same queue for request and response).   
 
