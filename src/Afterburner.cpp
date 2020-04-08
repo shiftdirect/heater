@@ -128,8 +128,8 @@
 
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 0;
-const char* FirmwareDate = "30 Mar 2020";
+const int FirmwareMinorRevision = 3;
+const char* FirmwareDate = "9 Apr 2020";
 
 
 #ifdef ESP32
