@@ -57,25 +57,6 @@ int CTxManage::m_nTxGatePin = 0;
 // Sadly digitalWrite falls into this category, so use a FreeRTOS queue
 // to push the end event handling into a non ISRL task
 
-static QueueHandle_t txGate_queue = NULL;
-static int lclTxGatePin = 0;
-
-// static function used for the tx gate termination 
-static void IRAM_ATTR GateTerminateCallback()
-{
-  uint32_t gpio_num = lclTxGatePin;
-  xQueueSendFromISR(txGate_queue, &gpio_num, NULL);
-}
-
-static void TxGateConclude(void* arg)
-{
-    uint32_t io_num;
-    for(;;) {
-        if(xQueueReceive(txGate_queue, &io_num, portMAX_DELAY)) {
-          digitalWrite(io_num, LOW);   // terminate Tx Gate
-        }
-    }
-}
 
 CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) : 
   m_BlueWireSerial(serial),
@@ -87,39 +68,32 @@ CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) :
   m_bTxPending = false;
   m_nStartTime = 0;
   m_nTxGatePin = TxGatePin;
-  lclTxGatePin = TxGatePin;
   _rawCommand = 0;
   m_HWTimer = NULL;
 }
 
 // static function used for the tx gate termination 
-void CTxManage::GateTerminate()
+// must use IRAM_ATTR being a call back called at ISRL
+void IRAM_ATTR 
+CTxManage::callbackGateTerminate()
 {
-  uint32_t gpio_num = m_nTxGatePin;
-  xQueueSendFromISR(txGate_queue, &gpio_num, NULL);
-//  digitalWrite(m_nTxGatePin, LOW);   // default to receive mode
+  digitalWrite(m_nTxGatePin, LOW);   // cancel Tx Gate
   m_nStartTime = 0;                  // cancel, we are DONE
 }
 
 
-void CTxManage::begin()
+void 
+CTxManage::begin()
 {
   pinMode(m_nTxGatePin, OUTPUT);
   digitalWrite(m_nTxGatePin, LOW);   // default to receive mode
-
-//create a queue to handle gpio event from isr
-  txGate_queue = xQueueCreate(10, sizeof(uint32_t));
-  //start gpio task
-  xTaskCreate(TxGateConclude, "Tx Gate Conclude", 2048, NULL, configMAX_PRIORITIES-2, NULL);
 
   // use a hardware timer to terminate the Tx gate shortly after the completion of the 24 byte transmit packet
   m_HWTimer = timerBegin(2, 80, true);
   //set time in uS of Tx gate from when actual tx data bytes are loaded 
   // 240 bits @ 25000bps is 9.6ms, we'll use 9.7ms for a bit of tolerance
   timerAlarmWrite(m_HWTimer, 10000-300, false); 
-  // timerAttachInterrupt(m_HWTimer, &GateTerminate, true);     
-  timerAttachInterrupt(m_HWTimer, &GateTerminateCallback, true);     
-  
+  timerAttachInterrupt(m_HWTimer, &callbackGateTerminate, true);     
   timerAlarmDisable(m_HWTimer); //disable interrupt for now
   timerSetAutoReload(m_HWTimer, false);
 }
@@ -193,6 +167,8 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     m_TxFrame.setFan_Max(NVstore.getHeaterTuning().Fmax);
     m_TxFrame.setPump_Min(NVstore.getHeaterTuning().getPmin());
     m_TxFrame.setPump_Max(NVstore.getHeaterTuning().getPmax());
+    m_TxFrame.setTemperature_Min(NVstore.getHeaterTuning().Tmin);      // Minimum settable temperature
+    m_TxFrame.setTemperature_Max(NVstore.getHeaterTuning().Tmax);      // Maximum settable temperature
 
     float altitude;
     if(getTempSensor().getAltitude(altitude)) {  // if a BME280 is fitted
@@ -200,7 +176,6 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     }
     else {
       m_TxFrame.setAltitude(3500);  // default height - yes it is weird, but that's what the simple controllers send!
-//      m_TxFrame.setAltitude(0);  // default height - yes it is weird, but that's what the simple controllers send!
     }
 
     float tActual = getTemperatureSensor();
@@ -335,7 +310,6 @@ CTxManage::CheckTx(unsigned long timenow)
       // Tx gate remains held high
       // it is then brought low by the timer alarm callback, which also cancels m_nStartTime
       m_bTxPending = false;
-      m_nStartTime = 0;
       m_BlueWireSerial.write(m_TxFrame.Data, 24);  // write native binary values
       timerWrite(m_HWTimer, 0);       //reset tx gate timeout  
       timerAlarmEnable(m_HWTimer);    // timeout will cause cessation of the Tx gate

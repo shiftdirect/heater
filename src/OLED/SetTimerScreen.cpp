@@ -34,8 +34,18 @@
 #include "../../lib/RTClib/RTClib.h"
 #include "../RTC/TimerManager.h"
 #include "fonts/Arial.h"
+#include "../Utility/NVStorage.h"
 
 const char* briefDOW[] = { "S", "M", "T", "W", "T", "F", "S" };
+
+float calcPumpHz(int desired) {
+  const sHeaterTuning& tuning = NVstore.getHeaterTuning();
+
+  float ratio = float(desired - tuning.Tmin) / float(tuning.Tmax - tuning.Tmin);
+  float offset = ratio * float(tuning.Pmax - tuning.Pmin);
+  float PumpHz = tuning.Pmin + offset;
+  return PumpHz / 10.f;  // tuning is saved as Hz x10
+}
 
 CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance) : CUIEditScreen(display, mgr) 
 {
@@ -83,7 +93,7 @@ CSetTimerScreen::show()
   else {
     // start
     xPos = 18;
-    yPos = 16;
+    yPos = 15;
     _printMenuText(xPos, yPos, "On", false, eRightJustify);
     _printMenuText(xPos+17, yPos, ":");
     xPos += 6;
@@ -95,7 +105,7 @@ CSetTimerScreen::show()
 
     // stop
     xPos = 82;
-    yPos = 16;
+    yPos = 15;
     _printMenuText(xPos, yPos, "Off", false, eRightJustify);
     _printMenuText(xPos+17, yPos, ":");
     xPos += 6;
@@ -105,6 +115,13 @@ CSetTimerScreen::show()
     sprintf(str, "%02d", _timerInfo.stop.min);
     _printMenuText(xPos, yPos, str, _rowSel==1 && _colSel==3);
     
+    yPos = 39;
+    {
+      CTransientFont AF(_display, &arialItalic_7ptFontInfo);
+      sprintf(str, "( %.1fHz )", calcPumpHz(_timerInfo.temperature));
+      _printMenuText(_display.xCentre()+5, yPos, str, false, eLeftJustify);
+    }
+
     // control
     const char* msg;
     _printEnabledTimers();
@@ -118,23 +135,23 @@ CSetTimerScreen::show()
     _printMenuText(xPos, yPos, msg, _rowSel==1 && _colSel==5, eRightJustify);
 
     xPos = 18;
-    yPos = 40;
+    yPos = 41;
     float fTemp = _timerInfo.temperature;
     if(fTemp == 0) {
       strcpy(str, "Current set ");
+      strcat(str, NVstore.getUserSettings().degF ? "`F" : "`C");
     }
     else {
       if(NVstore.getUserSettings().degF) {
         fTemp = fTemp * 9 / 5 + 32;
-        sprintf(str, "%.0f", fTemp);
+        sprintf(str, "%.0f`F", fTemp);
       }
       else {
-        sprintf(str, "%.0f", fTemp);
+        sprintf(str, "%.0f`C", fTemp);
       }
     }
-    bool degF = NVstore.getUserSettings().degF;
-    strcat(str, degF ? "`F" : "`C");
-    _printMenuText(_display.xCentre(), yPos, str, _rowSel==1 && _colSel==6, eCentreJustify);
+    _printMenuText(_display.xCentre(), yPos, str, _rowSel==1 && _colSel==6, eRightJustify);
+
 
 
     // navigation line
@@ -428,3 +445,4 @@ CSetTimerScreen::_showConflict(const char* str)
   _printInverted(_display.xCentre(), 28, "Conflicts", true, eCentreJustify);
 }  
  
+

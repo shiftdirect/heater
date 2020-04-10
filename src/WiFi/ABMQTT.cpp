@@ -38,6 +38,7 @@
 #include "../Protocol/Protocol.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/TempSense.h"
+#include "freertos/queue.h"
 
 extern void DecodeCmd(const char* cmd, String& payload);
 
@@ -66,6 +67,7 @@ char statusTopic[128];
 
 #ifdef USE_RTOS_MQTTTIMER
 TimerHandle_t mqttReconnectTimer = NULL;
+QueueHandle_t mqttQueue = NULL;
 #else
 unsigned long mqttReconnect = 0;
 #endif
@@ -83,6 +85,16 @@ void connectToMqtt() {
     }
   }
 }
+
+#ifdef USE_RTOS_MQTTTIMER
+// timer callbacks are called from ISRL
+// this code MUST run from IRAM, and then safest to pass the event down thru a queue to user code
+void IRAM_ATTR callbackMQTTreconnect() {
+  BaseType_t awoken;
+  int flag = 1;
+  xQueueSendFromISR(mqttQueue, &flag, &awoken);
+}
+#endif
 
 void onMqttConnect(bool sessionPresent) 
 {
@@ -192,7 +204,10 @@ bool mqttInit()
 #ifdef USE_RTOS_MQTTTIMER      
 #ifndef BLOCK_MQTT_RECON
   if(mqttReconnectTimer==NULL)  
-    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(20000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+    // mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(20000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(20000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(callbackMQTTreconnect));
+  if(mqttQueue == NULL) 
+    mqttQueue = xQueueCreate(10, 4);
 #endif
 #else
   mqttReconnect = 0;
@@ -242,7 +257,7 @@ bool mqttInit()
       MQTTclient.onSubscribe(onMqttSubscribe);
       setCallbacks = true;
     }
-    // connection takes pplace via delayed start method
+    // connection takes place via delayed start method
     return true;
   }
   return false;
@@ -260,7 +275,7 @@ bool mqttPublishJSON(const char* str)
   return false;
 }
 
-void kickMQTT() {
+/*void kickMQTT() {
   if (WiFi.isConnected()) {
     if(NVstore.getMQTTinfo().enabled) {
 #ifdef USE_RTOS_MQTTTIMER      
@@ -270,7 +285,7 @@ void kickMQTT() {
 #endif
     }
   }
-}
+}*/
 
 void doMQTT()
 {
@@ -280,13 +295,18 @@ void doMQTT()
     if(tDelta > 0) {
       MQTTrestart = 0;
       mqttInit();
-      // connectToMqtt();
     }
   }
 
   // most MQTT is managed via callbacks!!!
   if(NVstore.getMQTTinfo().enabled) {
-#ifndef USE_RTOS_MQTTTIMER
+#ifdef USE_RTOS_MQTTTIMER
+    int flag;
+    if(xQueueReceive(mqttQueue, &flag, 0)) {
+      DebugPort.println("MQTT connect request via queue");
+      connectToMqtt();
+    }
+#else
     if(mqttReconnect) {
       long tDelta = millis() - mqttReconnect;
       if(tDelta > 0) {
@@ -299,6 +319,7 @@ void doMQTT()
 #ifdef USE_RTOS_MQTTTIMER
 #ifndef BLOCK_MQTT_RECON
     if (!MQTTclient.connected() && WiFi.isConnected() && !xTimerIsTimerActive(mqttReconnectTimer)) {
+        DebugPort.println("Starting MQTT timer");
        xTimerStart(mqttReconnectTimer, 0);
     }
 #endif

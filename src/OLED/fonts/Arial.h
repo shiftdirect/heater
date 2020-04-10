@@ -36,6 +36,16 @@ extern const uint8_t PROGMEM arial_8ptBoldBitmaps [];
 extern const FONT_INFO arial_8ptBoldFontInfo;
 extern const FONT_CHAR_INFO PROGMEM arial_8ptBoldDescriptors[];
 
+// Font data for Arial 7pt Italic
+extern const uint8_t PROGMEM arialItalic_7ptBitmaps [];
+extern const FONT_INFO arialItalic_7ptFontInfo;
+extern const FONT_CHAR_INFO PROGMEM arialItalic_7ptDescriptors[];
+
+// Font data for Arial 8pt Italic
+extern const uint8_t PROGMEM arialItalic_8ptBitmaps [];
+extern const FONT_INFO arialItalic_8ptFontInfo;
+extern const FONT_CHAR_INFO PROGMEM arialItalic_8ptDescriptors[];
+
 // Font data for Arial 12pt
 extern const uint8_t PROGMEM arial_12ptBitmaps [];
 extern const FONT_INFO arial_12ptFontInfo;

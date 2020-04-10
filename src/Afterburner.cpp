@@ -128,8 +128,8 @@
 
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 3;
-const char* FirmwareDate = "9 Apr 2020";
+const int FirmwareMinorRevision = 4;
+const char* FirmwareDate = "11 Apr 2020";
 
 
 #ifdef ESP32
@@ -155,7 +155,7 @@ void checkDebugCommands();
 void manageCyclicMode();
 void manageFrostMode();
 void manageHumidity();
-bool preemptCyclicMode();
+int  checkStartTemp();
 void doStreaming();
 void heaterOn();
 void heaterOff();
@@ -512,8 +512,6 @@ void setup() {
   
   RTC_Store.begin();
   FuelGauge.init(RTC_Store.getFuelGauge());
-//  demandDegC = RTC_Store.getDesiredTemp();
-//  demandPump = RTC_Store.getDesiredPump();
 //  bCyclicEngaged = RTC_Store.getCyclicEngaged();
   DebugPort.printf("Previous cyclic active = %d\r\n", RTC_Store.getCyclicEngaged());   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
@@ -521,7 +519,10 @@ void setup() {
   pHourMeter->init(bESP32PowerUpInit || RTC_Store.getBootInit());     // ensure persistent memory variable are reset after powerup, or OTA update
   RTC_Store.setBootInit(false);
 
-  reqDemand(RTC_Store.getDesiredTemp());  // bug fix: was not applying saved set point!
+  // bug fix: was not applying saved set points!
+  // reqDemand(RTC_Store.getDesiredTemp());  
+  CTimerManager::setWorkingTemperature(RTC_Store.getDesiredTemp());
+  CTimerManager::setWorkingPumpHz(RTC_Store.getDesiredPump());
 
   // Check for solo DS18B20
   // store it's serial number as the primary sensor
@@ -1023,22 +1024,30 @@ void manageHumidity()
   }
 }
 
-bool preemptCyclicMode()
+int checkStartTemp()
 {
-  const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
-  if(cyclic.Stop) {   // cyclic mode enabled, and user has started heater
-    int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
-    float deltaT = getTemperatureSensor() - getDemandDegC();
+  int stopDeltaT = 0;
+  int cyclicstop = NVstore.getUserSettings().cyclic.Stop;
+  if(cyclicstop) {   // cyclic mode enabled
+    stopDeltaT = cyclicstop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
+  }
 
-    // check if over temp, skip straight to suspend
-    if(deltaT > stopDeltaT) {
+  float deltaT = getTemperatureSensor() - getDemandDegC();
+
+  if(deltaT > stopDeltaT) {
+    if(cyclicstop) {
       DebugPort.printf("CYCLIC MODE: Skipping directly to suspend, deltaT > +%d\r\n", stopDeltaT);
       heaterOff();    // over temp - request heater stop
-      return true;
+      return -2;
+    }
+    else {
+      // too warm - deny start
+      return -1;
     }
   }
-  return false;
+  return 0;
 }
+
 
 
 void initBlueWireSerial()
@@ -1071,6 +1080,12 @@ bool validateFrame(const CProtocol& frame, const char* name)
 }
 
 
+// return values:
+// 0: OK
+// -1: too warm
+// -2: suspended
+// -3: Low Voltage Cutout
+// -4: Insufficent fuel
 int requestOn(bool checkTemp)
 {
   DebugPort.println("Start Request!");
@@ -1081,18 +1096,15 @@ int requestOn(bool checkTemp)
   bool LVCOK = 2 != SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
   if(bHasHtrData && LVCOK) {
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
-    RTC_Store.setFrostOn(false);  // cancel frost mode
-    if(!preemptCyclicMode()) {    // only start if below cyclic threshold when enabled
-      if(!checkTemp || getTemperatureSensor() < getDemandDegC())  { // skip start if warmer than desired
-        heaterOn();
-        return 0;
-      }
-      else {
-        return -1;   // too warm
-      }
+    RTC_Store.setFrostOn(false);         // cancel frost mode
+    // only start if below appropriate temperature threshold, raised for cyclic mode
+    int denied = checkStartTemp();
+    if(!checkTemp || !denied) {
+      heaterOn();
+      return 0;
     }
     else {
-      return -2;   // immediate cyclic suspend
+      return denied;
     }
   }
   else {
@@ -1139,7 +1151,7 @@ bool reqDemand(uint8_t newDemand, bool save)
     CTimerManager::setWorkingTemperature(newDemand);
   }
   else {
-    RTC_Store.setDesiredPump(newDemand);
+    CTimerManager::setWorkingPumpHz(newDemand);
   }
 
   ScreenManager.reqUpdate();
@@ -1153,7 +1165,7 @@ bool reqDemandDelta(int delta)
     newDemand = CTimerManager::getWorkingTemperature() + delta;
   }
   else {
-    newDemand = RTC_Store.getDesiredPump() + delta;
+    newDemand = CTimerManager::getWorkingPumpHz() + delta;
   }
 
   return reqDemand(newDemand);
@@ -1268,7 +1280,7 @@ void  setDemandDegC(uint8_t val)
 
 uint8_t getDemandPump() 
 {
-  return RTC_Store.getDesiredPump();
+  return CTimerManager::getWorkingPumpHz();
 }
 
 
@@ -1278,10 +1290,12 @@ float getTemperatureDesired()
     return getHeaterInfo().getHeaterDemand();
   }
   else {
-    if(getThermostatModeActive()) 
+    if(getThermostatModeActive()) {
       return CTimerManager::getWorkingTemperature();
-    else 
-      return RTC_Store.getDesiredPump();
+    }
+    else {
+      return CTimerManager::getWorkingPumpHz();  // timer manager will return pump Hz, as demand value, not real Hz
+    }
   }
 }
 

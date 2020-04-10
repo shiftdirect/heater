@@ -43,6 +43,8 @@ struct sBM280tuning {
 };
 
 struct sHeaterTuning : public CESP32_NVStorage {
+  const uint8_t Tmin = 8;
+  const uint8_t Tmax = 35;
   uint8_t   Pmin;
   uint8_t   Pmax;
   uint16_t  Fmin;

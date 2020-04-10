@@ -38,7 +38,7 @@ public:
   bool CheckTx(unsigned long timenow);
   void begin();
   const CProtocol& getFrame() const { return m_TxFrame; };
-  static void GateTerminate();
+  static void IRAM_ATTR callbackGateTerminate();
   void queueSysUpdate();  // use to implant NV settings into heater
 
 private:
