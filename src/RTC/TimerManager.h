@@ -52,13 +52,7 @@ public:
   static void getTimer(int idx, sTimer& timerInfo);
   static int  setTimer(sTimer& timerInfo);
   static bool hasTimerChanged() { return _timerChanged; };
-  static uint8_t getWorkingTemperature();
-  static uint8_t getWorkingPumpHz();
-  static void setWorkingTemperature(uint8_t newDegC);
-  static void setWorkingPumpHz(uint8_t newDemand);
 private:
-  static uint8_t _workingTemperature;
-  static uint8_t _workingPumpHz;
   static int _activeTimer;
   static int _activeDow;
   static int _prevState;

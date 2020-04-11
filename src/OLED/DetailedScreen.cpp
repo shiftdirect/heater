@@ -29,6 +29,7 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/FuelGauge.h"
 #include "../RTC/RTCStore.h"
+#include "../Utility/DemandManager.h"
 
 
 #define MINIFONT miniFontInfo
@@ -98,13 +99,13 @@ CDetailedScreen::show()
   float desiredT = 0;
   float fPump = 0;
   if((runstate && (runstate <= 5)) || (runstate == 9) || _showTarget) {  // state 9 = manufactured "heating glow plug"
-    if(getThermostatModeActive() && !getExternalThermostatModeActive()) {
-      desiredT = getTemperatureDesired();
+    if(CDemandManager::isThermostat() && !CDemandManager::isExtThermostatMode()) {
+      desiredT = CDemandManager::getDemand();
     }
     else {
       fPump = getHeaterInfo().getPump_Fixed();
       if(NVstore.getUserSettings().cyclic.isEnabled())
-        desiredT = getDemandDegC();
+        desiredT = CDemandManager::getDegC();
     }
   }
 
@@ -234,9 +235,8 @@ CDetailedScreen::keyHandler(uint8_t event)
       if(event & key_Down) {
         if(_keyRepeatCount > 1) {    // held Down - toggle thermo/fixed mode
           _keyRepeatCount = -1;      // prevent double handling
-          if(reqThermoToggle()) {
+          if(CDemandManager::toggleThermostat()) {
             _showTarget = millis() + 3500;
-            NVstore.save();
           } 
           else  _reqOEMWarning();
         }
@@ -256,11 +256,17 @@ CDetailedScreen::keyHandler(uint8_t event)
   if(event & keyReleased) {
     if(_keyRepeatCount == 0) {  // short Up press - lower target
       if(event & key_Up) {
-        if(reqDemandDelta(+1))  _showTarget = millis() + 3500;
+        if(CDemandManager::deltaDemand(+1))  {
+          _showTarget = millis() + 3500;
+          _ScreenManager.reqUpdate();
+        }
         else  _reqOEMWarning();
       }
       if(event & key_Down) {   // short Down press - lower target
-        if(reqDemandDelta(-1))  _showTarget = millis() + 3500;
+        if(CDemandManager::deltaDemand(-1)) {
+          _showTarget = millis() + 3500;
+          _ScreenManager.reqUpdate();
+        } 
         else  _reqOEMWarning();
       }
       if(event & key_Centre) {  // short Centre press - show target
@@ -333,8 +339,8 @@ CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump)
   // draw target setting
   // may be suppressed if not in normal start or run state
   if((fDesired != 0) || (fPump != 0)) {
-    if(getThermostatModeActive() && getExternalThermostatModeActive()) {
-      const char* pTimeStr = getExternalThermostatHoldTime();
+    if(CDemandManager::isThermostat() && CDemandManager::isExtThermostatMode()) {
+      const char* pTimeStr = CDemandManager::getExtThermostatHoldTime();
       if(pTimeStr) {
         CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
         _drawBitmap(X_TARGET_ICON-1, Y_TARGET_ICON+2, ExtThermo2IconInfo);   // draw external input #2 icon
@@ -343,7 +349,7 @@ CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump)
       }
       else
         _drawBitmap(X_TARGET_ICON-1, Y_TARGET_ICON+2, ExtThermo2IconInfo);   // draw external input #2 icon
-      if(getExternalThermostatOn()) 
+      if(CDemandManager::isExtThermostatOn()) 
         _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+10, CloseIconInfo);   // draw external input #2 icon
       else
         _drawBitmap(X_TARGET_ICON-2, Y_TARGET_ICON+10, OpenIconInfo);   // draw external input #2 icon

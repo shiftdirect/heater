@@ -28,7 +28,7 @@
 #include "BTC_JSON.h"
 #include "../WiFi/BTCWebServer.h"
 #include "FuelGauge.h"
-
+#include "DemandManager.h"
 
 // a class to track the blue wire receive / transmit states
 // class CommStates 
@@ -107,10 +107,11 @@ void DecodeCmd(const char* cmd, String& payload)
 {
   int val;
   if(strcmp("TempDesired", cmd) == 0) {
-    if( !reqDemand(payload.toInt(), false) ) {  // this request is blocked if OEM controller active
+    if( !CDemandManager::setDemand(payload.toInt()) ) {  // this request is blocked if OEM controller active
       resetJSONmoderator("TempDesired");
     }
   }
+/*
   else if(strcmp("Run", cmd) == 0) {
     refreshMQTT();
     if(payload == "1") {
@@ -128,20 +129,47 @@ void DecodeCmd(const char* cmd, String& payload)
       requestOff();
     }
   }
+*/
+  else if((strcmp("RunState", cmd) == 0) || (strcmp("Run", cmd) == 0)) {
+    refreshMQTT();
+    if(payload.toInt()) {
+      CDemandManager::eStartCode result = requestOn();
+      switch(result) {
+        case CDemandManager::eStartOK:       sendJSONtext("{\"StartString\":\"\"}"); break;
+        case CDemandManager::eStartTooWarm:  sendJSONtext("{\"StartString\":\"Ambient too warm!\"}"); break;
+        case CDemandManager::eStartSuspend:  sendJSONtext("{\"StartString\":\"Immediate Cyclic suspension!\"}"); break;
+        case CDemandManager::eStartLVC:      sendJSONtext("{\"StartString\":\"Battery below LVC!\"}"); break;
+        case CDemandManager::eStartLowFuel:  sendJSONtext("{\"StartString\":\"Fuel Empty!\"}"); break;
+      }
+    }
+    else {
+      requestOff();
+    }
+  }
   else if(strcmp("PumpMin", cmd) == 0) {
-    setPumpMin(payload.toFloat());
+    sHeaterTuning tuning = NVstore.getHeaterTuning();
+    tuning.setPmin(payload.toFloat());
+    NVstore.setHeaterTuning(tuning);
   }
   else if(strcmp("PumpMax", cmd) == 0) {
-    setPumpMax(payload.toFloat());
+    sHeaterTuning tuning = NVstore.getHeaterTuning();
+    tuning.setPmax(payload.toFloat());
+    NVstore.setHeaterTuning(tuning);
   }
   else if(strcmp("FanMin", cmd) == 0) {
-    setFanMin(payload.toInt());
+    sHeaterTuning tuning = NVstore.getHeaterTuning();
+    if(INBOUNDS(payload.toInt(), 500, 5000))
+    tuning.setFmin(payload.toInt());
+    NVstore.setHeaterTuning(tuning);
   }
   else if(strcmp("FanMax", cmd) == 0) {
-    setFanMax(payload.toInt());
+    sHeaterTuning tuning = NVstore.getHeaterTuning();
+    if(INBOUNDS(payload.toInt(), 500, 5000))
+      tuning.setFmax(payload.toInt());
+    NVstore.setHeaterTuning(tuning);
   }
   else if(strcmp("CyclicTemp", cmd) == 0) {
-    setDemandDegC(payload.toInt());  // directly set demandDegC
+    CDemandManager::setDegC(payload.toInt());  // directly set demandDegC
   }
   else if((strcmp("CyclicOff", cmd) == 0) || (strcmp("ThermostatOvertemp", cmd) == 0)) {
     sUserSettings us = NVstore.getUserSettings();
@@ -171,7 +199,7 @@ void DecodeCmd(const char* cmd, String& payload)
       NVstore.setUserSettings(settings);
   }
   else if(strcmp("Thermostat", cmd) == 0) {
-    if(!setThermostatMode(payload.toInt())) {  // this request is blocked if OEM controller active
+    if(!CDemandManager::setThermostatMode(payload.toInt(), false)) {  // this request is blocked if OEM controller active
       resetJSONmoderator("ThermoStat");   
     }
   }
@@ -183,7 +211,7 @@ void DecodeCmd(const char* cmd, String& payload)
   }
   else if(strcmp("NVsave", cmd) == 0) {
     if(payload.toInt() == 8861)
-      saveNV();
+      NVstore.save();
   }
   else if(strcmp("Watchdog", cmd) == 0) {
     doJSONwatchdog(payload.toInt());
@@ -214,7 +242,9 @@ void DecodeCmd(const char* cmd, String& payload)
     refreshMQTT();
   }
   else if(strcmp("SystemVoltage", cmd) == 0) {
-    setSystemVoltage(payload.toFloat());
+    sHeaterTuning tuning = NVstore.getHeaterTuning();
+    tuning.setSysVoltage(payload.toFloat());
+    NVstore.setHeaterTuning(tuning);
   }
   else if(strcmp("TimerDays", cmd) == 0) {
     // value encoded as "ID Days,Days"
@@ -243,7 +273,9 @@ void DecodeCmd(const char* cmd, String& payload)
     resetJSONTimerModerator(payload.toInt());
   }
   else if(strcmp("FanSensor", cmd) == 0) {
-    setFanSensor(payload.toInt());
+    sHeaterTuning tuning = NVstore.getHeaterTuning();
+    tuning.setFanSensor(payload.toInt());
+    NVstore.setHeaterTuning(tuning);
   }
   else if(strcmp("IQuery", cmd) == 0) {
     resetJSONIPmoderator();   // force IP params to be sent

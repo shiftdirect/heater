@@ -38,13 +38,10 @@
 #include "../Protocol/Protocol.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/TempSense.h"
-#include "freertos/queue.h"
+#include "../Utility/DemandManager.h"
+#include "freertos/freertos.h"
 
 extern void DecodeCmd(const char* cmd, String& payload);
-
-#define USE_RTOS_MQTTTIMER
-//#define USE_LOCAL_MQTTSTRINGS
-//#define MQTT_DBG_RAWBYTES
 
 //IPAddress testMQTTserver(5, 196, 95, 208);   // test.mosquito.org
 //IPAddress testMQTTserver(18, 194, 98, 249);  // broker.hivemq.com
@@ -52,32 +49,18 @@ extern void DecodeCmd(const char* cmd, String& payload);
 AsyncMqttClient MQTTclient;
 char topicnameJSONin[128];
 char topicnameCmd[128];
-CModerator MQTTmoderator;  // for basic MQTT interface
+CModerator BasicMQTTmoderator;  // for basic MQTT interface
 unsigned long MQTTrestart = 0;
+char statusTopic[128];
+TimerHandle_t mqttReconnectTimer = NULL;
+SemaphoreHandle_t mqttSemaphore = NULL;
 
 void subscribe(const char* topic);
 
 
-#ifdef USE_LOCAL_MQTTSTRINGS
-char mqttHost[128];
-char mqttUser[32];
-char mqttPass[32];
-#endif
-char statusTopic[128];
-
-#ifdef USE_RTOS_MQTTTIMER
-TimerHandle_t mqttReconnectTimer = NULL;
-QueueHandle_t mqttQueue = NULL;
-#else
-unsigned long mqttReconnect = 0;
-#endif
 
 void connectToMqtt() {
-#ifdef USE_RTOS_MQTTTIMER
   xTimerStop(mqttReconnectTimer, 0);
-#else
-  mqttReconnect = 0;
-#endif
   if(!MQTTclient.connected()) {
     DebugPort.println("MQTT: Connecting...");
     if(NVstore.getMQTTinfo().enabled) {
@@ -86,24 +69,16 @@ void connectToMqtt() {
   }
 }
 
-#ifdef USE_RTOS_MQTTTIMER
 // timer callbacks are called from ISRL
-// this code MUST run from IRAM, and then safest to pass the event down thru a queue to user code
+// ALL callback code MUST run from IRAM, safest to pass the event down thru a queue to user code
 void IRAM_ATTR callbackMQTTreconnect() {
   BaseType_t awoken;
-  int flag = 1;
-  xQueueSendFromISR(mqttQueue, &flag, &awoken);
+  xSemaphoreGiveFromISR(mqttSemaphore, &awoken);
 }
-#endif
 
 void onMqttConnect(bool sessionPresent) 
 {
-#ifdef USE_RTOS_MQTTTIMER
   xTimerStop(mqttReconnectTimer, 0);
-#else
-  mqttReconnect = 0;
-#endif
-
 
   DebugPort.println("MQTT: Connected to broker.");
 //  DebugPort.printf("Session present: %d\r\n", sessionPresent);
@@ -137,12 +112,6 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 {
 	// handle message arrived
   DebugPort.printf("MQTT: onMessage %s ", topic);
-#ifdef MQTT_DBG_RAWBYTES
-  for(int i=0; i<len; i++) {
-    DebugPort.printf("0x%02X ", payload[i]);
-  }
-  DebugPort.println();
-#endif
   // string may not neccesarily be null terminated, make sure it is
   char szPayload[1024];
   int maxlen = sizeof(szPayload)-1;
@@ -162,7 +131,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }
   else if(strcmp(topic, statusTopic) == 0) {  // check if incoming topic is our general status
     if(strcmp(szPayload, "1") == 0) {
-       // MQTTmoderator.reset();
+       // BasicMQTTmoderator.reset();
       MQTTclient.publish(statusTopic, NVstore.getMQTTinfo().qos, true, "online");
     }
   }
@@ -184,11 +153,7 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 
   if (WiFi.isConnected()) {
     if(NVstore.getMQTTinfo().enabled) {
-#ifdef USE_RTOS_MQTTTIMER      
       xTimerStart(mqttReconnectTimer, 0);
-#else
-      mqttReconnect = millis() + 5000;
-#endif
     }
   }
 }
@@ -201,16 +166,12 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
 
 bool mqttInit() 
 {
-#ifdef USE_RTOS_MQTTTIMER      
 #ifndef BLOCK_MQTT_RECON
   if(mqttReconnectTimer==NULL)  
-    // mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(20000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
     mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(20000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(callbackMQTTreconnect));
-  if(mqttQueue == NULL) 
-    mqttQueue = xQueueCreate(10, 4);
-#endif
-#else
-  mqttReconnect = 0;
+  if(mqttSemaphore == NULL) {
+    mqttSemaphore = xSemaphoreCreateBinary();
+  }
 #endif
   MQTTrestart = 0;
 
@@ -229,25 +190,13 @@ bool mqttInit()
 
   const sMQTTparams params = NVstore.getMQTTinfo();
   if(params.enabled) {
-#ifdef USE_LOCAL_MQTTSTRINGS
-    strncpy(mqttHost, params.host, 127);
-    strncpy(mqttUser, params.username, 31);
-    strncpy(mqttPass, params.password, 31);
-    mqttHost[127] = 0;
-    mqttUser[31] = 0;
-    mqttPass[31] = 0;
-    DebugPort.printf("MQTT: setting broker to %s:%d\r\n", mqttHost, params.port);
-    DebugPort.printf("MQTT: %s/%s\r\n", mqttUser, mqttPass);
-    MQTTclient.setServer(mqttHost, params.port);
-    MQTTclient.setCredentials(mqttUser, mqttPass);
-#else
     // the client only stores a pointer - this must not be a volatile memory location! 
     // - NO STACK vars!!!
     DebugPort.printf("MQTT: setting broker to %s:%d\r\n", NVstore.getMQTTinfo().host, NVstore.getMQTTinfo().port);
     MQTTclient.setServer(NVstore.getMQTTinfo().host, NVstore.getMQTTinfo().port);
     DebugPort.printf("MQTT: %s/%s\r\n", NVstore.getMQTTinfo().username, NVstore.getMQTTinfo().password);
     MQTTclient.setCredentials(NVstore.getMQTTinfo().username, NVstore.getMQTTinfo().password);
-#endif
+
     static bool setCallbacks = false;
     // callbacks should only be added once (vector of callbacks in client!)
     if(!setCallbacks) {
@@ -275,18 +224,6 @@ bool mqttPublishJSON(const char* str)
   return false;
 }
 
-/*void kickMQTT() {
-  if (WiFi.isConnected()) {
-    if(NVstore.getMQTTinfo().enabled) {
-#ifdef USE_RTOS_MQTTTIMER      
-      xTimerStart(mqttReconnectTimer, 0);
-#else
-      mqttReconnect = millis() + 5000;
-#endif
-    }
-  }
-}*/
-
 void doMQTT()
 {
   // manage restart of MQTT
@@ -300,32 +237,17 @@ void doMQTT()
 
   // most MQTT is managed via callbacks!!!
   if(NVstore.getMQTTinfo().enabled) {
-#ifdef USE_RTOS_MQTTTIMER
-    int flag;
-    if(xQueueReceive(mqttQueue, &flag, 0)) {
-      DebugPort.println("MQTT connect request via queue");
+    
+    // test if MQTT start timeout has expired
+    if(xSemaphoreTake(mqttSemaphore, 0)) {
+      DebugPort.println("MQTT connect request via semaphore");
       connectToMqtt();
     }
-#else
-    if(mqttReconnect) {
-      long tDelta = millis() - mqttReconnect;
-      if(tDelta > 0) {
-        mqttReconnect = 0;
-        connectToMqtt();
-      }
-    }
-#endif
 
-#ifdef USE_RTOS_MQTTTIMER
 #ifndef BLOCK_MQTT_RECON
     if (!MQTTclient.connected() && WiFi.isConnected() && !xTimerIsTimerActive(mqttReconnectTimer)) {
-        DebugPort.println("Starting MQTT timer");
-       xTimerStart(mqttReconnectTimer, 0);
-    }
-#endif
-#else
-    if (!MQTTclient.connected() && WiFi.isConnected() && mqttReconnect==0) {
-      mqttReconnect = millis() + 5000;
+      DebugPort.println("Starting MQTT timer");
+      xTimerStart(mqttReconnectTimer, 0);
     }
 #endif
 
@@ -341,7 +263,7 @@ bool isMQTTconnected() {
 void pubTopic(const char* name, int value) 
 {
   if(MQTTclient.connected()) {
-    if(MQTTmoderator.shouldSend(name, value)) {
+    if(BasicMQTTmoderator.shouldSend(name, value)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
       sprintf(topic, "%s/sts/%s", getTopicPrefix(), name);
@@ -355,7 +277,7 @@ void pubTopic(const char* name, int value)
 void pubTopic(const char* name, float value) 
 {
   if(MQTTclient.connected()) {
-    if(MQTTmoderator.shouldSend(name, value)) {
+    if(BasicMQTTmoderator.shouldSend(name, value)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
       sprintf(topic, "%s/sts/%s", getTopicPrefix(), name);
@@ -369,7 +291,7 @@ void pubTopic(const char* name, float value)
 void pubTopic(const char* name, const char* payload) 
 {
   if(MQTTclient.connected()) {
-    if(MQTTmoderator.shouldSend(name, payload)) {
+    if(BasicMQTTmoderator.shouldSend(name, payload)) {
       const sMQTTparams params = NVstore.getMQTTinfo();
       char topic[128];
       sprintf(topic, "%s/sts/%s", getTopicPrefix(), name);
@@ -415,11 +337,11 @@ void updateMQTT()
         pubTopic("Temp4Current", "n/a"); 
     }
   }
-  pubTopic("TempDesired", getTemperatureDesired()); 
+  pubTopic("TempDesired", CDemandManager::getDemand()); 
   pubTopic("TempBody", getHeaterInfo().getTemperature_HeatExchg()); 
   pubTopic("ErrorState", getHeaterInfo().getErrState());
   pubTopic("ErrorString", getHeaterInfo().getErrStateStrEx()); // verbose it up!
-  pubTopic("Thermostat", getThermostatModeActive());
+  pubTopic("Thermostat", CDemandManager::isThermostat());
   pubTopic("PumpFixed", getHeaterInfo().getPump_Fixed() );
   pubTopic("PumpActual", getHeaterInfo().getPump_Actual());
   pubTopic("FanRPM", getFanSpeed());
@@ -433,7 +355,7 @@ void updateMQTT()
 
 void refreshMQTT()
 {
-  MQTTmoderator.reset();
+  BasicMQTTmoderator.reset();
 }
 
 void subscribe(const char* topic)

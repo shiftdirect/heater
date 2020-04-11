@@ -34,6 +34,7 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/helpers.h"
 #include "../RTC/RTCStore.h"
+#include "../Utility/DemandManager.h"
 
 // main array to hold information of which timer is active at any particular minute of the week
 // LSBs are used for the timerID + 1
@@ -44,8 +45,6 @@ int  CTimerManager::_activeTimer = 0;
 int  CTimerManager::_activeDow = 0;
 int  CTimerManager::_nextTimer = 0;
 int  CTimerManager::_nextStart = 0;
-uint8_t CTimerManager::_workingTemperature = 22;
-uint8_t CTimerManager::_workingPumpHz = 22;
 bool CTimerManager::_timerChanged = false;
 
 #define SET_MAPS() {                         \
@@ -271,11 +270,8 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
       // get timer settings
       int ID = (newID & 0xf) - 1;
       NVstore.getTimerInfo(ID, timer);
-      if (timer.temperature) {
-        _workingTemperature = timer.temperature;
-        _workingPumpHz = timer.temperature;
-      }
-      DebugPort.printf("Start of timer interval, starting heater @ %dC\r\n", _workingTemperature);
+      CDemandManager::setFromTimer(timer.temperature);
+      DebugPort.printf("Start of timer interval, starting heater @ %dC\r\n", timer.temperature);
       requestOn();
       _activeDow = dow;   // dow when timer interval start was detected
       retval = 1;
@@ -285,9 +281,8 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
       if(!RTC_Store.getFrostOn())
         requestOff();
       retval = 2;
-      _workingTemperature = RTC_Store.getDesiredTemp();
-      _workingPumpHz = RTC_Store.getDesiredPump();
-      DebugPort.printf("End of timer interval, stopping heater & %dC\r\n", _workingTemperature);
+      CDemandManager::reload();
+      DebugPort.printf("End of timer interval, stopping heater @ %dC\r\n", CDemandManager::getDegC());
     }
     _activeTimer = newID;
   }
@@ -426,49 +421,3 @@ CTimerManager::createOneShotMap(sTimer& timer, uint16_t* pTimerMap, uint16_t* pT
   return false;
 }
 
-// Concept of timer working temperature is that when a timer runs, it installs 
-// the programmed temperature for that timer as the new set point.
-// When the timer stops, it reverts to the usual user set temperature.
-//
-// BUT, if a timer is running, the working temperature is updated with the new demand
-// and the user temperature is also changed accordingly. 
-// The programmed timer temeprature is not altered and wil lrecur in the future when that time runs.
-uint8_t
-CTimerManager::getWorkingTemperature()
-{
-  return _workingTemperature;
-}
-
-void 
-CTimerManager::setWorkingTemperature(uint8_t newDegC)
-{
-  if(getThermostatModeActive()) {
-    _workingTemperature = newDegC;
-    RTC_Store.setDesiredTemp(newDegC);
-  }
-  else {
-    _workingPumpHz = newDegC;
-    RTC_Store.setDesiredPump(newDegC);
-  }
-}
-
-// Concept of timer working pump Hz is that when a timer runs, it installs 
-// the programmed temperature for that timer as the new set point.
-// That is then converted by the heater into Hz
-// When the timer stops, it reverts to the usual user set temperature.
-//
-// BUT, if a timer is running, the working temperature is updated with the new demand
-// and the user temperature is also changed accordingly. 
-// The programmed timer temeprature is not altered and wil lrecur in the future when that time runs.
-uint8_t
-CTimerManager::getWorkingPumpHz()
-{
-  return _workingPumpHz;
-}
-
-void 
-CTimerManager::setWorkingPumpHz(uint8_t newDemand)
-{
-  _workingPumpHz = newDemand;
-  RTC_Store.setDesiredPump(newDemand);
-}

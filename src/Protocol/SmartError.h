@@ -28,7 +28,7 @@ class CSmartError {
 public: 
   CSmartError();
   void reset();
-  void inhibit();
+  void inhibit(bool reseterror=false);
   void monitor(const CProtocol& heaterFrame);
   void monitor(uint8_t runstate);
   int checkVolts(float volts, float plugI, bool throwfault=true);  // 0 = OK, 1 = within 0.5V of LVC, 2 = under LVC

@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include "ScreenHeader.h"
+#include "../Utility/DemandManager.h"
 
 class C128x64_OLED;
 class CScreenManager;
@@ -31,7 +32,7 @@ class CBasicScreen : public CScreenHeader
   unsigned long _showSetModeTime;
   unsigned long _showModeTime;
   unsigned long _showAbortTime;
-  int _abortreason;
+  CDemandManager::eStartCode _abortreason;
   uint8_t _bShowOtherSensors;
   uint8_t _feedbackType;
   uint8_t _nModeSel;

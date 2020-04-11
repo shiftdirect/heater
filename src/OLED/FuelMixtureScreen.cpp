@@ -260,9 +260,11 @@ CFuelMixtureScreen::_adjustSetting(int dir)
 void
 CFuelMixtureScreen::_saveNV()
 {
-  setPumpMin(adjPump[0]);
-  setPumpMax(adjPump[1]);
-  setFanMin(adjFan[0]);
-  setFanMax(adjFan[1]);
-  saveNV();
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.setPmin(adjPump[0]);
+  tuning.setPmax(adjPump[1]);
+  tuning.setFmin(adjFan[0]);
+  tuning.setFmax(adjFan[1]);
+  NVstore.setHeaterTuning(tuning);
+  NVstore.save();
 }

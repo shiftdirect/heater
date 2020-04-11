@@ -43,16 +43,17 @@ CSmartError::reset()
 // we use inhibit when we manually command the heater off during preheat
 // otherwise we'll register an ignition fail event
 void
-CSmartError::inhibit()
+CSmartError::inhibit(bool reseterror)
 {
   _bInhibit = true;
-//  m_Error = 0;
+  if(reseterror)
+    _Error = 0;
 }
 
 // accept a fresh heater frame
 // inpsect the advertised run state, tracking when and how it transitions out
 // of preheat especially.
-// abnormal transitions are registered and becoem our smart m_Error
+// abnormal transitions are registered and becoem our smart '_Error'
 // In addition, the hetaer frame has the ErrState updated to track the 
 // smart error, providing no heater error exists!
 void

@@ -88,6 +88,12 @@ sHeaterTuning::setPmax(float val)
   Pmax = cVal;
 }
 
+void 
+sHeaterTuning::setFanSensor(int val)
+{
+  if(INBOUNDS(val, 1, 2))
+    fanSensor = val;
+}
 
 void 
 sHeaterTuning::setSysVoltage(float fVal)
@@ -97,6 +103,13 @@ sHeaterTuning::setSysVoltage(float fVal)
     sysVoltage = val;
   }
 }
+
+void 
+sHeaterTuning::setGlowDrive(uint8_t val) {
+  if(INBOUNDS(val, 1, 6))
+    glowDrive = val;
+} 
+
 
 float  
 sHeaterTuning::getLVC() const

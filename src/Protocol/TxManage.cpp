@@ -22,7 +22,8 @@
 #include "TxManage.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/helpers.h"
-#include "freertos/queue.h"
+#include "../Utility/DemandManager.h"
+#include "freertos/freertos.h"
 
 //#define DEBUG_THERMOSTAT
 
@@ -181,19 +182,19 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     float tActual = getTemperatureSensor();
     int8_t s8Temp = (int8_t)(tActual + 0.5);
     m_TxFrame.setTemperature_Actual(s8Temp);  // use current temp, for now
-    m_TxFrame.setHeaterDemand(getDemandDegC());
+    m_TxFrame.setHeaterDemand(CDemandManager::getDegC());
     m_TxFrame.setThermostatModeProtocol(1);  // assume using thermostat control for now
 
-    if(!getThermostatModeActive()) {
+    if(!CDemandManager::isThermostat()) {
       m_TxFrame.setThermostatModeProtocol(0);  // not using any form of thermostat control
-      m_TxFrame.setHeaterDemand(getDemandPump());  // set fixed Hz demand instead
+      m_TxFrame.setHeaterDemand(CDemandManager::getPumpHz());  // set fixed Hz demand instead
       m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
     } 
     else if(NVstore.getUserSettings().ThermostatMethod) {
       uint8_t ThermoMode = NVstore.getUserSettings().ThermostatMethod;  // get the METHOD of thermostat control
       float Window = NVstore.getUserSettings().ThermostatWindow;
       float tCurrent = getTemperatureSensor();
-      float tDesired = float(getDemandDegC());
+      float tDesired = float(CDemandManager::getDegC());
       float tDelta = tCurrent - tDesired;
       float fTemp;
 #ifdef DEBUG_THERMOSTAT
@@ -203,8 +204,8 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
       switch(ThermoMode) {
 
         case 3:  // GPIO controlled thermostat mode
-          if(getExternalThermostatModeActive()) {
-            if(getExternalThermostatOn()) { 
+          if(CDemandManager::isExtThermostatMode()) {
+            if(CDemandManager::isExtThermostatOn()) { 
               s8Temp = m_TxFrame.getTemperature_Max();  // input active (contact closure) - max burn
             }
             else {
@@ -232,11 +233,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           s8Temp = (int8_t)(tActual + 0.5);  // use rounded actual unless within window
           if(fabs(tDelta) < Window) {
             // hold at desired if inside window
-            s8Temp = getDemandDegC();   
+            s8Temp = CDemandManager::getDegC();   
           }
           else if(fabs(tDelta) <= 1.0) {
             // force outside if delta is <= 1 but greater than window
-            s8Temp = getDemandDegC() + ((tDelta > 0) ? 1 : -1); 
+            s8Temp = CDemandManager::getDegC() + ((tDelta > 0) ? 1 : -1); 
           }
           m_TxFrame.setTemperature_Actual(s8Temp);  
 #ifdef DEBUG_THERMOSTAT

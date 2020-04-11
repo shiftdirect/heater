@@ -32,6 +32,7 @@
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "../Protocol/Protocol.h"
+#include "../Utility/NVStorage.h"
 
 
 CInheritSettingsScreen::CInheritSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordScreen(display, mgr) 
@@ -122,13 +123,15 @@ CInheritSettingsScreen::keyHandler(uint8_t event)
 void
 CInheritSettingsScreen::_copySettings()
 {
-  setPumpMin(getHeaterInfo().getPump_Min());
-  setPumpMax(getHeaterInfo().getPump_Max());
-  setFanMin(getHeaterInfo().getFan_Min());
-  setFanMax(getHeaterInfo().getFan_Max());
-  setFanSensor(getHeaterInfo().getFan_Sensor());
-  setSystemVoltage(getHeaterInfo().getSystemVoltage());
-  saveNV();
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.setPmin(getHeaterInfo().getPump_Min());
+  tuning.setPmax(getHeaterInfo().getPump_Max());
+  tuning.setFmin(getHeaterInfo().getFan_Min());
+  tuning.setFmax(getHeaterInfo().getFan_Max());
+  tuning.fanSensor = getHeaterInfo().getFan_Sensor();
+  tuning.setSysVoltage(getHeaterInfo().getSystemVoltage());
+  NVstore.setHeaterTuning(tuning);
+  NVstore.save();
   _enableStoringMessage();
   _nAdoptSettings = 0;  // will cause return to main menu after storing message expires
 }

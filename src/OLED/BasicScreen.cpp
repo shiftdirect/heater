@@ -70,10 +70,11 @@ CBasicScreen::show()
     long tDelta = millis() - _showAbortTime;
     if(tDelta < 0) {
       switch(_abortreason) {
-        case -1: strcpy(msg, "Ignored - too warm!"); break;
-        case -2: strcpy(msg, "Suspended - too warm!"); break;
-        case -3: strcpy(msg, "Ignored - low voltage!"); break;
-        case -4: strcpy(msg, "Ignored - fuel empty!"); break;
+        case CDemandManager::eStartOK:      strcpy(msg, "Start OK!"); break;
+        case CDemandManager::eStartTooWarm: strcpy(msg, "Ignored - too warm!"); break;
+        case CDemandManager::eStartSuspend: strcpy(msg, "Suspended - too warm!"); break;
+        case CDemandManager::eStartLVC:     strcpy(msg, "Ignored - low voltage!"); break;
+        case CDemandManager::eStartLowFuel: strcpy(msg, "Ignored - fuel empty!"); break;
       }
       // centre message at bottom of screen
       _printMenuText(_display.xCentre(), _display.height() - _display.textHeight(), msg, false, eCentreJustify);
@@ -120,12 +121,12 @@ CBasicScreen::show()
           case 0:
             // Show current heat demand setting
 
-            if(getThermostatModeActive()) {
-              if(getExternalThermostatModeActive()) {
+            if(CDemandManager::isThermostat()) {
+              if(CDemandManager::isExtThermostatMode()) {
                 sprintf(msg, "External @ %.1fHz", getHeaterInfo().getPump_Fixed());
               }
               else {
-                float fTemp = getTemperatureDesired();
+                float fTemp = CDemandManager::getDegC();
                 if(NVstore.getUserSettings().degF) {
                   fTemp = fTemp * 9 / 5 + 32;
                   sprintf(msg, "Setpoint = %.0f`F", fTemp);
@@ -267,7 +268,7 @@ CBasicScreen::keyHandler(uint8_t event)
           repeatCount = -1;        // prevent double handling
           if(NVstore.getUserSettings().menuMode < 2) {
             _showModeTime = millis() + 5000;
-            _nModeSel = getThermostatModeActive() ? 0 : 1;
+            _nModeSel = CDemandManager::isThermostat() ? 0 : 1;
           }
         }
       }
@@ -299,7 +300,7 @@ CBasicScreen::keyHandler(uint8_t event)
             if(repeatCount > 3) {
               repeatCount = -1;
               _abortreason = requestOn();
-              if(_abortreason) {
+              if(_abortreason != CDemandManager::eStartOK) {
                 _showAbortTime = millis() + 5000;
               }
             }
@@ -317,7 +318,7 @@ CBasicScreen::keyHandler(uint8_t event)
       // release DOWN key to reduce set demand, provided we are not in mode select
       if(NVstore.getUserSettings().menuMode < 2) {
         if(event & key_Down) {
-          if(reqDemandDelta(-1)) {
+          if(CDemandManager::deltaDemand(-1)) {
             _showSetModeTime = millis() + 5000;
             _bShowOtherSensors = 0;
             _feedbackType = 0;
@@ -328,7 +329,7 @@ CBasicScreen::keyHandler(uint8_t event)
         }
         // release UP key to increase set demand, provided we are not in mode select
         if(event & key_Up) {
-          if(reqDemandDelta(+1)) {
+          if(CDemandManager::deltaDemand(+1)) {
             _showSetModeTime = millis() + 5000;
             _bShowOtherSensors = 0;
             _feedbackType = 0;
@@ -350,8 +351,7 @@ CBasicScreen::keyHandler(uint8_t event)
           else {
             _showModeTime = millis() + 5000;
             _nModeSel = 0;
-            setThermostatMode(1);    // set the new mode
-            NVstore.save();
+            CDemandManager::setThermostatMode(1);    // set the new mode
           }
           _ScreenManager.reqUpdate();
         }
@@ -367,8 +367,7 @@ CBasicScreen::keyHandler(uint8_t event)
           else {
             _showModeTime = millis() + 5000;
             _nModeSel = 1;
-            setThermostatMode(0);    // set the new mode
-            NVstore.save();
+            CDemandManager::setThermostatMode(0);    // set the new mode
           }
           _ScreenManager.reqUpdate();
         }

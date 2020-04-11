@@ -136,7 +136,7 @@ CPrimingScreen::show()
   }
   else {
     // follow actual heater settings
-    if(getThermostatModeActive()) {
+    if(CDemandManager::isThermostat()) {
       _drawBitmap(loc.xPos, midline, NVstore.getUserSettings().degF ? ThermostatDegFIconInfo : ThermostatDegCIconInfo);
     }
     else {
@@ -243,7 +243,7 @@ CPrimingScreen::keyHandler(uint8_t event)
           _colSel = 0;
           switch(_paramSel) {
             case 1:
-              _colSel = getThermostatModeActive() ? 0 : 1;              
+              _colSel = CDemandManager::isThermostat() ? 0 : 1;              
               break;
             case 2:
               _colSel = NVstore.getUserSettings().degF ? 1 : 0;
@@ -270,7 +270,7 @@ CPrimingScreen::keyHandler(uint8_t event)
               _colSel = NVstore.getUserSettings().degF ? 1 : 0;
               break;
             case 1:
-              _colSel = getThermostatModeActive() ? 0 : 1;              
+              _colSel = CDemandManager::isThermostat() ? 0 : 1;              
               break;
           }
           break;
@@ -285,19 +285,17 @@ CPrimingScreen::keyHandler(uint8_t event)
         switch(_paramSel) {
           case 0:
             _paramSel = 1;
-            _colSel = getThermostatModeActive() ? 0 : 1;              
+            _colSel = CDemandManager::isThermostat() ? 0 : 1;              
             break;
           case 1: 
             _colSel++; 
             WRAPLIMITS(_colSel, 0, 1);
-            setThermostatMode(_colSel == 0);
-            saveNV();
+            CDemandManager::setThermostatMode(_colSel == 0);
             break;
           case 2: 
             _colSel++; 
             WRAPLIMITS(_colSel, 0, 1);
-            setDegFMode(_colSel != 0);
-            saveNV();
+            CDemandManager::setDegFMode(_colSel != 0);
             break;
           case 3: 
             if(_resetConfirm) {
@@ -330,14 +328,12 @@ CPrimingScreen::keyHandler(uint8_t event)
           case 1: 
             _colSel--;
             WRAPLIMITS(_colSel, 0, 1);
-            setThermostatMode(_colSel == 0);
-            saveNV();
+            CDemandManager::setThermostatMode(_colSel == 0);
             break;
           case 2: 
             _colSel--;
             WRAPLIMITS(_colSel, 0, 1);
-            setDegFMode(_colSel != 0);
-            saveNV();
+            CDemandManager::setDegFMode(_colSel != 0);
             break;
           case 3: 
             _colSel--; 

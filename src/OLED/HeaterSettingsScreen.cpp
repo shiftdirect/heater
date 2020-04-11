@@ -231,8 +231,10 @@ CHeaterSettingsScreen::_adjust(int dir)
 void
 CHeaterSettingsScreen::_saveNV()
 {
-  setSystemVoltage(float(_sysVoltage));
-  setFanSensor(_fanSensor);
-  setGlowDrive(_glowDrive);
-  saveNV();
+  sHeaterTuning tuning = NVstore.getHeaterTuning();
+  tuning.setSysVoltage(float(_sysVoltage));
+  tuning.setFanSensor(_fanSensor);
+  tuning.setGlowDrive(_glowDrive);
+  NVstore.setHeaterTuning(tuning);
+  NVstore.save();
 }

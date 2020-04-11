@@ -38,6 +38,7 @@
 #include "HourMeter.h"
 #include "TempSense.h"
 #include "BoardDetect.h"
+#include "DemandManager.h"
 
 extern CModerator MQTTmoderator;
 
@@ -166,7 +167,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
       }
     }
   }
-  bSend |= moderator.addJson("TempDesired", getTemperatureDesired(), root); 
+  bSend |= moderator.addJson("TempDesired", CDemandManager::getDemand(), root); 
 	bSend |= moderator.addJson("TempMode", NVstore.getUserSettings().degF, root); 
   if(NVstore.getUserSettings().menuMode < 2) {
     bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
@@ -176,7 +177,7 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
     bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
     bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
     bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!
-    bSend |= moderator.addJson("Thermostat", getThermostatModeActive(), root );
+    bSend |= moderator.addJson("Thermostat", CDemandManager::isThermostat(), root );
     bSend |= moderator.addJson("PumpFixed", getHeaterInfo().getPump_Fixed(), root );
     bSend |= moderator.addJson("PumpMin", getHeaterInfo().getPump_Min(), root );
     bSend |= moderator.addJson("PumpMax", getHeaterInfo().getPump_Max(), root );
@@ -214,7 +215,7 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     if(stop) stop++;  // deliver effective threshold, not internal working value
     bSend |= moderator.addJson("ThermostatOvertemp", stop, root); 
     bSend |= moderator.addJson("ThermostatUndertemp", NVstore.getUserSettings().cyclic.Start, root); 
-    bSend |= moderator.addJson("CyclicTemp", getDemandDegC(), root);             // actual pivot point for cyclic mode
+    bSend |= moderator.addJson("CyclicTemp", CDemandManager::getDegC(), root);             // actual pivot point for cyclic mode, follows desired temp in thermostat mode
     bSend |= moderator.addJson("CyclicOff", stop, root);                         // threshold of over temp for cyclic mode
     bSend |= moderator.addJson("CyclicOn", NVstore.getUserSettings().cyclic.Start, root);  // threshold of under temp for cyclic mode
     bSend |= moderator.addJson("FrostOn", NVstore.getUserSettings().FrostOn, root);        // temp drops below this, auto start - 0 = disable
@@ -306,7 +307,7 @@ bool makeJSONStringGPIO(CModerator& moderator, char* opStr, int len)
       bSend |= moderator.addJson("GPmodeAnlg", GPIOalgNames[info.algMode], root); 
     }
     bSend |= moderator.addJson("ExtThermoTmout", (uint32_t)NVstore.getUserSettings().ExtThermoTimeout, root); 
-    const char* stop = getExternalThermostatHoldTime();
+    const char* stop = CDemandManager::getExtThermostatHoldTime();
     if(stop)
       bSend |= moderator.addJson("ExtThermoStop", stop, root); 
     else 

@@ -119,6 +119,7 @@
 #include <FreeRTOS.h>
 #include "RTC/TimerManager.h"
 #include "Utility/GetLine.h"
+#include "Utility/DemandManager.h"
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
@@ -155,7 +156,6 @@ void checkDebugCommands();
 void manageCyclicMode();
 void manageFrostMode();
 void manageHumidity();
-int  checkStartTemp();
 void doStreaming();
 void heaterOn();
 void heaterOff();
@@ -519,11 +519,9 @@ void setup() {
   pHourMeter->init(bESP32PowerUpInit || RTC_Store.getBootInit());     // ensure persistent memory variable are reset after powerup, or OTA update
   RTC_Store.setBootInit(false);
 
-  // bug fix: was not applying saved set points!
-  // reqDemand(RTC_Store.getDesiredTemp());  
-  CTimerManager::setWorkingTemperature(RTC_Store.getDesiredTemp());
-  CTimerManager::setWorkingPumpHz(RTC_Store.getDesiredPump());
-
+  // apply saved set points!
+  CDemandManager::reload();
+  
   // Check for solo DS18B20
   // store it's serial number as the primary sensor
   // This allows seamless standard operation, and marks the iniital sensor 
@@ -952,7 +950,7 @@ void manageCyclicMode()
   const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
   if(cyclic.Stop && RTC_Store.getCyclicEngaged()) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
-    float deltaT = getTemperatureSensor() - getDemandDegC();
+    float deltaT = getTemperatureSensor() - CDemandManager::getDegC(); 
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
 
     // ensure we cancel user ON mode if heater throws an error
@@ -1024,31 +1022,6 @@ void manageHumidity()
   }
 }
 
-int checkStartTemp()
-{
-  int stopDeltaT = 0;
-  int cyclicstop = NVstore.getUserSettings().cyclic.Stop;
-  if(cyclicstop) {   // cyclic mode enabled
-    stopDeltaT = cyclicstop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
-  }
-
-  float deltaT = getTemperatureSensor() - getDemandDegC();
-
-  if(deltaT > stopDeltaT) {
-    if(cyclicstop) {
-      DebugPort.printf("CYCLIC MODE: Skipping directly to suspend, deltaT > +%d\r\n", stopDeltaT);
-      heaterOff();    // over temp - request heater stop
-      return -2;
-    }
-    else {
-      // too warm - deny start
-      return -1;
-    }
-  }
-  return 0;
-}
-
-
 
 void initBlueWireSerial()
 {
@@ -1080,35 +1053,35 @@ bool validateFrame(const CProtocol& frame, const char* name)
 }
 
 
-// return values:
-// 0: OK
-// -1: too warm
-// -2: suspended
-// -3: Low Voltage Cutout
-// -4: Insufficent fuel
-int requestOn(bool checkTemp)
+CDemandManager::eStartCode 
+requestOn()
 {
   DebugPort.println("Start Request!");
   bool fuelOK = 2 != SmartError.checkfuelUsage();
   if(!fuelOK) {
-    return -4;
+    return CDemandManager::eStartLowFuel;
   }
   bool LVCOK = 2 != SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
   if(bHasHtrData && LVCOK) {
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
     RTC_Store.setFrostOn(false);         // cancel frost mode
     // only start if below appropriate temperature threshold, raised for cyclic mode
-    int denied = checkStartTemp();
-    if(!checkTemp || !denied) {
+    // int denied = checkStartTemp();
+    CDemandManager::eStartCode startCode = CDemandManager::checkStart();
+    if(startCode == CDemandManager::eStartOK) {
       heaterOn();
-      return 0;
     }
     else {
-      return denied;
+      if(startCode == CDemandManager::eStartSuspend) {
+        SmartError.inhibit(true);  // ensure our suspend does not get immediately cancelled by prior error sitting in system!
+        DebugPort.printf("CYCLIC MODE: Skipping directly to suspend, deltaT > +%d\r\n", NVstore.getUserSettings().cyclic.Stop+1);
+        heaterOff();    // over temp - request heater stop
+      }
     }
+    return startCode;
   }
   else {
-    return -3;   // LVC
+    return CDemandManager::eStartLVC;   // LVC
   }
 }
 
@@ -1130,110 +1103,6 @@ void heaterOff()
 {
   TxManage.queueOffRequest();
   SmartError.inhibit();
-}
-
-
-bool reqDemand(uint8_t newDemand, bool save)
-{
-  if(bHasOEMController)
-    return false;
-
-  uint8_t max = DefaultBTCParams.getTemperature_Max();
-  uint8_t min = DefaultBTCParams.getTemperature_Min();
-  if(newDemand >= max)
-    newDemand = max;
-  if(newDemand <= min)
-    newDemand = min;
-  
-  // set and save the demand to NV storage
-  // note that we now maintain fixed Hz and Thermostat set points seperately
-  if(getThermostatModeActive()) {
-    CTimerManager::setWorkingTemperature(newDemand);
-  }
-  else {
-    CTimerManager::setWorkingPumpHz(newDemand);
-  }
-
-  ScreenManager.reqUpdate();
-  return true;
-}
-
-bool reqDemandDelta(int delta)
-{
-  uint8_t newDemand;
-  if(getThermostatModeActive()) {
-    newDemand = CTimerManager::getWorkingTemperature() + delta;
-  }
-  else {
-    newDemand = CTimerManager::getWorkingPumpHz() + delta;
-  }
-
-  return reqDemand(newDemand);
-}
-
-bool reqThermoToggle()
-{
-  return setThermostatMode(getThermostatModeActive() ? 0 : 1);
-}
-
-bool setThermostatMode(uint8_t val)
-{
-  if(bHasOEMController)
-    return false;
-
-  sUserSettings settings = NVstore.getUserSettings();
-  if(INBOUNDS(val, 0, 1))
-    settings.useThermostat = val;
-  NVstore.setUserSettings(settings);
-  return true;
-}
-
-void setDegFMode(bool state)
-{
-  sUserSettings settings = NVstore.getUserSettings();
-  settings.degF = state ? 0x01 : 0x00;
-  NVstore.setUserSettings(settings);
-}
-
-
-bool getThermostatModeActive()
-{
-  if(bHasOEMController) {
-    return getHeaterInfo().isThermostat();
-  }
-  else {
-    return NVstore.getUserSettings().useThermostat != 0;
-  }
-}
-
-bool getExternalThermostatModeActive()
-{
-#if USE_JTAG == 0
-  return GPIOin.usesExternalThermostat() && (NVstore.getUserSettings().ThermostatMethod == 3);
-#else
-  //CANNOT USE GPIO WITH JTAG DEBUG
-  return false;
-#endif
-}
-
-bool getExternalThermostatOn()
-{
-#if USE_JTAG == 0
-  return GPIOin.getState(1);
-#else
-  //CANNOT USE GPIO WITH JTAG DEBUG
-  return false;
-#endif
-}
-
-const char* getExternalThermostatHoldTime()
-{
-#if USE_JTAG == 0
-  return GPIOin.getExtThermHoldTime();
-#else
-  //CANNOT USE GPIO WITH JTAG DEBUG
-  return "00:00";
-#endif
 }
 
 
@@ -1265,39 +1134,6 @@ void forceBootInit()
   RTC_Store.setBootInit();
 }
 
-uint8_t getDemandDegC() 
-{
-  return CTimerManager::getWorkingTemperature();
-}
-
-void  setDemandDegC(uint8_t val) 
-{
-  uint8_t max = DefaultBTCParams.getTemperature_Max();
-  uint8_t min = DefaultBTCParams.getTemperature_Min();
-  BOUNDSLIMIT(val, min, max);
-  CTimerManager::setWorkingTemperature(val);
-}
-
-uint8_t getDemandPump() 
-{
-  return CTimerManager::getWorkingPumpHz();
-}
-
-
-float getTemperatureDesired()
-{
-  if(bHasOEMController) {
-    return getHeaterInfo().getHeaterDemand();
-  }
-  else {
-    if(getThermostatModeActive()) {
-      return CTimerManager::getWorkingTemperature();
-    }
-    else {
-      return CTimerManager::getWorkingPumpHz();  // timer manager will return pump Hz, as demand value, not real Hz
-    }
-  }
-}
 
 float getTemperatureSensor(int source)
 {
@@ -1307,62 +1143,6 @@ float getTemperatureSensor(int source)
 
 }
 
-void  setPumpMin(float val)
-{
-  sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.setPmin(val);
-  NVstore.setHeaterTuning(tuning);
-}
-
-void  setPumpMax(float val)
-{
-  sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.setPmax(val);
-  NVstore.setHeaterTuning(tuning);
-}
-
-void  setFanMin(uint16_t cVal)
-{
-  sHeaterTuning tuning = NVstore.getHeaterTuning();
-  if(INBOUNDS(cVal, 500, 5000))
-    tuning.Fmin = cVal;
-  NVstore.setHeaterTuning(tuning);
-}
-
-void  setFanMax(uint16_t cVal)
-{
-  sHeaterTuning tuning = NVstore.getHeaterTuning();
-  if(INBOUNDS(cVal, 500, 5000))
-    tuning.Fmax = cVal;
-  NVstore.setHeaterTuning(tuning);
-}
-
-void setFanSensor(uint8_t cVal)
-{
-  sHeaterTuning tuning = NVstore.getHeaterTuning();
-  if(INBOUNDS(cVal, 1, 2))
-    tuning.fanSensor = cVal;
-  NVstore.setHeaterTuning(tuning);
-}
-
-void setSystemVoltage(float val) {
-  sHeaterTuning tuning = NVstore.getHeaterTuning();
-  tuning.setSysVoltage(val);
-  NVstore.setHeaterTuning(tuning);
-}
-
-void setGlowDrive(uint8_t val) {
-  sHeaterTuning tuning = NVstore.getHeaterTuning();
-  if(INBOUNDS(val, 1, 6))
-    tuning.glowDrive = val;
-  NVstore.setHeaterTuning(tuning);
-} 
-
-
-void saveNV() 
-{
-  NVstore.save();
-}
 
 const CProtocolPackage& getHeaterInfo()
 {
@@ -1874,14 +1654,14 @@ void doStreaming()
 
   KeyPad.update();      // scan keypad - key presses handler via callback functions!
 
-  Bluetooth.check();    // check for Bluetooth activity
-
 #if USE_JTAG == 0
   //CANNOT USE GPIO WITH JTAG DEBUG
   GPIOin.manage();
   GPIOout.manage(); 
   GPIOalg.manage();
 #endif
+
+  Bluetooth.check();    // check for Bluetooth activity
 
   // manage changes in Bluetooth connection status
   if(Bluetooth.isConnected()) {

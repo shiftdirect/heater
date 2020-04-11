@@ -128,7 +128,11 @@ struct sHeaterTuning : public CESP32_NVStorage {
   float getPmax() const;
   void setPmin(float val);
   void setPmax(float val);
+  void setFmin(int val) { Fmin = val; };
+  void setFmax(int val) { Fmax = val; };
+  void setFanSensor(int val);
   void setSysVoltage(float val);
+  void setGlowDrive(uint8_t val);
   float getLVC() const;
 };
 

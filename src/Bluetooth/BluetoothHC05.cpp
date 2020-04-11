@@ -253,7 +253,7 @@ CBluetoothHC05::foldbackDesiredTemp()
   StaticJsonBuffer<32> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
 
-	if(foldbackModerator.addJson("TempDesired", getTemperatureDesired(), root)) { 
+	if(foldbackModerator.addJson("TempDesired", CDemandManager::getDemand(), root)) { 
     char opStr[32];
 		root.printTo(opStr);
     send(opStr);
