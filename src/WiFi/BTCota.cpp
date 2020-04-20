@@ -31,8 +31,8 @@
 #include "../Utility/MODBUS-CRC16.h"
 #include "esp_ota_ops.h"
 
-//#define TESTFOTA
-//#define SYNCHRONOUS_FOTA
+// #define TESTFOTA
+// #define SYNCHRONOUS_FOTA
 
 bool CheckFirmwareCRC(int filesize);
 void onSuccess();
@@ -86,7 +86,7 @@ void initOTA(){
     static int prevPC = 0;
     if(percent != prevPC) {
       prevPC = percent;
-		  DebugPort.printf("Progress: %u%%\r", percent);
+		  DebugPort.printf("OTA progress: %u%%\r\n", percent);
       DebugPort.handle();    // keep telnet spy alive
       ShowOTAScreen(percent);
     }
@@ -247,7 +247,7 @@ void onWebProgress(size_t progress, size_t total)
   static int prevPC = 0;
   if(percent != prevPC) {
     prevPC = percent;
-		DebugPort.printf("Progress: %u%%\r", percent);
+		DebugPort.printf("Web progress: %u%%\r\n", percent);
     DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen(percent, eOTAWWW);
   }

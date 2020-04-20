@@ -28,6 +28,11 @@
 
 // Bluetooth access via HC-05 Module, using a UART
 
+static const int BTRates[] = {
+  9600, 38400, 115200, 19200, 57600, 2400, 4800, 1200
+};
+
+
 #if USE_HC05_BLUETOOTH == 1
 CBluetoothHC05::CBluetoothHC05(int keyPin, int sensePin)
 {
@@ -41,6 +46,8 @@ CBluetoothHC05::CBluetoothHC05(int keyPin, int sensePin)
   // this line goes high when a BT client is connected :-)
   pinMode(_sensePin, INPUT);              
   _bTest = false;
+  _bGotMAC = false;
+  _BTbaudIdx = 0;
   strcpy(_MAC, "unknown");
 }
 
@@ -48,27 +55,24 @@ CBluetoothHC05::CBluetoothHC05(int keyPin, int sensePin)
 void 
 CBluetoothHC05::begin()
 {
-  const int BTRates[] = {
-    9600, 38400, 115200, 19200, 57600, 2400, 4800, 1200
-  };
-
   _rxLine.clear();
 
-  digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
+  _setCommandMode(true);
+  // digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
 
-  delay(50);
+  // delay(50);
 
-  openSerial(9600); // virtual function, may call derived class method here
+  // _openSerial(9600); // virtual function, may call derived class method here
 
   DebugPort.println("\r\n\r\nAttempting to detect HC-05 Bluetooth module...");
 
-  int BTidx = 0;
+//  int BTidx = 0;
   int maxTries =  sizeof(BTRates)/sizeof(int);
-  for(BTidx = 0; BTidx < maxTries; BTidx++) {
-    DebugPort.printf("  @ %d baud... ", BTRates[BTidx]);
-    openSerial(BTRates[BTidx]);      // open serial port at a std. baud rate
+  for(_BTbaudIdx = 0; _BTbaudIdx < maxTries; _BTbaudIdx++) {
+    DebugPort.printf("  @ %d baud... ", BTRates[_BTbaudIdx]);
+    _openSerial(BTRates[_BTbaudIdx]);      // open serial port at a std. baud rate
     delay(10);
-    flush();
+    _flush();
     HC05_SerialPort.print("AT\r\n");   // clear the throat!
     delay(100);
     HC05_SerialPort.setTimeout(100);
@@ -90,7 +94,7 @@ CBluetoothHC05::begin()
   }
 
   DebugPort.println("");
-  if(BTidx == maxTries) {
+  if(_BTbaudIdx == maxTries) {
     // we could not get anywhere with the AT commands, but maybe this is the other module
     // plough on and assume 9600 baud, but at the mercy of whatever the module name is...
     DebugPort.println("FAILED to detect a HC-05 Bluetooth module :-(");
@@ -98,7 +102,9 @@ CBluetoothHC05::begin()
     // assume it is 9600, and just (try to) use it like that...
     // we will sense the STATE line to prove a client is hanging off the link...
     DebugPort.println("ASSUMING a HC-05 module @ 9600baud (Unknown name)");
-    openSerial(9600); 
+//    _openSerial(9600); 
+    _BTbaudIdx = 0;
+    _setCommandMode(false);
   }
   else {
     // found a HC-05 module at one of its supported baud rates.
@@ -137,7 +143,7 @@ CBluetoothHC05::begin()
     }
     else {
       DebugPort.println("OK");
-      decodeMACresponse(response, len);
+      _decodeMACresponse(response, len);
       DebugPort.print("    "); DebugPort.println(_MAC);
     }
 /*
@@ -156,9 +162,9 @@ CBluetoothHC05::begin()
     else {
       DebugPort.println("OK");
     }*/
-    flush();
+    _flush();
     delay(100);  
-    openSerial(9600); 
+    _openSerial(9600); 
 
     // leave HC-05 command mode, return to data mode
     digitalWrite(_keyPin, LOW);  
@@ -166,7 +172,7 @@ CBluetoothHC05::begin()
   }
 
   delay(50);
-  flush();    // ensure any AT command reponse dribbles are cleaned up!
+  _flush();    // ensure any AT command reponse dribbles are cleaned up!
 
   DebugPort.println("");
 }
@@ -205,7 +211,7 @@ CBluetoothHC05::send(const char* Str)
 }
 
 void 
-CBluetoothHC05::openSerial(int baudrate)
+CBluetoothHC05::_openSerial(int baudrate)
 {
   // standard serial port for Due, Mega (ESP32 uses virtual, derived from this class)
   HC05_SerialPort.begin(baudrate);
@@ -216,7 +222,7 @@ bool
 CBluetoothHC05::ATCommand(const char* cmd)
 {
   if(!_bTest) {
-    flush();   // ensure response is for *this* command!
+    _flush();   // ensure response is for *this* command!
     HC05_SerialPort.print(cmd);
     char RxBuffer[16];
     memset(RxBuffer, 0, 16);
@@ -233,7 +239,7 @@ bool
 CBluetoothHC05::ATResponse(const char* cmd, const char* respHdr, char* response, int& len)
 {
   if(!_bTest) {
-    flush();   // ensure response is for *this* command!
+    _flush();   // ensure response is for *this* command!
     HC05_SerialPort.print(cmd);
     memset(response, 0, len);
     int read = HC05_SerialPort.readBytesUntil('\n', response, len);  // \n is not included in returned string!
@@ -248,7 +254,7 @@ CBluetoothHC05::ATResponse(const char* cmd, const char* respHdr, char* response,
 }
 
 void 
-CBluetoothHC05::foldbackDesiredTemp()
+CBluetoothHC05::_foldbackDesiredTemp()
 {
   StaticJsonBuffer<32> jsonBuffer;               // create a JSON buffer on the stack
   JsonObject& root = jsonBuffer.createObject();   // create object to add JSON commands to
@@ -261,7 +267,7 @@ CBluetoothHC05::foldbackDesiredTemp()
 }
 
 void 
-CBluetoothHC05::flush()
+CBluetoothHC05::_flush()
 {
   while(HC05_SerialPort.available())  
     HC05_SerialPort.read();
@@ -283,18 +289,18 @@ CBluetoothHC05::test(char val)
     else if(val == ('b' & 0x1f)) {   // CTRL-B - leave bluetooth test mode
       DebugPort.println("LEAVING Test Bluetooth mode");
       digitalWrite(_keyPin, LOW);              // request HC-05 module to enter command mode
-      openSerial(9600); 
+      _openSerial(9600); 
       _bTest = false;
     }
     else if(val == ('c' & 0x1f)) {   // CTRL-C - data mode
       DebugPort.println("Test Bluetooth COMMAND mode");
       digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
-      openSerial(9600); 
+      _openSerial(9600); 
     }
     else if(val == ('d' & 0x1f)) {   // CTRL-D - data mode
       DebugPort.println("Test Bluetooth DATA mode");
       digitalWrite(_keyPin, LOW);              // request HC-05 module to enter command mode
-      openSerial(9600); 
+      _openSerial(9600); 
     }
     else {
       HC05_SerialPort.write(val);
@@ -308,7 +314,7 @@ CBluetoothHC05::test(char val)
 }
 
 void 
-CBluetoothHC05::decodeMACresponse(char* pResponse, int len)
+CBluetoothHC05::_decodeMACresponse(char* pResponse, int len)
 {
   // decode ADDR response from a HC-05 
   // NOTE:
@@ -364,6 +370,7 @@ CBluetoothHC05::decodeMACresponse(char* pResponse, int len)
 	}
 	if (deficit < 0) {  // more than 12 digits! - WHOA!
 		strcpy(_MAC, "unknown");
+    _bGotMAC = false;
 	}
 	else {
     // build final colon separated MAC address
@@ -375,7 +382,45 @@ CBluetoothHC05::decodeMACresponse(char* pResponse, int len)
 			*pDest++ = ':';
 		}
 		*--pDest = 0;  // step back and replace last colon with the null terminator!
+    _bGotMAC = true;
 	}
 }
+
+const char*
+CBluetoothHC05::getMAC()
+{
+  if(!_bGotMAC) {
+    DebugPort.print("  Getting MAC address...");
+    _setCommandMode(true);
+    int len = 32;
+    char response[32];
+    if(!ATResponse("AT+ADDR?\r\n", "+ADDR:", response, len)) {
+      DebugPort.println("FAILED");
+    }
+    else {
+      DebugPort.println("OK");
+      _decodeMACresponse(response, len);
+      DebugPort.print("    "); DebugPort.println(_MAC);
+    }
+    _setCommandMode(false);
+  }
+  return _MAC;
+}
+
+void
+CBluetoothHC05::_setCommandMode(bool commandMode) 
+{
+  if(commandMode) {
+    digitalWrite(_keyPin, HIGH);              // request HC-05 module to enter command mode
+    delay(50);
+    _openSerial(BTRates[_BTbaudIdx]);      // open serial port at a std. baud rate
+  }
+  else {
+    digitalWrite(_keyPin, LOW);              // request HC-05 module to enter data mode
+    delay(50);
+    _openSerial(9600); // virtual function, may call derived class method here
+  }
+}
+
 
 #endif 

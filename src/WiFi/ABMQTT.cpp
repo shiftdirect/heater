@@ -39,7 +39,7 @@
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/TempSense.h"
 #include "../Utility/DemandManager.h"
-#include "freertos/freertos.h"
+#include <FreeRTOS.h>
 
 extern void DecodeCmd(const char* cmd, String& payload);
 

@@ -500,14 +500,14 @@ bool sendWebSocketString(const char* Str)
 #endif
 
     bTxWebData = true;              // OLED tx data animation flag
-    webSocket.broadcastTXT(Str);
+    bool retval = webSocket.broadcastTXT(Str);
 
 #ifdef WEBTIMES
     unsigned long tWeb = profile.elapsed(true);
     DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
 #endif
-
-    return true;
+    feedWatchdog();
+    return retval;
   }
   return false;
 }

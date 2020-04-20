@@ -117,9 +117,11 @@ CSetTimerScreen::show()
     
     yPos = 39;
     {
-      CTransientFont AF(_display, &arialItalic_7ptFontInfo);
-      sprintf(str, "( %.1fHz )", calcPumpHz(_timerInfo.temperature));
-      _printMenuText(_display.xCentre()+5, yPos, str, false, eLeftJustify);
+      if(_timerInfo.temperature) {
+        CTransientFont AF(_display, &arialItalic_7ptFontInfo);
+        sprintf(str, "( %.1fHz )", calcPumpHz(_timerInfo.temperature));
+        _printMenuText(64, yPos, str, false, eLeftJustify);
+      }
     }
 
     // control
@@ -140,6 +142,7 @@ CSetTimerScreen::show()
     if(fTemp == 0) {
       strcpy(str, "Current set ");
       strcat(str, NVstore.getUserSettings().degF ? "`F" : "`C");
+      _printMenuText(_display.xCentre(), yPos, str, _rowSel==1 && _colSel==6, eCentreJustify);
     }
     else {
       if(NVstore.getUserSettings().degF) {
@@ -149,8 +152,8 @@ CSetTimerScreen::show()
       else {
         sprintf(str, "%.0f`C", fTemp);
       }
+    _printMenuText(59, yPos, str, _rowSel==1 && _colSel==6, eRightJustify);
     }
-    _printMenuText(_display.xCentre(), yPos, str, _rowSel==1 && _colSel==6, eRightJustify);
 
 
 

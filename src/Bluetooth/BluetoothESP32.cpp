@@ -46,7 +46,7 @@ CBluetoothESP32HC05::CBluetoothESP32HC05(int keyPin, int sensePin, int rxPin, in
 }
 
 void 
-CBluetoothESP32HC05::openSerial(int baudrate)
+CBluetoothESP32HC05::_openSerial(int baudrate)
 {
   // Open Serial port on the ESP32
   // best to explicitly specify pins for the pin multiplexer!   

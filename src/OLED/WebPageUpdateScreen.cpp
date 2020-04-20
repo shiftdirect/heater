@@ -24,7 +24,7 @@
 #include "KeyPad.h"
 #include "../Utility/helpers.h"
 #include "fonts/Arial.h"
-#include "../WiFi/BTCWiFi.h"
+#include "../WiFi/BTCWifi.h"
 #include "../WiFi/BTCWebServer.h"
 
 

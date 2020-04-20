@@ -129,7 +129,7 @@
 
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 4;
+const int FirmwareMinorRevision = 5;
 const char* FirmwareDate = "11 Apr 2020";
 
 
@@ -173,6 +173,7 @@ int DS18B20holdoff = 2;
 int BoardRevision = 0;
 bool bTestBTModule = false;
 bool bSetupMQTT = false;
+bool bReportStack = false;
 
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
@@ -289,7 +290,7 @@ void parentKeyHandler(uint8_t event)
 
 void interruptReboot()
 {     
-  ets_printf("Software watchdog reboot......\r\n");
+  ets_printf("%ld Software watchdog reboot......\r\n", millis());
   esp_restart();
 }
 
@@ -447,10 +448,10 @@ void setup() {
       initOTA();
     }
 #endif // USE_OTA
-    initFOTA();
 #if USE_WEBSERVER == 1
     initWebServer();
 #endif // USE_WEBSERVER
+    initFOTA();
 #if USE_MQTT == 1
     mqttInit();
 #endif // USE_MQTT
@@ -870,6 +871,11 @@ void loop()
       tDelta = timenow - lastTemperatureTime;
       if(tDelta > MIN_TEMPERATURE_INTERVAL) {  // maintain a minimum holdoff period
         lastTemperatureTime = millis();    // reset time to observe temeprature        
+
+        if(bReportStack) {
+          int stackdepth = uxTaskGetStackHighWaterMark(NULL);
+          DebugPort.printf("Stack : %d\r\n", stackdepth);
+        }
 
         TempSensor.readSensors();
         if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temperature
@@ -1377,15 +1383,18 @@ void checkDebugCommands()
       else if(rxVal == 'h') {
         getWebContent(true);
       }
-      else if(rxVal == 'r') {
-        ESP.restart();            // reset the esp
+      else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mdoe: bluetooth module route
+        bTestBTModule = !bTestBTModule;
+        Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
       }
       else if(rxVal == ('h' & 0x1f)) {   // CTRL-H hourmeter reset
         pHourMeter->resetHard();
       }
-      else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mdoe: bluetooth module route
-        bTestBTModule = !bTestBTModule;
-        Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
+      else if(rxVal == ('r' & 0x1f)) {   // CTRL-R reboot
+        ESP.restart();            // reset the esp
+      }
+      else if(rxVal == ('s' & 0x1f)) {   // CTRL-B Test Mode: bluetooth module route
+        bReportStack = !bReportStack;
       }
     }
 #ifdef PROTOCOL_INVESTIGATION    
@@ -1613,6 +1622,8 @@ void feedWatchdog()
 {
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
     // BEST NOT USE WATCHDOG WITH JTAG DEBUG :-)
+  // DebugPort.printf("\r %ld Watchdog fed", millis());
+  DebugPort.print("~");
   WatchdogTick = 1500;
 #else
   WatchdogTick = -1;

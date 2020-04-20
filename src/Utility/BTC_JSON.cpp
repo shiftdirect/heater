@@ -413,19 +413,17 @@ void updateJSONclients(bool report)
   char jsonStr[800];
   {
     if(makeJSONString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) {
-        DebugPort.printf("JSON send: %s\r\n", jsonStr);
-      }
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
       sendJSONtext(jsonStr);
+      if (report) DebugPort.println(" Done");
     }
   }
   // update extended params
   {
     if(makeJSONStringEx(JSONmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) {
-        DebugPort.printf("JSON send: %s\r\n", jsonStr);
-      }
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
       sendJSONtext(jsonStr);
+      if (report) DebugPort.println(" Done");
     }
   }
   // update timer parameters
@@ -433,10 +431,9 @@ void updateJSONclients(bool report)
   for(int tmr=0; tmr<14; tmr++) 
   {
     if(makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr))) {
-      if (report) { 
-        DebugPort.printf("JSON send: %s\r\n", jsonStr);
-      }
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
       sendJSONtext(jsonStr);
+      if (report) DebugPort.println("Done");
       bNewTimerInfo = true;
     }
   }
@@ -452,48 +449,43 @@ void updateJSONclients(bool report)
     root.set("TimerRefresh", 1);
     root.printTo(jsonStr, 800);
 
-    if (report) {
-      DebugPort.printf("JSON send: %s\r\n", jsonStr);
-    }
-      sendJSONtext(jsonStr);
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
+    sendJSONtext(jsonStr);
+    if (report) DebugPort.println(" Done");
   }
 
   // report MQTT params
   {
     if(makeJSONStringMQTT(MQTTJSONmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) {
-        DebugPort.printf("JSON send: %s\r\n", jsonStr);
-      }
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
       sendJSONtext(jsonStr);
+      if (report) DebugPort.println(" Done");
     }
   }
 
   // report IP params
   {
     if(makeJSONStringIP(IPmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) {
-        DebugPort.printf("JSON send: %s\r\n", jsonStr);
-      }
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
       sendJSONtext(jsonStr);
+      if (report) DebugPort.println(" Done");
     }
   }
 
   // report System info
   {
     if(makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr))) {
-      if (report) {
-        DebugPort.printf("JSON send: %s\r\n", jsonStr);
-      }
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
       sendJSONtext(jsonStr);
+      if (report) DebugPort.println(" Done");
     }
   }
   
   {
     if(makeJSONStringGPIO(GPIOmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) {
-        DebugPort.printf("JSON send: %s\r\n", jsonStr);
-      }
+      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
       sendJSONtext(jsonStr);
+      if (report) DebugPort.println(" Done");
     }
   }
 
@@ -570,11 +562,14 @@ void Expand(std::string& str)
 
 void sendJSONtext(const char* jsonStr)
 {
+    DebugPort.print("1");
     sendWebSocketString( jsonStr );
+    DebugPort.print("2");
     mqttPublishJSON(jsonStr);
+    DebugPort.print("3");
     std::string expand = jsonStr;
     Expand(expand);
-    getBluetoothClient().send( jsonStr );
+    getBluetoothClient().send( expand.c_str() );
 }
 
 void doJSONreboot(uint16_t PIN)

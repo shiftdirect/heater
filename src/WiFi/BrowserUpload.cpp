@@ -35,7 +35,7 @@ sBrowserUpload::init()
   Update
   .onProgress([](unsigned int progress, unsigned int total) {
     int percent = (progress / (total / 100));
-		DebugPort.printf("Progress: %u%%\r", percent);
+		DebugPort.printf("Browser progress: %u%%\r\n", percent);
     DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen(percent, eOTAWWW);  // WWW update in place
     DebugPort.print("^");
@@ -118,6 +118,9 @@ sBrowserUpload::fragment(HTTPUpload& upload)
         ::SPIFFS.remove(SrcFile.name.c_str());  // remove the bad file from SPIFFS
         return -2;
       }
+#ifdef SSL_SERVER
+      upload.totalSize += upload.currentSize;
+#endif
     }
   }
   else {
@@ -127,6 +130,9 @@ sBrowserUpload::fragment(HTTPUpload& upload)
       Update.printError(DebugPort);
       return -3;
     }
+#ifdef SSL_SERVER
+    upload.totalSize += upload.currentSize;
+#endif
   }
   return upload.totalSize;
 }
@@ -140,7 +146,7 @@ sBrowserUpload::end(HTTPUpload& upload)
     // Close the file if still open (did not encounter write error)
     if(DstFile.file) {
       DstFile.file.close();    
-      DebugPort.printf("Final SPIFFS upload Size: %d\r\n", upload.totalSize);
+      DebugPort.printf("\r\nFinal SPIFFS upload Size: %d\r\n", upload.totalSize);
     }
     else {
       // file already closed indicates we encountered a write error
@@ -152,12 +158,13 @@ sBrowserUpload::end(HTTPUpload& upload)
     // check the added CRC we genertaed matches 
     // - this helps guard against malicious, badly formatted bin file attempts.
     if(!CheckFirmwareCRC(SrcFile.size)) {
+      DebugPort.printf("\r\nCRC fail: %s, %d bytes\r\nRebooting...\r\n", SrcFile.name.c_str(), upload.totalSize);
       Update.abort();
       retval = -4;
     }
 
     if (Update.end()) { 
-      DebugPort.printf("Update Success: %s, %d bytes\r\nRebooting...\r\n", SrcFile.name.c_str(), upload.totalSize);
+      DebugPort.printf("\r\nUpdate Success: %s, %d bytes\r\nRebooting...\r\n", SrcFile.name.c_str(), upload.totalSize);
     } else {
       Update.printError(DebugPort);
       if(retval == upload.totalSize) {

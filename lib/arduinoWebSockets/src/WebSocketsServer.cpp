@@ -25,6 +25,9 @@
 #include "WebSockets.h"
 #include "WebSocketsServer.h"
 
+extern void feedWatchdog();
+
+
 WebSocketsServer::WebSocketsServer(uint16_t port, String origin, String protocol) {
     _port = port;
     _origin = origin;
@@ -222,7 +225,11 @@ bool WebSocketsServer::broadcastTXT(uint8_t * payload, size_t length, bool heade
     for(uint8_t i = 0; i < WEBSOCKETS_SERVER_CLIENT_MAX; i++) {
         client = &_clients[i];
         if(clientIsConnected(client)) {
+            feedWatchdog();
             if(!sendFrame(client, WSop_text, payload, length, true, headerToPayload)) {
+                feedWatchdog();
+                Serial.println("\n \007STOPPING CLIENT");
+                disconnect(i);
                 ret = false;
             }
         }

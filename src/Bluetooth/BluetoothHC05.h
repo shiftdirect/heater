@@ -43,17 +43,20 @@ class CBluetoothHC05 : public CBluetoothAbstract {
   CModerator foldbackModerator;
   char _MAC[32];
   bool _bTest;
+  bool _bGotMAC;
+  int _BTbaudIdx;
 public:
   CBluetoothHC05(int keyPin, int sensePin);
   void begin();
   void send(const char* Str);
   void check();
   virtual bool isConnected();
-  const char* getMAC() const { return _MAC; };
+  const char* getMAC();
   virtual bool test(char);   // returns true whilst test mode is active
 protected:
-  virtual void openSerial(int baudrate);
-  virtual void foldbackDesiredTemp();
-  void flush();
-  void decodeMACresponse(char* pResponse, int len);
+  virtual void _openSerial(int baudrate);
+  virtual void _foldbackDesiredTemp();
+  void _flush();
+  void _decodeMACresponse(char* pResponse, int len);
+  void _setCommandMode(bool commandMode);
 };

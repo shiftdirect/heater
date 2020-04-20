@@ -137,8 +137,8 @@ bool initWifi()
     //  for STA+AP mode we *must* use the same RF channel as STA
     DebugPort.println("Starting AP mode");
     WiFi.softAP(creds.APSSID, creds.APpassword, chnl);
-    DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
-    DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
+    // DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
+    // DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
     DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
   }
 
@@ -150,7 +150,7 @@ bool initWifi()
   }
 
   // WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
-  WiFi.setTxPower(WIFI_POWER_19_5dBm);
+  // WiFi.setTxPower(WIFI_POWER_19_5dBm);
   return retval;
 }
 

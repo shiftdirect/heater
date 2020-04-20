@@ -617,27 +617,32 @@ size_t WebSockets::write(WSclient_t * client, uint8_t *out, size_t n) {
 	while(n > 0) {
 		if(client->tcp == NULL) {
 			DEBUG_WEBSOCKETS("[write] tcp is null!\n");
+      Serial.printf("\n%ld write tcp is null!\n", millis());
 			break;
 		}
 
 		if(!client->tcp->connected()) {
 			DEBUG_WEBSOCKETS("[write] not connected!\n");
+      Serial.printf("\n%ld write not connected!\n", millis());
 			break;
 		}
 
 		if((millis() - t) > WEBSOCKETS_TCP_TIMEOUT) {
 			DEBUG_WEBSOCKETS("[write] write TIMEOUT! %lu\n", (millis() - t));
+      Serial.printf("\n%ld write TIMEOUT!\n", millis());
 			break;
 		}
 
 		len = client->tcp->write((const uint8_t*)out, n);
-		if(len) {
+		if(len > 0) {   // RLJ -1 returned?
 			t = millis();
 			out += len;
 			n -= len;
 			total += len;
 			//DEBUG_WEBSOCKETS("write %d left %d!\n", len, n);
 		} else {
+      Serial.printf("\n%ld write %d failed left %d!\n", millis(), len, n);
+      // break;
 			//DEBUG_WEBSOCKETS("write %d failed left %d!\n", len, n);
 		}
 #if (WEBSOCKETS_NETWORK_TYPE == NETWORK_ESP8266)

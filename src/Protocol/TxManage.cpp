@@ -23,7 +23,7 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/helpers.h"
 #include "../Utility/DemandManager.h"
-#include "freertos/freertos.h"
+#include <FreeRTOS.h>
 
 //#define DEBUG_THERMOSTAT
 

@@ -28,7 +28,7 @@ class CBluetoothESP32HC05 : public CBluetoothHC05 {
 public:
   CBluetoothESP32HC05(int keyPin, int sensePin, int rxPin, int txPin);
 protected:
-  void openSerial(int baudrate);
+  void _openSerial(int baudrate);
 };
 
 #if USE_CLASSIC_BLUETOOTH == 1
