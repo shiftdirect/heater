@@ -600,6 +600,8 @@ sCredentials::load()
   validatedLoad("APpassword", APpassword, 31, "thereisnospoon");
   validatedLoad("webUpdateUser", webUpdateUsername, 31, "Afterburner");
   validatedLoad("webUpdatePass", webUpdatePassword, 31, "BurnBabyBurn");
+  validatedLoad("webUser", webUsername, 31, "Afterburner");
+  validatedLoad("webPass", webPassword, 31, "WebAccess");
   preferences.end();    
 }
 
@@ -612,6 +614,8 @@ sCredentials::save()
   preferences.putString("APpassword", APpassword);
   preferences.putString("webUpdateUser", webUpdateUsername);
   preferences.putString("webUpdatePass", webUpdatePassword);
+  preferences.putString("webUser", webUsername);
+  preferences.putString("webPass", webPassword);
   preferences.end();    
 }
 

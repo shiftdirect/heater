@@ -1623,7 +1623,7 @@ void feedWatchdog()
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
     // BEST NOT USE WATCHDOG WITH JTAG DEBUG :-)
   // DebugPort.printf("\r %ld Watchdog fed", millis());
-  DebugPort.print("~");
+  // DebugPort.print("~");
   WatchdogTick = 1500;
 #else
   WatchdogTick = -1;

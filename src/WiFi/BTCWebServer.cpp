@@ -177,6 +177,14 @@ String getContentType(String filename) { // convert the file extension to the MI
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
   DebugPort.println("handleFileRead: " + path);
   if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+  if(path.indexOf("index.html") >= 0) {
+    sCredentials creds = NVstore.getCredentials();
+    if (!server.authenticate(creds.webUsername, creds.webPassword)) {
+      server.requestAuthentication();
+      return true;    // not entirely correct, but avoids 404 response
+    }
+  }
+
   path.replace("%20", " ");                             // convert HTML spaces to normal spaces
   String contentType = getContentType(path);            // Get the MIME type
   String pathWithGz = path + ".gz";
