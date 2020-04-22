@@ -94,7 +94,9 @@ bool initWifi()
   wm.setEnableConfigPortal(shouldBootIntoConfigPortal());
 //REMOVED - UNSTABLE WHETHER WE GET 192.168.4.1 or 192.168.100.1 ????  
 // REMOVED    wm.setAPStaticIPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255,255,255,0)); 
- 
+
+  ScreenManager.showBootMsg("Starting WiFi");
+
   bool res = wm.autoConnect(creds.APSSID, creds.APpassword); // User definable AP name & password
   DebugPort.printf("WifiMode after autoConnect = "); DebugPort.println(WiFi.getMode());
 
@@ -106,6 +108,7 @@ bool initWifi()
     DebugPort.println("WiFimanager failed STA connection. Setting up AP...");
     WiFi.disconnect();  // apparently needed for AP only OTA to reboot properly!!!
     startAP = true;
+    ScreenManager.showBootMsg("STA failed");
   }    
   else {
     // runs through here if STA connected OK
@@ -120,10 +123,12 @@ bool initWifi()
   if(isSTA) {
     if(NVstore.getUserSettings().wifiMode & 0x02) {  // Check for STA only mode
       DebugPort.println("  Using STA only mode."); 
+      ScreenManager.showBootMsg("STA only");
     }
     else {
       DebugPort.println("Now promoting to STA+AP mode..."); 
       startAP = true;
+      ScreenManager.showBootMsg("STA+AP");
     }
   }
 #if USE_AP_ALWAYS == 1
@@ -140,6 +145,8 @@ bool initWifi()
     // DebugPort.printf("  AP SSID: %s\r\n", WiFi.softAPgetHostname());
     // DebugPort.printf("  AP IP address: %s\r\n", getWifiAPAddrStr());
     DebugPort.printf("WifiMode after initWifi = %d\r\n", WiFi.getMode());
+    if(!isSTA)
+      ScreenManager.showBootMsg("AP only");
   }
 
   // even though we may have started in STA mode - start the config portal if demanded via the NV flag

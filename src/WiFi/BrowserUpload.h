@@ -25,6 +25,7 @@
 #include <Arduino.h>
 #include <SPIFFS.h>
 #include <WebServer.h>
+#include <HTTPResponse.hpp>
 
 struct sBrowserUpload{
   struct {
@@ -49,7 +50,7 @@ struct sBrowserUpload{
   }
   void init();
   int begin(String& filename, int filesize = -1);
-  int fragment(HTTPUpload& upload);
+  int fragment(HTTPUpload& upload, httpsserver::HTTPResponse * res = NULL);
   int end(HTTPUpload& upload);
   bool isSPIFFSupload() const { return DstFile.state != 0; };
   bool isOK() const; 

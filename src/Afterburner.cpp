@@ -381,6 +381,10 @@ void setup() {
   DebugPort.setBufferSize(8192);
   DebugPort.begin(115200);
   DebugPort.println("_______________________________________________________________");
+
+  DebugPort.printf("Arduino task priority was %d\r\n", uxTaskPriorityGet(NULL));
+  vTaskPrioritySet(NULL, TASKPRIORITY_ARDUINO);
+  DebugPort.printf("Arduino task priority now %d\r\n", uxTaskPriorityGet(NULL));
   
   DebugPort.printf("Getting NVS stats\r\n");
 
@@ -554,6 +558,8 @@ void setup() {
   TempSensor.getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
 
   delay(1000); // just to hold the splash screeen for while
+
+  ScreenManager.clearDisplay();
 }
 
 
@@ -628,7 +634,7 @@ void loop()
 
       if(bReportRecyleEvents) 
         DebugPort.println("Recycling blue wire serial interface");
-      initBlueWireSerial();
+      // initBlueWireSerial();
       CommState.set(CommStates::TemperatureRead);    // revert to idle mode, after passing thru temperature mode
     }
   }
@@ -1051,7 +1057,7 @@ bool validateFrame(const CProtocol& frame, const char* name)
     // Bad CRC - restart blue wire Serial port
     DebugPort.printf("\007Bad CRC detected for %s frame - restarting blue wire's serial port\r\n", name);
     DebugReportFrame("BAD CRC:", frame, "\r\n");
-    initBlueWireSerial();
+    // initBlueWireSerial();
     CommState.set(CommStates::TemperatureRead);
     return false;
   }
@@ -1623,7 +1629,7 @@ void feedWatchdog()
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
     // BEST NOT USE WATCHDOG WITH JTAG DEBUG :-)
   // DebugPort.printf("\r %ld Watchdog fed", millis());
-  DebugPort.print("~");
+  // DebugPort.print("~");
   WatchdogTick = 1500;
 #else
   WatchdogTick = -1;
@@ -1648,7 +1654,7 @@ void doStreaming()
   if(NVstore.getUserSettings().wifiMode) {
     doWiFiManager();
 #if USE_OTA == 1
-    doOTA();
+    // doOTA();
 #endif // USE_OTA 
 #if USE_WEBSERVER == 1
     bHaveWebClient = doWebServer();

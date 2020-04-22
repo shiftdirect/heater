@@ -199,14 +199,16 @@ CBluetoothHC05::isConnected()
   return digitalRead(_sensePin);
 }
 
-void
+bool
 CBluetoothHC05::send(const char* Str)
 {
   if(isConnected() && !_bTest) {
     HC05_SerialPort.print(Str);
+    return true;
   }
   else {
 //    DebugPort.print("No Bluetooth client");
+    return false;
   }
 }
 

@@ -33,7 +33,7 @@ protected:
   virtual void foldbackDesiredTemp() {};
 public:
   virtual void begin() {};
-  virtual void send(const char* Str) {};
+  virtual bool send(const char* Str) { return false; };
   virtual void check() {};
   virtual void collectRxData(char rxVal) {
     // provide common behviour for bytes received from a bluetooth client

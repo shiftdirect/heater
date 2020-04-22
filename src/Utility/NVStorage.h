@@ -235,11 +235,15 @@ struct sCredentials : public CESP32_NVStorage {
   char APpassword[32];
   char webUpdateUsername[32];
   char webUpdatePassword[32];
+  char webUsername[32];
+  char webPassword[32];
   void init() {
     strcpy(APSSID, "Afterburner");
     strcpy(APpassword, "thereisnospoon");
     strcpy(webUpdateUsername, "Afterburner");
     strcpy(webUpdatePassword, "BurnBabyBurn");
+    strcpy(webUsername, "Afterburner");
+    strcpy(webPassword, "WebAccess");
   };
   void load();
   void save();
@@ -249,6 +253,8 @@ struct sCredentials : public CESP32_NVStorage {
     strcpy(APpassword, rhs.APpassword);
     strcpy(webUpdateUsername, rhs.webUpdateUsername);
     strcpy(webUpdatePassword, rhs.webUpdatePassword);
+    strcpy(webUsername, rhs.webUsername);
+    strcpy(webPassword, rhs.webPassword);
     return *this;
   }
 };

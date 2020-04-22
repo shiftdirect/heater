@@ -73,6 +73,8 @@ public:
   void selectMenu(eUIMenuSets menuset, int specific = -1);   // use to select loop menus, including the root or branches
   void returnMenu();   // use to select loop menus, including the root or branches
   void showRebootMsg(const char* content[2], long delayTime);
+  void showBootMsg(const char* msg);
+  void showBootWait(int show);
   void showOTAMessage(int percent, eOTAmodes updateType);
   void clearDisplay();
   void bumpTimeout();

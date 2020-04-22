@@ -468,6 +468,7 @@ CScreenManager::_loadScreens()
   _bReload = false;
   reqUpdate();
   _enterScreen();
+  showSplash();
 }
 
 bool 
@@ -787,6 +788,34 @@ CScreenManager::showSplash()
   }
 
   // Show initial display buffer contents on the screen --
+  _pDisplay->display();
+}
+
+void
+CScreenManager::showBootMsg(const char* msg)
+{
+  CTransientFont AF(*_pDisplay, &arialItalic_7ptFontInfo);
+  _pDisplay->fillRect(0, 50, 128, 14, BLACK);
+  _pDisplay->setCursor(0, 50);
+  _pDisplay->print(msg);
+  _pDisplay->display();
+}
+
+void
+CScreenManager::showBootWait(int show)
+{
+  static int idx = 0;
+  // idx++;
+  BITMAP_INFO bitmap = hourGlassIcon0Info;
+  switch(idx++ & 0x03) {
+    case 0: bitmap = hourGlassIcon0Info; break;
+    case 1: bitmap = hourGlassIcon1Info; break;
+    case 2: bitmap = hourGlassIcon2Info; break;
+    case 3: bitmap = hourGlassIcon3Info; break;
+  }
+  _pDisplay->fillRect(80, 50, bitmap.width, bitmap.height, BLACK);
+  if(show)
+    _pDisplay->drawBitmap(80, 50, bitmap.pBitmap, bitmap.width, bitmap.height, WHITE); 
   _pDisplay->display();
 }
 

@@ -37,7 +37,7 @@ class CBluetoothESP32Classic : public CBluetoothAbstract {
   BluetoothSerial SerialBT;
 public:
   virtual void begin();
-  virtual void send(const char* Str);
+  virtual bool send(const char* Str);
   virtual void check();
   virtual bool isConnected();
 };
@@ -64,7 +64,7 @@ public:
   CBluetoothESP32BLE();
   virtual ~CBluetoothESP32BLE();
   virtual void begin();
-  virtual void send(const char* Str);
+  virtual bool send(const char* Str);
   virtual void check();
   virtual bool isConnected();
 

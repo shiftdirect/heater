@@ -162,3 +162,8 @@ extern const BITMAP_INFO threshIconInfo;
 extern const BITMAP_INFO onOffIconInfo;
 extern const BITMAP_INFO frostIconInfo;
 extern const BITMAP_INFO humidityIconInfo;
+
+extern const BITMAP_INFO hourGlassIcon0Info;
+extern const BITMAP_INFO hourGlassIcon1Info;
+extern const BITMAP_INFO hourGlassIcon2Info;
+extern const BITMAP_INFO hourGlassIcon3Info;

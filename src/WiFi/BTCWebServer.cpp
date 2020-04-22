@@ -43,6 +43,22 @@
 #include <Update.h>
 #include "WebContentDL.h"
 
+#include <HTTPSServer.hpp>
+#include <SSLCert.hpp>
+#include <HTTPRequest.hpp>
+#include <HTTPResponse.hpp>
+#include <HTTPBodyParser.hpp>
+#include <HTTPMultipartBodyParser.hpp>
+#include <HTTPURLEncodedBodyParser.hpp>
+#include <WebsocketHandler.hpp>
+#include <FreeRTOS.h>
+#include "../OLED/ScreenManager.h"
+// #include "../Utility/ABpreferences.h"
+
+extern CScreenManager ScreenManager;
+
+using namespace httpsserver;
+
 extern WiFiManager wm;
 extern const char* stdHeader;
 extern const char* formatIndex;
@@ -52,14 +68,27 @@ extern const char* rebootIndex;
 
 extern void checkSplashScreenUpdate();
 
+size_t streamFileSSL(fs::File &file, const String& contentType, httpsserver::HTTPResponse* pSSL);
+void streamFileCoreSSL(const size_t fileSize, const String & fileName, const String & contentType);
+
+SSLCert* pCert;
+HTTPSServer * secureServer;
+HTTPServer * insecureServer;
+HTTPServer * WSserver;
+#if USE_SSL_LOOP_TASK == 1
+void SSLloopTask(void *);
+#endif
+
 sBrowserUpload BrowserUpload;
-WebServer server(80);
-WebSocketsServer webSocket = WebSocketsServer(81);
+#ifdef OLD_SERVER
+// WebServer server(80);
+// WebSocketsServer webSocket = WebSocketsServer(81);
+#endif
 CGetWebContent GetWebContent;
 
 bool bRxWebData = false;   // flags for OLED animation
 bool bTxWebData = false;
-bool bUpdateAccessed = false;  // flag used to ensure browser update always starts via /update. direct accesses to /updatenow will FAIL
+bool bUpdateAccessed = false;  // flag used to ensure browser update always starts via GET /update. direct accesses to POST /update will FAIL
 bool bFormatAccessed = false;
 bool bFormatPerformed = false;
 long _SuppliedFileSize = 0;
@@ -67,24 +96,117 @@ long _SuppliedFileSize = 0;
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 bool checkFile(File &file);
 void addTableData(String& HTML, String dta);
-void rootRedirect();
 String getContentType(String filename);
-bool handleFileRead(String path);
+bool handleFileRead(String path, HTTPResponse* res=NULL);
 void onNotFound();
-void onErase();
+#ifdef OLD_SERVER
 void onFormatSPIFFS();
-void onFormatNow();
 void onFormatDone();
-void onReboot();
-void onDoReboot();
+void rootRedirect();
+void onRename();
 void onWMConfig();
 void onResetWifi();
-void onUploadBegin();
-void onUploadCompletion();
-void onUploadProgression();
-void onRename();
-void build404Response(String& content, String file);
+#else
+void onReboot(HTTPRequest * req, HTTPResponse * res);
+// void onDoReboot(HTTPRequest * req, HTTPResponse * res);
+void onFormatSPIFFS(HTTPRequest * req, HTTPResponse * res);
+void onFormatNow(HTTPRequest * req, HTTPResponse * res);
+void onFormatDone(HTTPRequest * req, HTTPResponse * res);
+void rootRedirect(HTTPRequest * req, HTTPResponse * res);
+void onErase(HTTPRequest * req, HTTPResponse * res);
+void onUpload(HTTPRequest* req, HTTPResponse* res);
+void onUploadBegin(HTTPRequest* req, HTTPResponse* res);
+void onUploadProgression(HTTPRequest* req, HTTPResponse* res);
+void onUploadCompletion(HTTPRequest* req, HTTPResponse* res);
+void onRename(HTTPRequest* req, HTTPResponse* res);
+void onWMConfig(HTTPRequest* req, HTTPResponse* res);
+void onResetWifi(HTTPRequest* req, HTTPResponse* res);
+void doDefaultWebHandler(HTTPRequest * req, HTTPResponse * res);
+#endif
+void build404Response(HTTPRequest * req, String& content, String file);
 void build500Response(String& content, String file);
+bool checkAuthentication(HTTPRequest * req, HTTPResponse * res, int credID=0);
+
+
+// As websockets are more complex, they need a custom class that is derived from WebsocketHandler
+class JSONHandler : public WebsocketHandler {
+public:
+  // This method is called by the webserver to instantiate a new handler for each
+  // client that connects to the websocket endpoint
+  static WebsocketHandler* create();
+
+  // This method is called when a message arrives
+  void onMessage(WebsocketInputStreambuf * input);
+
+  // Handler function on connection close
+  void onClose();
+};
+
+// Max clients to be connected to the JSON handler
+#define MAX_CLIENTS 4
+
+
+// Simple array to store the active clients:
+JSONHandler* activeClients[MAX_CLIENTS];
+
+
+// In the create function of the handler, we create a new Handler and keep track
+// of it using the activeClients array
+WebsocketHandler * JSONHandler::create() {
+  DebugPort.println("Creating new JSON client!");
+  JSONHandler * handler = new JSONHandler();
+  for(int i = 0; i < MAX_CLIENTS; i++) {
+    if (activeClients[i] == nullptr) {
+      activeClients[i] = handler;
+      break;
+    }
+  }
+  return handler;
+}
+
+// When the websocket is closing, we remove the client from the array
+void JSONHandler::onClose() {
+  for(int i = 0; i < MAX_CLIENTS; i++) {
+    if (activeClients[i] == this) {
+      activeClients[i] = nullptr;
+    }
+  }
+}
+
+// Finally, passing messages around. If we receive something, we send it to all
+// other clients
+void JSONHandler::onMessage(WebsocketInputStreambuf * inbuf) {
+  // Get the input message
+  std::ostringstream ss;
+  std::string msg;
+  ss << inbuf;
+  msg = ss.str();
+
+/*  // Send it back to every client
+  for(int i = 0; i < MAX_CLIENTS; i++) {
+    if (activeClients[i] != nullptr) {
+      activeClients[i]->send(msg, SEND_TYPE_TEXT);
+    }
+  }*/
+
+  bRxWebData = true;
+/*    char cmd[256];
+    memset(cmd, 0, 256);
+    for (int i = 0; i < length && i < 256; i++) {
+      cmd[i] = payload[i];
+    }
+    interpretJsonCommand(cmd);  // send to the main heater controller decode routine
+*/
+  char cmd[256];
+  memset(cmd, 0, 256);
+  if(msg.length() < 256) {
+    strcpy(cmd, msg.c_str());
+    interpretJsonCommand(cmd);  // send to the main heater controller decode routine
+  }
+  
+}
+
+
 
 
 const char* getWebContent(bool start) {
@@ -96,12 +218,178 @@ const char* getWebContent(bool start) {
   return GetWebContent.getFilename();
 }
 
+SemaphoreHandle_t SSLSemaphore = NULL;
+
+void SSLkeyTask(void *) {
+  DebugPort.println("SSL creation starting");
+
+  pCert = new SSLCert();
+
+  ABpreferences  SSLkeyStore;
+  SSLkeyStore.begin("SSLkeys");
+
+  if(SSLkeyStore.hasBytes("Certificate")) {
+    ScreenManager.showBootMsg("Loading SSL cert.");
+
+    DebugPort.println("Using stored SSL certificate");
+    int len;
+
+    len = SSLkeyStore.getBytesLength("Certificate");
+    unsigned char* pCertData = new unsigned char[len];              // POTENTIAL LEAK HERE DUE TO LAME SSL LIBARY POINTER COPY
+    SSLkeyStore.getBytes("Certificate", pCertData, len);
+    pCert->setCert(pCertData, len);
+
+    len = SSLkeyStore.getBytesLength("PrivateKey");
+    unsigned char* pPKData = new unsigned char[len];              // POTENTIAL LEAK HERE DUE TO LAME SSL LIBARY POINTER COPY
+    SSLkeyStore.getBytes("PrivateKey", pPKData, len);
+    pCert->setPK(pPKData, len);
+
+    // vTaskDelay(10000);  // TEST
+  }
+  else {
+    DebugPort.println("Creating SSL certificate - this may take a while...");
+    ScreenManager.showBootMsg("Creating SSL cert.");
+
+    int createCertResult = createSelfSignedCert(
+                          *pCert,
+                          KEYSIZE_2048,
+                          "CN=myesp.local,O=acme,C=US");
+ 
+    DebugPort.println("SSL certificate created");
+    if (createCertResult != 0) {
+      DebugPort.printf("Error generating certificate");
+    }
+    else {
+      SSLkeyStore.putBytes("Certificate", pCert->getCertData(), pCert->getCertLength());
+      SSLkeyStore.putBytes("PrivateKey", pCert->getPKData(), pCert->getPKLength());
+    }
+  }
+  SSLkeyStore.end();
+      DebugPort.printf("Certificate: length = %d\r\n", pCert->getCertLength());
+      for(int i=0; i<pCert->getCertLength(); i++ ) {
+        for(int j=0; (j < 32) && (i<pCert->getCertLength()); j++) {
+          DebugPort.printf("%02X ", pCert->getCertData()[i++]);
+        }
+        DebugPort.println("");
+      }
+      DebugPort.println("");
+
+      DebugPort.printf("Private key: length = %d\r\n", pCert->getPKLength());
+      for(int i=0; i<pCert->getPKLength(); i++ ) {
+        for(int j=0; (j < 32) && (i < pCert->getPKLength()); j++) {
+          DebugPort.printf("%02X ", pCert->getPKData()[i++]);
+        }
+        DebugPort.println("");
+      }
+      DebugPort.println("");
+
+  xSemaphoreGive(SSLSemaphore);
+  vTaskDelete(NULL);
+}
+
 
 void initWebServer(void) {
 
   if (MDNS.begin("Afterburner")) {
     DebugPort.println("MDNS responder started");
   }
+
+  // ScreenManager.showBootMsg("Preparing SSL cert.");
+
+  // create SSL certificate, but off load to a task with a BIG stack;
+  SSLSemaphore = xSemaphoreCreateBinary();
+
+  TaskHandle_t SSLTask;
+  xTaskCreate(SSLkeyTask,
+             "SSLkeyTask",
+             16384,
+             NULL,
+             TASKPRIORITY_SSL_CERT,   // low priority as this blocks BIG time
+             &SSLTask);
+
+  // int tick = 0;
+  // char animation[4] = { '-', '\\', '|', '/'};
+  while(!xSemaphoreTake(SSLSemaphore, 250)) {
+    ScreenManager.showBootWait(1);
+  }
+  ScreenManager.showBootWait(0);
+  ScreenManager.showBootMsg("Starting web server");
+    
+  vSemaphoreDelete(SSLSemaphore);
+
+  WSserver = new HTTPServer(81);
+  insecureServer = new HTTPServer();
+  secureServer = new HTTPSServer(pCert);
+  // secureServer->registerNode(SJSONNode);
+
+  DebugPort.println("HTTPS server created");
+
+  ResourceNode * WSnodeRoot = new ResourceNode("/", "GET", [](HTTPRequest * req, HTTPResponse * res){
+    res->print("Insecure websocket lives here!!!");
+  });  
+  WSserver->registerNode(WSnodeRoot);
+  WebsocketNode * WebsktNode = new WebsocketNode("/", &JSONHandler::create);
+  WSserver->registerNode(WebsktNode);
+  insecureServer->registerNode(WebsktNode);
+  secureServer->registerNode(WebsktNode);       // associated secure websocket
+
+  ResourceNode * rebootNode = new ResourceNode("/reboot", "", &onReboot);
+  // ResourceNode * formatspiffsGet = new ResourceNode("/formatspiffs", "GET", &onFormatSPIFFS);
+  ResourceNode * formatNode = new ResourceNode("/formatspiffs", "", &onFormatNow);
+  // // handle attempts to browse the /formatnow path - force redirect to root
+  // ResourceNode * formatnowGet = new ResourceNode("/formatnow", "GET", [](HTTPRequest * req, HTTPResponse * res){
+  //   DebugPort.println("WEB: GET /formatnow - ILLEGAL - root redirect");
+  //   rootRedirect(req, res);
+  // });
+  // ResourceNode * formatnowPost = new ResourceNode("/formatnow", "POST", &onFormatNow);
+  // ResourceNode * formatnowNode = new ResourceNode("/formatnow", "", &onFormatNow);  // POST/GET handled by onFormatNow
+  // ResourceNode * updateGet = new ResourceNode("/update", "GET", &onUploadBegin);
+  // // handle attempts to browse the /updatenow path - force redirect to root
+  // ResourceNode * updatenowGet = new ResourceNode("/updatenow", "GET", [](HTTPRequest * req, httpsserver::HTTPResponse * res){
+  //   DebugPort.println("WEB: GET /updatenow - ILLEGAL - root redirect");
+  //   rootRedirect(req, res);
+  // });
+  // // // valid upload attempts must use post, AND they must have also passed thru /update (bUpdateAccessed = true)
+  // ResourceNode * updatenowPost = new ResourceNode("/updatenow", "POST", &onUploadProgression);
+  ResourceNode * updateNode = new ResourceNode("/update", "", &onUpload);
+  ResourceNode * renameNode = new ResourceNode("/rename", "POST", &onRename);
+  ResourceNode * eraseNode = new ResourceNode("/erase", "POST", &onErase);
+  ResourceNode * wmconfigNode = new ResourceNode("/wmconfig", "GET", &onWMConfig);
+  ResourceNode * resetwifiNode = new ResourceNode("/resetwifi", "GET", &onResetWifi);
+  
+
+  insecureServer->registerNode(rebootNode);     
+  insecureServer->registerNode(formatNode);
+  insecureServer->registerNode(updateNode);
+  insecureServer->registerNode(renameNode);
+  insecureServer->registerNode(eraseNode);
+  insecureServer->registerNode(resetwifiNode);
+  insecureServer->registerNode(wmconfigNode);
+  // insecureServer->registerNode(formatspiffsGet);
+/*  
+  // insecureServer->registerNode(rebootGet);
+  // insecureServer->registerNode(rebootPost);  
+  // insecureServer->registerNode(formatspiffsGet);
+  // insecureServer->registerNode(formatnowGet);
+  // insecureServer->registerNode(formatnowPost);
+  // insecureServer->registerNode(updateGet);
+  // insecureServer->registerNode(updatenowGet);
+  // insecureServer->registerNode(updatenowPost);
+  insecureServer->registerNode(renamePost);
+  insecureServer->registerNode(wmconfigGet);
+  insecureServer->registerNode(resetwifiGet);*/
+
+  ResourceNode * defaultGet = new ResourceNode("/", "GET", &doDefaultWebHandler);
+  
+  insecureServer->setDefaultNode(defaultGet);
+  secureServer->setDefaultNode(defaultGet);
+
+  WSserver->start();
+  insecureServer->start();
+  secureServer->start();
+  DebugPort.println("HTTPS started");
+
+#ifdef OLD_SERVER
 
   server.on("/wmconfig", onWMConfig);
   server.on("/resetwifi", onResetWifi);
@@ -147,18 +435,45 @@ void initWebServer(void) {
   
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+#endif
 
-  DebugPort.println("HTTP server started");
+#if USE_SSL_LOOP_TASK == 1
+  xTaskCreate(SSLloopTask,
+             "SSLloopTask",
+             16384,
+             NULL,
+             TASKPRIORITY_SSL_LOOP,   // low priority as this blocks BIG time
+             &SSLTask);
 
+  DebugPort.println("HTTP task started");
+#endif
   // initWebPageUpdate();
 }
 
+#if USE_SSL_LOOP_TASK == 1
+void SSLloopTask(void *) {
+  for(;;) {
+    WSserver->loop();
+    insecureServer->loop();
+    secureServer->loop();
+    vTaskDelay(1);   
+  }
+}
+#endif
 
 // called by main sketch loop()
 bool doWebServer(void) 
 {
-	webSocket.loop();
-	server.handleClient();
+#if USE_SSL_LOOP_TASK != 1
+  WSserver->loop();
+  insecureServer->loop();
+  secureServer->loop();
+#endif
+    
+#ifdef OLD_SERVER
+  webSocket.loop();
+  server.handleClient();
+#endif
   GetWebContent.manage();
   return true;
 }
@@ -174,15 +489,88 @@ String getContentType(String filename) { // convert the file extension to the MI
   return "text/plain";
 }
 
-bool handleFileRead(String path) { // send the right file to the client (if it exists)
-  DebugPort.println("handleFileRead: " + path);
+
+bool
+findFormArg(HTTPRequest * req, const char* Arg, std::string& value)
+{
+  HTTPBodyParser *pParser = new HTTPMultipartBodyParser(req);
+  while(pParser->nextField()) {
+    std::string name = pParser->getFieldName();
+    DebugPort.printf("findArg: %s\r\n", name.c_str());
+    if (name == Arg) {
+      DebugPort.println("found desired Arg");
+      char buf[512];
+      size_t readLength = pParser->read((byte *)buf, 512);
+      value = std::string(buf, readLength);
+      delete pParser;
+      return true;
+    }
+  }
+  delete pParser;
+  return false;
+}
+
+void
+doDefaultWebHandler(HTTPRequest * req, HTTPResponse * res)
+{
+  String path = req->getRequestString().c_str();
+  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+  if(path.indexOf("index.html") >= 0) {
+    if(!checkAuthentication(req, res, 1)) {
+      return;
+    }
+  }
+  if (!handleFileRead(req->getRequestString().c_str(), res)) {                  // send it if it exists
+
+    String message;
+    build404Response(req, message, path);
+
+    res->setStatusCode(404);
+    res->setStatusText("Not found");
+    res->print(message.c_str());
+  }
+}
+
+bool checkAuthentication(HTTPRequest * req, HTTPResponse * res, int credID) {
+  // Get login information from request
+  // If you use HTTP Basic Auth, you can retrieve the values from the request.
+  // The return values will be empty strings if the user did not provide any data,
+  // or if the format of the Authorization header is invalid (eg. no Basic Method
+  // for Authorization, or an invalid Base64 token)
+  std::string reqUsername = req->getBasicAuthUser();
+  std::string reqPassword = req->getBasicAuthPassword();
+
+  // If the user entered login information, we will check it
+  if (reqUsername.length() > 0 && reqPassword.length() > 0) {
+
+    sCredentials creds = NVstore.getCredentials();
+    if (credID == 0 && reqUsername == creds.webUpdateUsername && reqPassword == creds.webUpdatePassword) {
+      return true;
+    }
+    if (credID == 1 && reqUsername == creds.webUsername && reqPassword == creds.webPassword) {
+      return true;
+    }
+  }
+  res->setStatusCode(401);
+  res->setStatusText("Unauthorized");
+  res->setHeader("WWW-Authenticate", "Basic realm=\"Login Required\"");
+  res->setHeader("Content-Type", "text/html");
+  res->println("401. Not authorized");
+  return false;
+}
+
+bool handleFileRead(String path, HTTPResponse *res) { // send the right file to the client (if it exists)
+  DebugPort.println("handleFileRead original request: " + path);
   if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
   path.replace("%20", " ");                             // convert HTML spaces to normal spaces
   String contentType = getContentType(path);            // Get the MIME type
   String pathWithGz = path + ".gz";
+  DebugPort.println("handleFileRead conditioned request: " + path);
   if(SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {  // If the file exists as a compressed archive, or normal
-    if (SPIFFS.exists(pathWithGz))                      // If the compressed file exists
+    if (SPIFFS.exists(pathWithGz)) {                     // If the compressed file exists
       path += ".gz";
+      DebugPort.println("handleFileRead now .gz request: " + path);
+    }
     File file = SPIFFS.open(path, "r");                 // Open it
     if(!checkFile(file)) {                              // check it is readable
       file.close();                                     // if not, close the file
@@ -192,11 +580,27 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
 
       String content;
       build500Response(content, path);
-      server.send(500, "text/html", content);
+      if(res) {
+        res->setStatusCode(500);
+        res->setStatusText("Internal server error");
+        res->print(content.c_str());
+      }
+#ifdef OLD_SERVER
+      else {
+        server.send(500, "text/html", content);
+      }
+#endif
       return false;                                     // If the file is broken, return false
     }
     else {
-      server.streamFile(file, contentType);             // File good, send it to the client
+      if(res) {
+        streamFileSSL(file, contentType, res);
+      }
+#ifdef OLD_SERVER
+      else {
+        server.streamFile(file, contentType);             // File good, send it to the client
+      }
+#endif
       file.close();                                     // Then close the file 
       return true;
     }
@@ -204,6 +608,44 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   DebugPort.println("\tFile Not Found");
   return false;                                         // If the file doesn't exist, return false
 }
+
+  size_t streamFileSSL(fs::File &file, const String& contentType, HTTPResponse* res) {
+    String filename = file.name();
+    if (filename.endsWith("gz") &&
+        contentType != String("application/x-gzip") &&
+        contentType != String("application/octet-stream")) {
+      res->setHeader("Content-Encoding", "gzip");
+    }
+    res->setHeader("Content-Type", contentType.c_str());
+    res->setHeader("Content-Length", httpsserver::intToString(file.size()));
+
+    DebugPort.print("Streaming");
+
+  // Read the file and write it to the response
+    uint8_t buffer[256];
+    size_t progressdot = 0;
+    size_t done = 0;
+    size_t length = file.read(buffer, 256);
+    while(length > 0) {
+
+      size_t wr = res->write(buffer, length);
+      if(wr > 0) {
+        done += wr;
+        if(done > progressdot) {
+#if USE_SSL_LOOP_TASK != 1          
+          feedWatchdog();
+#endif
+          DebugPort.print(".");
+          progressdot += 1024;
+        }
+      }
+      if(wr <= 0) break;
+
+      length = file.read(buffer, 256);
+    } 
+    return done;
+  }
+
 
 const char* stdHeader = R"=====(
 <!DOCTYPE html>
@@ -305,6 +747,9 @@ function onWebSocket(event) {
   var key;
   for(key in response) {
    switch(key) {
+    case 'done':
+     setTimeout( function() { location.assign('/'); }, 10000);    
+     break;
     case 'progress':
      // actual data bytes received as fed back via web socket
      var progress = response[key];
@@ -358,7 +803,7 @@ function uploadFile() {
  ajax.addEventListener('load', completeHandler, false);
  ajax.addEventListener('error', errorHandler, false);
  ajax.addEventListener('abort', abortHandler, false);
- ajax.open('POST', '/updatenow');
+ ajax.open('POST', '/update');
  ajax.send(formdata);
 }
 
@@ -451,44 +896,42 @@ function onformatClick() {
 )=====";
 
 
-void onWMConfig() 
+void onWMConfig(HTTPRequest * req, httpsserver::HTTPResponse * res) 
 {
   DebugPort.println("WEB: GET /wmconfig");
-  server.send(200, "text/plain", "Start Config Portal - Retaining credential");
+  // server.send(200, "text/plain", "Start Config Portal - Retaining credential");
+  // res->setStatusCode(200);
+  // res->setHeader("Content-Type", "text/plain");
+  res->print("Start Config Portal - Retaining credential");
   DebugPort.println("Starting web portal for wifi config");
   delay(500);
   wifiEnterConfigPortal(true, false, 3000);
 }
 
-void onResetWifi() 
+
+void onResetWifi(HTTPRequest * req, httpsserver::HTTPResponse * res) 
 {
   DebugPort.println("WEB: GET /resetwifi");
-  server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
+  // server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
+  // res->setStatusCode(200);
+  // res->setHeader("Content-Type", "text/plain");
+  res->print("Start Config Portal - Resetting Wifi credentials!");
   DebugPort.println("diconnecting client and wifi, then rebooting");
   delay(500);
   wifiEnterConfigPortal(true, true, 3000);
 }
 
 
-void onNotFound() 
+void rootRedirect(HTTPRequest * req, httpsserver::HTTPResponse * res)
 {
-  String path = server.uri();
-  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
-
-  String message;
-  build404Response(message, path);
-
-  server.send(404, "text/html", message);
+  res->setHeader("Location","/");      // reselect the update page
+  res->setStatusCode(303);
 }
 
-void rootRedirect()
-{
-  server.sendHeader("Location","/");      // reselect the update page
-  server.send(303);
-}
 
 bool sendWebSocketString(const char* Str)
 {
+#ifdef OLD_SERVER
 #ifdef WEBTIMES
   CProfile profile;
 #endif
@@ -500,16 +943,42 @@ bool sendWebSocketString(const char* Str)
 #endif
 
     bTxWebData = true;              // OLED tx data animation flag
-    bool retval = webSocket.broadcastTXT(Str);
+    webSocket.broadcastTXT(Str);
 
 #ifdef WEBTIMES
     unsigned long tWeb = profile.elapsed(true);
     DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
 #endif
-    feedWatchdog();
-    return retval;
+
+    return true;
   }
   return false;
+#else
+#ifdef WEBTIMES
+  CProfile profile;
+#endif
+
+#ifdef WEBTIMES
+    unsigned long tCon = profile.elapsed(true);
+#endif
+
+  bool sent = false;
+  for(int i=0; i< MAX_CLIENTS; i++) {
+    if(activeClients[i]) {
+      bTxWebData = true;              // OLED tx data animation flag
+      sent = true;
+      activeClients[i]->send(Str, WebsocketHandler::SEND_TYPE_TEXT);
+    }
+  }
+
+
+#ifdef WEBTIMES
+    unsigned long tWeb = profile.elapsed(true);
+    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
+#endif
+
+  return sent;
+#endif
 }
 
 
@@ -530,7 +999,14 @@ bool isWebSocketClientChange()
 {
   static int prevNumClients = -1;
 
+#ifdef OLD_SERVER
   int numClients = webSocket.connectedClients();
+#else
+  int numClients = 0;
+  for(int i=0; i< MAX_CLIENTS; i++) {
+    if(activeClients[i]) numClients++;
+  }
+#endif
   if(numClients != prevNumClients) {
     bool retval = numClients > prevNumClients;
     prevNumClients = numClients;
@@ -693,10 +1169,13 @@ void addTableData(String& HTML, String dta)
   HTML += "</td>\n";
 }
 
+
 // erase a file from SPIFFS partition
-void onErase()
+void onErase(HTTPRequest * req, HTTPResponse * res)
 {
-  String filename = server.arg("filename");        // get request argument value by name
+  std::string sfilename;
+  findFormArg(req, "filename", sfilename);
+  String filename(sfilename.c_str());
   filename.replace("%20", " ");   // convert HTML spaces to real spaces
 
   if(filename.length() != 0)  {
@@ -710,8 +1189,9 @@ void onErase()
   }
 }
 
+
 // function called upon completion of file (form) upload
-void onUploadCompletion()
+void onUploadCompletion(HTTPRequest * req, HTTPResponse * res)
 {
   _SuppliedFileSize = 0;
   DebugPort.println("WEB: POST /updatenow completion");
@@ -720,25 +1200,41 @@ void onUploadCompletion()
     if(BrowserUpload.isOK()) {
       checkSplashScreenUpdate();
       DebugPort.println("WEB: SPIFFS OK");
-      server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
+      // server.send(200, "text/plain", "OK - File uploaded to SPIFFS");
+      res->setStatusCode(200);
+      res->setHeader("Content-Type", "text/plain");
+      res->print("OK - File uploaded to SPIFFS");
       // javascript reselects the /update page!
     }
     else {
       DebugPort.println("WEB: SPIFFS FAIL");
-      server.send(500, "text/plain", "500: couldn't create file");
+      // server.send(500, "text/plain", "500: couldn't create file");
+      res->setStatusCode(500);
+      res->setHeader("Content-Type", "text/plain");
+      res->print("500: couldn't create file");
     }
     BrowserUpload.reset();
+#if USE_SSL_LOOP_TASK != 1          
     ShowOTAScreen(-1, eOTAbrowser);  // browser update 
+#endif
   }
   else {
     if(BrowserUpload.isOK()) {
       DebugPort.println("WEB: FIRMWARE UPDATE OK");
-      server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
+      // server.send(200, "text/plain", "OK - Afterburner will reboot shortly");
+      res->setStatusCode(200);
+      res->setHeader("Content-Type", "text/plain");
+      res->print("OK - Afterburner will reboot shortly");
     }
     else {
       DebugPort.println("WEB: FIRMWARE UPDATE FAIL");
-      server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
+      // server.send(200, "text/plain", "FAIL - Afterburner will reboot shortly");
+      res->setStatusCode(200);
+      res->setHeader("Content-Type", "text/plain");
+      res->print("FAIL - Afterburner will reboot shortly");
     }
+    // rootRedirect(req, res);
+
     forceBootInit();
     delay(1000);
     // javascript redirects to root page so we go there after reboot!
@@ -746,13 +1242,25 @@ void onUploadCompletion()
   }
 }
 
-void onUploadBegin()
+
+void onUpload(HTTPRequest* req, HTTPResponse* res) 
+{
+  if(req->getMethod() == "GET") {
+    onUploadBegin(req, res);
+  }
+  if(req->getMethod() == "POST") {
+    onUploadProgression(req, res);
+  }
+}
+
+void onUploadBegin(HTTPRequest* req, HTTPResponse* res)
 {
   DebugPort.println("WEB: GET /update");
-  sCredentials creds = NVstore.getCredentials();
-  if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
-    return server.requestAuthentication();
-  }
+  if(!checkAuthentication(req, res))
+    return;
+  // if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
+  //   return server.requestAuthentication();
+  // }
   bUpdateAccessed = true;
   bFormatAccessed = false;
   bFormatPerformed = false;
@@ -763,72 +1271,122 @@ void onUploadBegin()
   content += updateIndex + SPIFFSinfo;
   content += "<p><button class='redbutton' onclick='onformatClick()'>Format SPIFFS</button>";
   content += "</body></html>";
-  server.send(200, "text/html", content );
+  res->setStatusCode(200);
+  res->setHeader("Content-Type", "text/html");
+  res->print( content );
+
 #else
     handleFileRead("/uploadfirmware.html");
 #endif
 }
 
-void onUploadProgression()
+void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
 {
   char JSON[64];
 
-  if(bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
-    HTTPUpload& upload = server.upload();
-    String filename = upload.filename;
-    if(!filename.startsWith("/")) filename = "/"+filename;
-
-    if (upload.status == UPLOAD_FILE_START) {
-      int sts = BrowserUpload.begin(filename, _SuppliedFileSize);
-      sprintf(JSON, "{\"progress\":%d}", sts);
-      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-    } 
-
-    // handle file fragments of form upload
-    else if (upload.status == UPLOAD_FILE_WRITE) {
-      feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
-      int sts = BrowserUpload.fragment(upload);
-      if(sts < 0) {
-        sprintf(JSON, "{\"progress\":%d}", sts);
-        sendWebSocketString(JSON);  // feedback -ve byte count of update to browser via websocket - write error
-      }
-      else {
-        // upload still in progress?
-        if(BrowserUpload.bUploadActive) {  // show progress unless a write error has occured
-          DebugPort.print(".");
-          if(upload.totalSize) {
-            // feed back bytes received over web socket for progressbar update on browser (via javascript)
-            sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-            sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-          }
-          // show percentage on OLED
-          int percent = 0;
-          if(_SuppliedFileSize) 
-            percent = 100 * upload.totalSize / _SuppliedFileSize;
-          ShowOTAScreen(percent, eOTAbrowser);  // browser update 
-        }
-      }
-    } 
-    
-    // handle end of upload
-    else if (upload.status == UPLOAD_FILE_END) {
-      int sts = BrowserUpload.end(upload);
-      sprintf(JSON, "{\"progress\":%d}", sts);
-      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-      delay(2000);
-
-      bUpdateAccessed = false;  // close gate on POST to /updatenow
-    } else {
-      DebugPort.printf("Update Failed Unexpectedly (likely broken connection): status=%d\r\n", upload.status);
-      bUpdateAccessed = false;  // close gate on POST to /updatenow
-    }
+  if(!bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
+    DebugPort.println("WEB: POST /updatenow forbidden entry");
+    rootRedirect(req, res);
   }
   else {
-    // attempt to POST without using /update - forced redirect to root
-    DebugPort.println("WEB: POST /updatenow forbidden entry");
-    rootRedirect();
+
+    if(!checkAuthentication(req, res)) {
+      // attempt to POST without using /update - forced redirect to root
+      bUpdateAccessed = false;
+      return;
+    }
+
+    HTTPUpload upload;
+    HTTPBodyParser *parser;
+    std::string contentType = req->getHeader("Content-Type");
+    size_t semicolonPos = contentType.find(";");
+    if (semicolonPos != std::string::npos) {
+      contentType = contentType.substr(0, semicolonPos);
+    }
+    if (contentType == "multipart/form-data") {
+      parser = new HTTPMultipartBodyParser(req);
+    } else {
+      Serial.printf("Unknown POST Content-Type: %s\n", contentType.c_str());
+      return;
+    }
+
+    // We iterate over the fields. Any field with a filename is uploaded
+    while(parser->nextField()) {
+      std::string name = parser->getFieldName();
+      std::string sfilename = parser->getFieldFilename();
+      std::string mimeType = parser->getFieldMimeType();
+      DebugPort.printf("onUploadProgression: field name='%s', filename='%s', mimetype='%s'\n", name.c_str(), sfilename.c_str(), mimeType.c_str());
+      // Double check that it is what we expect
+      if (name != "update") {
+        Serial.println("Skipping unexpected field");
+        break;
+      }
+      // Should check file name validity and all that, but we skip that.
+      String filename = sfilename.c_str();
+      if(filename[0] != '/')
+        filename = "/" + filename;
+
+      upload.filename = filename;
+      upload.name = name.c_str();
+      upload.type = mimeType.c_str();
+      upload.totalSize = 0;
+      upload.currentSize = 0;
+
+      int sts = BrowserUpload.begin(filename, _SuppliedFileSize);   // _SuppliedFileSize come in via websocket
+      sprintf(JSON, "{\"progress\":%d}", sts);
+      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+
+      while (!parser->endOfField()) {
+#if USE_SSL_LOOP_TASK != 1          
+        feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
+#endif
+        upload.currentSize = parser->read(upload.buf, HTTP_UPLOAD_BUFLEN);
+        int sts = BrowserUpload.fragment(upload, res);
+        if(sts < 0) {
+          sprintf(JSON, "{\"progress\":%d}", sts);
+          sendWebSocketString(JSON);  // feedback -ve byte count of update to browser via websocket - write error
+          break;
+        }
+        else {
+          // upload still in progress?
+          if(BrowserUpload.bUploadActive) {  // show progress unless a write error has occured
+            DebugPort.print(".");
+            if(upload.totalSize) {
+              // feed back bytes received over web socket for progressbar update on browser (via javascript)
+              sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
+              sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+            }
+            // show percentage on OLED
+            int percent = 0;
+            if(_SuppliedFileSize) 
+              percent = 100 * upload.totalSize / _SuppliedFileSize;
+#if USE_SSL_LOOP_TASK != 1          
+            ShowOTAScreen(percent, eOTAbrowser);  // browser update 
+#endif
+          }
+        }
+      }
+    }
+
+    int sts = BrowserUpload.end(upload);
+    sprintf(JSON, "{\"progress\":%d", sts);
+    sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+    if(!BrowserUpload.isSPIFFSupload()) {
+      sprintf(JSON, "{\"done\":1}");
+      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+    }
+    // WSserver->loop();
+    delay(2000);
+
+    bUpdateAccessed = false;  // close gate on POST to /updatenow
+
+    delete parser;
+
+    onUploadCompletion(req, res);
+
   }
 }
+
 
 /***************************************************************************************
  * FORMAT SPIFFS HANDLING
@@ -849,6 +1407,7 @@ void onUploadProgression()
  * A button allows direct access to /update
  */
 
+#ifdef OLD_SERVER
 void onFormatSPIFFS()
 {
   DebugPort.println("WEB: GET /formatspiffs");
@@ -871,6 +1430,36 @@ void onFormatSPIFFS()
   }
   server.send(200, "text/html", content );
 }
+#else
+
+
+void onFormatSPIFFS(HTTPRequest * req, HTTPResponse * res)
+{
+  DebugPort.println("WEB: GET /formatspiffs");
+  bUpdateAccessed = false;
+  String content = stdHeader;
+  if(!bFormatPerformed) {
+    if(checkAuthentication(req, res)) {
+      bFormatAccessed = true;   // only set after we pass authentication
+
+      content += formatIndex;
+      res->setStatusCode(200);
+      res->setHeader("Content-Type", "text/html");
+      res->print( content );
+    }
+  }
+  else {
+    bFormatAccessed = false;
+    bFormatPerformed = false;
+
+    content += formatDoneContent;
+
+    res->setStatusCode(200);
+    res->setHeader("Content-Type", "text/html");
+    res->print( content );
+  }
+}
+#endif
 
 const char* formatDoneContent = R"=====(
 <style>
@@ -910,7 +1499,8 @@ function onFormat() {
   setTimeout(function () { location.assign('/update'); }, 20);    
  }
  var ajax = new XMLHttpRequest();
- ajax.open('POST', '/formatnow');
+//  ajax.open('POST', '/formatnow');
+ ajax.open('POST', '/formatspiffs');
  ajax.send(formdata);
 }
 </script>
@@ -926,41 +1516,72 @@ function onFormat() {
 )=====";
 
 
-void onFormatNow() 
+void onFormatNow(HTTPRequest * req, httpsserver::HTTPResponse * res)
 {
-  // HTTP POST handler, do not need to return a web page!
-  DebugPort.println("WEB: POST /formatnow");
-  String confirm = server.arg("confirm");        // get request argument value by name
-  if(confirm == "yes" && bFormatAccessed) {      // confirm user agrees, and we did pass thru /formatspiffs first
-    DebugPort.println("Formatting SPIFFS partition");
-    SPIFFS.format();                             // re-format the SPIFFS partition
-    bFormatPerformed = true;
+  if(req->getMethod() == "GET") {
+    onFormatSPIFFS(req, res);
+    // DebugPort.println("WEB: GET /formatnow - ILLEGAL - root redirect");
+    // rootRedirect(req, res);
   }
-  else {
-    bFormatAccessed = false;                     // user cancelled upon last confirm popup, or not authenticated access
-    bFormatPerformed = false;
-    rootRedirect();
+
+  if(req->getMethod() == "POST") {
+    // HTTP POST handler, do not need to return a web page!
+    DebugPort.println("WEB: POST /formatnow");
+    std::string value;
+    findFormArg(req, "confirm", value);
+    if(value == "yes" && bFormatAccessed) {      // confirm user agrees, and we did pass thru /formatspiffs first
+      DebugPort.println("Formatting SPIFFS partition");
+      SPIFFS.format();                             // re-format the SPIFFS partition
+      bFormatPerformed = true;
+    }
+    else {
+      bFormatAccessed = false;                     // user cancelled upon last confirm popup, or not authenticated access
+      bFormatPerformed = false;
+      rootRedirect(req, res);
+    }
   }
 }
 
-void onReboot()
-{
-  DebugPort.println("WEB: GET /reboot");
-  String content = stdHeader;
-  content += rebootIndex;
-  server.send(200, "text/html", content );
+
+void onReboot(HTTPRequest * req, httpsserver::HTTPResponse * res)
+{  
+  if (req->getMethod() == "GET") {
+    DebugPort.println("WEB: GET /reboot");
+    String content = stdHeader;
+    content += rebootIndex;
+    res->print(content);
+  }
+  if (req->getMethod() == "POST") {
+    // HTTP POST handler, do not need to return a web page!
+    DebugPort.println("WEB: POST /reboot");
+    // First, we need to check the encoding of the form that we have received.
+    // The browser will set the Content-Type request header, so we can use it for that purpose.
+    std::string value;
+    if(findFormArg(req, "reboot", value)) {
+      if(value == "yes") {      // confirm user agrees, and we did pass thru /formatspiffs first
+        DebugPort.println("Rebooting via /reboot");
+        ESP.restart();
+      }
+    }
+  }
+
 }
 
-void onDoReboot() 
+/*void onDoReboot(HTTPRequest * req, HTTPResponse * res) 
 {
   // HTTP POST handler, do not need to return a web page!
   DebugPort.println("WEB: POST /reboot");
-  String confirm = server.arg("reboot");        // get request argument value by name
-  if(confirm == "yes") {      // confirm user agrees, and we did pass thru /formatspiffs first
-    DebugPort.println("Rebooting via /reboot");
-    ESP.restart();
+  // First, we need to check the encoding of the form that we have received.
+  // The browser will set the Content-Type request header, so we can use it for that purpose.
+  std::string value;
+  if(findFormArg(req, "reboot", value)) {
+    if(value == "yes") {      // confirm user agrees, and we did pass thru /formatspiffs first
+      DebugPort.println("Rebooting via /reboot");
+      ESP.restart();
+    }
   }
-}
+}*/
+
 
 const char* rebootIndex = R"=====(
 <style>
@@ -1000,12 +1621,17 @@ function onReboot() {
 )=====";
 
 
-void onRename() 
+
+void onRename(HTTPRequest * req, httpsserver::HTTPResponse * res) 
 {
   // HTTP POST handler, do not need to return a web page!
-  DebugPort.println("WEB: POST /reboot");
-  String oldname = server.arg("oldname");    // get request argument value by name
-  String newname = server.arg("newname");    // get request argument value by name
+  DebugPort.println("WEB: POST /rename");
+  std::string value;
+  findFormArg(req, "oldname", value);  // get request argument value by name
+  String oldname = value.c_str();   
+  findFormArg(req, "newname", value);  // get request argument value by name
+  String newname = value.c_str();   
+
   newname.replace("%20", " ");               // convert html spaces to real spaces
   oldname.replace("%20", " ");
   if(oldname != "" && newname != "") {      
@@ -1019,7 +1645,7 @@ void onRename()
 /***************************************************************************************
  * HTTP RESPONSE 404 - FILE NOT FOUND HANDLING
  */
-void build404Response(String& content, String file)
+void build404Response(HTTPRequest * req, String& content, String file)
 {
 content += stdHeader;
 content += R"=====(</head>
@@ -1029,11 +1655,25 @@ content += R"=====(</head>
 content +=  file;
 content += R"=====(</i></b><br>
 Method: )=====";
+#ifdef OLD_SERVER
 content += (server.method() == HTTP_GET) ? "GET" : "POST";
 content += "<br>Arguments: ";
 for (uint8_t i = 0; i < server.args(); i++) {
 	content += " " + server.argName(i) + ": " + server.arg(i) + "<br>";
 }
+#else
+content += req->getMethod().c_str();
+content += "<br>Arguments: ";
+for(auto it = req->getParams()->beginQueryParameters(); it != req->getParams()->endQueryParameters(); ++it) {
+  std::string nm(it->first);
+  std::string val(it->second);
+	content += " ";
+  content += nm.c_str();
+  content += ": ";
+  content += val.c_str();
+  content += "<br>";
+}
+#endif
 content += R"=====(<hr>
 <p>Please check the URL.<br>
 If OK please try uploading the file from the web content.

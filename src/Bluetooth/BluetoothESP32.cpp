@@ -85,7 +85,7 @@ CBluetoothESP32Classic::check()
   }
 }
 
-void 
+bool 
 CBluetoothESP32Classic::send(const char* Str)
 {
   if(isConnected()) {
@@ -95,12 +95,14 @@ CBluetoothESP32Classic::send(const char* Str)
 #endif
     SerialBT.write((uint8_t*)Str, strlen(Str));
     delay(10);
+    return true;
   }
   else {
     DebugPort.println("No Bluetooth client");
 #if BT_LED == 1     
     digitalWrite(LED_Pin, 0);
 #endif
+    return false;
   }
 }
 
@@ -261,7 +263,7 @@ CBluetoothESP32BLE::sendFrame(const char* pHdr, const CProtocol& Frame, bool lin
   }
 }
 */
-void 
+bool 
 CBluetoothESP32BLE::send(const char* Str)
 {
   char fullMsg[32];
@@ -275,12 +277,14 @@ CBluetoothESP32BLE::send(const char* Str)
 
     BLE_Send(txData);
     delay(10);
+    return true;
   }
   else {
     DebugPort.println("No Bluetooth client");
 #if BT_LED == 1     
     digitalWrite(LED_Pin, 0);
 #endif
+    return false;
   }
 }
 

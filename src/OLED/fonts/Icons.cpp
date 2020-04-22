@@ -1360,3 +1360,60 @@ const uint8_t PROGMEM humidityIcon[]  =
 };
 
 const BITMAP_INFO humidityIconInfo(15, 14, humidityIcon);
+
+
+const uint8_t PROGMEM HourGlass0_Icon[]  =
+{
+	0x01, 0xFF, //     #########
+	0x00, 0xFE, //      ####### 
+	0x00, 0xFE, //      ####### 
+	0x00, 0x7C, //       #####  
+	0x00, 0x38, //        ###   
+	0x00, 0x44, //       #   #  
+	0x00, 0x82, //      #     # 
+	0x00, 0x82, //      #     # 
+	0x00, 0x82, //      #     # 
+	0x01, 0xFF, //     #########
+};const uint8_t PROGMEM HourGlass1_Icon[]  =
+{
+	0x01, 0xFF, //     #########
+	0x00, 0x82, //      #     # 
+	0x00, 0xEE, //      ### ### 
+	0x00, 0x7C, //       #####  
+	0x00, 0x38, //        ###   
+	0x00, 0x44, //       #   #  
+	0x00, 0x82, //      #     # 
+	0x00, 0x92, //      #  #  # 
+	0x00, 0xBA, //      # ### # 
+	0x01, 0xFF, //     #########
+};const uint8_t PROGMEM HourGlass2_Icon[]  =
+{
+	0x01, 0xFF, //     #########
+	0x00, 0x82, //      #     # 
+	0x00, 0x82, //      #     # 
+	0x00, 0x7C, //       #####  
+	0x00, 0x38, //        ###   
+	0x00, 0x44, //       #   #  
+	0x00, 0x92, //      #  #  # 
+	0x00, 0xBA, //      # ### # 
+	0x00, 0xFE, //      ####### 
+	0x01, 0xFF, //     #########
+};const uint8_t PROGMEM HourGlass3_Icon[]  =
+{
+	0x01, 0xFF, //     #########
+	0x00, 0x82, //      #     # 
+	0x00, 0x82, //      #     # 
+	0x00, 0x44, //       #   #  
+	0x00, 0x28, //        # #   
+	0x00, 0x44, //       #   #  
+	0x00, 0xBA, //      # ### # 
+	0x00, 0xFE, //      ####### 
+	0x00, 0xFE, //      ####### 
+	0x01, 0xFF, //     #########
+};
+
+const BITMAP_INFO hourGlassIcon0Info(16, 10, HourGlass0_Icon);
+const BITMAP_INFO hourGlassIcon1Info(16, 10, HourGlass1_Icon);
+const BITMAP_INFO hourGlassIcon2Info(16, 10, HourGlass2_Icon);
+const BITMAP_INFO hourGlassIcon3Info(16, 10, HourGlass3_Icon);
+

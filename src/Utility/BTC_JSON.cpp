@@ -562,14 +562,23 @@ void Expand(std::string& str)
 
 void sendJSONtext(const char* jsonStr)
 {
+  std::string dest;
     DebugPort.print("1");
-    sendWebSocketString( jsonStr );
+    if(sendWebSocketString( jsonStr ))
+      dest += "W";
     DebugPort.print("2");
-    mqttPublishJSON(jsonStr);
+    if(mqttPublishJSON(jsonStr))
+      dest += "M";
     DebugPort.print("3");
     std::string expand = jsonStr;
     Expand(expand);
-    getBluetoothClient().send( expand.c_str() );
+    if(getBluetoothClient().send( expand.c_str() ))
+      dest += "B";
+
+  if(!dest.empty()) {
+    DebugPort.printf(" to %s", dest.c_str());
+  }
+
 }
 
 void doJSONreboot(uint16_t PIN)

@@ -48,7 +48,7 @@ class CBluetoothHC05 : public CBluetoothAbstract {
 public:
   CBluetoothHC05(int keyPin, int sensePin);
   void begin();
-  void send(const char* Str);
+  bool send(const char* Str);
   void check();
   virtual bool isConnected();
   const char* getMAC();
