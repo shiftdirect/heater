@@ -118,9 +118,6 @@ sBrowserUpload::fragment(HTTPUpload& upload)
         ::SPIFFS.remove(SrcFile.name.c_str());  // remove the bad file from SPIFFS
         return -2;
       }
-#ifdef SSL_SERVER
-      upload.totalSize += upload.currentSize;
-#endif
     }
   }
   else {
@@ -130,9 +127,6 @@ sBrowserUpload::fragment(HTTPUpload& upload)
       Update.printError(DebugPort);
       return -3;
     }
-#ifdef SSL_SERVER
-    upload.totalSize += upload.currentSize;
-#endif
   }
   return upload.totalSize;
 }

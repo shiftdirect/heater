@@ -19,17 +19,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
+#ifndef __BLUEWIRETASK_H__
+#define __BLUEWIRETASK_H__
 
-//#include "../../lib/TelnetSpy/TelnetSpy.h"
-#include "ABTelnetSpy.h"
+#include <FreeRTOS.h>
+#include "../Utility/UtilClasses.h"
 
-#ifndef __DEBUGPORT_H__
-#define __DEBUGPORT_H__
+extern QueueHandle_t BlueWireMsgBuf;    // cannot use general Serial.print etc from this task without causing conflicts
+extern QueueHandle_t BlueWireRxQueue;   // queue to pass down heater receive data
+extern QueueHandle_t BlueWireTxQueue;   // queue to pass down heater transmit data
+extern SemaphoreHandle_t BlueWireSemaphore;  // flag to indicate completion of heater data exchange
 
-class CProtocol;
+const int BLUEWIRE_MSGQUEUESIZE = 192;
+const int BLUEWIRE_DATAQUEUESIZE = 24;
 
-extern ABTelnetSpy DebugPort;
+extern void BlueWireTask(void*);
+extern CommStates CommState;
 
-void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr, char* msg);
 
-#endif // __DEBUGPORT_H__
+#endif

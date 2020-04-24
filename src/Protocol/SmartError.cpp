@@ -59,8 +59,7 @@ CSmartError::inhibit(bool reseterror)
 void
 CSmartError::monitor(const CProtocol& heaterFrame)
 {
-  bool bSilent = true;
-  if(heaterFrame.verifyCRC(bSilent)) {  // check but don't report dodgy frames to debug
+  if(heaterFrame.verifyCRC(NULL)) {  // check but don't report dodgy frames to debug
     // only accept valid heater frames!
     monitor(heaterFrame.getRunState());
   }

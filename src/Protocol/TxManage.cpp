@@ -28,8 +28,6 @@
 //#define DEBUG_THERMOSTAT
 
 
-extern void DebugReportFrame(const char* hdr, const CProtocol&, const char* ftr);
-
 // CTxManage is used to send a data frame to the blue wire
 //
 // As the blue wire is bidirectional, we need to only allow our transmit data
@@ -71,6 +69,7 @@ CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) :
   m_nTxGatePin = TxGatePin;
   _rawCommand = 0;
   m_HWTimer = NULL;
+  _callback = NULL;
 }
 
 // static function used for the tx gate termination 
@@ -198,7 +197,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
       float tDelta = tCurrent - tDesired;
       float fTemp;
 #ifdef DEBUG_THERMOSTAT
-      DebugPort.printf("Window=%.1f tCurrent=%.1f tDesired=%.1f tDelta=%.1f\r\n", Window, tCurrent, tDesired, tDelta); 
+      if(_callback) {
+        char msg[80];
+        sprintf(msg, "Window=%.1f tCurrent=%.1f tDesired=%.1f tDelta=%.1f\r\n", Window, tCurrent, tDesired, tDelta); 
+        _callback(msg);
+      }
 #endif
       Window /= 2;
       switch(ThermoMode) {
@@ -224,7 +227,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           s8Temp = (int8_t)(tActual + 0.5);
           m_TxFrame.setTemperature_Actual(s8Temp);
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.printf("Conventional thermostat mode: tActual = %d\r\n", u8Temp); 
+          if(_callback) {
+            char msg[80];
+            sprintf(msg, "Conventional thermostat mode: tActual = %d\r\n", u8Temp); 
+            _callback(msg);
+          }
 #endif
           break;
 
@@ -241,7 +248,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           }
           m_TxFrame.setTemperature_Actual(s8Temp);  
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.printf("Heater controlled windowed thermostat mode: tActual=%d\r\n", u8Temp); 
+          if(_callback) {
+            char msg[80];
+            sprintf(msg, "Heater controlled windowed thermostat mode: tActual=%d\r\n", u8Temp); 
+            _callback(msg);
+          }
 #endif
           break;
 
@@ -251,7 +262,11 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           // so create a desired "temp" according the the current hystersis
           tDelta /= Window;  // convert tDelta to fraction of window (CAUTION - may be > +-1 !)
 #ifdef DEBUG_THERMOSTAT
-          DebugPort.printf("Linear window thermostat mode: Fraction=%f", tDelta);
+          if(_callback) {
+            char msg[80];
+            DebugPort.printf("Linear window thermostat mode: Fraction=%f", tDelta);
+            _callback(msg);
+          }
 #endif
           fTemp = (m_TxFrame.getTemperature_Max() + m_TxFrame.getTemperature_Min()) * 0.5;  // midpoint - tDelta = 0 hinges here
           tDelta *= (m_TxFrame.getTemperature_Max() - fTemp);  // linear offset from setpoint
@@ -264,8 +279,12 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           m_TxFrame.setHeaterDemand(s8Temp);
           m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
           m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
-#ifdef DEBUG_THERMOSTAT
-          DebugPort.printf(" tDesired (pseudo Hz demand) = %d\r\n", u8Temp); 
+#ifdef DEBUG_THERMOSTAT 
+          if(_callback) {
+            char msg[80];
+            sprintf(msg, " tDesired (pseudo Hz demand) = %d\r\n", u8Temp); 
+            _callback(msg);
+          }
 #endif
           break;
       }

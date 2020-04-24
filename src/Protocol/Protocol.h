@@ -95,7 +95,7 @@ public:
   void setCRC();                    // calculate and set the CRC in the buffer
   void setCRC(uint16_t CRC);  // set  the CRC in the buffer
   uint16_t getCRC() const;    // extract CRC value from buffer
-  bool verifyCRC(bool silent=false) const;   // return true for CRC match
+  bool verifyCRC(std::function<void(const char*)> pushMsg) const;   // return true for CRC match
 
   void setActiveMode() { Controller.Byte0 = 0x76; };  // this allows heater to save tuning params to EEPROM
   void setPassiveMode() { Controller.Byte0 = 0x78; };  // this prevents heater saving tuning params to EEPROM
@@ -214,7 +214,7 @@ public:
   int   getAltitude() const { return Controller.getAltitude(); };
 
 //  void  setRefTime();
-  void  reportFrames(bool isOEM);
+  void  reportFrames(bool isOEM, std::function<void(const char*)> pushMsg);
 };
 
 extern const CProtocolPackage& getHeaterInfo();

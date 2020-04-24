@@ -438,16 +438,22 @@ CBME280Sensor::getTemperature(float& tempReading, bool filtered)
 }
 
 bool
-CBME280Sensor::getAltitude(float& reading)
+CBME280Sensor::getAltitude(float& reading, bool fresh)
 {
-  reading = _bme.readAltitude(1013.25);  //use  standard atmosphere as reference
+  if(fresh) {
+    _fAltitude = _bme.readAltitude(1013.25);  //use  standard atmosphere as reference
+  }
+  reading = _fAltitude;
   return true;
 }
 
 bool
-CBME280Sensor::getHumidity(float& reading)
+CBME280Sensor::getHumidity(float& reading, bool fresh)
 {
-  reading = _bme.readHumidity();
+  if(fresh) {
+    _fHumidity = _bme.readHumidity();
+  }
+  reading = _fHumidity;
   return true;
 }
 
@@ -489,6 +495,10 @@ CTempSense::startConvert()
 bool
 CTempSense::readSensors()
 {
+  float fDummy;
+  getAltitude(fDummy, true);
+  getHumidity(fDummy, true);
+
   return DS18B20.readSensors();
 }
 
@@ -628,19 +638,19 @@ CTempSense::getTemperatureBME280(float& reading)
 }
 
 bool
-CTempSense::getAltitude(float& reading)
+CTempSense::getAltitude(float& reading, bool fresh)
 {
   if(BME280.getCount())
-    return BME280.getAltitude(reading);
+    return BME280.getAltitude(reading, fresh);
   else
     return false;
 }
 
 bool
-CTempSense::getHumidity(float& reading)
+CTempSense::getHumidity(float& reading, bool fresh)
 {
   if(BME280.getCount())
-    return BME280.getHumidity(reading);
+    return BME280.getHumidity(reading, fresh);
   else
     return false;
 }

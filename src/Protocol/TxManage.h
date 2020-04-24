@@ -27,6 +27,7 @@ class CTxManage
   const int m_nFrameTime = 14;  
   const int m_nFrontPorch = 0;  
   int m_sysUpdate;
+  std::function<void(const char*)> _callback;
 
 public:
   CTxManage(int TxGatePin, HardwareSerial& serial);
@@ -40,6 +41,7 @@ public:
   const CProtocol& getFrame() const { return m_TxFrame; };
   static void IRAM_ATTR callbackGateTerminate();
   void queueSysUpdate();  // use to implant NV settings into heater
+  void setCallback(std::function<void(const char*)> fn) { _callback = fn; };
 
 private:
   HardwareSerial& m_BlueWireSerial;
