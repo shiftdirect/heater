@@ -220,33 +220,21 @@ CSecuritySetup::_showMenu(bool init)
   DebugPort.printf("    <1> - set SSID, currently \"%s\"\r\n", _credsSetup.APSSID);
   DebugPort.print("    <2> - set password");
   len = strlen(_credsSetup.APpassword);
-  if(len == 0)
-    DebugPort.print(", currently UNRESTRICTED\r\n");
-  else {
-    insertDummy(len);
-  }
+  insertDummy(len);
   DebugPort.println("");
 
   DebugPort.println("  Web page credentials");
   DebugPort.printf("    <3> - set username, currently \"%s\"\r\n", _credsSetup.webUsername);
   DebugPort.print("    <4> - set password");
   len = strlen(_credsSetup.webPassword);
-  if(len == 0)
-    DebugPort.printf(", currently UNRESTRICTED\r\n");
-  else {
-    insertDummy(len);
-  }
+  insertDummy(len);
   DebugPort.println("");
 
   DebugPort.println("  /update web page credentials");
   DebugPort.printf("    <5> - set username, currently \"%s\"\r\n", _credsSetup.webUpdateUsername);
   DebugPort.printf("    <6> - set password");
   len = strlen(_credsSetup.webUpdatePassword);
-  if(len == 0)
-    DebugPort.printf(", UNRESTRICTED!\r\n");
-  else {
-    insertDummy(len);
-  }
+  insertDummy(len);
   DebugPort.println("");
   DebugPort.printf("  <ENTER> - save and exit\r\n");
   DebugPort.printf("  <ESC> - abort\r\n");
@@ -255,13 +243,17 @@ CSecuritySetup::_showMenu(bool init)
 }
 
 void insertDummy(int len) {
-  char dummy[32];
-  memset(dummy, 0, 32);
-  if(len > 31) 
-    len = 31;
-  for(int i = 0; i < len; i++)
-    dummy[i] = '*';
-  DebugPort.printf(" (%s)\r\n", dummy);
+  if(len == 0)
+    DebugPort.println(", NOT REQUIRED!");
+  else {
+    char dummy[32];
+    memset(dummy, 0, 32);
+    if(len > 31) 
+      len = 31;
+    for(int i = 0; i < len; i++)
+      dummy[i] = '*';
+    DebugPort.printf(" (%s)\r\n", dummy);
+  }
 }
 
 
@@ -312,7 +304,7 @@ CSecuritySetup::_handle(char rxVal)
             break;
           case 2: 
             DebugPort.print("Enter current AP password"); 
-            _initPassword(0);
+            _initPassword(0, "inbuilt Access Point");
             break;
           case 3: 
             DebugPort.printf("Enter new Web page access username (currently '%s', CTRL-X to erase)", _credsSetup.webUsername); 
@@ -320,7 +312,7 @@ CSecuritySetup::_handle(char rxVal)
             break;
           case 4: 
             DebugPort.print("Enter current web page access password"); 
-            _initPassword(1);
+            _initPassword(1, "web page access");
             break;
           case 5: 
             DebugPort.printf("Enter new /update web page access username (currently '%s', CTRL-X to erase)", _credsSetup.webUpdateUsername); 
@@ -328,7 +320,7 @@ CSecuritySetup::_handle(char rxVal)
             break;
           case 6: 
             DebugPort.print("Enter current /update web page access password"); 
-            _initPassword(2);
+            _initPassword(2, "/update web page access");
             break;
         }
         DebugPort.print("... ");
@@ -355,12 +347,16 @@ CSecuritySetup::_handle(char rxVal)
 }
 
 void 
-CSecuritySetup::_initPassword(int idx)
+CSecuritySetup::_initPassword(int idx, const char* prompt)
 {
   _lineInput.reset();
   _lineInput.maskEntry();
   _password.Idx = idx;
   _password.State = 1;
+  if(strlen(_getCurrentPassword()) == 0) {
+    DebugPort.printf("\rEnter password for %s (CTRL-X for no password) - ", prompt);
+    _password.State = 2;
+  }
 }
 
 bool
@@ -373,7 +369,7 @@ bool
 CSecuritySetup::_handlePassword(char rxVal)
 {
   switch(_password.State) {
-    case 1:
+    case 1:  // collect, then test existing password
       if(_lineInput.handle(rxVal)) {
         _password.str1 = _lineInput.getString();
         _password.str2 = _getCurrentPassword();
@@ -383,7 +379,7 @@ CSecuritySetup::_handlePassword(char rxVal)
         }
         else {
           _password.State = 2;
-          DebugPort.print("\r\nPlease enter new password - ");
+          DebugPort.print("\r\nPlease enter new password (CTRL-X for no password) - ");
           DebugPort.enable(false);  // block other debug msgs whilst we get the password
         }
         _lineInput.reset();
@@ -391,6 +387,12 @@ CSecuritySetup::_handlePassword(char rxVal)
       }
       return true;
     case 2:
+      if(rxVal == ('x' & 0x1f)) {  // special handling for CTRL-X - erase password
+        _password.State = 4;
+        DebugPort.print("\r\nConfirm no password required? (y/n) - ");
+        _password.str2 = "";
+        return true;
+      }
       if(_lineInput.handle(rxVal)) {
         _password.str1 = _lineInput.getString();
         if(_lineInput.getLen() < 8) {

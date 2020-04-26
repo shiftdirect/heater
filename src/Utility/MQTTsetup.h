@@ -48,7 +48,7 @@ class CSecuritySetup {
   sCredentials _credsSetup;
   bool _handle(char rxVal);
   void _showMenu(bool init = false);
-  void _initPassword(int idx);
+  void _initPassword(int idx, const char*prompt);
   bool _getPassword();
   bool _handlePassword(char rxVal);
   const char* _getCurrentPassword();

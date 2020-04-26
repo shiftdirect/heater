@@ -130,8 +130,8 @@
 
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 5;
-const char* FirmwareDate = "11 Apr 2020";
+const int FirmwareMinorRevision = 6;
+const char* FirmwareDate = "26 Apr 2020";
 
 
 #ifdef ESP32
@@ -838,10 +838,6 @@ bool isWebClientConnected()
 
 void checkDebugCommands()
 {
-  static uint8_t nGetString = 0;
-  static uint8_t nGetConf = 0;
-  static String pw1;
-  static String pw2;
   static CGetLine line;
 
   // check for test commands received over Debug serial port or telnet
@@ -868,229 +864,6 @@ void checkDebugCommands()
         showMainmenu();
       }
       return;
-    }
-
-    if(nGetConf) {
-      DebugPort.print(rxVal);
-      bool bSave = (rxVal == 'y') || (rxVal == 'Y');
-      DebugPort.println("");
-      if(!bSave) {
-        DebugPort.println(" ABORTED!");
-        nGetConf = 0;
-        return;
-      }
-      switch(nGetConf) {
-        case 1: 
-          setName(line.getString(), 0);  
-          break;
-        case 2:
-          setPassword(pw2.c_str(), 0);
-          break;
-        case 3:
-          setName(line.getString(), 1);
-          break;
-        case 4:
-          setPassword(pw2.c_str(), 1);
-          break;
-        case 5:
-          setName(line.getString(), 2);
-          break;
-        case 6:
-          setPassword(pw2.c_str(), 2);
-          break;
-      }
-      nGetConf = 0;
-      return;
-    }
-    else if(nGetString) {
-      DebugPort.enable(true);
-
-      if(rxVal == 0x1b) {  // ESCAPE
-        nGetString = 0;
-        DebugPort.println("\r\nABORTED!");
-        return;
-      }
-
-      if(line.handle(rxVal)) {
-        switch(nGetString) {
-          case 1:  
-            if(line.getLen() <= 31) {
-              nGetConf = 1; 
-              DebugPort.printf("\r\nSet AP SSID to %s? (y/n) - ", line.getString());
-            }
-            else {
-              DebugPort.println("\r\nNew name is longer than 31 characters - ABORTING");
-            }
-            nGetString = 0;
-            return;
-          case 2:
-            pw1 = line.getString();
-            pw2 = NVstore.getCredentials().APpassword;
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nPassword does not match existing - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 3;
-              DebugPort.print("\r\nPlease enter new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 3:
-            pw1 = line.getString();
-            if(line.getLen() < 8) {
-              // ABORT - too short
-              DebugPort.println("\r\nNew password must be at least 8 characters - ABORTING");
-              nGetString = 0;
-            }
-            else if(line.getLen() > 31) {
-              // ABORT - too long!
-              DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 4;
-              DebugPort.print("\r\nPlease confirm new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 4:
-            pw2 = line.getString();
-            line.reset();
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nNew passwords do not match - ABORTING");
-            }
-            else {
-              nGetConf = 2;
-              DebugPort.print("\r\nSet new password (y/n) - ");
-            }
-            nGetString = 0;
-            return;
-          case 10:  
-            if(line.getLen() <= 31) {
-              nGetConf = 3; 
-              DebugPort.printf("\r\nSet Web page username to %s? (y/n) - ", line.getString());
-            }
-            else {
-              DebugPort.println("\r\nNew username is longer than 31 characters - ABORTING");
-            }
-            nGetString = 0;
-            return;
-          case 11:
-            pw1 = line.getString();
-            pw2 = NVstore.getCredentials().webPassword;
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nPassword does not match existing - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 12;
-              DebugPort.print("\r\nPlease enter new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 12:
-            pw1 = line.getString();
-            if(line.getLen() < 8) {
-              // ABORT - too short
-              DebugPort.println("\r\nNew password must be at least 8 characters - ABORTING");
-              nGetString = 0;
-            }
-            else if(line.getLen() > 31) {
-              // ABORT - too long!
-              DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 13;
-              DebugPort.print("\r\nPlease confirm new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 13:
-            pw2 = line.getString();
-            line.reset();
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nNew passwords do not match - ABORTING");
-            }
-            else {
-              nGetConf = 4;
-              DebugPort.print("\r\nSet new password (y/n) - ");
-            }
-            nGetString = 0;
-            return;
-
-          case 20:  
-            if(line.getLen() <= 31) {
-              nGetConf = 5; 
-              DebugPort.printf("\r\nSet Web /update username to %s? (y/n) - ", line.getString());
-            }
-            else {
-              DebugPort.println("\r\nNew username is longer than 31 characters - ABORTING");
-            }
-            nGetString = 0;
-            return;
-            
-          case 21:
-            pw1 = line.getString();
-            pw2 = NVstore.getCredentials().webUpdatePassword;
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nPassword does not match existing - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 22;
-              DebugPort.print("\r\nPlease enter new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 22:
-            pw1 = line.getString();
-            if(line.getLen() < 8) {
-              // ABORT - too short
-              DebugPort.println("\r\nNew password must be at least 8 characters - ABORTING");
-              nGetString = 0;
-            }
-            else if(line.getLen() > 31) {
-              // ABORT - too long!
-              DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 23;
-              DebugPort.print("\r\nPlease confirm new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 23:
-            pw2 = line.getString();
-            line.reset();
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nNew passwords do not match - ABORTING");
-            }
-            else {
-              nGetConf = 6;
-              DebugPort.print("\r\nSet new password (y/n) - ");
-            }
-            nGetString = 0;
-            return;
-        }
-      }
-      DebugPort.enable(false);
-      return;
-
     }
 
     rxVal = toLowerCase(rxVal);
@@ -1163,12 +936,6 @@ void checkDebugCommands()
           bReportRecyleEvents = false;
         DebugPort.printf("Toggled blue wire recycling event reporting %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
       }
-      else if(rxVal == 'n') {
-        DebugPort.print("Please enter new SSID name for Access Point - ");
-        line.reset();
-        nGetString = 1;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
-      }
       else if(rxVal == 'm') {
         MQTTmenu.setActive();
       }
@@ -1178,37 +945,6 @@ void checkDebugCommands()
       else if(rxVal == ('o' & 0x1f))  {
         bReportOEMresync = !bReportOEMresync;
         DebugPort.printf("Toggled OEM resync event reporting %s\r\n", bReportOEMresync ? "ON" : "OFF");
-      }
-      else if(rxVal == 'p') {
-        DebugPort.print("Please enter current AP password - ");
-        line.reset();
-        line.maskEntry();
-        nGetString = 2;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
-      }
-      else if(rxVal == 'u') {
-        DebugPort.print("Please enter username for Web page access (CTRL-X to disable) - ");
-        line.reset();
-        nGetString = 10;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
-      }
-      else if(rxVal == 'w') {
-        DebugPort.print("Please enter current Web page password - ");
-        line.reset();
-        nGetString = 11;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
-      }
-      else if(rxVal == 'y') {
-        DebugPort.print("Please enter username for /update Web page access - ");
-        line.reset();
-        nGetString = 20;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
-      }
-      else if(rxVal == 'z') {
-        DebugPort.print("Please enter current /update Web page password - ");
-        line.reset();
-        nGetString = 21;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
       }
       else if(rxVal == ('c' & 0x1f)) {
         CommState.toggleReporting();
@@ -1222,7 +958,7 @@ void checkDebugCommands()
       else if(rxVal == 'h') {
         getWebContent(true);
       }
-      else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mdoe: bluetooth module route
+      else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mode: bluetooth module route
         bTestBTModule = !bTestBTModule;
         Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
       }
