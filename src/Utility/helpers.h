@@ -45,6 +45,7 @@ extern void  resetFuelGauge();
 extern const char* getBlueWireStatStr();
 extern bool  hasOEMcontroller();
 extern bool  hasOEMLCDcontroller();
+extern bool  hasHtrData();
 extern int   getBlueWireStat();
 extern int   getSmartError();
 extern bool  isCyclicActive();
@@ -73,8 +74,8 @@ extern CTempSense& getTempSensor() ;
 extern void reqHeaterCalUpdate();
 
 
-void setSSID(const char* name);
-void setAPpassword(const char* name);
+void setName(const char* name, int type);
+void setPassword(const char* name, int type);
 
 extern void ShowOTAScreen(int percent=0, eOTAmodes updateType=eOTAnormal);
 

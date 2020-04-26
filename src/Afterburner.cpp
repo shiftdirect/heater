@@ -120,17 +120,18 @@
 #include "RTC/TimerManager.h"
 #include "Utility/GetLine.h"
 #include "Utility/DemandManager.h"
+#include "Protocol/BlueWireTask.h"
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
 //#define AP_PASSWORD "thereisnospoon"
 
-#define RX_DATA_TIMOUT 50
+// #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 5;
-const char* FirmwareDate = "11 Apr 2020";
+const int FirmwareMinorRevision = 6;
+const char* FirmwareDate = "26 Apr 2020";
 
 
 #ifdef ESP32
@@ -139,17 +140,6 @@ const char* FirmwareDate = "11 Apr 2020";
 #include "Bluetooth/BluetoothHC05.h"
 #endif
 
-// Setup Serial Port Definitions
-#if defined(__arm__)
-// Required for Arduino Due, UARTclass is derived from HardwareSerial
-static UARTClass& BlueWireSerial(Serial1);
-#else
-// for ESP32, Mega
-// HardwareSerial is it for these boards
-static HardwareSerial& BlueWireSerial(Serial1);  
-#endif
-
-void initBlueWireSerial();
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
@@ -159,9 +149,11 @@ void manageHumidity();
 void doStreaming();
 void heaterOn();
 void heaterOff();
-void updateFilteredData();
+void updateFilteredData(CProtocol& HeaterInfo);
 bool HandleMQTTsetup(char rxVal);
 void showMainmenu();
+bool checkTemperatureSensors();
+void checkBlueWireEvents();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus
@@ -178,16 +170,11 @@ bool bReportStack = false;
 unsigned long lastAnimationTime;     // used to sequence updates to LCD for animation
 
 sFilteredData FilteredSamples;
-CommStates CommState;
-CTxManage TxManage(TxEnbPin, BlueWireSerial);
-CModeratedFrame OEMCtrlFrame;        // data packet received from heater in response to OEM controller packet
-CModeratedFrame HeaterFrame1;        // data packet received from heater in response to OEM controller packet
-CProtocol HeaterFrame2;              // data packet received from heater in response to our packet 
-CProtocol DefaultBTCParams(CProtocol::CtrlMode);  // defines the default parameters, used in case of no OEM controller
 CSmartError SmartError;
 CKeyPad KeyPad;
 CScreenManager ScreenManager;
 ABTelnetSpy DebugPort;
+
 #if USE_JTAG == 0
 //CANNOT USE GPIO WITH JTAG DEBUG
 CGPIOin GPIOin;
@@ -196,13 +183,9 @@ CGPIOalg GPIOalg;
 #endif
 
 CMQTTsetup MQTTmenu;
+CSecuritySetup SecurityMenu;
 
 
-
-long lastRxTime;                     // used to observe inter character delays
-bool bHasOEMController = false;
-bool bHasOEMLCDController = false;
-bool bHasHtrData = false;
 
 // these variables will persist over a soft reboot.
 __NOINIT_ATTR float persistentRunTime;
@@ -217,10 +200,10 @@ bool bReportJSONData = REPORT_JSON_TRANSMIT;
 bool bReportRecyleEvents = REPORT_BLUEWIRE_RECYCLES;
 bool bReportOEMresync = REPORT_OEM_RESYNC;
 
-CProtocolPackage reportHeaterData;
-CProtocolPackage primaryHeaterData;
+CProtocol BlueWireRxData;
+CProtocol BlueWireTxData;
+CProtocolPackage BlueWireData;
 
-unsigned long moderator;
 bool bUpdateDisplay = false;
 bool bHaveWebClient = false;
 bool bBTconnected = false;
@@ -281,6 +264,52 @@ CBluetoothAbstract& getBluetoothClient()
   return Bluetooth;
 }
 
+char taskMsg[BLUEWIRE_MSGQUEUESIZE];
+
+void checkBlueWireEvents()
+{
+// collect and report any debug messages from the blue wire task
+  if(BlueWireMsgBuf && xQueueReceive(BlueWireMsgBuf, taskMsg, 0))
+    DebugPort.print(taskMsg);
+
+  // check for complted data exchange from the blue wire task
+  if(BlueWireSemaphore && xSemaphoreTake(BlueWireSemaphore, 0)) {
+    updateJSONclients(bReportJSONData);
+    updateMQTT();
+    NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
+  }
+
+  // collect transmitted heater data from blue wire task
+  if(BlueWireTxQueue && xQueueReceive(BlueWireTxQueue, BlueWireTxData.Data, 0)) {
+  }
+
+  // collect and process received heater data from blue wire task
+  if(BlueWireRxQueue && xQueueReceive(BlueWireRxQueue, BlueWireRxData.Data, 0)) {
+    BlueWireData.set(BlueWireRxData, BlueWireTxData);
+    SmartError.monitor(BlueWireRxData);
+
+    updateFilteredData(BlueWireRxData);
+
+    FuelGauge.Integrate(BlueWireRxData.getPump_Actual());
+
+    if(INBOUNDS(BlueWireRxData.getRunState(), 1, 5)) {  // check for Low Voltage Cutout
+      SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+      SmartError.checkfuelUsage();
+    }
+
+    // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
+    if(RTC_Store.getCyclicEngaged() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
+      const char* msg = "Forcing cyclic cancel due to error induced shutdown\r\n";
+      xQueueSend(BlueWireMsgBuf, msg, 0);
+      // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+      RTC_Store.setCyclicEngaged(false);
+    }
+
+    pHourMeter->monitor(BlueWireRxData);
+  }
+}
+
+
 // callback function for Keypad events.
 // must be an absolute function, cannot be a class member due the "this" element!
 void parentKeyHandler(uint8_t event) 
@@ -321,6 +350,7 @@ void WatchdogTask(void * param)
 }
 
 
+
 //**************************************************************************************************
 //**                                                                                              **
 //**         WORKAROUND for crap ESP32 millis() standard function                                 **
@@ -352,6 +382,8 @@ extern "C" unsigned long __wrap_millis() {
 
 void setup() {
 
+  vTaskPrioritySet(NULL, TASK_PRIORITY_ARDUINO);   // elevate normal Arduino loop etc higher than the usual '1'
+
   // ensure cyclic mode is disabled after power on
   bool bESP32PowerUpInit = false;
   if(rtc_get_reset_reason(0) == 1/* || bForceInit*/) {
@@ -382,10 +414,6 @@ void setup() {
   DebugPort.begin(115200);
   DebugPort.println("_______________________________________________________________");
 
-  DebugPort.printf("Arduino task priority was %d\r\n", uxTaskPriorityGet(NULL));
-  vTaskPrioritySet(NULL, TASKPRIORITY_ARDUINO);
-  DebugPort.printf("Arduino task priority now %d\r\n", uxTaskPriorityGet(NULL));
-  
   DebugPort.printf("Getting NVS stats\r\n");
 
   nvs_stats_t nvs_stats;
@@ -466,30 +494,10 @@ void setup() {
   pinMode(LED_Pin, OUTPUT);               // On board LED indicator
   digitalWrite(LED_Pin, LOW);
 
-  initBlueWireSerial();
-  
-  // prepare for first long delay detection
-  lastRxTime = millis();
-
-  TxManage.begin(); // ensure Tx enable pin is setup
-
-  // define defaults should OEM controller be missing
-  DefaultBTCParams.setHeaterDemand(23);
-  DefaultBTCParams.setTemperature_Actual(22);
-  DefaultBTCParams.setSystemVoltage(12.0);
-  DefaultBTCParams.setPump_Min(1.6f);
-  DefaultBTCParams.setPump_Max(5.5f);
-  DefaultBTCParams.setFan_Min(1680);
-  DefaultBTCParams.setFan_Max(4500);
-  DefaultBTCParams.Controller.FanSensor = 1;
-
   bBTconnected = false;
   Bluetooth.begin();
 
   setupGPIO(); 
-
-//  pinMode(0, OUTPUT);
-//  digitalWrite(0, LOW);
 
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
   // create a high priority FreeRTOS task as a watchdog monitor
@@ -557,6 +565,18 @@ void setup() {
   TempSensor.getDS18B20().mapSensor(1, NVstore.getHeaterTuning().DS18B20probe[1].romCode);
   TempSensor.getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
 
+  // create task to run blue wire interface
+  TaskHandle_t Task;
+  xTaskCreate(BlueWireTask,              
+              "BlueWireTask",
+              2000,
+              NULL,
+              TASK_PRIORITY_BLUEWIRE,
+             &Task);
+
+  
+
+
   delay(1000); // just to hold the splash screeen for while
 
   ScreenManager.clearDisplay();
@@ -570,311 +590,28 @@ void setup() {
 
 void loop() 
 {
-
-  float fTemperature;
-  unsigned long timenow = millis();
-
   // DebugPort.handle();    // keep telnet spy alive
-
-  //////////////////////////////////////////////////////////////////////////////////////
-  // Blue wire data reception
-  //  Reads data from the "blue wire" Serial port, (to/from heater)
-  //  If an OEM controller exists we will also see it's data frames
-  //  Note that the data is read now, then held for later use in the state machine
-  //
-  sRxData BlueWireData;
-
-  // calc elapsed time since last rxd byte
-  // used to detect no OEM controller, or the start of an OEM frame sequence
-  unsigned long RxTimeElapsed = timenow - lastRxTime;
-
-  if (BlueWireSerial.available()) {
-    // Data is available, read and store it now, use it later
-    // Note that if not in a recognised data receive frame state, the data 
-    // will be deliberately lost!
-    BlueWireData.setValue(BlueWireSerial.read());  // read hex byte, store for later use
-      
-    lastRxTime = timenow;    // tickle last rx time, for rx data timeout purposes
-  } 
-
-
-  // precautionary state machine action if all 24 bytes were not received 
-  // whilst expecting a frame from the blue wire
-  if(RxTimeElapsed > RX_DATA_TIMOUT) {         
-
-    if(NVstore.getUserSettings().menuMode == 2)
-      bReportRecyleEvents = false;
-
-    if( CommState.is(CommStates::OEMCtrlRx) || 
-        CommState.is(CommStates::HeaterRx1) ||  
-        CommState.is(CommStates::HeaterRx2) ) {
-
-      if(RxTimeElapsed >= moderator) {
-        moderator += 10;  
-        if(bReportRecyleEvents) {
-          DebugPort.printf("%ldms - ", RxTimeElapsed);
-        }
-        if(CommState.is(CommStates::OEMCtrlRx)) {
-          bHasOEMController = false;
-          bHasOEMLCDController = false;
-          if(bReportRecyleEvents) 
-            DebugPort.println("Timeout collecting OEM controller data, returning to Idle State");
-        }
-        else if(CommState.is(CommStates::HeaterRx1)) {
-          bHasHtrData = false;
-          if(bReportRecyleEvents) 
-            DebugPort.println("Timeout collecting OEM heater response data, returning to Idle State");
-        }
-        else {
-          bHasHtrData = false;
-          if(bReportRecyleEvents) 
-            DebugPort.println("Timeout collecting BTC heater response data, returning to Idle State");
-        }
-      }
-
-      if(bReportRecyleEvents) 
-        DebugPort.println("Recycling blue wire serial interface");
-      // initBlueWireSerial();
-      CommState.set(CommStates::TemperatureRead);    // revert to idle mode, after passing thru temperature mode
-    }
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  // do our state machine to track the reception and delivery of blue wire data
-
-  long tDelta;
-  switch(CommState.get()) {
-
-    case CommStates::Idle:
 
       feedWatchdog(); // feed watchdog
       
-      doStreaming();   // do wifi, BT tx etc when NOT in midst of handling blue wire
-                       // this especially avoids E-07 faults due to larger data transfers
+  doStreaming();   // do wifi, BT tx etc 
 
-      moderator = 50;  
+  Clock.update();
 
-#if RX_LED == 1
-      digitalWrite(LED_Pin, LOW);
-#endif
-      // Detect the possible start of a new frame sequence from an OEM controller
-      // This will be the first activity for considerable period on the blue wire
-      // The heater always responds to a controller frame, but otherwise never by itself
-      
-      if(RxTimeElapsed >= (NVstore.getUserSettings().FrameRate - 60)) {  // compensate for the time spent just doing things in this state machine
-        // have not seen any receive data for a second.
-        // OEM controller is probably not connected. 
-        // Skip state machine immediately to BTC_Tx, sending our own settings.
-        bHasHtrData = false;
-        bHasOEMController = false;
-        bHasOEMLCDController = false;
-        bool isBTCmaster = true;
-        TxManage.PrepareFrame(DefaultBTCParams, isBTCmaster);  // use our parameters, and mix in NV storage values
-        TxManage.Start(timenow);
-        CommState.set(CommStates::BTC_Tx);
-        break;
-      } 
+  if(checkTemperatureSensors())
+    ScreenManager.reqUpdate();
 
-#if SUPPORT_OEM_CONTROLLER == 1
-      if(BlueWireData.available() && (RxTimeElapsed > (RX_DATA_TIMOUT+10))) {  
-
-        if(bReportOEMresync) {
-          DebugPort.printf("Re-sync'd with OEM Controller. %ldms Idle time.\r\n", RxTimeElapsed);
-        }
-
-        bHasHtrData = false;
-        bHasOEMController = true;
-        CommState.set(CommStates::OEMCtrlRx);   // we must add this new byte!
-        //
-        //  ** IMPORTANT - we must drop through to OEMCtrlRx *NOW* (skipping break) **
-        //  **             otherwise the first byte will be lost!                   **
-        //
-      }
-      else {
-        Clock.update();
         checkDisplayUpdate();    
-        break;  // only break if we fail all Idle state tests
-      }
-#else
-      Clock.update();
-      checkDisplayUpdate();
-      break;  
-#endif
+
+  checkBlueWireEvents();
+
+  vTaskDelay(1);
+}  // loop
 
 
-    case CommStates::OEMCtrlRx:
-
-#if RX_LED == 1
-    digitalWrite(LED_Pin, HIGH);
-#endif
-      // collect OEM controller frame
-      if(BlueWireData.available()) {
-        if(CommState.collectData(OEMCtrlFrame, BlueWireData.getValue()) ) {
-          CommState.set(CommStates::OEMCtrlValidate);  // collected 24 bytes, move on!
-        }
-      }
-      break;
-
-
-    case CommStates::OEMCtrlValidate:
-#if RX_LED == 1
-    digitalWrite(LED_Pin, LOW);
-#endif
-      // test for valid CRC, abort and restarts Serial1 if invalid
-      if(!validateFrame(OEMCtrlFrame, "OEM")) {
-        break;
-      }
-
-      // filled OEM controller frame
-      OEMCtrlFrame.setTime();
-      // LCD controllers use 0x76 as first byte, rotary knobs use 0x78
-      bHasOEMLCDController = (OEMCtrlFrame.Controller.Byte0 != 0x78);
-
-      CommState.set(CommStates::HeaterRx1);
-      break;
-
-
-    case CommStates::HeaterRx1:
-#if RX_LED == 1
-    digitalWrite(LED_Pin, HIGH);
-#endif
-      // collect heater frame, always in response to an OEM controller frame
-      if(BlueWireData.available()) {
-        if( CommState.collectData(HeaterFrame1, BlueWireData.getValue()) ) {
-          CommState.set(CommStates::HeaterValidate1);
-        }
-      }
-      break;
-
-
-    case CommStates::HeaterValidate1:
-#if RX_LED == 1
-    digitalWrite(LED_Pin, LOW);
-#endif
-
-      // test for valid CRC, abort and restarts Serial1 if invalid
-      if(!validateFrame(HeaterFrame1, "RX1")) {
-        bHasHtrData = false;
-        break;
-      }
-      bHasHtrData = true;
-
-      // received heater frame (after controller message), report
-    
-      // do some monitoring of the heater state variable
-      // if abnormal transitions, introduce a smart error!
-      // This routine also cancels ON/OFF requests if runstate in startup/shutdown periods
-      SmartError.monitor(HeaterFrame1);
-
-      HeaterFrame1.setTime();
-
-      while(BlueWireSerial.available()) {
-        DebugPort.println("DUMPED ROGUE RX DATA");
-        BlueWireSerial.read();
-      }
-      BlueWireSerial.flush();
-
-      primaryHeaterData.set(HeaterFrame1, OEMCtrlFrame);  // OEM is always *the* controller
-      if(bReportBlueWireData) {
-        primaryHeaterData.reportFrames(true);
-        CommState.setDelay(20);          // let serial get sent before we send blue wire
-      }
-      else {
-        CommState.setDelay(0);
-      }
-      CommState.set(CommStates::HeaterReport1);
-      break;
-
-
-    case CommStates::HeaterReport1:
-      if(CommState.delayExpired()) {
-        bool isBTCmaster = false;
-        TxManage.PrepareFrame(OEMCtrlFrame, isBTCmaster);  // parrot OEM parameters, but block NV modes
-        TxManage.Start(timenow);
-        CommState.set(CommStates::BTC_Tx);
-      }
-      break;
-    
-
-    case CommStates::BTC_Tx:
-      // Handle time interval where we send data to the blue wire
-      lastRxTime = timenow;                     // *we* are pumping onto blue wire, track this activity!
-      if(TxManage.CheckTx(timenow) ) {          // monitor progress of our data delivery
-        CommState.set(CommStates::HeaterRx2);   // then await heater repsonse
-      }
-      break;
-
-
-    case CommStates::HeaterRx2:
-#if RX_LED == 1
-    digitalWrite(LED_Pin, HIGH);
-#endif
-      // collect heater frame, in response to our control frame
-      if(BlueWireData.available()) {
-#ifdef BADSTARTCHECK
-        if(!CommState.checkValidStart(BlueWireData.getValue())) {
-          DebugPort.println("***** Invalid start of frame - restarting Serial port *****");    
-          initBlueWireSerial();
-          CommState.set(CommStates::Idle);
-        }
-        else {
-          if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
-            CommState.set(CommStates::HeaterValidate2);
-          }
-        }
-#else
-        if( CommState.collectData(HeaterFrame2, BlueWireData.getValue()) ) {
-          CommState.set(CommStates::HeaterValidate2);
-        }
-#endif
-      } 
-      break;
-
-
-    case CommStates::HeaterValidate2:
-#if RX_LED == 1
-      digitalWrite(LED_Pin, LOW);
-#endif
-
-      // test for valid CRC, abort and restart Serial1 if invalid
-      if(!validateFrame(HeaterFrame2, "RX2")) {
-        bHasHtrData = false;
-        break;
-      }
-      bHasHtrData = true;
-
-      // received heater frame (after our control message), report
-
-      // do some monitoring of the heater state variables
-      // if abnormal transitions, introduce a smart error!
-      SmartError.monitor(HeaterFrame2);
-
-      if(!bHasOEMController)              // no OEM controller - BTC is *the* controller
-        primaryHeaterData.set(HeaterFrame2, TxManage.getFrame());
-       
-      if(bReportBlueWireData) {
-        reportHeaterData.set(HeaterFrame2, TxManage.getFrame());
-        reportHeaterData.reportFrames(false);
-        CommState.setDelay(20);          // let serial get sent before we send blue wire
-      }
-      else {
-        CommState.setDelay(0);
-      }
-      CommState.set(CommStates::HeaterReport2);
-      break;
-
-
-    case CommStates::HeaterReport2:
-      if(CommState.delayExpired()) {
-        CommState.set(CommStates::TemperatureRead);
-      }
-      break;
-
-
-    case CommStates::TemperatureRead:
-      // update temperature reading, 
-      // synchronised with serial reception as interrupts do get disabled in the OneWire library
-      tDelta = timenow - lastTemperatureTime;
+bool checkTemperatureSensors()
+{
+  long tDelta = millis() - lastTemperatureTime;
       if(tDelta > MIN_TEMPERATURE_INTERVAL) {  // maintain a minimum holdoff period
         lastTemperatureTime = millis();    // reset time to observe temeprature        
 
@@ -884,6 +621,8 @@ void loop()
         }
 
         TempSensor.readSensors();
+
+    float fTemperature;
         if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temperature
           if(DS18B20holdoff) {
             DS18B20holdoff--; 
@@ -905,56 +644,9 @@ void loop()
 
         TempSensor.startConvert();  // request a new conversion, will be ready by the time we loop back around
 
-        ScreenManager.reqUpdate();
+    return true;
       }
-
-      if(bHasHtrData) {
-        // apply exponential mean to the anlogue readings for some smoothing
-        updateFilteredData();
-
-        // integrate fuel pump activity for fuel gauge
-        FuelGauge.Integrate(getHeaterInfo().getPump_Actual());
-
-        // test for low volts shutdown during normal run
-        if(INBOUNDS(getHeaterInfo().getRunState(), 1, 5)) {  // check for Low Voltage Cutout
-          SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
-          SmartError.checkfuelUsage();
-        }
-
-        // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
-        if(RTC_Store.getCyclicEngaged() && (getHeaterInfo().getRunState() == 0) && (getHeaterInfo().getErrState() > 1)) {
-          DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
-          RTC_Store.setCyclicEngaged(false);
-        }
-
-        pHourMeter->monitor(HeaterFrame2);
-      }
-      updateJSONclients(bReportJSONData);
-      updateMQTT();
-      CommState.set(CommStates::Idle);
-      NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
-      break;
-  }  // switch(CommState)
-
-  BlueWireData.reset();   // ensure we flush any used data
-
-// 21/11/19 vTaskDelay() causes E-07 errors when OEM controller is attached.
-// may look at a specific freertos task to handle the blue wire....
-  if(!bHasOEMController) {
-    vTaskDelay(1);  // give up for now - allow power lowering...
-  }
-
-}  // loop
-
-void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr)
-{
-  DebugPort.print(hdr);                     // header
-  for(int i=0; i<24; i++) {
-    char str[16];
-    sprintf(str, " %02X", Frame.Data[i]);  // build 2 dig hex values
-    DebugPort.print(str);                   // and print     
-  }
-  DebugPort.print(ftr);                     // footer
+  return false;
 }
 
 void manageCyclicMode()
@@ -1035,36 +727,6 @@ void manageHumidity()
 }
 
 
-void initBlueWireSerial()
-{
-  // initialize serial port to interact with the "blue wire"
-  // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
-  // Tx/Rx data to/from heater, 
-  // Note special baud rate for Chinese heater controllers
-#if defined(__arm__) || defined(__AVR__)
-  BlueWireSerial.begin(25000);   
-  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
-#elif ESP32
-  // ESP32
-  BlueWireSerial.begin(25000, SERIAL_8N1, Rx1Pin, Tx1Pin);  // need to explicitly specify pins for pin multiplexer!
-  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
-#endif
-}
-
-bool validateFrame(const CProtocol& frame, const char* name)
-{
-  if(!frame.verifyCRC()) {
-    // Bad CRC - restart blue wire Serial port
-    DebugPort.printf("\007Bad CRC detected for %s frame - restarting blue wire's serial port\r\n", name);
-    DebugReportFrame("BAD CRC:", frame, "\r\n");
-    // initBlueWireSerial();
-    CommState.set(CommStates::TemperatureRead);
-    return false;
-  }
-  return true;
-}
-
-
 CDemandManager::eStartCode 
 requestOn()
 {
@@ -1074,7 +736,7 @@ requestOn()
     return CDemandManager::eStartLowFuel;
   }
   bool LVCOK = 2 != SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
-  if(bHasHtrData && LVCOK) {
+  if(hasHtrData() && LVCOK) {
     RTC_Store.setCyclicEngaged(true);    // for cyclic mode
     RTC_Store.setFrostOn(false);         // cancel frost mode
     // only start if below appropriate temperature threshold, raised for cyclic mode
@@ -1136,11 +798,6 @@ void checkDisplayUpdate()
   }
 }
 
-void reqPumpPrime(bool on)
-{
-  DefaultBTCParams.setPump_Prime(on);
-}
-
 void forceBootInit()
 {
   RTC_Store.setBootInit();
@@ -1156,11 +813,6 @@ float getTemperatureSensor(int source)
 }
 
 
-const CProtocolPackage& getHeaterInfo()
-{
-  return primaryHeaterData;
-}
-
 bool isWebClientConnected()
 {
   return bHaveWebClient;
@@ -1168,10 +820,6 @@ bool isWebClientConnected()
 
 void checkDebugCommands()
 {
-  static uint8_t nGetString = 0;
-  static uint8_t nGetConf = 0;
-  static String pw1;
-  static String pw2;
   static CGetLine line;
 
   // check for test commands received over Debug serial port or telnet
@@ -1193,100 +841,11 @@ void checkDebugCommands()
       }
       return;
     }
-
-    if(nGetConf) {
-      DebugPort.print(rxVal);
-      bool bSave = (rxVal == 'y') || (rxVal == 'Y');
-      DebugPort.println("");
-      if(!bSave) {
-        DebugPort.println(" ABORTED!");
-        nGetConf = 0;
-        return;
+    if(SecurityMenu.Handle(rxVal)) {
+      if(rxVal == 0) {
+        showMainmenu();
       }
-      switch(nGetConf) {
-        case 1: 
-          setSSID(line.getString());  
-          break;
-        case 2:
-          setAPpassword(pw2.c_str());
-          break;
-      }
-      nGetConf = 0;
       return;
-    }
-    else if(nGetString) {
-      DebugPort.enable(true);
-
-      if(rxVal == 0x1b) {  // ESCAPE
-        nGetString = 0;
-        DebugPort.println("\r\nABORTED!");
-        return;
-      }
-
-      if(line.handle(rxVal)) {
-        switch(nGetString) {
-          case 1:  
-            if(line.getLen() <= 31) {
-              nGetConf = 1; 
-              DebugPort.printf("\r\nSet AP SSID to %s? (y/n) - ", line.getString());
-            }
-            else {
-              DebugPort.println("\r\nNew name is longer than 31 characters - ABORTING");
-            }
-            nGetString = 0;
-            return;
-          case 2:
-            pw1 = line.getString();
-            pw2 = NVstore.getCredentials().APpassword;
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nPassword does not match existing - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 3;
-              DebugPort.print("\r\nPlease enter new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 3:
-            pw1 = line.getString();
-            if(line.getLen() < 8) {
-              // ABORT - too short
-              DebugPort.println("\r\nNew password must be at least 8 characters - ABORTING");
-              nGetString = 0;
-            }
-            else if(line.getLen() > 31) {
-              // ABORT - too long!
-              DebugPort.println("\r\nNew password is longer than 31 characters - ABORTING");
-              nGetString = 0;
-            }
-            else {
-              nGetString = 4;
-              DebugPort.print("\r\nPlease confirm new password - ");
-              DebugPort.enable(false);  // block other debug msgs whilst we get the password
-            }
-            line.reset();
-            line.maskEntry();
-            return;
-          case 4:
-            pw2 = line.getString();
-            line.reset();
-            if(pw1 != pw2) {
-              DebugPort.println("\r\nNew passwords do not match - ABORTING");
-            }
-            else {
-              nGetConf = 2;
-              DebugPort.print("\r\nSet new password (y/n) - ");
-            }
-            nGetString = 0;
-            return;
-        }
-      }
-      DebugPort.enable(false);
-      return;
-
     }
 
     rxVal = toLowerCase(rxVal);
@@ -1353,31 +912,23 @@ void checkDebugCommands()
         bReportJSONData = !bReportJSONData;
         DebugPort.printf("Toggled JSON data reporting %s\r\n", bReportJSONData ? "ON" : "OFF");
       }
-      else if(rxVal == 'w')  {
+      else if(rxVal == ('w' & 0x1f))  {
         bReportRecyleEvents = !bReportRecyleEvents;
+        if(NVstore.getUserSettings().menuMode == 2)
+          bReportRecyleEvents = false;
         DebugPort.printf("Toggled blue wire recycling event reporting %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
-      }
-      else if(rxVal == 'n') {
-        DebugPort.print("Please enter new SSID name for Access Point - ");
-        line.reset();
-        nGetString = 1;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
       }
       else if(rxVal == 'm') {
         MQTTmenu.setActive();
       }
-      else if(rxVal == 'o')  {
+      else if(rxVal == 's') {
+        SecurityMenu.setActive();
+      }
+      else if(rxVal == ('o' & 0x1f))  {
         bReportOEMresync = !bReportOEMresync;
         DebugPort.printf("Toggled OEM resync event reporting %s\r\n", bReportOEMresync ? "ON" : "OFF");
       }
-      else if(rxVal == 'p') {
-        DebugPort.print("Please enter current AP password - ");
-        line.reset();
-        line.maskEntry();
-        nGetString = 2;
-        DebugPort.enable(false);  // block other debug msgs whilst we get strings
-      }
-      else if(rxVal == 's') {
+      else if(rxVal == ('c' & 0x1f)) {
         CommState.toggleReporting();
       }
       else if(rxVal == '+') {
@@ -1389,7 +940,7 @@ void checkDebugCommands()
       else if(rxVal == 'h') {
         getWebContent(true);
       }
-      else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mdoe: bluetooth module route
+      else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mode: bluetooth module route
         bTestBTModule = !bTestBTModule;
         Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
       }
@@ -1399,7 +950,7 @@ void checkDebugCommands()
       else if(rxVal == ('r' & 0x1f)) {   // CTRL-R reboot
         ESP.restart();            // reset the esp
       }
-      else if(rxVal == ('s' & 0x1f)) {   // CTRL-B Test Mode: bluetooth module route
+      else if(rxVal == ('s' & 0x1f)) {   // CTRL-S Test Mode: bluetooth module route
         bReportStack = !bReportStack;
       }
     }
@@ -1428,38 +979,6 @@ void checkDebugCommands()
   }
 }
 
-// 0x00 - Normal:  BTC, with heater responding
-// 0x01 - Error:   BTC, heater not responding
-// 0x02 - Special: OEM controller & heater responding
-// 0x03 - Error:   OEM controller, heater not responding
-int getBlueWireStat()
-{
-  int stat = 0;
-  if(!bHasHtrData) {
-    stat |= 0x01;
-  }
-  if(bHasOEMController) {
-    stat |= 0x02;
-  }
-  return stat;
-}
-
-const char* getBlueWireStatStr()
-{
-  static const char* BlueWireStates[] = { "BTC,Htr", "BTC", "OEM,Htr", "OEM" };
-
-  return BlueWireStates[getBlueWireStat()];
-}
-
-bool hasOEMcontroller()
-{
-  return bHasOEMController;
-}
-
-bool hasOEMLCDcontroller()
-{
-  return bHasOEMLCDController;
-}
 
 int getSmartError()
 {
@@ -1654,10 +1173,12 @@ void doStreaming()
   if(NVstore.getUserSettings().wifiMode) {
     doWiFiManager();
 #if USE_OTA == 1
-    // doOTA();
+    doOTA();
 #endif // USE_OTA 
 #if USE_WEBSERVER == 1
+#ifdef OLD_WEBSOCKETHANDLER
     bHaveWebClient = doWebServer();
+#endif
 #endif //USE_WEBSERVER
 #if USE_MQTT == 1
     // most MQTT is managed via callbacks, but need some sundry housekeeping
@@ -1762,14 +1283,14 @@ int getFanSpeed()
 #endif
 }
 
-void updateFilteredData()
+void updateFilteredData(CProtocol& HeaterInfo)
 {
-  FilteredSamples.ipVolts.update(getHeaterInfo().getBattVoltage());
-  FilteredSamples.GlowVolts.update(getHeaterInfo().getGlow_Voltage());
-  FilteredSamples.GlowAmps.update(getHeaterInfo().getGlow_Current());
-  FilteredSamples.Fan.update(getHeaterInfo().getFan_Actual());
-  FilteredSamples.FastipVolts.update(getHeaterInfo().getBattVoltage());
-  FilteredSamples.FastGlowAmps.update(getHeaterInfo().getGlow_Current());
+  FilteredSamples.ipVolts.update(HeaterInfo.getVoltage_Supply());
+  FilteredSamples.GlowVolts.update(HeaterInfo.getGlowPlug_Voltage());
+  FilteredSamples.GlowAmps.update(HeaterInfo.getGlowPlug_Current());
+  FilteredSamples.Fan.update(HeaterInfo.getFan_Actual());
+  FilteredSamples.FastipVolts.update(HeaterInfo.getVoltage_Supply());
+  FilteredSamples.FastGlowAmps.update(HeaterInfo.getGlowPlug_Current());
 }
 
 int sysUptime()
@@ -1782,32 +1303,52 @@ void resetFuelGauge()
   FuelGauge.reset();
 }
 
-void setSSID(const char* name)
+void setName(const char* name, int type)
 {
   sCredentials creds = NVstore.getCredentials();
-  strncpy(creds.APSSID, name, 31);
-  creds.APSSID[31] = 0;
+  char* pDest = NULL;
+  switch (type) {
+    case 0: pDest = creds.APSSID; break;
+    case 1: pDest = creds.webUsername; break;
+    case 2: pDest = creds.webUpdateUsername; break;
+  }
+  if(pDest) {
+    strncpy(pDest, name, 31);
+    pDest[31] = 0;
+  }
   NVstore.setCredentials(creds);
   NVstore.save();
   NVstore.doSave();   // ensure NV storage
+  if(type == 0) {
   DebugPort.println("Restarting ESP to invoke new network credentials");
   DebugPort.handle();
   delay(1000);
   ESP.restart();
 }
+}
 
-void setAPpassword(const char* name)
+void setPassword(const char* name, int type)
 {
   sCredentials creds = NVstore.getCredentials();
-  strncpy(creds.APpassword, name, 31);
-  creds.APpassword[31] = 0;
+  char* pDest = NULL;
+  switch (type) {
+    case 0: pDest = creds.APpassword; break;
+    case 1: pDest = creds.webPassword; break;
+    case 2: pDest = creds.webUpdatePassword; break;
+  }
+  if(pDest) {
+    strncpy(pDest, name, 31);
+    pDest[31] = 0;
+  }
   NVstore.setCredentials(creds);
   NVstore.save();
   NVstore.doSave();   // ensure NV storage
+  if(type == 0) {
   DebugPort.println("Restarting ESP to invoke new network credentials");
   DebugPort.handle();
   delay(1000);
   ESP.restart();
+}
 }
 
 
@@ -1818,15 +1359,14 @@ void showMainmenu()
   DebugPort.println("");
   DebugPort.printf("  <B> - toggle raw blue wire data reporting, currently %s\r\n", bReportBlueWireData ? "ON" : "OFF");
   DebugPort.printf("  <J> - toggle output JSON reporting, currently %s\r\n", bReportJSONData ? "ON" : "OFF");
-  DebugPort.printf("  <W> - toggle reporting of blue wire timeout/recycling event, currently %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
-  DebugPort.printf("  <O> - toggle reporting of OEM resync event, currently %s\r\n", bReportOEMresync ? "ON" : "OFF");        
-  DebugPort.printf("  <S> - toggle reporting of state machine transits %s\r\n", CommState.isReporting() ? "ON" : "OFF");        
-  DebugPort.printf("  <N> - change AP SSID, currently \"%s\"\r\n", NVstore.getCredentials().APSSID);
-  DebugPort.println("  <P> - change AP password");
   DebugPort.println("  <M> - configure MQTT");
+  DebugPort.println("  <S> - configure Security");
   DebugPort.println("  <+> - request heater turns ON");
   DebugPort.println("  <-> - request heater turns OFF");
-  DebugPort.println("  <R> - restart the ESP");
+  DebugPort.println("  <CTRL-R> - restart the ESP");
+  DebugPort.printf("  <CTRL-C> - toggle reporting of state machine transits %s\r\n", CommState.isReporting() ? "ON" : "OFF");        
+  DebugPort.printf("  <CTRL-O> - toggle reporting of OEM resync event, currently %s\r\n", bReportOEMresync ? "ON" : "OFF");        
+  DebugPort.printf("  <CTRL-W> - toggle reporting of blue wire timeout/recycling event, currently %s\r\n", bReportRecyleEvents ? "ON" : "OFF");
   DebugPort.println("");
   DebugPort.println("");
   DebugPort.println("");
@@ -1850,3 +1390,9 @@ void reqHeaterCalUpdate()
 {
   TxManage.queueSysUpdate();
 }
+
+const CProtocolPackage& getHeaterInfo()
+{
+  return BlueWireData;
+}
+

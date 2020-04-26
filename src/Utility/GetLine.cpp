@@ -66,21 +66,30 @@ CGetLine::handle(char rxVal)
   if(rxVal < ' ') {
     if(_idx == 0) {
       if(_pTarget) 
-        strcpy(_buffer, _pTarget);
+        strcpy(_buffer, _pTarget);  // copy buffer if control upon first key, may well be a enter
     }
-    if(rxVal == ('x' & 0x1f)) {  // CTRL-X - erase string, return done
-      memset(_buffer, 0, sizeof(_buffer));
+    // CTRL-H (backspace)
+    if(rxVal == ('h' & 0x1f)) {  
+      if(_idx)
+        _idx--;
+    }
+    // CTRL-X
+    if(rxVal == ('x' & 0x1f)) {  
+      memset(_buffer, 0, sizeof(_buffer));  // erase string, return done
       _zeroTarget();
       return true;
     }
-    if(rxVal == '\r')   // ignore CR
-      return false;
-    if(rxVal == '\n') {  // accept buffered string upon LF, return done
-      _copyTarget();
+    // CR (ala CTRL-M)
+    if(rxVal == '\r')   
+      return false;     // do nothing upon CR
+    // LF (ala CTRL-J)
+    if(rxVal == '\n') {  
+      _copyTarget();    // accept buffered string upon LF, return done
       return true;
     }
-    if(rxVal == 0x1b) {  // abort, no change upon ESC, return done
-      return true;
+    // ESC
+    if(rxVal == 0x1b) {  
+      return true;      // abort, no change upon ESC, return done
     }
   }
   else {
@@ -89,10 +98,16 @@ CGetLine::handle(char rxVal)
       DebugPort.print('*');
     else
       DebugPort.print(rxVal);
-    _buffer[_idx++] = rxVal;
-    if(_idx == _maxlen) {
-      _copyTarget();
-      return true;
+    if(rxVal == 0x7f) {  // backspace
+      if(_idx)
+        _idx--;
+    }
+    else {
+      _buffer[_idx++] = rxVal;
+      if(_idx == _maxlen) {
+        _copyTarget();
+        return true;
+      }
     }
   }
   return false;
@@ -108,6 +123,11 @@ CGetLine::_doNum(char rxVal)
       int val = atoi(_buffer);
       _Numeric = val;
       return true;
+    }
+    // CTRL-H (backspace)
+    if(rxVal == ('h' & 0x1f)) {  
+      if(_idx)
+        _idx--;
     }
     if(rxVal == 0x1b) {
       return true;
@@ -125,6 +145,11 @@ CGetLine::_doNum(char rxVal)
     }
   }
   else {
+    if(rxVal == 0x7f) {  // backspace
+      if(_idx)
+        _idx--;
+      return false;
+    }
     return true;
   }
   return false;

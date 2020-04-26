@@ -54,15 +54,17 @@ CProtocol::getCRC() const
 
 // return true for CRC match
 bool
-CProtocol::verifyCRC(bool bSilent) const
+CProtocol::verifyCRC(std::function<void(const char*)> pushMsg) const
 {
+  char errmsg[32];
   CModBusCRC16 CRCengine;
   uint16_t CRC = CRCengine.process(22, Data);  // calculate CRC based on first 22 bytes of our data buffer
 
   uint16_t FrameCRC = getCRC();
   bool bOK = (FrameCRC == CRC);
-  if(!bOK && !bSilent) {
-    DebugPort.printf("verifyCRC FAILED: calc: %04X data: %04X\r\n", CRC, FrameCRC);
+  if(!bOK) {
+    sprintf(errmsg, "verifyCRC FAILED: calc: %04X data: %04X\r\n", CRC, FrameCRC);
+    pushMsg(errmsg);
   }
   return bOK;        // does it match the stored values?
 }
@@ -430,16 +432,19 @@ CProtocolPackage::setRefTime()
 }*/
 
 void  
-CProtocolPackage::reportFrames(bool isOEM)
+CProtocolPackage::reportFrames(bool isOEM, std::function<void(const char*)> pushMsg)
 {
-  _timeStamp.report();   // absolute time
+  char msg[192];
+  msg[0] = 0;
+  _timeStamp.report(msg);   // absolute time
   if(isOEM) {
-    DebugReportFrame("OEM:", Controller, TERMINATE_OEM_LINE ? "\r\n" : "   ");
+    DebugReportFrame("OEM:", Controller, TERMINATE_OEM_LINE ? "\r\n" : "   ", msg);
   }
   else {
-    DebugReportFrame("BTC:", Controller, TERMINATE_BTC_LINE ? "\r\n" : "   ");
+    DebugReportFrame("BTC:", Controller, TERMINATE_BTC_LINE ? "\r\n" : "   ", msg);
   }
-  DebugReportFrame("HTR:", Heater, "\r\n");
+  DebugReportFrame("HTR:", Heater, "\r\n", msg);
+  pushMsg(msg);
 }
 
 int   

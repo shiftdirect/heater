@@ -103,7 +103,7 @@ sBrowserUpload::begin(String& filename, int filesize)
 }
 
 int 
-sBrowserUpload::fragment(HTTPUpload& upload, httpsserver::HTTPResponse * res)
+sBrowserUpload::fragment(HTTPUpload& upload, HTTPResponse * res)
 {
   if(isSPIFFSupload()) {
     // SPIFFS update (may be error state)

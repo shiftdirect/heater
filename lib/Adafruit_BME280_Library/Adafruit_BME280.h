@@ -127,13 +127,27 @@ class Adafruit_BME280_Unified : public Adafruit_Sensor
 
 */
 
+  /***********************************************************/
+  /*!
+      @brief environment readings combined
+  */
+  /***********************************************************/
+  typedef struct {
+    float temperature;  // temperature sensed [C]
+    float humidity;     // humidity sensed [%Rh]
+    float pressure;     // pressure sensed [Pa]
+    float altitude;     // [m], referenced to std. sea level pressure
+  } bme280_readings;
 /**************************************************************************/
+
 /*!
     @brief  Class that stores state and functions for interacting with BME280 IC
 */
 /**************************************************************************/
 class Adafruit_BME280 {
 public:
+  /*=========================================================*/
+
   /**************************************************************************/
   /*!
       @brief  sampling rates
@@ -188,6 +202,19 @@ public:
     STANDBY_MS_1000 = 0b101
   };
 
+
+  /*******************************************************/
+  /*!
+      @brief  read status for readAll()
+  */
+  /*******************************************************/
+  enum read_success {
+    BME280_T_OK = 0x01,
+    BME280_P_OK = 0x02,
+    BME280_H_OK = 0x04
+  };
+
+  
   // constructors
   Adafruit_BME280();
   Adafruit_BME280(int8_t cspin, SPIClass *theSPI = &SPI);
@@ -214,6 +241,8 @@ public:
 
   float readAltitude(float seaLevel);
   float seaLevelForAltitude(float altitude, float pressure);
+  int readAll(bme280_readings& readings);
+
   uint32_t sensorID(void);
 
 protected:

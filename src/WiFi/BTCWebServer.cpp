@@ -66,6 +66,8 @@ extern const char* updateIndex;
 extern const char* formatDoneContent;
 extern const char* rebootIndex;
 
+QueueHandle_t webSocketQueue = NULL;
+
 extern void checkSplashScreenUpdate();
 
 size_t streamFileSSL(fs::File &file, const String& contentType, httpsserver::HTTPResponse* pSSL);
@@ -899,9 +901,6 @@ function onformatClick() {
 void onWMConfig(HTTPRequest * req, httpsserver::HTTPResponse * res) 
 {
   DebugPort.println("WEB: GET /wmconfig");
-  // server.send(200, "text/plain", "Start Config Portal - Retaining credential");
-  // res->setStatusCode(200);
-  // res->setHeader("Content-Type", "text/plain");
   res->print("Start Config Portal - Retaining credential");
   DebugPort.println("Starting web portal for wifi config");
   delay(500);
@@ -912,9 +911,6 @@ void onWMConfig(HTTPRequest * req, httpsserver::HTTPResponse * res)
 void onResetWifi(HTTPRequest * req, httpsserver::HTTPResponse * res) 
 {
   DebugPort.println("WEB: GET /resetwifi");
-  // server.send(200, "text/plain", "Start Config Portal - Resetting Wifi credentials!");
-  // res->setStatusCode(200);
-  // res->setHeader("Content-Type", "text/plain");
   res->print("Start Config Portal - Resetting Wifi credentials!");
   DebugPort.println("diconnecting client and wifi, then rebooting");
   delay(500);
@@ -936,7 +932,11 @@ bool sendWebSocketString(const char* Str)
   CProfile profile;
 #endif
 
-  if(webSocket.connectedClients()) {
+  char* pMsg = new char[strlen(Str)+1];
+  strcpy(pMsg, Str);
+  if(webSocketQueue) xQueueSend(webSocketQueue, &pMsg, 0);
+
+/*  if(webSocket.connectedClients()) {
 
 #ifdef WEBTIMES
     unsigned long tCon = profile.elapsed(true);

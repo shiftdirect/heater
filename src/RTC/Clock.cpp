@@ -84,7 +84,7 @@ CClock::update()
     _currentTime = _rtc.now();             // moderate I2C accesses
     Wire.setClock(origClock);
     _nextRTCfetch = millis() + 500;
-//    _checkTimers();
+
     // check timers upon minute rollovers
     if(_currentTime.minute() != _prevMinute) {
       CTimerManager::manageTime(_currentTime.hour(), _currentTime.minute(), _currentTime.dayOfTheWeek());

@@ -157,7 +157,7 @@ bool initWifi()
   }
 
   // WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
-  // WiFi.setTxPower(WIFI_POWER_19_5dBm);
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
   return retval;
 }
 

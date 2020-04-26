@@ -29,11 +29,14 @@
 class CProtocol;
 
 // a class to track the blue wire receive / transmit states
+
+#define COMMSTATES_CALLBACK_SIGNATURE std::function<void(char*)> CScallback
+
 class CommStates {
 public:
   // comms states
   enum eCS { 
-    Idle, OEMCtrlRx, OEMCtrlValidate, HeaterRx1, HeaterValidate1, HeaterReport1, BTC_Tx, HeaterRx2, HeaterValidate2, HeaterReport2,TemperatureRead
+    Idle, OEMCtrlRx, OEMCtrlValidate, HeaterRx1, HeaterValidate1, TxStart, TxInterval, HeaterRx2, HeaterValidate2, ExchangeComplete
   };
 
 private:
@@ -41,12 +44,14 @@ private:
   int _Count;
   unsigned long _delay;
   bool _report;
+  std::function<void(const char*)> _callback;
 public:
   CommStates() {
     _State = Idle;
     _Count = 0;
     _delay = millis();
-    _report = REPORT_STATE_MACHINE_TRANSITIONS;
+    _report = false;
+    _callback = NULL;
   }
   void set(eCS eState);
   eCS get() {
@@ -56,7 +61,6 @@ public:
     return _State == eState;
   }
   bool collectData(CProtocol& Frame, uint8_t val, int limit = 24);
-  bool collectDataEx(CProtocol& Frame, uint8_t val, int limit = 24);
   bool checkValidStart(uint8_t val);
   void setDelay(int ms);
   bool delayExpired();
@@ -67,6 +71,7 @@ public:
   bool isReporting() {
     return _report != 0;
   };
+  void setCallback(std::function<void(const char*)> fn) { _callback = fn; };
 };
 
 
@@ -128,19 +133,29 @@ public:
   void setRefTime() { 
     refTime = millis(); 
   };
-  void report(bool isDelta) {
+  void report(bool isDelta, char* msg=NULL) {
     if(isDelta) {
       long delta = millis() - prevTime;
-      DebugPort.printf("%+8ldms ", delta);
+      if(msg)
+        sprintf(msg, "%+8ldms ", delta);
+      else
+        DebugPort.printf("%+8ldms ", delta);
     }
     else {
       prevTime = millis();
-      DebugPort.printf("%8ldms ", prevTime - refTime);
+      if(msg)
+        sprintf(msg, "%8ldms ", prevTime - refTime);
+      else
+        DebugPort.printf("%8ldms ", prevTime - refTime);
     }
   };
-  void report() {
+  void report(char* msg = NULL) {
     prevTime = millis();
-    DebugPort.printf("%8ldms ", prevTime - refTime);
+    if(msg) {
+      sprintf(msg, "%8ldms ", prevTime - refTime);  
+    }
+    else 
+      DebugPort.printf("%8ldms ", prevTime - refTime);
   };
 };
 

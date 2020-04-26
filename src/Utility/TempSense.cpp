@@ -429,6 +429,7 @@ CBME280Sensor::getTemperature(float& tempReading, bool filtered)
     float temperature = _bme.readTemperature();
     update(temperature);
     _lastSampleTime = millis() + 1000;
+    DebugPort.println("Forced BME sensor reading");
   }
 
   CSensor::getTemperature(tempReading, filtered);
@@ -438,17 +439,36 @@ CBME280Sensor::getTemperature(float& tempReading, bool filtered)
 }
 
 bool
-CBME280Sensor::getAltitude(float& reading)
+CBME280Sensor::getAltitude(float& reading, bool fresh)
 {
-  reading = _bme.readAltitude(1013.25);  //use  standard atmosphere as reference
+  if(fresh) {
+    _fAltitude = _bme.readAltitude(1013.25);  //use  standard atmosphere as reference
+  }
+  reading = _fAltitude;
   return true;
 }
 
 bool
-CBME280Sensor::getHumidity(float& reading)
+CBME280Sensor::getHumidity(float& reading, bool fresh)
 {
-  reading = _bme.readHumidity();
+  if(fresh) {
+    _fHumidity = _bme.readHumidity();
+  }
+  reading = _fHumidity;
   return true;
+}
+
+int 
+CBME280Sensor::getAllReadings(bme280_readings& readings) 
+{
+  int retval = _bme.readAll(readings);
+  _fAltitude = readings.altitude;
+  _fHumidity = readings.humidity;
+  update(readings.temperature);
+
+  _lastSampleTime = millis() + 1000;
+
+  return retval;
 }
 
 const char* 
@@ -489,6 +509,9 @@ CTempSense::startConvert()
 bool
 CTempSense::readSensors()
 {
+  bme280_readings readings;
+  getBME280().getAllReadings(readings);
+
   return DS18B20.readSensors();
 }
 
@@ -628,19 +651,19 @@ CTempSense::getTemperatureBME280(float& reading)
 }
 
 bool
-CTempSense::getAltitude(float& reading)
+CTempSense::getAltitude(float& reading, bool fresh)
 {
   if(BME280.getCount())
-    return BME280.getAltitude(reading);
+    return BME280.getAltitude(reading, fresh);
   else
     return false;
 }
 
 bool
-CTempSense::getHumidity(float& reading)
+CTempSense::getHumidity(float& reading, bool fresh)
 {
   if(BME280.getCount())
-    return BME280.getHumidity(reading);
+    return BME280.getHumidity(reading, fresh);
   else
     return false;
 }
