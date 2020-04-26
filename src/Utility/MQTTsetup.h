@@ -35,3 +35,26 @@ public:
   bool Handle(char& rxVal);
   void setActive();
 };
+
+class CSecuritySetup {
+  CGetLine _lineInput;
+  int _mode;
+  bool _active;
+  struct {
+    int Idx;
+    int State;
+    String str1, str2;
+  } _password;
+  sCredentials _credsSetup;
+  bool _handle(char rxVal);
+  void _showMenu(bool init = false);
+  void _initPassword(int idx);
+  bool _getPassword();
+  bool _handlePassword(char rxVal);
+  const char* _getCurrentPassword();
+  void _setPassword(const char* newPW);
+public:
+  CSecuritySetup();
+  bool Handle(char& rxVal);
+  void setActive();
+};

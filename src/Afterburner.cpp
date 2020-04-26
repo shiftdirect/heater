@@ -152,6 +152,8 @@ void heaterOff();
 void updateFilteredData(CProtocol& HeaterInfo);
 bool HandleMQTTsetup(char rxVal);
 void showMainmenu();
+bool checkTemperatureSensors();
+void checkBlueWireEvents();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus
@@ -181,6 +183,7 @@ CGPIOalg GPIOalg;
 #endif
 
 CMQTTsetup MQTTmenu;
+CSecuritySetup SecurityMenu;
 
 
 
@@ -261,13 +264,51 @@ CBluetoothAbstract& getBluetoothClient()
   return Bluetooth;
 }
 
-// collect and report any debug messages from the blue wire task
 char taskMsg[BLUEWIRE_MSGQUEUESIZE];
-void checkBlueWireDebugMsgs()
+
+void checkBlueWireEvents()
 {
+// collect and report any debug messages from the blue wire task
   if(BlueWireMsgBuf && xQueueReceive(BlueWireMsgBuf, taskMsg, 0))
     DebugPort.print(taskMsg);
+
+  // check for complted data exchange from the blue wire task
+  if(BlueWireSemaphore && xSemaphoreTake(BlueWireSemaphore, 0)) {
+    updateJSONclients(bReportJSONData);
+    updateMQTT();
+    NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
+  }
+
+  // collect transmitted heater data from blue wire task
+  if(BlueWireTxQueue && xQueueReceive(BlueWireTxQueue, BlueWireTxData.Data, 0)) {
+  }
+
+  // collect and process received heater data from blue wire task
+  if(BlueWireRxQueue && xQueueReceive(BlueWireRxQueue, BlueWireRxData.Data, 0)) {
+    BlueWireData.set(BlueWireRxData, BlueWireTxData);
+    SmartError.monitor(BlueWireRxData);
+
+    updateFilteredData(BlueWireRxData);
+
+    FuelGauge.Integrate(BlueWireRxData.getPump_Actual());
+
+    if(INBOUNDS(BlueWireRxData.getRunState(), 1, 5)) {  // check for Low Voltage Cutout
+      SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+      SmartError.checkfuelUsage();
+    }
+
+    // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
+    if(RTC_Store.getCyclicEngaged() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
+      const char* msg = "Forcing cyclic cancel due to error induced shutdown\r\n";
+      xQueueSend(BlueWireMsgBuf, msg, 0);
+      // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+      RTC_Store.setCyclicEngaged(false);
+    }
+
+    pHourMeter->monitor(BlueWireRxData);
+  }
 }
+
 
 // callback function for Keypad events.
 // must be an absolute function, cannot be a class member due the "this" element!
@@ -308,6 +349,19 @@ void WatchdogTask(void * param)
   }
 }
 
+void webSocketTask(void*)
+{
+  for(;;) {
+#if USE_WEBSERVER == 1
+#ifndef OLD_WEBSOCKETHANDLER
+    bHaveWebClient = doWebServer();
+#endif
+#endif //USE_WEBSERVER
+    checkWebSocketSend();
+
+    vTaskDelay(1);
+  }
+}
 
 //**************************************************************************************************
 //**                                                                                              **
@@ -339,6 +393,8 @@ extern "C" unsigned long __wrap_millis() {
 
 
 void setup() {
+
+  vTaskPrioritySet(NULL, TASK_PRIORITY_ARDUINO);   // elevate normal ardion loop etc higher than the usual '1'
 
   // ensure cyclic mode is disabled after power on
   bool bESP32PowerUpInit = false;
@@ -522,13 +578,24 @@ void setup() {
   TempSensor.getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
 
   // create task to run blue wire interface
-  TaskHandle_t bwTask;
+  TaskHandle_t Task;
   xTaskCreate(BlueWireTask,              
               "BlueWireTask",
               2000,
               NULL,
-              3,
-             &bwTask);
+              TASK_PRIORITY_BLUEWIRE,
+             &Task);
+
+  // create task to run the websockets
+  xTaskCreate(webSocketTask,              
+              "WebSocketTask",
+              6000,
+              NULL,
+              TASK_PRIORITY_ARDUINO,
+             &Task);
+
+
+
 
   delay(1000); // just to hold the splash screeen for while
 }
@@ -541,23 +608,28 @@ void setup() {
 
 void loop() 
 {
-
-  float fTemperature;
-  unsigned long timenow = millis();
-
   // DebugPort.handle();    // keep telnet spy alive
-
-  // report any debug messages from the blue wire task
-  checkBlueWireDebugMsgs();
 
   feedWatchdog(); // feed watchdog
       
   doStreaming();   // do wifi, BT tx etc 
 
   Clock.update();
+
+  if(checkTemperatureSensors())
+    ScreenManager.reqUpdate();
+
   checkDisplayUpdate();    
 
-  long tDelta = timenow - lastTemperatureTime;
+  checkBlueWireEvents();
+
+  vTaskDelay(1);
+}  // loop
+
+
+bool checkTemperatureSensors()
+{
+  long tDelta = millis() - lastTemperatureTime;
   if(tDelta > MIN_TEMPERATURE_INTERVAL) {  // maintain a minimum holdoff period
     lastTemperatureTime = millis();    // reset time to observe temeprature        
 
@@ -567,6 +639,8 @@ void loop()
     }
 
     TempSensor.readSensors();
+
+    float fTemperature;
     if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temperature
       if(DS18B20holdoff) {
         DS18B20holdoff--; 
@@ -588,48 +662,10 @@ void loop()
 
     TempSensor.startConvert();  // request a new conversion, will be ready by the time we loop back around
 
-    ScreenManager.reqUpdate();
+    return true;
   }
-
-  if(BlueWireSemaphore && xSemaphoreTake(BlueWireSemaphore, 0)) {
-    updateJSONclients(bReportJSONData);
-    updateMQTT();
-    NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
-  }
-
-  // collect transmitted heater data from blue wire task
-  if(BlueWireTxQueue && xQueueReceive(BlueWireTxQueue, BlueWireTxData.Data, 0)) {
-  }
-
-  // collect and process received heater data from blue wire task
-  if(BlueWireRxQueue && xQueueReceive(BlueWireRxQueue, BlueWireRxData.Data, 0)) {
-    BlueWireData.set(BlueWireRxData, BlueWireTxData);
-    SmartError.monitor(BlueWireRxData);
-
-    updateFilteredData(BlueWireRxData);
-
-    FuelGauge.Integrate(BlueWireRxData.getPump_Actual());
-
-    if(INBOUNDS(BlueWireRxData.getRunState(), 1, 5)) {  // check for Low Voltage Cutout
-      SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
-      SmartError.checkfuelUsage();
-    }
-
-    // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
-    if(RTC_Store.getCyclicEngaged() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
-      const char* msg = "Forcing cyclic cancel due to error induced shutdown\r\n";
-      xQueueSend(BlueWireMsgBuf, msg, 0);
-      // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
-      RTC_Store.setCyclicEngaged(false);
-    }
-
-    pHourMeter->monitor(BlueWireRxData);
-
-  }
-
-
-}  // loop
-
+  return false;
+}
 
 void manageCyclicMode()
 {
@@ -822,6 +858,12 @@ void checkDebugCommands()
       return;
     }
     if(MQTTmenu.Handle(rxVal)) {
+      if(rxVal == 0) {
+        showMainmenu();
+      }
+      return;
+    }
+    if(SecurityMenu.Handle(rxVal)) {
       if(rxVal == 0) {
         showMainmenu();
       }
@@ -1130,6 +1172,9 @@ void checkDebugCommands()
       else if(rxVal == 'm') {
         MQTTmenu.setActive();
       }
+      else if(rxVal == 's') {
+        SecurityMenu.setActive();
+      }
       else if(rxVal == ('o' & 0x1f))  {
         bReportOEMresync = !bReportOEMresync;
         DebugPort.printf("Toggled OEM resync event reporting %s\r\n", bReportOEMresync ? "ON" : "OFF");
@@ -1413,7 +1458,9 @@ void doStreaming()
     doOTA();
 #endif // USE_OTA 
 #if USE_WEBSERVER == 1
+#ifdef OLD_WEBSOCKETHANDLER
     bHaveWebClient = doWebServer();
+#endif
 #endif //USE_WEBSERVER
 #if USE_MQTT == 1
     // most MQTT is managed via callbacks, but need some sundry housekeeping
@@ -1586,26 +1633,6 @@ void setPassword(const char* name, int type)
   }
 }
 
-void setWebUsername(const char* name)
-{
-  sCredentials creds = NVstore.getCredentials();
-  strncpy(creds.webUsername, name, 31);
-  creds.webUsername[31] = 0;
-  NVstore.setCredentials(creds);
-  NVstore.save();
-  NVstore.doSave();   // ensure NV storage
-}
-
-void setWebPassword(const char* name)
-{
-  sCredentials creds = NVstore.getCredentials();
-  strncpy(creds.webPassword, name, 31);
-  creds.webPassword[31] = 0;
-  NVstore.setCredentials(creds);
-  NVstore.save();
-  NVstore.doSave();   // ensure NV storage
-}
-
 
 void showMainmenu()
 {
@@ -1614,13 +1641,8 @@ void showMainmenu()
   DebugPort.println("");
   DebugPort.printf("  <B> - toggle raw blue wire data reporting, currently %s\r\n", bReportBlueWireData ? "ON" : "OFF");
   DebugPort.printf("  <J> - toggle output JSON reporting, currently %s\r\n", bReportJSONData ? "ON" : "OFF");
-  DebugPort.printf("  <N> - change AP SSID, currently \"%s\"\r\n", NVstore.getCredentials().APSSID);
-  DebugPort.println("  <P> - change AP password");
   DebugPort.println("  <M> - configure MQTT");
-  DebugPort.println("  <U> - change Web page username");
-  DebugPort.println("  <W> - change Web page password");
-  DebugPort.println("  <Y> - change Web /update username");
-  DebugPort.println("  <Z> - change Web /update password");
+  DebugPort.println("  <S> - configure Security");
   DebugPort.println("  <+> - request heater turns ON");
   DebugPort.println("  <-> - request heater turns OFF");
   DebugPort.println("  <CTRL-R> - restart the ESP");

@@ -423,6 +423,129 @@ bool Adafruit_BME280::isReadingCalibration(void) {
   return (rStatus & (1 << 0)) != 0;
 }
 
+
+/*!
+ *  Pressure and humidity readings require precise temperature for correctness.
+ *  For this reason both readPressure() and readHumidity() call readTemperature() internally,
+ *  which results in 2 SPI/I2C transactions for those readings.
+ * 
+ *  If user code calls a sequence of individual read*() methods to get all sensed values
+ *  it may make sense to replace it with a call to this method
+ *  and get all readings in 3 SPI/I2C transactions, instead of 5.
+ * 
+ *  @brief Returns all environmental values sensed
+ *  @returns 0 on failure, otherwise a bitwise OR of BME280_{T,P,H}_OK flags
+ *  @param readings reference to bme280_readings structure to be filled with data
+ */
+int Adafruit_BME280::readAll(bme280_readings& readings)
+{
+  int retval = 0;
+
+  readings.temperature = readTemperature(); // will set t_fine attribute, for immediate reuse
+
+  if (readings.temperature == NAN)   // temperature is required for other measurements, abort
+  {
+    readings.humidity = NAN;
+    readings.pressure = NAN;
+    readings.altitude = NAN;
+    return retval; 
+  }
+
+  retval |= BME280_T_OK; // temperature read OK
+
+  // t_fine attribute has just been updated by readTemperature(), proceed
+  // below code copied almost verbatim from readPressure()
+
+  int64_t var1, var2, p;
+  int32_t adc_P = read24(BME280_REGISTER_PRESSUREDATA);
+
+  // less readable code, but reading humidity register could be moved here to minimise
+  // time before obtaining t_fine and applying it to humidity calculations
+  // int32_t adc_H = read16(BME280_REGISTER_HUMIDDATA);
+
+  if (adc_P == 0x800000) // value in case pressure measurement was disabled
+  {
+    readings.pressure = NAN;
+  }
+  else
+  {
+    adc_P >>= 4;
+
+    var1 = ((int64_t)t_fine) - 128000;
+    var2 = var1 * var1 * (int64_t)_bme280_calib.dig_P6;
+    var2 = var2 + ((var1 * (int64_t)_bme280_calib.dig_P5) << 17);
+    var2 = var2 + (((int64_t)_bme280_calib.dig_P4) << 35);
+    var1 = ((var1 * var1 * (int64_t)_bme280_calib.dig_P3) >> 8) +
+           ((var1 * (int64_t)_bme280_calib.dig_P2) << 12);
+    var1 = (((((int64_t)1) << 47) + var1)) * ((int64_t)_bme280_calib.dig_P1) >> 33;
+
+    if (var1 == 0)
+    {
+      readings.pressure = (float) 0.0; // avoid exception caused by division by zero
+    }
+    else
+    {
+      p = 1048576 - adc_P;
+      p = (((p << 31) - var2) * 3125) / var1;
+      var1 = (((int64_t)_bme280_calib.dig_P9) * (p >> 13) * (p >> 13)) >> 25;
+      var2 = (((int64_t)_bme280_calib.dig_P8) * p) >> 19;
+
+      p = ((p + var1 + var2) >> 8) + (((int64_t)_bme280_calib.dig_P7) << 4);
+
+      readings.pressure = (float) p / 256;
+      retval |= BME280_P_OK;   // pressure read OK
+
+      // calculate altitude ref to std sea level pressure
+      readings.altitude = readAltitude(1013.25);
+    }
+  }
+
+  // proceed with reading humidity
+  // again, code copied almost verbatim from readHumidity()
+  // t_fine attribute is assumed to be valid
+
+  int32_t adc_H = read16(BME280_REGISTER_HUMIDDATA);
+
+  if (adc_H == 0x8000)
+  { // value in case humidity measurement was disabled
+    readings.humidity = NAN;
+  }
+  else
+  {
+    int32_t v_x1_u32r;
+
+    v_x1_u32r = (t_fine - ((int32_t)76800));
+
+    v_x1_u32r = (((((adc_H << 14) - (((int32_t)_bme280_calib.dig_H4) << 20) -
+                    (((int32_t)_bme280_calib.dig_H5) * v_x1_u32r)) +
+                   ((int32_t)16384)) >>
+                  15) *
+                 (((((((v_x1_u32r * ((int32_t)_bme280_calib.dig_H6)) >> 10) *
+                      (((v_x1_u32r * ((int32_t)_bme280_calib.dig_H3)) >> 11) +
+                       ((int32_t)32768))) >>
+                     10) +
+                    ((int32_t)2097152)) *
+                       ((int32_t)_bme280_calib.dig_H2) +
+                   8192) >>
+                  14));
+
+    v_x1_u32r = (v_x1_u32r - (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) *
+                               ((int32_t)_bme280_calib.dig_H1)) >>
+                              4));
+
+    v_x1_u32r = (v_x1_u32r < 0) ? 0 : v_x1_u32r;
+    v_x1_u32r = (v_x1_u32r > 419430400) ? 419430400 : v_x1_u32r;
+
+    float h = (v_x1_u32r >> 12);
+    readings.humidity = h / 1024.0;
+
+    retval |= BME280_H_OK;  // humidity reading OK
+  }
+
+  return retval;
+}
+
+
 /*!
  *   @brief  Returns the temperature from the sensor
  *   @returns the temperature read from the device

@@ -42,6 +42,7 @@
 #include "BrowserUpload.h"
 #include <Update.h>
 #include "WebContentDL.h"
+#include <FreeRTOS.h>
 
 extern WiFiManager wm;
 extern const char* stdHeader;
@@ -49,6 +50,8 @@ extern const char* formatIndex;
 extern const char* updateIndex;
 extern const char* formatDoneContent;
 extern const char* rebootIndex;
+
+QueueHandle_t webSocketQueue = NULL;
 
 extern void checkSplashScreenUpdate();
 
@@ -85,6 +88,7 @@ void onUploadProgression();
 void onRename();
 void build404Response(String& content, String file);
 void build500Response(String& content, String file);
+bool checkWebSocketSend();
 
 
 const char* getWebContent(bool start) {
@@ -98,6 +102,8 @@ const char* getWebContent(bool start) {
 
 
 void initWebServer(void) {
+
+  webSocketQueue = xQueueCreate(10, sizeof(char*));
 
   if (MDNS.begin("Afterburner")) {
     DebugPort.println("MDNS responder started");
@@ -175,13 +181,18 @@ String getContentType(String filename) { // convert the file extension to the MI
 }
 
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
+  
   DebugPort.println("handleFileRead: " + path);
-  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
-  if(path.indexOf("index.html") >= 0) {
+  
+  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file in that folder
+
+  if(path.indexOf("index.html") >= 0) {                 // if referencing
     sCredentials creds = NVstore.getCredentials();
-    if (!server.authenticate(creds.webUsername, creds.webPassword)) {
-      server.requestAuthentication();
-      return true;    // not entirely correct, but avoids 404 response
+    if(strlen(creds.webPassword)) {                     // optionally present an authentication prompt for /index.html
+      if (!server.authenticate(creds.webUsername, creds.webPassword)) {
+        server.requestAuthentication();
+        return true;    // not entirely correct, but avoids 404 response
+      }
     }
   }
 
@@ -495,13 +506,18 @@ void rootRedirect()
   server.send(303);
 }
 
+
 bool sendWebSocketString(const char* Str)
 {
 #ifdef WEBTIMES
   CProfile profile;
 #endif
 
-  if(webSocket.connectedClients()) {
+  char* pMsg = new char[strlen(Str)+1];
+  strcpy(pMsg, Str);
+  if(webSocketQueue) xQueueSend(webSocketQueue, &pMsg, 0);
+
+/*  if(webSocket.connectedClients()) {
 
 #ifdef WEBTIMES
     unsigned long tCon = profile.elapsed(true);
@@ -515,6 +531,38 @@ bool sendWebSocketString(const char* Str)
     DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
 #endif
     feedWatchdog();
+    return retval;
+  }*/
+  return false;
+}
+
+bool checkWebSocketSend()
+{
+  bool retval = false;
+#ifdef WEBTIMES
+  CProfile profile;
+#endif
+
+  char* pMsg = NULL;
+  if(webSocketQueue && xQueueReceive(webSocketQueue, &pMsg, 0)) {
+
+    if(webSocket.connectedClients()) {
+
+#ifdef WEBTIMES
+      unsigned long tCon = profile.elapsed(true);
+#endif
+
+      bTxWebData = true;              // OLED tx data animation flag
+      if(pMsg)
+        retval = webSocket.broadcastTXT(pMsg);
+
+#ifdef WEBTIMES
+      unsigned long tWeb = profile.elapsed(true);
+      DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
+#endif
+    // feedWatchdog();
+      delete pMsg;
+    }
     return retval;
   }
   return false;

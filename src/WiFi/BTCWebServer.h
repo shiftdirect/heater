@@ -36,6 +36,7 @@ void listSPIFFS(const char * dirname, uint8_t levels, String& HTMLreport, int wi
 
 const char* getWebContent(bool start); 
 void getWebContent(const char* filename); 
+bool checkWebSocketSend();
 
 #endif
 

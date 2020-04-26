@@ -61,6 +61,26 @@ CBME280Screen::show()
       _printMenuText(80, 26, msg, false);
       sprintf(msg, "%.0fm", altitude);
       _printMenuText(80, 36, msg, false);
+
+//      int rv = getTempSensor().getBME280().getAllReadings(readings);
+//      if(rv & Adafruit_BME280::BME280_T_OK)
+//        sprintf(msg, "%.1f`C",  readings.temperature);
+//      else 
+//        strcpy(msg, "n/a");
+//      _printMenuText(80, 16, msg, false);
+//
+//      if(rv & Adafruit_BME280::BME280_H_OK)
+//        sprintf(msg, "%.1f%%", readings.humidity);
+//      else 
+//        strcpy(msg, "n/a");
+//      _printMenuText(80, 26, msg, false);
+//
+//      if(rv & Adafruit_BME280::BME280_P_OK)
+//        sprintf(msg, "%.0fm", readings.altitude);
+//      else 
+//        strcpy(msg, "n/a");
+//      _printMenuText(80, 36, msg, false);
+
     }
     else {
       _printMenuText(64, 16, "Sensor not found", false, eCentreJustify);

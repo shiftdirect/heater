@@ -98,6 +98,7 @@ public:
   bool getTemperature(float& tempReading, bool filtered) ;
   bool getAltitude(float& reading, bool fresh=false);
   bool getHumidity(float& reading, bool fresh=false);
+  int getAllReadings(bme280_readings& readings);
   const char* getID();
   int getCount() const { return _count; };
 };

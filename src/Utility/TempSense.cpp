@@ -429,6 +429,7 @@ CBME280Sensor::getTemperature(float& tempReading, bool filtered)
     float temperature = _bme.readTemperature();
     update(temperature);
     _lastSampleTime = millis() + 1000;
+    DebugPort.println("Forced BME sensor reading");
   }
 
   CSensor::getTemperature(tempReading, filtered);
@@ -455,6 +456,19 @@ CBME280Sensor::getHumidity(float& reading, bool fresh)
   }
   reading = _fHumidity;
   return true;
+}
+
+int 
+CBME280Sensor::getAllReadings(bme280_readings& readings) 
+{
+  int retval = _bme.readAll(readings);
+  _fAltitude = readings.altitude;
+  _fHumidity = readings.humidity;
+  update(readings.temperature);
+
+  _lastSampleTime = millis() + 1000;
+
+  return retval;
 }
 
 const char* 
@@ -495,9 +509,8 @@ CTempSense::startConvert()
 bool
 CTempSense::readSensors()
 {
-  float fDummy;
-  getAltitude(fDummy, true);
-  getHumidity(fDummy, true);
+  bme280_readings readings;
+  getBME280().getAllReadings(readings);
 
   return DS18B20.readSensors();
 }

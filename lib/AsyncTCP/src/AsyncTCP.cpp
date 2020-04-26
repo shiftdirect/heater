@@ -85,10 +85,10 @@ const int _number_of_closed_slots = CONFIG_LWIP_MAX_ACTIVE_TCP;
 static uint32_t _closed_slots[_number_of_closed_slots];
 static uint32_t _closed_index = []() {
     _slots_lock = xSemaphoreCreateBinary();
-    xSemaphoreGive(_slots_lock);
     for (int i = 0; i < _number_of_closed_slots; ++ i) {
-        _closed_slots[i] = 1;
+        _closed_slots[i] = 1;    // slot available
     }
+    xSemaphoreGive(_slots_lock);
     return 1;
 }();
 
@@ -849,21 +849,25 @@ void AsyncClient::_allocate_closed_slot(){
         }
     }
     if (_closed_slot != -1) {
-        _closed_slots[_closed_slot] = 0;
+        _closed_slots[_closed_slot] = 0;    // slot in use!
     }
     xSemaphoreGive(_slots_lock);
 }
 
 void AsyncClient::_free_closed_slot(){
+    xSemaphoreTake(_slots_lock, portMAX_DELAY);
     if(_closed_slot >= 16 || _closed_slot < -1) {
       Serial.printf("CLOSED SLOTS BOUNDS!! free_closed_slot (%d)\r\n", _closed_slot);
+      xSemaphoreGive(_slots_lock);
       return;
     }
     if (_closed_slot != -1) {
-        _closed_slots[_closed_slot] = _closed_index;
+        _closed_slots[_closed_slot] = _closed_index;  // slot released by index
         _closed_slot = -1;
         ++ _closed_index;
+        if(_closed_index == 0) _closed_index = 1;
     }
+    xSemaphoreGive(_slots_lock);
 }
 
 /*
@@ -888,12 +892,12 @@ int8_t AsyncClient::_connected(void* pcb, int8_t err){
 void AsyncClient::_error(int8_t err) {
     if(_pcb){
         tcp_arg(_pcb, NULL);
-        if(_pcb->state == LISTEN) {
+        // if(_pcb->state == LISTEN) {
             tcp_sent(_pcb, NULL);
             tcp_recv(_pcb, NULL);
             tcp_err(_pcb, NULL);
             tcp_poll(_pcb, NULL, 0);
-        }
+        // }
         _pcb = NULL;
     }
     if(_error_cb) {
@@ -911,12 +915,12 @@ int8_t AsyncClient::_lwip_fin(tcp_pcb* pcb, int8_t err) {
         return ERR_OK;
     }
     tcp_arg(_pcb, NULL);
-    if(_pcb->state == LISTEN) {
+    // if(_pcb->state == LISTEN) {
         tcp_sent(_pcb, NULL);
         tcp_recv(_pcb, NULL);
         tcp_err(_pcb, NULL);
         tcp_poll(_pcb, NULL, 0);
-    }
+    // }
     if(tcp_close(_pcb) != ERR_OK) {
         tcp_abort(_pcb);
     }
