@@ -24,6 +24,7 @@
 // Place Holder Config File - User config vars and defines to be moved here
 
 #define USE_JTAG 0
+#define DBG_FREERTOS 0
 
 //////////////////////////////////////////////////////////////////////////////
 // Configure bluetooth options
@@ -46,6 +47,7 @@
 #define USE_OTA       1
 #define USE_WEBSERVER 1
 #define USE_MQTT      1
+#define USE_HTTPS     0
 
 #define USE_PORTAL_TRIGGER_PIN 0
 

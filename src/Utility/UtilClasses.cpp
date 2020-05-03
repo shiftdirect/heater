@@ -487,3 +487,13 @@ void setHoldoff(unsigned long& holdoff, unsigned long period)
 {
   holdoff = (millis() + period) | 1;
 }
+
+void hexDump(uint8_t* pData, int len, int wrap) 
+{
+  for(int i=0; i<len; ) {
+    for(int j=0; j<wrap && i<len; j++) {
+      DebugPort.printf("%02X ", pData[i++]);
+    }
+    DebugPort.println("");
+  }
+}

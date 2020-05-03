@@ -121,6 +121,9 @@
 #include "Utility/GetLine.h"
 #include "Utility/DemandManager.h"
 #include "Protocol/BlueWireTask.h"
+#if USE_TWDT == 1
+#include "esp_task_wdt.h"
+#endif
 
 // SSID & password now stored in NV storage - these are still the default values.
 //#define AP_SSID "Afterburner"
@@ -132,6 +135,18 @@ const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
 const int FirmwareMinorRevision = 6;
 const char* FirmwareDate = "26 Apr 2020";
+
+/*
+ * Macro to check the outputs of TWDT functions and trigger an abort if an
+ * incorrect code is returned.
+ */
+#define TWDT_TIMEOUT_S 15
+#define CHECK_ERROR_CODE(returned, expected) ({                        \
+            if(returned != expected){                                  \
+                printf("TWDT ERROR\n");                                \
+                abort();                                               \
+            }                                                          \
+})
 
 
 #ifdef ESP32
@@ -185,7 +200,9 @@ CGPIOalg GPIOalg;
 CMQTTsetup MQTTmenu;
 CSecuritySetup SecurityMenu;
 
-
+TaskHandle_t handleWatchdogTask;
+TaskHandle_t handleBlueWireTask;
+extern TaskHandle_t handleSSLTask;
 
 // these variables will persist over a soft reboot.
 __NOINIT_ATTR float persistentRunTime;
@@ -269,7 +286,7 @@ char taskMsg[BLUEWIRE_MSGQUEUESIZE];
 void checkBlueWireEvents()
 {
 // collect and report any debug messages from the blue wire task
-  if(BlueWireMsgBuf && xQueueReceive(BlueWireMsgBuf, taskMsg, 0))
+  if(BlueWireMsgQueue && xQueueReceive(BlueWireMsgQueue, taskMsg, 0))
     DebugPort.print(taskMsg);
 
   // check for complted data exchange from the blue wire task
@@ -299,8 +316,7 @@ void checkBlueWireEvents()
 
     // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
     if(RTC_Store.getCyclicEngaged() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
-      const char* msg = "Forcing cyclic cancel due to error induced shutdown\r\n";
-      xQueueSend(BlueWireMsgBuf, msg, 0);
+      DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
       // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
       RTC_Store.setCyclicEngaged(false);
     }
@@ -320,7 +336,8 @@ void parentKeyHandler(uint8_t event)
 void interruptReboot()
 {     
   ets_printf("%ld Software watchdog reboot......\r\n", millis());
-  esp_restart();
+  abort();
+  // esp_restart();
 }
 
 unsigned long WatchdogTick = -1;
@@ -499,16 +516,27 @@ void setup() {
 
   setupGPIO(); 
 
+#if USE_TWDT == 1
+  DebugPort.println("Initialize TWDT");
+  //Initialize or reinitialize TWDT
+  CHECK_ERROR_CODE(esp_task_wdt_init(TWDT_TIMEOUT_S, true), ESP_OK);  // invoke panic if WDT kicks
+  //Subscribe this task to TWDT, then check if it is subscribed
+  CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
+  CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
+
+#else
+
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
   // create a high priority FreeRTOS task as a watchdog monitor
-  TaskHandle_t wdTask;
   xTaskCreate(WatchdogTask,
              "watchdogTask",
-             2000,
+             1024,
              NULL,
              configMAX_PRIORITIES-1,
-             &wdTask);
+             &handleWatchdogTask);
 #endif
+#endif
+
   JSONWatchdogTick = -1;
   WatchdogTick = -1;
 
@@ -566,13 +594,12 @@ void setup() {
   TempSensor.getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
 
   // create task to run blue wire interface
-  TaskHandle_t Task;
   xTaskCreate(BlueWireTask,              
               "BlueWireTask",
-              2000,
+              1600,
               NULL,
-              TASK_PRIORITY_BLUEWIRE,
-             &Task);
+              TASK_PRIORITY_HEATERCOMMS,
+             &handleBlueWireTask);
 
   
 
@@ -592,7 +619,7 @@ void loop()
 {
   // DebugPort.handle();    // keep telnet spy alive
 
-      feedWatchdog(); // feed watchdog
+  feedWatchdog(); // feed watchdog
       
   doStreaming();   // do wifi, BT tx etc 
 
@@ -601,7 +628,7 @@ void loop()
   if(checkTemperatureSensors())
     ScreenManager.reqUpdate();
 
-        checkDisplayUpdate();    
+  checkDisplayUpdate();    
 
   checkBlueWireEvents();
 
@@ -612,40 +639,43 @@ void loop()
 bool checkTemperatureSensors()
 {
   long tDelta = millis() - lastTemperatureTime;
-      if(tDelta > MIN_TEMPERATURE_INTERVAL) {  // maintain a minimum holdoff period
-        lastTemperatureTime = millis();    // reset time to observe temeprature        
+  if(tDelta > MIN_TEMPERATURE_INTERVAL) {  // maintain a minimum holdoff period
+    lastTemperatureTime = millis();    // reset time to observe temeprature        
 
-        if(bReportStack) {
-          int stackdepth = uxTaskGetStackHighWaterMark(NULL);
-          DebugPort.printf("Stack : %d\r\n", stackdepth);
-        }
+    if(bReportStack) {
+      DebugPort.println("Stack high water marks");
+      DebugPort.printf("  Arduino: %d\r\n", uxTaskGetStackHighWaterMark(NULL));
+      DebugPort.printf("  BlueWire: %d\r\n", uxTaskGetStackHighWaterMark(handleBlueWireTask));
+      DebugPort.printf("  Watchdog: %d\r\n", uxTaskGetStackHighWaterMark(handleWatchdogTask));
+      DebugPort.printf("  SSL loop: %d\r\n", uxTaskGetStackHighWaterMark(handleSSLTask));
+    }
 
-        TempSensor.readSensors();
+    TempSensor.readSensors();
 
     float fTemperature;
-        if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temperature
-          if(DS18B20holdoff) {
-            DS18B20holdoff--; 
-            DebugPort.printf("Skipped initial DS18B20 reading: %f\r\n", fTemperature);
-          }                           // first value upon sensor connect is bad
-          else {
-            // exponential mean to stabilse readings
-            FilteredSamples.AmbientTemp.update(fTemperature);
+    if(TempSensor.getTemperature(0, fTemperature)) {  // get Primary sensor temperature
+      if(DS18B20holdoff) {
+        DS18B20holdoff--; 
+        DebugPort.printf("Skipped initial DS18B20 reading: %f\r\n", fTemperature);
+      }                           // first value upon sensor connect is bad
+      else {
+        // exponential mean to stabilse readings
+        FilteredSamples.AmbientTemp.update(fTemperature);
 
-            manageCyclicMode();
-            manageFrostMode();
-            manageHumidity();
-          }
-        }
-        else {
-          DS18B20holdoff = 3;
-          FilteredSamples.AmbientTemp.reset(-100.0);
-        }
+        manageCyclicMode();
+        manageFrostMode();
+        manageHumidity();
+      }
+    }
+    else {
+      DS18B20holdoff = 3;
+      FilteredSamples.AmbientTemp.reset(-100.0);
+    }
 
-        TempSensor.startConvert();  // request a new conversion, will be ready by the time we loop back around
+    TempSensor.startConvert();  // request a new conversion, will be ready by the time we loop back around
 
     return true;
-      }
+  }
   return false;
 }
 
@@ -940,6 +970,10 @@ void checkDebugCommands()
       else if(rxVal == 'h') {
         getWebContent(true);
       }
+      else if(rxVal == '!') {
+        DebugPort.println("Invoking deliberate halt loop");
+        for(;;);    // force watchdog reboot
+      }
       else if(rxVal == ('b' & 0x1f)) {   // CTRL-B Tst Mode: bluetooth module route
         bTestBTModule = !bTestBTModule;
         Bluetooth.test(bTestBTModule ? 0xff : 0x00);  // special enter or leave BT test commands
@@ -1145,6 +1179,10 @@ void ShowOTAScreen(int percent, eOTAmodes updateType)
 
 void feedWatchdog()
 {
+#if USE_TWDT == 1  
+  CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);  //Comment this line to trigger a TWDT timeout
+#else
+
 #if USE_SW_WATCHDOG == 1 && USE_JTAG == 0
     // BEST NOT USE WATCHDOG WITH JTAG DEBUG :-)
   // DebugPort.printf("\r %ld Watchdog fed", millis());
@@ -1152,6 +1190,7 @@ void feedWatchdog()
   WatchdogTick = 1500;
 #else
   WatchdogTick = -1;
+#endif
 #endif
 }
 
@@ -1193,10 +1232,12 @@ void doStreaming()
   KeyPad.update();      // scan keypad - key presses handler via callback functions!
 
 #if USE_JTAG == 0
+#if DBG_FREERTOS == 0
   //CANNOT USE GPIO WITH JTAG DEBUG
   GPIOin.manage();
   GPIOout.manage(); 
   GPIOalg.manage();
+#endif
 #endif
 
   Bluetooth.check();    // check for Bluetooth activity
@@ -1320,11 +1361,16 @@ void setName(const char* name, int type)
   NVstore.save();
   NVstore.doSave();   // ensure NV storage
   if(type == 0) {
-  DebugPort.println("Restarting ESP to invoke new network credentials");
-  DebugPort.handle();
-  delay(1000);
-  ESP.restart();
-}
+    DebugPort.println("Restarting ESP to invoke new network credentials");
+    DebugPort.handle();
+    // initiate reboot
+    const char* content[2];
+    content[0] = "AP reconfig reset";
+    content[1] = "initiated";
+    ScreenManager.showRebootMsg(content, 1000);
+  // delay(1000);
+  //   ESP.restart();
+  }
 }
 
 void setPassword(const char* name, int type)
@@ -1344,11 +1390,16 @@ void setPassword(const char* name, int type)
   NVstore.save();
   NVstore.doSave();   // ensure NV storage
   if(type == 0) {
-  DebugPort.println("Restarting ESP to invoke new network credentials");
-  DebugPort.handle();
-  delay(1000);
-  ESP.restart();
-}
+    DebugPort.println("Restarting ESP to invoke new network credentials");
+    DebugPort.handle();
+    // initate reboot
+    const char* content[2];
+    content[0] = "AP password";
+    content[1] = "changed";
+    ScreenManager.showRebootMsg(content, 1000);
+    // delay(1000);
+    // ESP.restart();
+  }
 }
 
 

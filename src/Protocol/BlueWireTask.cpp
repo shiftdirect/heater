@@ -63,7 +63,7 @@ extern bool bReportOEMresync;
 extern bool bReportBlueWireData;
 extern sFilteredData FilteredSamples;
 
-QueueHandle_t BlueWireMsgBuf = NULL;    // cannot use general Serial.print etc from this task without causing conflicts
+QueueHandle_t BlueWireMsgQueue = NULL;    // cannot use general Serial.print etc from this task without causing conflicts
 QueueHandle_t BlueWireRxQueue = NULL;   // queue to pass down heater receive data
 QueueHandle_t BlueWireTxQueue = NULL;   // queue to pass down heater transmit data
 SemaphoreHandle_t BlueWireSemaphore = NULL;  // flag to indicate completion of heater data exchange
@@ -74,8 +74,8 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr, 
 void initBlueWireSerial();
 
 void pushDebugMsg(const char* msg) {
-  if(BlueWireMsgBuf)
-    xQueueSend(BlueWireMsgBuf, msg, 0);
+  if(BlueWireMsgQueue)
+    xQueueSend(BlueWireMsgQueue, msg, 0);
 }
 
 void BlueWireTask(void*) {
@@ -89,7 +89,7 @@ void BlueWireTask(void*) {
   static unsigned long moderator = 50;
   bool isBTCmaster = false;
 
-  BlueWireMsgBuf = xQueueCreate(4, BLUEWIRE_MSGQUEUESIZE);
+  BlueWireMsgQueue = xQueueCreate(4, BLUEWIRE_MSGQUEUESIZE);
   BlueWireRxQueue = xQueueCreate(4, BLUEWIRE_DATAQUEUESIZE);
   BlueWireTxQueue = xQueueCreate(4, BLUEWIRE_DATAQUEUESIZE);
   BlueWireSemaphore = xSemaphoreCreateBinary();
@@ -380,7 +380,13 @@ void BlueWireTask(void*) {
         break;
     }  // switch(CommState)
 
+#if DBG_FREERTOS == 1
+    digitalWrite(GPIOout1_pin, LOW);
+#endif
     vTaskDelay(1);
+#if DBG_FREERTOS == 1
+    digitalWrite(GPIOout1_pin, HIGH);
+#endif
   }
 }
 

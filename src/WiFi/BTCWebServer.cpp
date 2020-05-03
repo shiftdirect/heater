@@ -55,6 +55,9 @@
 #include "../OLED/ScreenManager.h"
 // #include "../Utility/ABpreferences.h"
 
+// Max clients to be connected to the JSON handler
+#define MAX_CLIENTS 4
+
 extern CScreenManager ScreenManager;
 
 using namespace httpsserver;
@@ -66,15 +69,19 @@ extern const char* updateIndex;
 extern const char* formatDoneContent;
 extern const char* rebootIndex;
 
-QueueHandle_t webSocketQueue = NULL;
 
 extern void checkSplashScreenUpdate();
 
 size_t streamFileSSL(fs::File &file, const String& contentType, httpsserver::HTTPResponse* pSSL);
 void streamFileCoreSSL(const size_t fileSize, const String & fileName, const String & contentType);
+void processWebsocketQueue();
 
+QueueHandle_t webSocketQueue = NULL;
+#if USE_HTTPS == 1
 SSLCert* pCert;
+TaskHandle_t handleSSLTask;
 HTTPSServer * secureServer;
+#endif
 HTTPServer * insecureServer;
 HTTPServer * WSserver;
 #if USE_SSL_LOOP_TASK == 1
@@ -101,30 +108,18 @@ void addTableData(String& HTML, String dta);
 String getContentType(String filename);
 bool handleFileRead(String path, HTTPResponse* res=NULL);
 void onNotFound();
-#ifdef OLD_SERVER
-void onFormatSPIFFS();
-void onFormatDone();
-void rootRedirect();
-void onRename();
-void onWMConfig();
-void onResetWifi();
-#else
 void onReboot(HTTPRequest * req, HTTPResponse * res);
-// void onDoReboot(HTTPRequest * req, HTTPResponse * res);
 void onFormatSPIFFS(HTTPRequest * req, HTTPResponse * res);
 void onFormatNow(HTTPRequest * req, HTTPResponse * res);
 void onFormatDone(HTTPRequest * req, HTTPResponse * res);
 void rootRedirect(HTTPRequest * req, HTTPResponse * res);
-void onErase(HTTPRequest * req, HTTPResponse * res);
 void onUpload(HTTPRequest* req, HTTPResponse* res);
 void onUploadBegin(HTTPRequest* req, HTTPResponse* res);
 void onUploadProgression(HTTPRequest* req, HTTPResponse* res);
 void onUploadCompletion(HTTPRequest* req, HTTPResponse* res);
-void onRename(HTTPRequest* req, HTTPResponse* res);
 void onWMConfig(HTTPRequest* req, HTTPResponse* res);
 void onResetWifi(HTTPRequest* req, HTTPResponse* res);
 void doDefaultWebHandler(HTTPRequest * req, HTTPResponse * res);
-#endif
 void build404Response(HTTPRequest * req, String& content, String file);
 void build500Response(String& content, String file);
 bool checkAuthentication(HTTPRequest * req, HTTPResponse * res, int credID=0);
@@ -143,9 +138,6 @@ public:
   // Handler function on connection close
   void onClose();
 };
-
-// Max clients to be connected to the JSON handler
-#define MAX_CLIENTS 4
 
 
 // Simple array to store the active clients:
@@ -167,7 +159,8 @@ WebsocketHandler * JSONHandler::create() {
 }
 
 // When the websocket is closing, we remove the client from the array
-void JSONHandler::onClose() {
+void 
+JSONHandler::onClose() {
   for(int i = 0; i < MAX_CLIENTS; i++) {
     if (activeClients[i] == this) {
       activeClients[i] = nullptr;
@@ -175,40 +168,150 @@ void JSONHandler::onClose() {
   }
 }
 
-// Finally, passing messages around. If we receive something, we send it to all
-// other clients
-void JSONHandler::onMessage(WebsocketInputStreambuf * inbuf) {
+void 
+JSONHandler::onMessage(WebsocketInputStreambuf * inbuf) {
   // Get the input message
   std::ostringstream ss;
   std::string msg;
   ss << inbuf;
   msg = ss.str();
 
-/*  // Send it back to every client
-  for(int i = 0; i < MAX_CLIENTS; i++) {
-    if (activeClients[i] != nullptr) {
-      activeClients[i]->send(msg, SEND_TYPE_TEXT);
-    }
-  }*/
-
   bRxWebData = true;
-/*    char cmd[256];
-    memset(cmd, 0, 256);
-    for (int i = 0; i < length && i < 256; i++) {
-      cmd[i] = payload[i];
-    }
-    interpretJsonCommand(cmd);  // send to the main heater controller decode routine
-*/
+
   char cmd[256];
   memset(cmd, 0, 256);
   if(msg.length() < 256) {
     strcpy(cmd, msg.c_str());
+    // TODO: use a queue to hand over message
     interpretJsonCommand(cmd);  // send to the main heater controller decode routine
   }
   
 }
 
 
+// websocket handler, purely for performing /update handshaking
+class updateWSHandler : public WebsocketHandler {
+  String renameFrom;
+  String renameTo;
+public:
+  // This method is called by the webserver to instantiate a new handler for each
+  // client that connects to the websocket endpoint
+  static WebsocketHandler* create();
+
+  // This method is called when a message arrives
+  void onMessage(WebsocketInputStreambuf * input);
+
+  // Handler function on connection close
+  void onClose();
+
+  void interpret(const char* cmd);
+  void decode(const char* cmd, String& payload);
+};
+updateWSHandler* pUpdateHandler = NULL; 
+
+
+WebsocketHandler* 
+updateWSHandler::create()
+{
+  if(pUpdateHandler) {
+    delete pUpdateHandler;
+    DebugPort.println("deleting old /update websocket!");
+  }
+  DebugPort.println("Creating new /update websocket!");
+  pUpdateHandler = new updateWSHandler();
+  return pUpdateHandler;
+}
+
+void 
+updateWSHandler::onMessage(WebsocketInputStreambuf * inbuf) 
+{
+  // DebugPort.printf("updateWSHandler::onMessage...");
+  // Get the input message
+  std::ostringstream ss;
+  std::string msg;
+  ss << inbuf;
+  msg = ss.str();
+
+  char cmd[256];
+  memset(cmd, 0, 256);
+  if(msg.length() < 256) {
+    strcpy(cmd, msg.c_str());
+    interpret(cmd);  // send to the decode routine
+  }
+}
+  
+// When the websocket is closing, we remove the client from the array
+void 
+updateWSHandler::onClose() 
+{
+  DebugPort.println("updateWSHandler::onClose()");
+  pUpdateHandler = nullptr;
+}
+
+void 
+updateWSHandler::interpret(const char* cmd) 
+{
+  if(strlen(cmd) == 0)
+    return;
+
+  // DebugPort.printf("updateWSHandler::interpret %s...", cmd);
+
+  StaticJsonBuffer<512> jsonBuffer;   // create a JSON buffer on the heap
+	JsonObject& obj = jsonBuffer.parseObject(cmd);
+	if(!obj.success()) {
+		// DebugPort.println(" FAILED");
+		return;
+	}
+	// DebugPort.println(" OK"); 
+
+	JsonObject::iterator it;
+	for(it = obj.begin(); it != obj.end(); ++it) {
+
+    String payload(it->value.as<const char*>());
+    decode(it->key, payload);
+  }
+}
+
+void 
+updateWSHandler::decode(const char* cmd, String& payload) 
+{
+  if(strcmp("erase", cmd) == 0) {
+    String filename(payload);
+    filename.replace("%20", " ");   // convert HTML spaces to real spaces
+
+    if(filename.length() != 0)  {
+      DebugPort.printf("WS onErase: %s ", filename.c_str());
+      if(SPIFFS.exists(filename.c_str())) {
+        SPIFFS.remove(filename.c_str());
+        DebugPort.println("ERASED\r\n");
+      }
+      else
+        DebugPort.println("NOT FOUND\r\n");
+    }
+    if(pUpdateHandler)
+       pUpdateHandler->send("{\"updateReload\":100}", WebsocketHandler::SEND_TYPE_TEXT);
+            // activeClients[i]->send(pMsg, WebsocketHandler::SEND_TYPE_TEXT);
+  }
+  else if(strcmp("renameFrom", cmd) == 0) {
+    renameFrom = payload;
+    renameFrom.replace("%20", " ");               // convert html spaces to real spaces
+  }
+  else if(strcmp("renameTo", cmd) == 0) {
+    renameTo = payload;
+    renameTo.replace("%20", " ");               // convert html spaces to real spaces
+
+    if(renameFrom != "" && renameTo != "") {      
+      DebugPort.printf("Renaming %s to %s\r\n", renameFrom.c_str(), renameTo.c_str());
+      SPIFFS.rename(renameFrom.c_str(), renameTo.c_str());
+      checkSplashScreenUpdate();
+    }
+    if(pUpdateHandler)
+       pUpdateHandler->send("{\"updateReload\":100}", WebsocketHandler::SEND_TYPE_TEXT);
+  }
+  else if(strcmp("updateSize", cmd) == 0) {
+    setUploadSize(payload.toInt());
+  }
+}
 
 
 const char* getWebContent(bool start) {
@@ -219,6 +322,8 @@ const char* getWebContent(bool start) {
 
   return GetWebContent.getFilename();
 }
+
+#if USE_HTTPS == 1
 
 SemaphoreHandle_t SSLSemaphore = NULL;
 
@@ -268,27 +373,18 @@ void SSLkeyTask(void *) {
   }
   SSLkeyStore.end();
       DebugPort.printf("Certificate: length = %d\r\n", pCert->getCertLength());
-      for(int i=0; i<pCert->getCertLength(); i++ ) {
-        for(int j=0; (j < 32) && (i<pCert->getCertLength()); j++) {
-          DebugPort.printf("%02X ", pCert->getCertData()[i++]);
-        }
-        DebugPort.println("");
-      }
+      hexDump(pCert->getCertData(), pCert->getCertLength(), 32);
       DebugPort.println("");
 
       DebugPort.printf("Private key: length = %d\r\n", pCert->getPKLength());
-      for(int i=0; i<pCert->getPKLength(); i++ ) {
-        for(int j=0; (j < 32) && (i < pCert->getPKLength()); j++) {
-          DebugPort.printf("%02X ", pCert->getPKData()[i++]);
-        }
-        DebugPort.println("");
-      }
+      hexDump(pCert->getPKData(), pCert->getPKLength(), 32);
       DebugPort.println("");
 
   xSemaphoreGive(SSLSemaphore);
   vTaskDelete(NULL);
 }
 
+#endif
 
 void initWebServer(void) {
 
@@ -298,19 +394,17 @@ void initWebServer(void) {
 
   // ScreenManager.showBootMsg("Preparing SSL cert.");
 
+#if USE_HTTPS == 1
   // create SSL certificate, but off load to a task with a BIG stack;
   SSLSemaphore = xSemaphoreCreateBinary();
 
-  TaskHandle_t SSLTask;
   xTaskCreate(SSLkeyTask,
              "SSLkeyTask",
              16384,
              NULL,
-             TASKPRIORITY_SSL_CERT,   // low priority as this blocks BIG time
-             &SSLTask);
+             TASK_PRIORITY_SSL_CERT,   // low priority as this blocks BIG time
+             &handleSSLTask);
 
-  // int tick = 0;
-  // char animation[4] = { '-', '\\', '|', '/'};
   while(!xSemaphoreTake(SSLSemaphore, 250)) {
     ScreenManager.showBootWait(1);
   }
@@ -319,149 +413,90 @@ void initWebServer(void) {
     
   vSemaphoreDelete(SSLSemaphore);
 
+  secureServer = new HTTPSServer(pCert);
+#else
+  ScreenManager.showBootMsg("Starting web server");
+#endif
+
   WSserver = new HTTPServer(81);
   insecureServer = new HTTPServer();
-  secureServer = new HTTPSServer(pCert);
-  // secureServer->registerNode(SJSONNode);
-
+  
   DebugPort.println("HTTPS server created");
 
   ResourceNode * WSnodeRoot = new ResourceNode("/", "GET", [](HTTPRequest * req, HTTPResponse * res){
     res->print("Insecure websocket lives here!!!");
   });  
-  WSserver->registerNode(WSnodeRoot);
   WebsocketNode * WebsktNode = new WebsocketNode("/", &JSONHandler::create);
+  WebsocketNode * WebsktUpdateNode = new WebsocketNode("/update", &updateWSHandler::create);
+
+  // setup limited websocket only capability on port 81
+  WSserver->registerNode(WSnodeRoot);
   WSserver->registerNode(WebsktNode);
+  
+  // setup websocket capability on port 80 & 443
   insecureServer->registerNode(WebsktNode);
+#if USE_HTTPS == 1
   secureServer->registerNode(WebsktNode);       // associated secure websocket
+#endif
 
   ResourceNode * rebootNode = new ResourceNode("/reboot", "", &onReboot);
-  // ResourceNode * formatspiffsGet = new ResourceNode("/formatspiffs", "GET", &onFormatSPIFFS);
   ResourceNode * formatNode = new ResourceNode("/formatspiffs", "", &onFormatNow);
-  // // handle attempts to browse the /formatnow path - force redirect to root
-  // ResourceNode * formatnowGet = new ResourceNode("/formatnow", "GET", [](HTTPRequest * req, HTTPResponse * res){
-  //   DebugPort.println("WEB: GET /formatnow - ILLEGAL - root redirect");
-  //   rootRedirect(req, res);
-  // });
-  // ResourceNode * formatnowPost = new ResourceNode("/formatnow", "POST", &onFormatNow);
-  // ResourceNode * formatnowNode = new ResourceNode("/formatnow", "", &onFormatNow);  // POST/GET handled by onFormatNow
-  // ResourceNode * updateGet = new ResourceNode("/update", "GET", &onUploadBegin);
-  // // handle attempts to browse the /updatenow path - force redirect to root
-  // ResourceNode * updatenowGet = new ResourceNode("/updatenow", "GET", [](HTTPRequest * req, httpsserver::HTTPResponse * res){
-  //   DebugPort.println("WEB: GET /updatenow - ILLEGAL - root redirect");
-  //   rootRedirect(req, res);
-  // });
-  // // // valid upload attempts must use post, AND they must have also passed thru /update (bUpdateAccessed = true)
-  // ResourceNode * updatenowPost = new ResourceNode("/updatenow", "POST", &onUploadProgression);
   ResourceNode * updateNode = new ResourceNode("/update", "", &onUpload);
-  ResourceNode * renameNode = new ResourceNode("/rename", "POST", &onRename);
-  ResourceNode * eraseNode = new ResourceNode("/erase", "POST", &onErase);
   ResourceNode * wmconfigNode = new ResourceNode("/wmconfig", "GET", &onWMConfig);
   ResourceNode * resetwifiNode = new ResourceNode("/resetwifi", "GET", &onResetWifi);
+  ResourceNode * defaultGet = new ResourceNode("/", "GET", &doDefaultWebHandler);
   
-
   insecureServer->registerNode(rebootNode);     
   insecureServer->registerNode(formatNode);
   insecureServer->registerNode(updateNode);
-  insecureServer->registerNode(renameNode);
-  insecureServer->registerNode(eraseNode);
+  insecureServer->registerNode(WebsktUpdateNode);
   insecureServer->registerNode(resetwifiNode);
   insecureServer->registerNode(wmconfigNode);
-  // insecureServer->registerNode(formatspiffsGet);
-/*  
-  // insecureServer->registerNode(rebootGet);
-  // insecureServer->registerNode(rebootPost);  
-  // insecureServer->registerNode(formatspiffsGet);
-  // insecureServer->registerNode(formatnowGet);
-  // insecureServer->registerNode(formatnowPost);
-  // insecureServer->registerNode(updateGet);
-  // insecureServer->registerNode(updatenowGet);
-  // insecureServer->registerNode(updatenowPost);
-  insecureServer->registerNode(renamePost);
-  insecureServer->registerNode(wmconfigGet);
-  insecureServer->registerNode(resetwifiGet);*/
-
-  ResourceNode * defaultGet = new ResourceNode("/", "GET", &doDefaultWebHandler);
-  
   insecureServer->setDefaultNode(defaultGet);
+
+#if USE_HTTPS == 1
+  secureServer->registerNode(rebootNode);     
+  secureServer->registerNode(formatNode);
+  secureServer->registerNode(updateNode);
+  secureServer->registerNode(WebsktUpdateNode);
+  secureServer->registerNode(resetwifiNode);
+  secureServer->registerNode(wmconfigNode);
   secureServer->setDefaultNode(defaultGet);
+#endif
 
   WSserver->start();
   insecureServer->start();
+#if USE_HTTPS == 1
   secureServer->start();
+#endif
+
   DebugPort.println("HTTPS started");
 
-#ifdef OLD_SERVER
-
-  server.on("/wmconfig", onWMConfig);
-  server.on("/resetwifi", onResetWifi);
-  server.on("/erase", HTTP_POST, onErase);  // erase file from SPIFFS
-
-  // Magical code originally shamelessly lifted from Arduino WebUpdate example, then greatly modified
-  // This allows pushing new firmware to the ESP from a WEB BROWSER!
-  // Added authentication and a sequencing flag to ensure this is not bypassed
-  // You can also upload files to SPIFFS via this same portal
-  //
-  // Initial launch page
-  server.on("/update", HTTP_GET, onUploadBegin);
-  // handle attempts to browse the /updatenow path - force redirect to root
-  server.on("/updatenow", HTTP_GET, []() {  
-    DebugPort.println("WEB: GET /updatenow - ILLEGAL - root redirect");
-    rootRedirect();
-  });
-  // valid upload attempts must use post, AND they must have also passed thru /update (bUpdateAccessed = true)
-  server.on("/updatenow", HTTP_POST, onUploadCompletion, onUploadProgression);
-
-  // SPIFFS formatting
-  server.on("/formatspiffs", HTTP_GET, onFormatSPIFFS);
-  server.on("/formatnow", HTTP_GET, []() {     // deny browse access
-    DebugPort.println("WEB: GET /formatnow - ILLEGAL - root redirect");
-    rootRedirect();
-  });
-  server.on("/formatnow", HTTP_POST, onFormatNow);  // access via POST is legal, but only if bFormatAccess == true
-
-  server.on("/reboot", HTTP_GET, onReboot);  // access via POST is legal, but only if bFormatAccess == true
-  server.on("/reboot", HTTP_POST, onDoReboot);  // access via POST is legal, but only if bFormatAccess == true
-
-  server.on("/rename", HTTP_POST, onRename);  // access via POST is legal, but only if bFormatAccess == true
-
-// NOTE: this serves the default home page, and favicon.ico
-  server.onNotFound([]() 
-  {                                                      // If the client requests any URI
-    if (!handleFileRead(server.uri())) {                  // send it if it exists
-      onNotFound();
-    }
-  });
-
-  server.begin();
   
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
-#endif
-
-#if USE_SSL_LOOP_TASK == 1
+  // setup task to handle webserver
+  webSocketQueue = xQueueCreate(50, sizeof(char*) );
   xTaskCreate(SSLloopTask,
              "SSLloopTask",
-             16384,
+             8192,
+            //  16384,
              NULL,
-             TASKPRIORITY_SSL_LOOP,   // low priority as this blocks BIG time
-             &SSLTask);
+             TASK_PRIORITY_SSL_LOOP,   // low priority as this potentially blocks BIG time
+             &handleSSLTask);
 
   DebugPort.println("HTTP task started");
-#endif
-  // initWebPageUpdate();
 }
 
-#if USE_SSL_LOOP_TASK == 1
 void SSLloopTask(void *) {
   for(;;) {
     WSserver->loop();
     insecureServer->loop();
+#if USE_HTTPS == 1
     secureServer->loop();
+#endif
+    processWebsocketQueue();
     vTaskDelay(1);   
   }
 }
-#endif
 
 // called by main sketch loop()
 bool doWebServer(void) 
@@ -469,13 +504,11 @@ bool doWebServer(void)
 #if USE_SSL_LOOP_TASK != 1
   WSserver->loop();
   insecureServer->loop();
+#if USE_HTTPS == 1
   secureServer->loop();
 #endif
-    
-#ifdef OLD_SERVER
-  webSocket.loop();
-  server.handleClient();
 #endif
+    
   GetWebContent.manage();
   return true;
 }
@@ -539,13 +572,17 @@ bool checkAuthentication(HTTPRequest * req, HTTPResponse * res, int credID) {
   // The return values will be empty strings if the user did not provide any data,
   // or if the format of the Authorization header is invalid (eg. no Basic Method
   // for Authorization, or an invalid Base64 token)
+
+  sCredentials creds = NVstore.getCredentials();
+  if(credID == 0 && strlen(creds.webUpdatePassword) == 0) return true;
+  if(credID == 1 && strlen(creds.webPassword) == 0) return true;
+
   std::string reqUsername = req->getBasicAuthUser();
   std::string reqPassword = req->getBasicAuthPassword();
 
   // If the user entered login information, we will check it
   if (reqUsername.length() > 0 && reqPassword.length() > 0) {
 
-    sCredentials creds = NVstore.getCredentials();
     if (credID == 0 && reqUsername == creds.webUpdateUsername && reqPassword == creds.webUpdatePassword) {
       return true;
     }
@@ -587,22 +624,12 @@ bool handleFileRead(String path, HTTPResponse *res) { // send the right file to 
         res->setStatusText("Internal server error");
         res->print(content.c_str());
       }
-#ifdef OLD_SERVER
-      else {
-        server.send(500, "text/html", content);
-      }
-#endif
       return false;                                     // If the file is broken, return false
     }
     else {
       if(res) {
         streamFileSSL(file, contentType, res);
       }
-#ifdef OLD_SERVER
-      else {
-        server.streamFile(file, contentType);             // File good, send it to the client
-      }
-#endif
       file.close();                                     // Then close the file 
       return true;
     }
@@ -660,11 +687,10 @@ const char* stdHeader = R"=====(
 <style>
 body { 
  font-family: Arial, Helvetica, sans-serif; 
- zoom: 200%;
 }
 button {
- background-color: #016ABC;
- color: #fff;
+ background-color: royalblue;
+ color: white;
  border-radius: 25px;
  height: 30px;
 }
@@ -716,7 +742,7 @@ body {
 }
 .inputfile + label {
  color: #fff;
- background-color: #016ABC;
+ background-color: royalblue;
  display: inline-block;
  border-style: solid;
  border-radius: 25px;
@@ -738,23 +764,30 @@ body {
 <script>
 // globals
 var sendSize;
-var ws;
+var ws = null;
 var timeDown;
 var timeUp;
 var ajax;
 var uploadErr;
+var timedReload;
 
 function onWebSocket(event) {
-  var response = JSON.parse(event.data);
+  console.log(event.data);
+  var res = JSON.parse(event.data);
   var key;
-  for(key in response) {
+  for(key in res) {
    switch(key) {
-    case 'done':
-     setTimeout( function() { location.assign('/'); }, 10000);    
+    case 'updateDone':
+     setTimeout( function() { location.replace('/'); }, 10000);    
      break;
-    case 'progress':
+    case 'updateReload':
+     console.log("updateReload /update");
+     clearTimeout(timedReload);
+     setTimeout( function() { location.reload(true); }, res[key]);    
+     break;
+    case 'updateProgress':
      // actual data bytes received as fed back via web socket
-     var progress = response[key];
+     var progress = res[key];
      if(progress >= 0) {
       // normal progression
       _('loaded_n_total').innerHTML = 'Uploaded ' + progress + ' bytes of ' + sendSize;
@@ -780,9 +813,26 @@ function onWebSocket(event) {
 }
 
 function init() {
- ws = new WebSocket('ws://' + window.location.hostname + ':81/');
- ws.onmessage = onWebSocket;
+  console.log(window.location);
+  disableAll(true);
+  startWS();
 }
+
+function startWS()
+{
+  if(ws != null)
+   delete ws;
+ if(window.location.protocol==='https:') {
+  ws = new WebSocket('wss://' + window.location.hostname + window.location.pathname);
+ }
+ else {
+  ws = new WebSocket('ws://' + window.location.hostname + window.location.pathname);
+ }
+ ws.onmessage = onWebSocket;
+ ws.onerror = function() { setTimeout(startWS, 2000); };
+ ws.onopen = function() { disableAll(false); };
+}
+
 
 function uploadFile() {
  _('upload_form').hidden = true;
@@ -793,20 +843,85 @@ function uploadFile() {
  sendSize = file.size;
  console.log(file);
  var JSONmsg = {};
- JSONmsg['UploadSize'] = sendSize;
+ JSONmsg.updateSize = sendSize;
+ JSONmsg.updateFilename = file.name;
  var str = JSON.stringify(JSONmsg);
  console.log('JSON Tx:', str);
  ws.send(str);
- var formdata = new FormData();
- formdata.append('update', file);
- ajax = new XMLHttpRequest();
+ var form = new FormData();
+ form.append('update', file);
+ xhr = new XMLHttpRequest();
  // progress feedback is handled via websocket JSON sent from controller
  // using server side progress only shows the buffer filling, not actual delivery.
- ajax.addEventListener('load', completeHandler, false);
- ajax.addEventListener('error', errorHandler, false);
- ajax.addEventListener('abort', abortHandler, false);
- ajax.open('POST', '/update');
- ajax.send(formdata);
+ xhr.open('POST', '/update');
+ xhr.onload = completeHandler;
+ xhr.onerror = errorHandler;
+ xhr.onabort = abortHandler;
+ xhr.send(form);
+ disableAll(true);
+}
+
+function disableAll(en)
+{
+  var x = document.getElementsByClassName("rename");
+  l = x.length;
+  for (i = 0; i < l; i++) {
+    if(en == false)
+      enBtn(x[i]);
+    else
+      disEl(x[i]);
+  }
+  var x = document.getElementsByClassName("del");
+  l = x.length;
+  for (i = 0; i < l; i++) {
+    if(en == false)
+      enDel(x[i])
+    else
+      disEl(x[i]);
+  }
+  if(en == false) {
+    _('upload_form').hidden = false;
+    _('cancel').hidden = false;
+    _('status').innerHTML='';
+    _('status').hidden = true;
+    document.body.style.backgroundColor = 'yellowgreen';
+  }
+  else {
+    _('upload_form').hidden = true;
+    _('cancel').hidden = true;
+    _('status').innerHTML='Please wait';
+    _('status').hidden = false;
+    document.body.style.backgroundColor = 'lightgrey';
+  }
+}
+
+function disEl(el)
+{
+  el.disabled = true;
+  el.style.color = 'darkgrey';
+  el.style.backgroundColor = 'grey';
+}
+function enBtn(el)
+{
+  el.disabled = false;
+  el.style.color = 'white';
+  el.style.backgroundColor = 'royalblue';
+}
+function enDel(el)
+{
+  el.disabled = false;
+  el.style.color = 'white';
+  el.style.backgroundColor = 'red';
+}
+
+function startReload(tm)
+{
+  // timedReload = setTimeout(function () { location.replace('/update'); }, tm);   
+  timedReload = setTimeout(function () { 
+    console.log('initiating reload');
+    ws.close();
+    location.assign("/update"); 
+    }, tm);    
 }
 
 function completeHandler(event) {
@@ -819,49 +934,55 @@ function completeHandler(event) {
   _('status').innerHTML='Rebooting NOW';
   setTimeout(function () { _('status').innerHTML='Rebooted'; }, 2000);    
   setTimeout(function () { _('status').innerHTML='Initialising...'; }, 4000);    
-  setTimeout(function () { _('status').innerHTML='Loading /index.html...'; location.assign('/'); }, 7500);    
+  setTimeout(function () { _('status').innerHTML='Loading /index.html...'; location.replace('/'); }, 7500);    
  }
  else {
-  setTimeout( function() { location.assign('/update'); }, 500);    
+  startReload(500);    
  }
 }
 
 function errorHandler(event) {
- console.log('Error Handler');
- _('status').innerHTML = 'Upload Error?';
- _('status').style.color = 'red';
- setTimeout( function() { location.reload(); }, 2000);    
+  console.log('Error Handler', event);
+  console.log('Error Handler');
+  _('status').innerHTML = 'Upload Error?';
+  _('status').style.color = 'red';
+  startReload(2000);    
 }
 
 function abortHandler(event) {
  console.log('Abort Handler' + event);
  _('status').innerHTML = uploadErr;
  _('status').style.color = 'red';
- setTimeout( function() { location.reload(); }, 2000);    
+ startReload(2000);    
 }
 
+function ajaxSuccess () {
+  console.log(this.responseText);
+}
 function onErase(fn) {
  if(confirm('Do you really want to erase ' + fn +' ?')) {
-  var formdata = new FormData();
-  formdata.append('filename', fn);
-  var ajax = new XMLHttpRequest();
-  ajax.open('POST', '/erase');
-  ajax.send(formdata);
-  setTimeout(function () { location.reload(); }, 500);    
+  var JSONmsg = {};
+  JSONmsg.erase = fn;
+  var str = JSON.stringify(JSONmsg);
+  console.log('JSON Tx:', str);
+  ws.send(str);
+  startReload(10000);    
+  disableAll(true);
  }
 }
 
 function onRename(fn) {
-  var newname = prompt('Enter new file name', fn);
-  if(newname != null && newname != '') {
-    var formdata = new FormData();
-    formdata.append('oldname', fn);
-    formdata.append('newname', newname);
-    var ajax = new XMLHttpRequest();
-    ajax.open('POST', '/rename');
-    ajax.send(formdata);
-    setTimeout(function () { location.reload(); }, 500);    
-  }
+ var nm = prompt('Enter new file name', fn);
+ if(nm != null && nm != '') {
+  var JSONmsg = {};
+  JSONmsg.renameFrom = fn;
+  JSONmsg.renameTo = nm;
+  var str = JSON.stringify(JSONmsg);
+  console.log('JSON Tx:', str);
+  ws.send(str);
+  startReload(10000);    
+  disableAll(true);
+ }
 }
 
 function onBrowseChange() {
@@ -875,7 +996,7 @@ function onBrowseChange() {
 }
 
 function onformatClick() {
-    location.assign('/formatspiffs');
+    location.replace('/formatspiffs');
 }
 
 </script>
@@ -892,7 +1013,7 @@ function onformatClick() {
  <div id='uploaddiv' hidden><span id='filename'></span>&nbsp;<button id='upload' class='throb' onclick='uploadFile()' hidden>Upload</button>
  <progress id='progressBar' value='0' max='100' style='width:300px;' hidden></progress><p></div>
  <p id='spacer' hidden> </p> 
- <div><button onclick=location.assign('/') id='cancel'>Cancel</button></div>
+ <div><button onclick=location.replace('/') id='cancel'>Cancel</button></div>
  <h3 id='status' hidden></h3>
  <div id='loaded_n_total' hidden></div>
 )=====";
@@ -924,62 +1045,42 @@ void rootRedirect(HTTPRequest * req, httpsserver::HTTPResponse * res)
   res->setStatusCode(303);
 }
 
-
+// pass new data for websocket send via a queue
 bool sendWebSocketString(const char* Str)
 {
-#ifdef OLD_SERVER
-#ifdef WEBTIMES
-  CProfile profile;
-#endif
-
-  char* pMsg = new char[strlen(Str)+1];
-  strcpy(pMsg, Str);
-  if(webSocketQueue) xQueueSend(webSocketQueue, &pMsg, 0);
-
-/*  if(webSocket.connectedClients()) {
-
-#ifdef WEBTIMES
-    unsigned long tCon = profile.elapsed(true);
-#endif
-
-    bTxWebData = true;              // OLED tx data animation flag
-    webSocket.broadcastTXT(Str);
-
-#ifdef WEBTIMES
-    unsigned long tWeb = profile.elapsed(true);
-    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
-#endif
-
+  if(webSocketQueue) {
+    char* pMsg = new char[strlen(Str)+1];
+    strcpy(pMsg, Str);
+    xQueueSend(webSocketQueue, &pMsg, 0);
     return true;
   }
   return false;
-#else
-#ifdef WEBTIMES
-  CProfile profile;
-#endif
+}
 
-#ifdef WEBTIMES
-    unsigned long tCon = profile.elapsed(true);
-#endif
-
-  bool sent = false;
-  for(int i=0; i< MAX_CLIENTS; i++) {
-    if(activeClients[i]) {
-      bTxWebData = true;              // OLED tx data animation flag
-      sent = true;
-      activeClients[i]->send(Str, WebsocketHandler::SEND_TYPE_TEXT);
+// query queue for new messages to send to websocket(s)
+void processWebsocketQueue()
+{
+  char* pMsg;
+  if(webSocketQueue) {
+    if(xQueueReceive(webSocketQueue, &pMsg, 0)) {
+      if(pMsg == NULL) {
+        DebugPort.println("websocket send NULL averted");
+      }
+      else {
+        DebugPort.printf("websocket len=%d\r\n", strlen(pMsg));
+        for(int i=0; i< MAX_CLIENTS; i++) {
+          if(activeClients[i]) {
+            bTxWebData = true;              // OLED tx data animation flag
+            activeClients[i]->send(pMsg, WebsocketHandler::SEND_TYPE_TEXT);
+            // DebugPort.println("->");
+          }
+        }
+        delete pMsg;
+      }
     }
   }
-
-
-#ifdef WEBTIMES
-    unsigned long tWeb = profile.elapsed(true);
-    DebugPort.printf("Websend times : %ld,%ld\r\n", tCon, tWeb); 
-#endif
-
-  return sent;
-#endif
 }
+
 
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
@@ -1170,26 +1271,6 @@ void addTableData(String& HTML, String dta)
 }
 
 
-// erase a file from SPIFFS partition
-void onErase(HTTPRequest * req, HTTPResponse * res)
-{
-  std::string sfilename;
-  findFormArg(req, "filename", sfilename);
-  String filename(sfilename.c_str());
-  filename.replace("%20", " ");   // convert HTML spaces to real spaces
-
-  if(filename.length() != 0)  {
-    DebugPort.printf("onErase: %s ", filename.c_str());
-    if(SPIFFS.exists(filename.c_str())) {
-      SPIFFS.remove(filename.c_str());
-      DebugPort.println("ERASED\r\n");
-    }
-    else
-      DebugPort.println("NOT FOUND\r\n");
-  }
-}
-
-
 // function called upon completion of file (form) upload
 void onUploadCompletion(HTTPRequest * req, HTTPResponse * res)
 {
@@ -1217,6 +1298,8 @@ void onUploadCompletion(HTTPRequest * req, HTTPResponse * res)
 #if USE_SSL_LOOP_TASK != 1          
     ShowOTAScreen(-1, eOTAbrowser);  // browser update 
 #endif
+    if(pUpdateHandler)
+      pUpdateHandler->send("{\"updateReload\":1000}", WebsocketHandler::SEND_TYPE_TEXT);
   }
   else {
     if(BrowserUpload.isOK()) {
@@ -1236,9 +1319,12 @@ void onUploadCompletion(HTTPRequest * req, HTTPResponse * res)
     // rootRedirect(req, res);
 
     forceBootInit();
-    delay(1000);
-    // javascript redirects to root page so we go there after reboot!
-    ESP.restart();                             // reboot
+
+    // initate reboot
+    const char* content[2];
+    content[0] = "New firmware upload";
+    content[1] = "completed";
+    ScreenManager.showRebootMsg(content, 1000);
   }
 }
 
@@ -1258,9 +1344,7 @@ void onUploadBegin(HTTPRequest* req, HTTPResponse* res)
   DebugPort.println("WEB: GET /update");
   if(!checkAuthentication(req, res))
     return;
-  // if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
-  //   return server.requestAuthentication();
-  // }
+
   bUpdateAccessed = true;
   bFormatAccessed = false;
   bFormatPerformed = false;
@@ -1268,12 +1352,15 @@ void onUploadBegin(HTTPRequest* req, HTTPResponse* res)
   String SPIFFSinfo;
   listSPIFFS("/", 2, SPIFFSinfo, 2);
   String content = stdHeader;
-  content += updateIndex + SPIFFSinfo;
+  content += updateIndex;
+  // content += "<div id='spiffs'>" + SPIFFSinfo + "</div>";
+  content += SPIFFSinfo;
   content += "<p><button class='redbutton' onclick='onformatClick()'>Format SPIFFS</button>";
   content += "</body></html>";
   res->setStatusCode(200);
   res->setHeader("Content-Type", "text/html");
   res->print( content );
+  res->finalize();
 
 #else
     handleFileRead("/uploadfirmware.html");
@@ -1285,8 +1372,9 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
   char JSON[64];
 
   if(!bUpdateAccessed) {  // only allow progression via /update, attempts to directly access /updatenow will fail
-    DebugPort.println("WEB: POST /updatenow forbidden entry");
-    rootRedirect(req, res);
+    DebugPort.println("WEB: POST /update forbidden entry");
+    res->setHeader("Location","/update");      // reselect the update page
+    res->setStatusCode(303);
   }
   else {
 
@@ -1333,18 +1421,27 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
       upload.currentSize = 0;
 
       int sts = BrowserUpload.begin(filename, _SuppliedFileSize);   // _SuppliedFileSize come in via websocket
-      sprintf(JSON, "{\"progress\":%d}", sts);
-      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+      if(sts < 0) {
+        break;
+      }
+      else {
+        sprintf(JSON, "{\"updateProgress\":%d}", sts);
+        // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+        if(pUpdateHandler)
+          pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
+      }
 
       while (!parser->endOfField()) {
 #if USE_SSL_LOOP_TASK != 1          
         feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
 #endif
         upload.currentSize = parser->read(upload.buf, HTTP_UPLOAD_BUFLEN);
-        int sts = BrowserUpload.fragment(upload, res);
+        sts = BrowserUpload.fragment(upload, res);
         if(sts < 0) {
-          sprintf(JSON, "{\"progress\":%d}", sts);
-          sendWebSocketString(JSON);  // feedback -ve byte count of update to browser via websocket - write error
+          sprintf(JSON, "{\"updateProgress\":%d}", sts);
+          if(pUpdateHandler)
+            pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
+          // sendWebSocketString(JSON);  // feedback -ve byte count of update to browser via websocket - write error
           break;
         }
         else {
@@ -1353,8 +1450,10 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
             DebugPort.print(".");
             if(upload.totalSize) {
               // feed back bytes received over web socket for progressbar update on browser (via javascript)
-              sprintf(JSON, "{\"progress\":%d}", upload.totalSize);
-              sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+              sprintf(JSON, "{\"updateProgress\":%d}", upload.totalSize);
+              if(pUpdateHandler)
+                pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
+              // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
             }
             // show percentage on OLED
             int percent = 0;
@@ -1366,23 +1465,28 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
           }
         }
       }
+      sts = BrowserUpload.end(upload);
+      sprintf(JSON, "{\"updateProgress\":%d}", sts);
+      if(pUpdateHandler)
+        pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
+      // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+      if(!BrowserUpload.isSPIFFSupload()) {
+        sprintf(JSON, "{\"updateDone\":1}");
+        if(pUpdateHandler)
+          pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
+        // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+      }
     }
 
-    int sts = BrowserUpload.end(upload);
-    sprintf(JSON, "{\"progress\":%d", sts);
-    sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-    if(!BrowserUpload.isSPIFFSupload()) {
-      sprintf(JSON, "{\"done\":1}");
-      sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-    }
     // WSserver->loop();
-    delay(2000);
+    // delay(2000);
 
     bUpdateAccessed = false;  // close gate on POST to /updatenow
 
     delete parser;
 
     onUploadCompletion(req, res);
+    res->finalize();
 
   }
 }
@@ -1406,31 +1510,6 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
  * As bFormatAccessed is still set, a confimration page is the presented advising files now need to be uploaded
  * A button allows direct access to /update
  */
-
-#ifdef OLD_SERVER
-void onFormatSPIFFS()
-{
-  DebugPort.println("WEB: GET /formatspiffs");
-  bUpdateAccessed = false;
-  String content = stdHeader;
-  if(!bFormatPerformed) {
-    sCredentials creds = NVstore.getCredentials();
-    if (!server.authenticate(creds.webUpdateUsername, creds.webUpdatePassword)) {
-      return server.requestAuthentication();
-    }
-    bFormatAccessed = true;   // only set after we pass authentication
-
-    content += formatIndex;
-  }
-  else {
-    bFormatAccessed = false;
-    bFormatPerformed = false;
-
-    content += formatDoneContent;
-  }
-  server.send(200, "text/html", content );
-}
-#else
 
 
 void onFormatSPIFFS(HTTPRequest * req, HTTPResponse * res)
@@ -1458,8 +1537,9 @@ void onFormatSPIFFS(HTTPRequest * req, HTTPResponse * res)
     res->setHeader("Content-Type", "text/html");
     res->print( content );
   }
+  res->finalize();
 }
-#endif
+
 
 const char* formatDoneContent = R"=====(
 <style>
@@ -1488,20 +1568,19 @@ body {
 function init() {
 }
 function onFormat() {
- var formdata = new FormData();
+ var form = new FormData();
  if(confirm('Do you really want to reformat the SPIFFS partition ?')) {
   _('throb').innerHTML = 'FORMATTING - Please wait';
-  formdata.append('confirm', 'yes');
-  setTimeout(function () { location.reload(); }, 200);    
+  form.append('confirm', 'yes');
+  timedReload = setTimeout(function () { location.assign('/update'); }, 10000);    
  }
  else {
-  formdata.append('confirm', 'no');
-  setTimeout(function () { location.assign('/update'); }, 20);    
+  form.append('confirm', 'no');
+  timedReload = setTimeout(function () { location.assign('/update'); }, 20);    
  }
- var ajax = new XMLHttpRequest();
-//  ajax.open('POST', '/formatnow');
- ajax.open('POST', '/formatspiffs');
- ajax.send(formdata);
+ var xhr = new XMLHttpRequest();
+ xhr.open('POST', '/formatspiffs');
+ xhr.send(form);
 }
 </script>
 <title>Afterburner SPIFFS format</title>
@@ -1550,6 +1629,7 @@ void onReboot(HTTPRequest * req, httpsserver::HTTPResponse * res)
     String content = stdHeader;
     content += rebootIndex;
     res->print(content);
+    res->finalize();
   }
   if (req->getMethod() == "POST") {
     // HTTP POST handler, do not need to return a web page!
@@ -1560,27 +1640,17 @@ void onReboot(HTTPRequest * req, httpsserver::HTTPResponse * res)
     if(findFormArg(req, "reboot", value)) {
       if(value == "yes") {      // confirm user agrees, and we did pass thru /formatspiffs first
         DebugPort.println("Rebooting via /reboot");
-        ESP.restart();
+        // initate reboot
+        const char* content[2];
+        content[0] = "/reboot";
+        content[1] = "initiated";
+        ScreenManager.showRebootMsg(content, 1000);
+        // ESP.restart();
       }
     }
   }
 
 }
-
-/*void onDoReboot(HTTPRequest * req, HTTPResponse * res) 
-{
-  // HTTP POST handler, do not need to return a web page!
-  DebugPort.println("WEB: POST /reboot");
-  // First, we need to check the encoding of the form that we have received.
-  // The browser will set the Content-Type request header, so we can use it for that purpose.
-  std::string value;
-  if(findFormArg(req, "reboot", value)) {
-    if(value == "yes") {      // confirm user agrees, and we did pass thru /formatspiffs first
-      DebugPort.println("Rebooting via /reboot");
-      ESP.restart();
-    }
-  }
-}*/
 
 
 const char* rebootIndex = R"=====(
@@ -1596,11 +1666,11 @@ function onReboot() {
   setTimeout(function () { _('info').innerHTML='Rebooted'; }, 2000);    
   setTimeout(function () { _('info').innerHTML='Initialising...'; }, 4000);    
   setTimeout(function () { _('info').innerHTML='Loading /index.html...'; location.assign('/'); }, 7500);    
-  var formdata = new FormData();
-  formdata.append('reboot', 'yes');
-  var ajax = new XMLHttpRequest();
-  ajax.open('POST', '/reboot');
-  ajax.send(formdata);
+  var form = new FormData();
+  form.append('reboot', 'yes');
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/reboot');
+  xhr.send(form);
   _('info').hidden = false;
  }
  else {
@@ -1622,26 +1692,6 @@ function onReboot() {
 
 
 
-void onRename(HTTPRequest * req, httpsserver::HTTPResponse * res) 
-{
-  // HTTP POST handler, do not need to return a web page!
-  DebugPort.println("WEB: POST /rename");
-  std::string value;
-  findFormArg(req, "oldname", value);  // get request argument value by name
-  String oldname = value.c_str();   
-  findFormArg(req, "newname", value);  // get request argument value by name
-  String newname = value.c_str();   
-
-  newname.replace("%20", " ");               // convert html spaces to real spaces
-  oldname.replace("%20", " ");
-  if(oldname != "" && newname != "") {      
-    DebugPort.printf("Renaming %s to %s\r\n", oldname.c_str(), newname.c_str());
-    SPIFFS.rename(oldname.c_str(), newname.c_str());
-    checkSplashScreenUpdate();
-  }
-}
-
-
 /***************************************************************************************
  * HTTP RESPONSE 404 - FILE NOT FOUND HANDLING
  */
@@ -1655,13 +1705,6 @@ content += R"=====(</head>
 content +=  file;
 content += R"=====(</i></b><br>
 Method: )=====";
-#ifdef OLD_SERVER
-content += (server.method() == HTTP_GET) ? "GET" : "POST";
-content += "<br>Arguments: ";
-for (uint8_t i = 0; i < server.args(); i++) {
-	content += " " + server.argName(i) + ": " + server.arg(i) + "<br>";
-}
-#else
 content += req->getMethod().c_str();
 content += "<br>Arguments: ";
 for(auto it = req->getParams()->beginQueryParameters(); it != req->getParams()->endQueryParameters(); ++it) {
@@ -1673,7 +1716,6 @@ for(auto it = req->getParams()->beginQueryParameters(); it != req->getParams()->
   content += val.c_str();
   content += "<br>";
 }
-#endif
 content += R"=====(<hr>
 <p>Please check the URL.<br>
 If OK please try uploading the file from the web content.

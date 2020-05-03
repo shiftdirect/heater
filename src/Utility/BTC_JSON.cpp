@@ -39,8 +39,10 @@
 #include "TempSense.h"
 #include "BoardDetect.h"
 #include "DemandManager.h"
+#include "../OLED/ScreenManager.h"
 
 extern CModerator MQTTmoderator;
+extern CScreenManager ScreenManager;
 
 char defaultJSONstr[64];
 CModerator JSONmoderator;
@@ -581,6 +583,7 @@ void sendJSONtext(const char* jsonStr)
 
 }
 
+
 void doJSONreboot(uint16_t PIN)
 {
   char jsonStr[20];
@@ -589,15 +592,19 @@ void doJSONreboot(uint16_t PIN)
     validate = random(1, 10000);
 
     char jsonStr[20];
-    sprintf(jsonStr, "{\"Reboot\":%04d}", validate);
+    sprintf(jsonStr, "{\"Reboot\":\"%04d\"}", validate);
 
     sendJSONtext( jsonStr );
   }
   else if(PIN == validate) {
-    strcpy(jsonStr, "{\"Reboot\":-1}");
+    strcpy(jsonStr, "{\"Reboot\":\"-1\"}");
     sendJSONtext( jsonStr );
 
-    delay(1000);
-    ESP.restart();                             // reboot
+    // initate reboot
+    const char* content[2];
+    content[0] = "Remote reset";
+    content[1] = "initiated";
+    ScreenManager.showRebootMsg(content, 1000);
   }
 }
+

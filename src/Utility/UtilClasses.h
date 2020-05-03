@@ -193,5 +193,6 @@ enum eOTAmodes {
 };
 
 void setHoldoff(unsigned long& holdoff, unsigned long period);
+void hexDump(uint8_t* pData, int len, int wrap=16);
 
 #endif // __UTIL_CLASSES_H__

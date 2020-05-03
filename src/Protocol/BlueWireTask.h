@@ -25,7 +25,7 @@
 #include <FreeRTOS.h>
 #include "../Utility/UtilClasses.h"
 
-extern QueueHandle_t BlueWireMsgBuf;    // cannot use general Serial.print etc from this task without causing conflicts
+extern QueueHandle_t BlueWireMsgQueue;    // cannot use general Serial.print etc from this task without causing conflicts
 extern QueueHandle_t BlueWireRxQueue;   // queue to pass down heater receive data
 extern QueueHandle_t BlueWireTxQueue;   // queue to pass down heater transmit data
 extern SemaphoreHandle_t BlueWireSemaphore;  // flag to indicate completion of heater data exchange

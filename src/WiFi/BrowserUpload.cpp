@@ -103,12 +103,18 @@ sBrowserUpload::begin(String& filename, int filesize)
 }
 
 int 
-sBrowserUpload::fragment(HTTPUpload& upload, HTTPResponse * res)
+sBrowserUpload::fragment(HTTPUpload& upload, httpsserver::HTTPResponse * res)
 {
   if(isSPIFFSupload()) {
     // SPIFFS update (may be error state)
     if(DstFile.file) {
       // file is open, add new fragment of data to file opened for writing
+
+#ifdef REPORT_FILE_BYTES
+      DebugPort.println("Upload bytes...");
+      hexDump(upload.buf, upload.currentSize, 32);
+#endif
+
       if(DstFile.file.write(upload.buf, upload.currentSize) != upload.currentSize) { // Write the received bytes to the file
         // ERROR! write operation failed if length does not match!
         DstFile.file.close();         // close the file (fsUploadFile becomes NULL)
