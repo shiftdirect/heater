@@ -70,6 +70,7 @@ CTxManage::CTxManage(int TxGatePin, HardwareSerial& serial) :
   _rawCommand = 0;
   m_HWTimer = NULL;
   _callback = NULL;
+  _prime = false;
 }
 
 // static function used for the tx gate termination 
@@ -177,6 +178,8 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
     else {
       m_TxFrame.setAltitude(3500);  // default height - yes it is weird, but that's what the simple controllers send!
     }
+
+    m_TxFrame.setPump_Prime(_prime);
 
     float tActual = getTemperatureSensor();
     int8_t s8Temp = (int8_t)(tActual + 0.5);
@@ -338,3 +341,8 @@ CTxManage::CheckTx(unsigned long timenow)
   return m_nStartTime == 0;   // returns true when done
 }
 
+void 
+CTxManage::reqPrime(bool on)
+{
+  _prime = on;
+}

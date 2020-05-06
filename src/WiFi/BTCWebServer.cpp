@@ -77,9 +77,9 @@ void streamFileCoreSSL(const size_t fileSize, const String & fileName, const Str
 void processWebsocketQueue();
 
 QueueHandle_t webSocketQueue = NULL;
+TaskHandle_t handleWebServerTask;
 #if USE_HTTPS == 1
 SSLCert* pCert;
-TaskHandle_t handleSSLTask;
 HTTPSServer * secureServer;
 #endif
 HTTPServer * insecureServer;
@@ -403,7 +403,7 @@ void initWebServer(void) {
              16384,
              NULL,
              TASK_PRIORITY_SSL_CERT,   // low priority as this blocks BIG time
-             &handleSSLTask);
+             &handleWebServerTask);
 
   while(!xSemaphoreTake(SSLSemaphore, 250)) {
     ScreenManager.showBootWait(1);
@@ -476,12 +476,12 @@ void initWebServer(void) {
   // setup task to handle webserver
   webSocketQueue = xQueueCreate(50, sizeof(char*) );
   xTaskCreate(SSLloopTask,
-             "SSLloopTask",
+             "Web server task",
              8192,
             //  16384,
              NULL,
              TASK_PRIORITY_SSL_LOOP,   // low priority as this potentially blocks BIG time
-             &handleSSLTask);
+             &handleWebServerTask);
 
   DebugPort.println("HTTP task started");
 }

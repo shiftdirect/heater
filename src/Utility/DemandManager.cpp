@@ -123,28 +123,30 @@ CDemandManager::checkStart()
   // create a deny start temperature margin
   int stopDeltaT = 0;
 
-  int cyclicstop = NVstore.getUserSettings().cyclic.Stop;
-  if(cyclicstop) {                // cyclic mode enabled
-    // if cylic mode, raise the margin by the cyclic stop range
-    stopDeltaT = cyclicstop + 1;  // bump up by 1 degree - no point invoking cyclic at 1 deg over!
-  }
-
   // determine temperature error vs desired thermostat value
   float deltaT = getTemperatureSensor() - getDegC();
 
-  if(deltaT > stopDeltaT) {
-    // temperature exceeded the allowed margin
-    if(cyclicstop) {
-      // using cyclic mode - suggest immediate cyclic suspend
+  int cyclicstop = NVstore.getUserSettings().cyclic.Stop;
+  if(cyclicstop) {                // cyclic mode enabled
+    // if cyclic mode, raise the margin by the cyclic stop range
+    stopDeltaT = cyclicstop + 1;  // bump up by 1 degree - no point invoking cyclic at 1 deg over!
+
+    // alows honour cyclic stop threshold - immediate suspend transition
+    if(deltaT > stopDeltaT) {
       return eStartSuspend;
     }
-    else {
-      // only deny start if actually using thermostat mode
+  }
+
+  if(!isExtThermostatMode()) {
+    if(deltaT > stopDeltaT) {
+      // temperature exceeded the allowed margin
+      // only deny start if actually using inbuilt thermostat mode
       if(isThermostat()) {
         return eStartTooWarm;  // too warm - deny start
       }
     }
   }
+
   return eStartOK;  // allow start
 }
 

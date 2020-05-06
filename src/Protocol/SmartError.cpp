@@ -36,6 +36,7 @@ void
 CSmartError::reset()
 {
   _prevRunState = 0;
+  _prevPumpHz = 0;
   _Error = 0;
   _bInhibit = false;
 }
@@ -61,14 +62,15 @@ CSmartError::monitor(const CProtocol& heaterFrame)
 {
   if(heaterFrame.verifyCRC(NULL)) {  // check but don't report dodgy frames to debug
     // only accept valid heater frames!
-    monitor(heaterFrame.getRunState());
+    _monitor(heaterFrame.getRunState());
+    _monitorPriming(heaterFrame.getRunState(), heaterFrame.getPump_Actual());
   }
 }
 
 // test the new run state value, comparing to previous
 // detect abnormal transitions
 void 
-CSmartError::monitor(uint8_t newRunState)
+CSmartError::_monitor(uint8_t newRunState)
 {
   // check if moving away from heater Idle state (S0)
   // especially useful if an OEM controller exists
@@ -208,4 +210,16 @@ CSmartError::checkfuelUsage(bool throwfault)
     }
   }
   return retval;
+}
+
+void
+CSmartError::_monitorPriming(uint8_t runState, uint8_t pumpHz)
+{
+  if(runState == 0 && pumpHz == 0 && _prevPumpHz != 0) {
+    TxManage.reqPrime(false);     // cancel pump priming request upon heater auto stopping priming
+  }
+  if(runState != 0) {
+    TxManage.reqPrime(false);     // ALWAYS cancel pump priming request upon heater running
+  }
+  _prevPumpHz = pumpHz;
 }

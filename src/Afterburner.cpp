@@ -202,7 +202,7 @@ CSecuritySetup SecurityMenu;
 
 TaskHandle_t handleWatchdogTask;
 TaskHandle_t handleBlueWireTask;
-extern TaskHandle_t handleSSLTask;
+extern TaskHandle_t handleWebServerTask;
 
 // these variables will persist over a soft reboot.
 __NOINIT_ATTR float persistentRunTime;
@@ -647,7 +647,7 @@ bool checkTemperatureSensors()
       DebugPort.printf("  Arduino: %d\r\n", uxTaskGetStackHighWaterMark(NULL));
       DebugPort.printf("  BlueWire: %d\r\n", uxTaskGetStackHighWaterMark(handleBlueWireTask));
       DebugPort.printf("  Watchdog: %d\r\n", uxTaskGetStackHighWaterMark(handleWatchdogTask));
-      DebugPort.printf("  SSL loop: %d\r\n", uxTaskGetStackHighWaterMark(handleSSLTask));
+      DebugPort.printf("  SSL loop: %d\r\n", uxTaskGetStackHighWaterMark(handleWebServerTask));
     }
 
     TempSensor.readSensors();

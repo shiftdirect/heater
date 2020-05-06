@@ -53,6 +53,7 @@ CProtocol HeaterFrame2;              // data packet received from heater in resp
 // CSmartError SmartError;
 CProtocolPackage reportHeaterData;
 CProtocolPackage primaryHeaterData;
+char dbgMsg[BLUEWIRE_MSGQUEUESIZE];
 
 static bool bHasOEMController = false;
 static bool bHasOEMLCDController = false;
@@ -142,9 +143,8 @@ void BlueWireTask(void*) {
         if(RxTimeElapsed >= moderator) {
           moderator += 10;  
           if(bReportRecyleEvents) {
-            char msg[32];
-            sprintf(msg, "%ldms - ", RxTimeElapsed);
-            pushDebugMsg(msg);
+            sprintf(dbgMsg, "%ldms - ", RxTimeElapsed);
+            pushDebugMsg(dbgMsg);
           }
           if(CommState.is(CommStates::OEMCtrlRx)) {
             bHasOEMController = false;
@@ -208,9 +208,8 @@ void BlueWireTask(void*) {
         if(BlueWireRxData.available() && (RxTimeElapsed > (RX_DATA_TIMOUT+10))) {  
 
           if(bReportOEMresync) {
-            char msg[64];
-            sprintf(msg, "Re-sync'd with OEM Controller. %ldms Idle time.\r\n", RxTimeElapsed);
-            pushDebugMsg(msg);
+            sprintf(dbgMsg, "Re-sync'd with OEM Controller. %ldms Idle time.\r\n", RxTimeElapsed);
+            pushDebugMsg(dbgMsg);
           }
 
           bHasHtrData = false;
@@ -395,12 +394,11 @@ bool validateFrame(const CProtocol& frame, const char* name)
 {
   if(!frame.verifyCRC(pushDebugMsg)) {
     // Bad CRC - restart blue wire Serial port
-    char msg[128];
-    sprintf(msg, "\007Bad CRC detected for %s frame - restarting blue wire's serial port\r\n", name);
-    pushDebugMsg(msg);
-    msg[0] = 0;  // empty string
-    DebugReportFrame("BAD CRC:", frame, "\r\n", msg);
-    pushDebugMsg(msg);
+    sprintf(dbgMsg, "\007Bad CRC detected for %s frame - restarting blue wire's serial port\r\n", name);
+    pushDebugMsg(dbgMsg);
+    dbgMsg[0] = 0;  // empty string
+    DebugReportFrame("BAD CRC:", frame, "\r\n", dbgMsg);
+    pushDebugMsg(dbgMsg);
 #ifdef REBOOT_BLUEWIRE
     initBlueWireSerial();
 #endif
@@ -415,7 +413,7 @@ void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr, 
 {
   strcat(msg, hdr);                     // header
   for(int i=0; i<24; i++) {
-    char str[16];
+    char str[8];
     sprintf(str, " %02X", Frame.Data[i]);  // build 2 dig hex values
     strcat(msg, str);                   // and print     
   }
@@ -478,7 +476,7 @@ const char* getBlueWireStatStr()
 
 void reqPumpPrime(bool on)
 {
-  DefaultBTCParams.setPump_Prime(on);
+  TxManage.reqPrime(on);
 }
 
 

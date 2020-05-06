@@ -431,20 +431,21 @@ CProtocolPackage::setRefTime()
   _timeStamp.setRefTime();
 }*/
 
+char dbgFrameMsg[192];
+
 void  
 CProtocolPackage::reportFrames(bool isOEM, std::function<void(const char*)> pushMsg)
 {
-  char msg[192];
-  msg[0] = 0;
-  _timeStamp.report(msg);   // absolute time
+  dbgFrameMsg[0] = 0;
+  _timeStamp.report(dbgFrameMsg);   // absolute time
   if(isOEM) {
-    DebugReportFrame("OEM:", Controller, TERMINATE_OEM_LINE ? "\r\n" : "   ", msg);
+    DebugReportFrame("OEM:", Controller, TERMINATE_OEM_LINE ? "\r\n" : "   ", dbgFrameMsg);
   }
   else {
-    DebugReportFrame("BTC:", Controller, TERMINATE_BTC_LINE ? "\r\n" : "   ", msg);
+    DebugReportFrame("BTC:", Controller, TERMINATE_BTC_LINE ? "\r\n" : "   ", dbgFrameMsg);
   }
-  DebugReportFrame("HTR:", Heater, "\r\n", msg);
-  pushMsg(msg);
+  DebugReportFrame("HTR:", Heater, "\r\n", dbgFrameMsg);
+  pushMsg(dbgFrameMsg);
 }
 
 int   
