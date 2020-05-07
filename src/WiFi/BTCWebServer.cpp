@@ -102,7 +102,6 @@ bool bFormatAccessed = false;
 bool bFormatPerformed = false;
 long _SuppliedFileSize = 0;
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 bool checkFile(File &file);
 void addTableData(String& HTML, String dta);
 String getContentType(String filename);
@@ -1082,20 +1081,6 @@ void processWebsocketQueue()
 }
 
 
-
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
-{
-  if (type == WStype_TEXT) {
-    bRxWebData = true;
-    char cmd[256];
-    memset(cmd, 0, 256);
-    for (int i = 0; i < length && i < 256; i++) {
-      cmd[i] = payload[i];
-    }
-    interpretJsonCommand(cmd);  // send to the main heater controller decode routine
-  }
-}
-
 bool isWebSocketClientChange() 
 {
   static int prevNumClients = -1;
@@ -1425,10 +1410,10 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
         break;
       }
       else {
-        sprintf(JSON, "{\"updateProgress\":%d}", sts);
-        // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-        if(pUpdateHandler)
+        if(pUpdateHandler) {
+          sprintf(JSON, "{\"updateProgress\":%d}", sts);
           pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
+        }
       }
 
       while (!parser->endOfField()) {
@@ -1438,10 +1423,10 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
         upload.currentSize = parser->read(upload.buf, HTTP_UPLOAD_BUFLEN);
         sts = BrowserUpload.fragment(upload, res);
         if(sts < 0) {
-          sprintf(JSON, "{\"updateProgress\":%d}", sts);
-          if(pUpdateHandler)
+          if(pUpdateHandler) {
+            sprintf(JSON, "{\"updateProgress\":%d}", sts);
             pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
-          // sendWebSocketString(JSON);  // feedback -ve byte count of update to browser via websocket - write error
+          }
           break;
         }
         else {
@@ -1450,10 +1435,10 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
             DebugPort.print(".");
             if(upload.totalSize) {
               // feed back bytes received over web socket for progressbar update on browser (via javascript)
-              sprintf(JSON, "{\"updateProgress\":%d}", upload.totalSize);
-              if(pUpdateHandler)
+              if(pUpdateHandler) {
+                sprintf(JSON, "{\"updateProgress\":%d}", upload.totalSize);
                 pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
-              // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+              }
             }
             // show percentage on OLED
             int percent = 0;
@@ -1466,20 +1451,15 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
         }
       }
       sts = BrowserUpload.end(upload);
-      sprintf(JSON, "{\"updateProgress\":%d}", sts);
-      if(pUpdateHandler)
+      if(pUpdateHandler) {
+        sprintf(JSON, "{\"updateProgress\":%d}", sts);
         pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
-      // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
-      if(!BrowserUpload.isSPIFFSupload()) {
-        sprintf(JSON, "{\"updateDone\":1}");
-        if(pUpdateHandler)
+        if(!BrowserUpload.isSPIFFSupload()) {
+          sprintf(JSON, "{\"updateDone\":1}");
           pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
-        // sendWebSocketString(JSON);  // feedback proper byte count of update to browser via websocket
+        }
       }
     }
-
-    // WSserver->loop();
-    // delay(2000);
 
     bUpdateAccessed = false;  // close gate on POST to /updatenow
 

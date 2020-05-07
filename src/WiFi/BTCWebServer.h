@@ -25,8 +25,6 @@
 #ifndef _BTCWEBSERVER_h
 #define _BTCWEBSERVER_h
 
-#include "../../lib/arduinoWebSockets/src/WebSocketsServer.h"
-
 void initWebServer();
 bool doWebServer();
 
