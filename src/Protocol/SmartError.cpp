@@ -216,6 +216,7 @@ void
 CSmartError::_monitorPriming(uint8_t runState, uint8_t pumpHz)
 {
   if(runState == 0 && pumpHz == 0 && _prevPumpHz != 0) {
+    DebugPort.println("Detected pump stop event, forced prime cancel");
     TxManage.reqPrime(false);     // cancel pump priming request upon heater auto stopping priming
   }
   if(runState != 0) {

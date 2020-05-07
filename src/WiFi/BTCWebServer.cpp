@@ -1064,10 +1064,10 @@ void processWebsocketQueue()
   if(webSocketQueue) {
     if(xQueueReceive(webSocketQueue, &pMsg, 0)) {
       if(pMsg == NULL) {
-        DebugPort.println("websocket send NULL averted");
+        // DebugPort.println("websocket send NULL averted");
       }
       else {
-        DebugPort.printf("websocket len=%d\r\n", strlen(pMsg));
+        // DebugPort.printf("websocket len=%d\r\n", strlen(pMsg));
         for(int i=0; i< MAX_CLIENTS; i++) {
           if(activeClients[i]) {
             bTxWebData = true;              // OLED tx data animation flag

@@ -653,8 +653,9 @@ CTempSense::getTemperatureBME280(float& reading)
 bool
 CTempSense::getAltitude(float& reading, bool fresh)
 {
-  if(BME280.getCount())
+  if(BME280.getCount()) {
     return BME280.getAltitude(reading, fresh);
+  }
   else
     return false;
 }

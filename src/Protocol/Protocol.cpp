@@ -243,7 +243,7 @@ CProtocol::setAltitude(float altitude)
 int
 CProtocol::getAltitude() const 
 {
-  int alt = (Controller.Altitude_MSB << 8) | Controller.Altitude_LSB;
+  int16_t alt = (Controller.Altitude_MSB << 8) | Controller.Altitude_LSB;
   return alt;
 }
 
@@ -271,7 +271,7 @@ CProtocol::Init(int FrameMode)
     Controller.Unknown1_MSB = 0x01;   // always 0x01
     Controller.Unknown1_LSB = 0x2c;   // always 0x2c  16bit: "300 secs = max run without burn detected" ??
     Controller.Altitude_MSB = 0x0d;   // basic controllers always 0x0d
-    Controller.Altitude_LSB = 0xac;   // basic controllersalways 0xac  16bit: "3500" 
+    Controller.Altitude_LSB = 0xac;   // basic controllers always 0xac  16bit: "3500" 
     setCRC();
   }
   else if(FrameMode == HeatMode){
