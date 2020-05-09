@@ -199,8 +199,10 @@ CVersionInfoScreen::keyHandler(uint8_t event)
 
     // UP press
     if(event & key_Up) {
-      _rowSel++;
-      UPPERLIMIT(_rowSel, 3);
+      if(NVstore.getUserSettings().menuMode != 2) {
+        _rowSel++;
+        UPPERLIMIT(_rowSel, 3);
+      } 
     }
     // DOWN press
     if(event & key_Down) {

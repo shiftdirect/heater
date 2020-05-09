@@ -52,8 +52,10 @@ public:
   static void getTimer(int idx, sTimer& timerInfo);
   static int  setTimer(sTimer& timerInfo);
   static bool hasTimerChanged() { return _timerChanged; };
+  static void cancelActiveTimer();
 private:
   static int _activeTimer;
+  static int _cancelledTimer;
   static int _activeDow;
   static int _prevState;
   static int _nextTimer;

@@ -22,6 +22,7 @@
 
 // Should be working - Jimmy C
 #include "BTCWifi.h"
+#include "BTCWebServer.h"
 #include "../Utility/DebugPort.h"
 #include <DNSServer.h>
 #include "../OLED/ScreenManager.h"
@@ -45,6 +46,8 @@ unsigned restartServer = 0;        // set to time of portal reconfig - will caus
 char MACstr[2][20];                // MACstr[0] STA, MACstr[1] = AP
 int wifiButtonState = 0;
 unsigned long WifiReconnectHoldoff = 0;
+
+wmReboot pendingWMreboot;
 
 extern CScreenManager ScreenManager;
 
@@ -164,6 +167,8 @@ bool initWifi()
 // call from main sketch loop()
 void doWiFiManager()
 {
+  manageWMreboot();
+
   if(NVstore.getUserSettings().wifiMode) {
     wm.process();
 
@@ -233,7 +238,8 @@ void wifiDisable(long rebootDelay)
 
 void wifiEnterConfigPortal(bool state, bool erase, long rebootDelay, bool STAonly) 
 {
-	wm.disconnect();
+  stopWebServer();
+  wm.disconnect();
 
   sUserSettings settings = NVstore.getUserSettings();
   settings.wifiMode = STAonly ? 0x02 : 0x01;
@@ -428,3 +434,22 @@ int  isWifiButton()
 {
   return wifiButtonState;
 }
+
+void scheduleWMreboot(wmReboot& newMode)
+{
+  pendingWMreboot = newMode;
+}
+
+void manageWMreboot()
+{
+  if(pendingWMreboot.delay) {
+    long tDelta = millis() - pendingWMreboot.started;
+    if(tDelta > pendingWMreboot.delay) {
+      wifiEnterConfigPortal(pendingWMreboot.startPortal, 
+                            pendingWMreboot.eraseCreds, 
+                            3000);
+      pendingWMreboot.delay = 0;
+    }
+  }
+}
+

@@ -414,8 +414,8 @@ CScreenManager::_loadScreens()
   else if(NVstore.getUserSettings().menuMode == 2) {  // no heater menu set
     menuloop.push_back(new CNoHeaterHomeMenuSelScreen(*_pDisplay, *this)); // No Heater Home menu settings screen
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
-    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
-      menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
+    // if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
+    //   menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }
   _Screens.push_back(menuloop);
 
@@ -426,8 +426,8 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CWebPageUpdateScreen(*_pDisplay, *this)); // Web Page update screen
     if(NVstore.getUserSettings().menuMode == 0) {
       menuloop.push_back(new CHourMeterScreen(*_pDisplay, *this)); // Hour Meter screen
+      menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
     }
-    menuloop.push_back(new CWiFiScreen(*_pDisplay, *this));
     menuloop.push_back(new CWiFiSTAScreen(*_pDisplay, *this));
     menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
     menuloop.push_back(new CBTScreen(*_pDisplay, *this));

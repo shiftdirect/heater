@@ -600,8 +600,8 @@ sCredentials::load()
   validatedLoad("APpassword", APpassword, 31, "thereisnospoon");
   validatedLoad("webUpdateUser", webUpdateUsername, 31, "Afterburner");
   validatedLoad("webUpdatePass", webUpdatePassword, 31, "BurnBabyBurn");
-  validatedLoad("webUser", webUsername, 31, "Afterburner");
-  validatedLoad("webPass", webPassword, 31, "WebAccess");
+  validatedLoad("webUser", webUsername, 31, "");
+  validatedLoad("webPass", webPassword, 31, "");
   preferences.end();    
 }
 

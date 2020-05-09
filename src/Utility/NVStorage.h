@@ -242,8 +242,8 @@ struct sCredentials : public CESP32_NVStorage {
     strcpy(APpassword, "thereisnospoon");
     strcpy(webUpdateUsername, "Afterburner");
     strcpy(webUpdatePassword, "BurnBabyBurn");
-    strcpy(webUsername, "Afterburner");
-    strcpy(webPassword, "WebAccess");
+    strcpy(webUsername, "");
+    strcpy(webPassword, "");
   };
   void load();
   void save();

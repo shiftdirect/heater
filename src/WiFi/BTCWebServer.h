@@ -27,6 +27,7 @@
 
 void initWebServer();
 bool doWebServer();
+void stopWebServer();
 
 bool sendWebSocketString(const char* Str);
 bool isWebSocketClientChange(); 

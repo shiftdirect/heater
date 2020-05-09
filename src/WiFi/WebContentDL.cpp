@@ -64,7 +64,9 @@ void WebPageRequestCB(void* pClass, asyncHTTPrequest* request, int readyState)
 
 CWebContentDL::CWebContentDL()
 {
+#ifdef DEBUG_WEBDL
   _request.setDebug(true);
+#endif
   _request.onReadyStateChange(WebPageRequestCB, this);
   _request.onData(WebPageDataCB, this);
   _queue = NULL;
@@ -108,7 +110,7 @@ void CWebContentDL::get(const char* filename)
 }
 
 // routine called regualrly by the "loop" task - ie not IRQL
-// it is no safe to write to SPIFFS in the AsyncTCP callbacks!
+// it is not safe to write to SPIFFS in the AsyncTCP callbacks!
 void 
 CWebContentDL::process() 
 {

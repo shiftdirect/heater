@@ -133,6 +133,7 @@ CDemandManager::checkStart()
 
     // alows honour cyclic stop threshold - immediate suspend transition
     if(deltaT > stopDeltaT) {
+      DebugPort.println("Immediate switch to suspend mode, too warm");
       return eStartSuspend;
     }
   }
@@ -142,11 +143,13 @@ CDemandManager::checkStart()
       // temperature exceeded the allowed margin
       // only deny start if actually using inbuilt thermostat mode
       if(isThermostat()) {
+        DebugPort.println("Start denied, too warm");
         return eStartTooWarm;  // too warm - deny start
       }
     }
   }
 
+  DebugPort.println("Start allowed");
   return eStartOK;  // allow start
 }
 

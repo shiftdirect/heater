@@ -24,6 +24,27 @@
 
 #include <WiFi.h>
 
+struct wmReboot {
+  bool startPortal;
+  bool eraseCreds;
+  unsigned long delay;
+  unsigned long started;
+
+  wmReboot(bool timenow = false) {
+    startPortal = false;
+    eraseCreds = false;
+    delay = 0;
+    started = timenow ? millis() : 0;
+  };
+  wmReboot& operator=(wmReboot& rhs) {
+    startPortal = rhs.startPortal;
+    eraseCreds = rhs.eraseCreds;
+    delay = rhs.delay;
+    started = rhs.started;
+    return *this;
+  };
+};
+
 void doWiFiManager();
 bool initWifi();
 const char* getWifiAPAddrStr(); 
@@ -45,5 +66,8 @@ void wifiEnterConfigPortal(bool state, bool erase = false, long timeout = 7000, 
 void wifiDisable(long rebootDelay = 7000);
 void wifiFactoryDefault();
 int  isWifiButton();
+
+void scheduleWMreboot(wmReboot& newMode);
+void manageWMreboot();
 
 #endif // __BTCWIFI_H__

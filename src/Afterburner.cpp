@@ -763,6 +763,7 @@ requestOn()
   DebugPort.println("Start Request!");
   bool fuelOK = 2 != SmartError.checkfuelUsage();
   if(!fuelOK) {
+    DebugPort.println("Start denied - Low fuel");
     return CDemandManager::eStartLowFuel;
   }
   bool LVCOK = 2 != SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
@@ -785,6 +786,7 @@ requestOn()
     return startCode;
   }
   else {
+    DebugPort.println("Start denied - LVC");
     return CDemandManager::eStartLVC;   // LVC
   }
 }
@@ -795,6 +797,7 @@ void requestOff()
   heaterOff();
   RTC_Store.setCyclicEngaged(false);   // for cyclic mode
   RTC_Store.setFrostOn(false);  // cancel active frost mode
+  CTimerManager::cancelActiveTimer();
 }
 
 void heaterOn() 
@@ -1215,9 +1218,7 @@ void doStreaming()
     doOTA();
 #endif // USE_OTA 
 #if USE_WEBSERVER == 1
-#ifdef OLD_WEBSOCKETHANDLER
     bHaveWebClient = doWebServer();
-#endif
 #endif //USE_WEBSERVER
 #if USE_MQTT == 1
     // most MQTT is managed via callbacks, but need some sundry housekeeping

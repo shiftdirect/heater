@@ -84,9 +84,7 @@ HTTPSServer * secureServer;
 #endif
 HTTPServer * insecureServer;
 HTTPServer * WSserver;
-#if USE_SSL_LOOP_TASK == 1
 void SSLloopTask(void *);
-#endif
 
 sBrowserUpload BrowserUpload;
 #ifdef OLD_SERVER
@@ -100,6 +98,7 @@ bool bTxWebData = false;
 bool bUpdateAccessed = false;  // flag used to ensure browser update always starts via GET /update. direct accesses to POST /update will FAIL
 bool bFormatAccessed = false;
 bool bFormatPerformed = false;
+bool bStopWebServer = false;
 long _SuppliedFileSize = 0;
 
 bool checkFile(File &file);
@@ -474,6 +473,8 @@ void initWebServer(void) {
   
   // setup task to handle webserver
   webSocketQueue = xQueueCreate(50, sizeof(char*) );
+
+  bStopWebServer = false;
   xTaskCreate(SSLloopTask,
              "Web server task",
              8192,
@@ -486,7 +487,8 @@ void initWebServer(void) {
 }
 
 void SSLloopTask(void *) {
-  for(;;) {
+  
+  while(!bStopWebServer) {
     WSserver->loop();
     insecureServer->loop();
 #if USE_HTTPS == 1
@@ -495,22 +497,31 @@ void SSLloopTask(void *) {
     processWebsocketQueue();
     vTaskDelay(1);   
   }
+
+  WSserver->stop();
+  insecureServer->stop();
+#if USE_HTTPS == 1
+  secureServer->stop();
+#endif
+
+  vTaskDelete(NULL);
+  bStopWebServer = false;
 }
 
 // called by main sketch loop()
 bool doWebServer(void) 
 {
-#if USE_SSL_LOOP_TASK != 1
-  WSserver->loop();
-  insecureServer->loop();
-#if USE_HTTPS == 1
-  secureServer->loop();
-#endif
-#endif
-    
   GetWebContent.manage();
   return true;
 }
+
+void stopWebServer()
+{
+  DebugPort.println("Requesting web server stop");
+  bStopWebServer = true;
+  delay(100);
+}
+
 
 String getContentType(String filename) { // convert the file extension to the MIME type
   if (filename.endsWith(".html")) return "text/html";
@@ -660,9 +671,6 @@ bool handleFileRead(String path, HTTPResponse *res) { // send the right file to 
       if(wr > 0) {
         done += wr;
         if(done > progressdot) {
-#if USE_SSL_LOOP_TASK != 1          
-          feedWatchdog();
-#endif
           DebugPort.print(".");
           progressdot += 1024;
         }
@@ -1017,14 +1025,45 @@ function onformatClick() {
  <div id='loaded_n_total' hidden></div>
 )=====";
 
+const char* wmConfigIndex = R"=====(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="-1">
+<meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+<script>
+function init() {
+ setTimeout(function(){location.assign("/");},15000);    
+}
+</script>
+<title>Launching Afterburner Wifi Manager</title>
+</head>
+<body onload='javascript:init()'>
+ <h1>Launching Afterburner Wifi Manager</h1>
+ <p>
+ <h2>This page will automatically reload in 15 seconds, please wait.</h2>
+  <i>If auto reload fails, try manually refreshing the web page</i>
+
+<h1>You may need to reconnect to the Afterburner's AP following the reboot</h1>
+</body>
+</html>
+)=====";
 
 void onWMConfig(HTTPRequest * req, httpsserver::HTTPResponse * res) 
 {
   DebugPort.println("WEB: GET /wmconfig");
-  res->print("Start Config Portal - Retaining credential");
+  res->print(wmConfigIndex);
   DebugPort.println("Starting web portal for wifi config");
-  delay(500);
-  wifiEnterConfigPortal(true, false, 3000);
+  wmReboot newMode(true);
+  newMode.startPortal = true;
+  newMode.eraseCreds = false;
+  newMode.delay = 500;
+  scheduleWMreboot(newMode);
+
+  // delay(500);
+  // wifiEnterConfigPortal(true, false, 10000);
 }
 
 
@@ -1033,8 +1072,13 @@ void onResetWifi(HTTPRequest * req, httpsserver::HTTPResponse * res)
   DebugPort.println("WEB: GET /resetwifi");
   res->print("Start Config Portal - Resetting Wifi credentials!");
   DebugPort.println("diconnecting client and wifi, then rebooting");
-  delay(500);
-  wifiEnterConfigPortal(true, true, 3000);
+  wmReboot newMode(true);
+  newMode.startPortal = true;
+  newMode.eraseCreds = true;
+  newMode.delay = 500;
+  scheduleWMreboot(newMode);
+  // delay(500);
+  // wifiEnterConfigPortal(true, true, 3000);
 }
 
 
@@ -1417,9 +1461,6 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
       }
 
       while (!parser->endOfField()) {
-#if USE_SSL_LOOP_TASK != 1          
-        feedWatchdog();   // we get stuck here for a while, don't let the watchdog bite!
-#endif
         upload.currentSize = parser->read(upload.buf, HTTP_UPLOAD_BUFLEN);
         sts = BrowserUpload.fragment(upload, res);
         if(sts < 0) {

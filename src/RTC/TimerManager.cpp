@@ -35,6 +35,7 @@
 #include "../Utility/helpers.h"
 #include "../RTC/RTCStore.h"
 #include "../Utility/DemandManager.h"
+#include "../Protocol/Protocol.h"
 
 // main array to hold information of which timer is active at any particular minute of the week
 // LSBs are used for the timerID + 1
@@ -42,6 +43,7 @@
 uint8_t CTimerManager::_weekMap[7][CTimerManager::_dayMinutes];   // b[7] = repeat flag, b[3..0] = timer ID
 
 int  CTimerManager::_activeTimer = 0;
+int  CTimerManager::_cancelledTimer = 0;
 int  CTimerManager::_activeDow = 0;
 int  CTimerManager::_nextTimer = 0;
 int  CTimerManager::_nextStart = 0;
@@ -57,6 +59,8 @@ bool CTimerManager::_timerChanged = false;
     _weekMap[dow][dayMinute] = recordTimer;  \
   }                                          \
 }
+
+#define START_ON_TEMPERATURE_DROP
 
 // create a bitmap that describes the pattern of on/off times
 void 
@@ -266,15 +270,17 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
     }
 
     if(newID) {
-      sTimer timer;
-      // get timer settings
-      int ID = (newID & 0xf) - 1;
-      NVstore.getTimerInfo(ID, timer);
-      CDemandManager::setFromTimer(timer.temperature);
-      DebugPort.printf("Start of timer interval, starting heater @ %dC\r\n", timer.temperature);
-      requestOn();
-      _activeDow = dow;   // dow when timer interval start was detected
-      retval = 1;
+      if(_cancelledTimer != newID) {
+        sTimer timer;
+        // get timer settings
+        int ID = (newID & 0xf) - 1;
+        NVstore.getTimerInfo(ID, timer);
+        CDemandManager::setFromTimer(timer.temperature);
+        DebugPort.printf("Start of timer interval, starting heater @ %dC\r\n", timer.temperature);
+        requestOn();
+        _activeDow = dow;   // dow when timer interval start was detected
+        retval = 1;
+      }
     }
     else {
 //      if(!RTC_Store.getFrostOn() && !RTC_Store.getCyclicEngaged())
@@ -283,11 +289,29 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
       retval = 2;
       CDemandManager::reload();
       DebugPort.printf("End of timer interval, stopping heater @ %dC\r\n", CDemandManager::getDegC());
+      _cancelledTimer = 0;
     }
     _activeTimer = newID;
   }
+#ifdef START_ON_TEMPERATURE_DROP
+  if((_activeTimer != 0) &&
+     (_activeTimer != _cancelledTimer) && 
+     (getHeaterInfo().getRunStateEx() == 0)) {
+    // heater is off, but timer is active and not cancelled
+    DebugPort.println("Timer re-attempting start");
+    requestOn();
+  }
+#endif
   findNextTimer(hour, minute, dow);
   return retval;
+}
+
+void
+CTimerManager::cancelActiveTimer()
+{
+  if(_activeTimer)
+    DebugPort.printf("User off caused timer #%d cancellation\r\n", _activeTimer & 0xf);
+  _cancelledTimer = _activeTimer;
 }
 
 int  
