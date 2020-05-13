@@ -283,7 +283,6 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
       }
     }
     else {
-//      if(!RTC_Store.getFrostOn() && !RTC_Store.getCyclicEngaged())
       if(!RTC_Store.getFrostOn())
         requestOff();
       retval = 2;

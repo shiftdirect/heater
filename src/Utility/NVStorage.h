@@ -310,7 +310,7 @@ struct sUserSettings : public CESP32_NVStorage {
   long menuTimeout;
   long ExtThermoTimeout;
   uint8_t degF;
-  uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode
+  uint8_t ThermostatMethod;  // 0: standard heater, 1: Narrow Hysterisis, 2:Managed Hz mode, 3: External contact, 4: Stop/Start
   float   ThermostatWindow;   
   uint8_t FrostOn;
   uint8_t FrostRise;
@@ -333,7 +333,7 @@ struct sUserSettings : public CESP32_NVStorage {
     retval &= INBOUNDS(menuTimeout, 0, 300000);  // 5 mins
     retval &= INBOUNDS(ExtThermoTimeout, 0, 3600000); // 1 hour
     retval &= (degF == 0) || (degF == 1);
-    retval &= ThermostatMethod <= 3;  // only modes 0, 1 or 2, 3
+    retval &= ThermostatMethod <= 4;  // only modes 0, 1, 2, 3 or 4
     retval &= INBOUNDS(ThermostatWindow, 0.2f, 10.f);
     retval &= useThermostat < 2;
     retval &= INBOUNDS(wifiMode, 0, 3);

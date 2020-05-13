@@ -131,11 +131,11 @@ void DecodeCmd(const char* cmd, String& payload)
     if(payload.toInt()) {
       CDemandManager::eStartCode result = requestOn();
       switch(result) {
-        case CDemandManager::eStartOK:       sendJSONtext("{\"StartString\":\"\"}"); break;
-        case CDemandManager::eStartTooWarm:  sendJSONtext("{\"StartString\":\"Ambient too warm!\"}"); break;
-        case CDemandManager::eStartSuspend:  sendJSONtext("{\"StartString\":\"Immediate Cyclic suspension!\"}"); break;
-        case CDemandManager::eStartLVC:      sendJSONtext("{\"StartString\":\"Battery below LVC!\"}"); break;
-        case CDemandManager::eStartLowFuel:  sendJSONtext("{\"StartString\":\"Fuel Empty!\"}"); break;
+        case CDemandManager::eStartOK:       sendJSONtext("{\"StartString\":\"\"}", true); break;
+        case CDemandManager::eStartTooWarm:  sendJSONtext("{\"StartString\":\"Ambient too warm!\"}", true); break;
+        case CDemandManager::eStartSuspend:  sendJSONtext("{\"StartString\":\"Immediate Cyclic suspension!\"}", true); break;
+        case CDemandManager::eStartLVC:      sendJSONtext("{\"StartString\":\"Battery below LVC!\"}", true); break;
+        case CDemandManager::eStartLowFuel:  sendJSONtext("{\"StartString\":\"Fuel Empty!\"}", true); break;
       }
     }
     else {
@@ -185,7 +185,7 @@ void DecodeCmd(const char* cmd, String& payload)
   else if(strcmp("ThermostatMethod", cmd) == 0) {
     sUserSettings settings = NVstore.getUserSettings();
     settings.ThermostatMethod = payload.toInt();
-    if(INBOUNDS(settings.ThermostatMethod, 0, 3))
+    if(INBOUNDS(settings.ThermostatMethod, 0, 4))
       NVstore.setUserSettings(settings);
   }
   else if(strcmp("ThermostatWindow", cmd) == 0) {

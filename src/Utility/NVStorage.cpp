@@ -452,11 +452,13 @@ sUserSettings::load()
   validatedLoad("thermostat", useThermostat, 1, u8inBounds, 0, 1);
   validatedLoad("thermoMethod", ThermostatMethod, 0, u8inBounds, 0, 255);
   // catch and migrate old combined method & window
-  if(ThermostatMethod & 0xFC) {
-    float defVal = float(ThermostatMethod>>2) * 0.1f;
-    validatedLoad("thermoWindow", ThermostatWindow, defVal, 0.2f, 10.0f);
-    preferences.putUChar("thermoMethod", ThermostatMethod & 0x03);  // strip old window
-  }
+  // if(ThermostatMethod & 0xFC) {
+  //   float defVal = float(ThermostatMethod>>2) * 0.1f;
+  //   validatedLoad("thermoWindow", ThermostatWindow, defVal, 0.2f, 10.0f);
+  //   preferences.putUChar("thermoMethod", ThermostatMethod & 0x03);  // strip old window
+  // }
+  if(ThermostatMethod > 4)
+    ThermostatMethod = 0;
   validatedLoad("thermoWindow", ThermostatWindow, 1.0f, 0.2f, 10.f);
   DebugPort.printf("2) Window = %f\r\n", ThermostatWindow);
   validatedLoad("frostOn", FrostOn, 0, u8inBounds, 0, 10);

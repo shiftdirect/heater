@@ -29,6 +29,9 @@
 #include "BTCota.h"
 #include "../Utility/helpers.h"
 
+QueueHandle_t webUpdateQueue = NULL;
+
+
 void
 sBrowserUpload::init()
 {
@@ -103,7 +106,7 @@ sBrowserUpload::begin(String& filename, int filesize)
 }
 
 int 
-sBrowserUpload::fragment(HTTPUpload& upload, httpsserver::HTTPResponse * res)
+sBrowserUpload::doFragment(HTTPUpload& upload, httpsserver::HTTPResponse * res)
 {
   if(isSPIFFSupload()) {
     // SPIFFS update (may be error state)
@@ -129,6 +132,7 @@ sBrowserUpload::fragment(HTTPUpload& upload, httpsserver::HTTPResponse * res)
     }
   }
   else {
+    // DebugPort.print(".");
     // Firmware update, add new fragment to OTA partition
     if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
       // ERROR !
@@ -138,6 +142,13 @@ sBrowserUpload::fragment(HTTPUpload& upload, httpsserver::HTTPResponse * res)
     if(res)
       upload.totalSize += upload.currentSize;
   }
+  // show percentage on OLED
+  int percent = 0;
+  if(SrcFile.size) {
+    percent = 100 * upload.totalSize / SrcFile.size;
+  }
+  ShowOTAScreen(percent, eOTAbrowser);  // browser update 
+
   return upload.totalSize;
 }
 
@@ -186,4 +197,48 @@ sBrowserUpload::isOK() const
     return DstFile.state == 1; 
   else
     return !Update.hasError(); 
+}
+
+bool
+sBrowserUpload::Ready() const
+{
+  return _bProcessed;
+}
+
+int 
+sBrowserUpload::queueFragment(HTTPUpload& upload)
+{
+  _bProcessed = false;
+  sUpdateFragment fragment;
+  fragment.pUploadInfo = &upload;
+  xQueueSend(webUpdateQueue, &fragment, 0);
+  return upload.currentSize;
+}
+
+bool  
+sBrowserUpload::queueProcess()
+{
+  sUpdateFragment fragment;
+  if(webUpdateQueue && xQueueReceive(webUpdateQueue, &fragment, 0)) {
+
+    HTTPUpload& upload = *fragment.pUploadInfo;
+    _queueResult = doFragment(upload, (httpsserver::HTTPResponse *)1);
+    _bProcessed = true;
+    return true;
+  }
+  return false;
+}
+
+int 
+sBrowserUpload::queueResult()
+{
+  return _queueResult;
+}
+
+void 
+sBrowserUpload::createQueue()
+{
+  if(webUpdateQueue == NULL) {
+    webUpdateQueue = xQueueCreate(2, sizeof(sUpdateFragment) );
+  }
 }

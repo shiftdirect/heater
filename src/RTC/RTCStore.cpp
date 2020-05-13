@@ -52,7 +52,7 @@ CRTC_Store::CRTC_Store()
   _fuelgauge = 0;
   _demandDegC = 22;
   _demandPump = 22;
-  _CyclicEngaged = false;
+  _userStart = false;
   _BootInit = true;
   _RunTime = 0;
   _GlowTime = 0;
@@ -65,7 +65,7 @@ CRTC_Store::begin()
     // RTC lost power - reset internal NV values to defaults
     DebugPort.println("CRTC_Store::begin() RTC lost power, re-initialising NV aspect");
     _demandPump = _demandDegC = 22;
-    _CyclicEngaged = false;
+    _userStart = false;
     setFuelGauge(0);
     setDesiredTemp(_demandDegC);
     setDesiredPump(_demandPump);
@@ -127,16 +127,16 @@ CRTC_Store::setBootInit(bool val)
 }
 
 bool  
-CRTC_Store::getCyclicEngaged()
+CRTC_Store::getUserStart()
 {
   _ReadAndUnpackByte4();
-  return _CyclicEngaged;
+  return _userStart;
 }
 
 void 
-CRTC_Store::setCyclicEngaged(bool active)
+CRTC_Store::setUserStart(bool active)
 {
-  _CyclicEngaged = active;
+  _userStart = active;
   _PackAndSaveByte4();
 }
 
@@ -166,6 +166,20 @@ CRTC_Store::getFrostOn()
 {
   _ReadAndUnpackByte5();
   return _frostOn;
+}
+
+void
+CRTC_Store::setSpare(bool state)
+{
+  _spare = state;
+  _PackAndSaveByte5();
+}
+
+bool
+CRTC_Store::getSpare()
+{
+  _ReadAndUnpackByte5();
+  return _spare;
 }
 
 void
@@ -221,17 +235,17 @@ CRTC_Store::_ReadAndUnpackByte4()
     uint8_t NVval = 0;
     Clock.readData((uint8_t*)&NVval, 1, 4);
     _demandDegC = NVval & 0x3f;
-    _CyclicEngaged = (NVval & 0x80) != 0;
+    _userStart = (NVval & 0x80) != 0;
     _BootInit = (NVval & 0x40) != 0;
     _accessed[1] = true;
-    DebugPort.printf("RTC_Store - read byte4: degC=%d, CyclicOn=%d, BootInit=%d\r\n", _demandDegC, _CyclicEngaged, _BootInit);
+    DebugPort.printf("RTC_Store - read byte4: degC=%d, UserStart=%d, BootInit=%d\r\n", _demandDegC, _userStart, _BootInit);
   }
 }
 
 void
 CRTC_Store::_PackAndSaveByte4()
 {
-  uint8_t NVval = (_CyclicEngaged ? 0x80 : 0x00) 
+  uint8_t NVval = (_userStart ? 0x80 : 0x00) 
                 | (_BootInit ? 0x40 : 0x00)
                 | (_demandDegC & 0x3f);
   Clock.saveData((uint8_t*)&NVval, 1, 4);
@@ -245,6 +259,7 @@ CRTC_Store::_ReadAndUnpackByte5()
     Clock.readData((uint8_t*)&NVval, 1, 5);
     _demandPump = NVval & 0x3f;
     _frostOn = (NVval & 0x40) != 0;
+    _spare = (NVval & 0x80) != 0;
     _accessed[2] = true;
     DebugPort.printf("RTC_Store - read byte5: pump=%d\r\n", _demandPump);
   }
@@ -255,6 +270,7 @@ CRTC_Store::_PackAndSaveByte5()
 {
   uint8_t NVval = (_demandPump & 0x3f);
   NVval |= _frostOn ? 0x40 : 0;
+  NVval |= _spare ? 0x80 : 0;
 
   Clock.saveData((uint8_t*)&NVval, 1, 5);
 }

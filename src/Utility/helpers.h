@@ -48,7 +48,7 @@ extern bool  hasOEMLCDcontroller();
 extern bool  hasHtrData();
 extern int   getBlueWireStat();
 extern int   getSmartError();
-extern bool  isCyclicActive();
+extern bool  isCyclicStopStartActive();
 extern float getVersion();
 const char* getVersionStr(bool beta=false);
 extern const char* getVersionDate();

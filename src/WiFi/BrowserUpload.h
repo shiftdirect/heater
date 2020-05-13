@@ -37,10 +37,16 @@ struct sBrowserUpload{
     int state;
   } DstFile;
   bool bUploadActive;
+  int _queueResult;
+  volatile bool _bProcessed;
   //methods
   sBrowserUpload() {
     reset();
+    createQueue();
+    _bProcessed = true;
   }
+  void createQueue();
+
   void reset() {
     if(DstFile.file) {
       DstFile.file.close();
@@ -50,10 +56,21 @@ struct sBrowserUpload{
   }
   void init();
   int begin(String& filename, int filesize = -1);
-  int fragment(HTTPUpload& upload, httpsserver::HTTPResponse * res = NULL);
+  int doFragment(HTTPUpload& upload, httpsserver::HTTPResponse * res = NULL);
   int end(HTTPUpload& upload);
   bool isSPIFFSupload() const { return DstFile.state != 0; };
   bool isOK() const; 
+  bool Ready() const;
+  int queueFragment(HTTPUpload& upload);
+  bool  queueProcess();
+  int  queueResult();
+
+};
+
+struct sUpdateFragment {
+  // uint16_t len;
+  // uint8_t buf[1500];
+  HTTPUpload *pUploadInfo;
 };
 
 

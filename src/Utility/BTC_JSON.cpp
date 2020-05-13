@@ -415,17 +415,13 @@ void updateJSONclients(bool report)
   char jsonStr[800];
   {
     if(makeJSONString(JSONmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-      sendJSONtext(jsonStr);
-      if (report) DebugPort.println(" Done");
+      sendJSONtext(jsonStr, report);
     }
   }
   // update extended params
   {
     if(makeJSONStringEx(JSONmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-      sendJSONtext(jsonStr);
-      if (report) DebugPort.println(" Done");
+      sendJSONtext(jsonStr, report);
     }
   }
   // update timer parameters
@@ -433,9 +429,7 @@ void updateJSONclients(bool report)
   for(int tmr=0; tmr<14; tmr++) 
   {
     if(makeJSONTimerString(tmr, jsonStr, sizeof(jsonStr))) {
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-      sendJSONtext(jsonStr);
-      if (report) DebugPort.println("Done");
+      sendJSONtext(jsonStr, report);
       bNewTimerInfo = true;
     }
   }
@@ -451,43 +445,33 @@ void updateJSONclients(bool report)
     root.set("TimerRefresh", 1);
     root.printTo(jsonStr, 800);
 
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-    sendJSONtext(jsonStr);
-    if (report) DebugPort.println(" Done");
+    sendJSONtext(jsonStr, report);
   }
 
   // report MQTT params
   {
     if(makeJSONStringMQTT(MQTTJSONmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-      sendJSONtext(jsonStr);
-      if (report) DebugPort.println(" Done");
+      sendJSONtext(jsonStr, report);
     }
   }
 
   // report IP params
   {
     if(makeJSONStringIP(IPmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-      sendJSONtext(jsonStr);
-      if (report) DebugPort.println(" Done");
+      sendJSONtext(jsonStr, report);
     }
   }
 
   // report System info
   {
     if(makeJSONStringSysInfo(SysModerator, jsonStr, sizeof(jsonStr))) {
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-      sendJSONtext(jsonStr);
-      if (report) DebugPort.println(" Done");
+      sendJSONtext(jsonStr, report);
     }
   }
   
   {
     if(makeJSONStringGPIO(GPIOmoderator, jsonStr, sizeof(jsonStr))) {
-      if (report) DebugPort.printf(" %ld JSON send: %s", millis(), jsonStr);
-      sendJSONtext(jsonStr);
-      if (report) DebugPort.println(" Done");
+      sendJSONtext(jsonStr, report);
     }
   }
 
@@ -508,7 +492,7 @@ void resetAllJSONmoderators()
   GPIOmoderator.reset();
   // create and send a validation code (then client knows AB is capable of reboot over JSON)
   doJSONreboot(0);  
-  sendJSONtext("{\"LoadWebContent\":\"Supported\"}");
+  sendJSONtext("{\"LoadWebContent\":\"Supported\"}", false);
 }
 
 void initJSONMQTTmoderator()
@@ -562,8 +546,10 @@ void Expand(std::string& str)
   }
 }
 
-void sendJSONtext(const char* jsonStr)
+void sendJSONtext(const char* jsonStr, bool report)
 {
+  if (report) DebugPort.printf("JSON send: %s\r\n", jsonStr);
+
 #ifdef REPORT_JSONSENDS
   std::string dest;
   DebugPort.print("1");
@@ -601,11 +587,11 @@ void doJSONreboot(uint16_t PIN)
     char jsonStr[20];
     sprintf(jsonStr, "{\"Reboot\":\"%04d\"}", validate);
 
-    sendJSONtext( jsonStr );
+    sendJSONtext( jsonStr, false );
   }
   else if(PIN == validate) {
     strcpy(jsonStr, "{\"Reboot\":\"-1\"}");
-    sendJSONtext( jsonStr );
+    sendJSONtext( jsonStr, false );
 
     // initate reboot
     const char* content[2];

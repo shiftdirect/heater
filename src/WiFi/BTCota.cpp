@@ -122,7 +122,7 @@ void doOTA()
     if ((WiFi.status() == WL_CONNECTED)) // bug workaround in FOTA where execHTTPcheck does not return false in this condition
     {   
 #endif
-      FOTA.onProgress(onWebProgress);        // important - keeps watchdog fed
+      FOTA.onProgress(NULL);        // important - keeps watchdog fed
       FOTA.onComplete(CheckFirmwareCRC);     // upload complete, but not yet verified
       FOTA.onSuccess(onSuccess);
 #ifdef TESTFOTA
@@ -137,16 +137,20 @@ void doOTA()
       if(FOTA.execHTTPcheck()) {
         DebugPort.println("New firmware available on web server!");
         if(FOTAauth == 2) {  // user has authorised update (was == 1 before auth.)
+          FOTA.onProgress(onWebProgress);        // important - keeps watchdog fed
           FOTA.execOTA();    // go ahead and do the update, reading new file from web server
+          FOTA.onProgress(NULL);        // avoid rogue web update pop ups during browser update!
           FOTAauth = 0;      // and we're done.
         }
-        else 
+        else {
           FOTAauth = 1;   // flag that new firmware is available
+        }
       }
       else {
         FOTAauth = 0;      // cancel
       }
     }  // Wifi (STA) Connected
+    FOTA.onProgress(NULL);
 
 #else
 
@@ -161,7 +165,9 @@ void doOTA()
   // version number is collected asynchronously after initiating the update check
   if(FOTA.getNewVersion()) {
     if(FOTAauth == 2) {  // user has authorised update (was == 1 before auth.)
+      FOTA.onProgress(onWebProgress);        // important - keeps watchdog fed
       FOTA.execOTA();    // go ahead and do the update, reading new file from web server
+      FOTA.onProgress(NULL);        // avoid rogue web update pop ups during browser update!
       FOTAauth = 0;      // and we're done.
     }
     else {
@@ -247,8 +253,6 @@ void onWebProgress(size_t progress, size_t total)
   static int prevPC = 0;
   if(percent != prevPC) {
     prevPC = percent;
-		DebugPort.printf("Web progress: %u%%\r\n", percent);
-    DebugPort.handle();    // keep telnet spy alive
     ShowOTAScreen(percent, eOTAWWW);
   }
 }

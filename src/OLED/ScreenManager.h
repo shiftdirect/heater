@@ -33,6 +33,7 @@ class CScreenManager {
   std::vector<std::vector<CScreen*>> _Screens;
   CRebootScreen* _pRebootScreen;
   C128x64_OLED* _pDisplay;
+  unsigned long _OTAholdoff;
   int _menu;
   int _subMenu;
   int _rootMenu;
@@ -49,6 +50,7 @@ class CScreenManager {
   void _dim(bool state);
   void _loadScreens();
   void _unloadScreens();
+  bool _checkOTAholdoff();
 public:
   enum eUIMenuSets { RootMenuLoop, TimerMenuLoop, UserSettingsLoop, SystemSettingsLoop, TuningMenuLoop, BranchMenu };
   enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, GPIOInfoUI, TrunkUI };

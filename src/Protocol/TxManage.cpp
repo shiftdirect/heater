@@ -290,6 +290,12 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
           }
 #endif
           break;
+
+        case 4:
+          m_TxFrame.setThermostatModeProtocol(0);  // direct heater to use Hz Mode
+          m_TxFrame.setTemperature_Actual(0);      // must force actual to 0 for Hz mode
+          m_TxFrame.setHeaterDemand(m_TxFrame.getTemperature_Max());  // maximum Hz
+          break;
       }
     }
 

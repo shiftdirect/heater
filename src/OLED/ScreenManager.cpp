@@ -292,6 +292,7 @@ CScreenManager::CScreenManager()
   _pRebootScreen = NULL;
   _bDimmed = false;
   _bReload = true;
+  _OTAholdoff = 0;
 }
 
 CScreenManager::~CScreenManager()
@@ -472,8 +473,24 @@ CScreenManager::_loadScreens()
 }
 
 bool 
+CScreenManager::_checkOTAholdoff()
+{
+  if(_OTAholdoff) {
+    long tDelta = millis() - _OTAholdoff;
+    if(tDelta < 0) 
+      return false;
+    _pDisplay->clearDisplay();
+    _pDisplay->display();   // blank screen
+    _OTAholdoff = 0;
+  }
+  return true;
+}
+bool 
 CScreenManager::checkUpdate()
 {
+  if(!_checkOTAholdoff())
+    return false;
+
   if(_bReload)
     _loadScreens();
 
@@ -585,6 +602,9 @@ CScreenManager::reqUpdate()
 bool 
 CScreenManager::animate()
 {
+  if(!_checkOTAholdoff())
+    return false;
+
   if(_pRebootScreen) 
   	return false;
 
@@ -733,6 +753,7 @@ CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
   static int prevPercent = -1;
 
   if(percent != prevPercent) {
+    DebugPort.printf("%d%%\r\n", percent);
     prevPercent = percent;
     _pDisplay->clearDisplay();
     if(percent < 0)
@@ -759,6 +780,7 @@ CScreenManager::showOTAMessage(int percent, eOTAmodes updateType)
     }
     _pDisplay->display();
   }
+  _OTAholdoff = millis() + 1000;
 }
 
 void

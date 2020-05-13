@@ -395,6 +395,6 @@ CGetWebContent::_sendJSON(const char* name)
   else
     JSONmsg += name;  
   JSONmsg += "\"}";
-  sendJSONtext(JSONmsg.c_str());
+  sendJSONtext(JSONmsg.c_str(), false);
 }
 

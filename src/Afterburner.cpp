@@ -134,7 +134,7 @@
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
 const int FirmwareMinorRevision = 6;
-const char* FirmwareDate = "26 Apr 2020";
+const char* FirmwareDate = "12 May 2020";
 
 /*
  * Macro to check the outputs of TWDT functions and trigger an abort if an
@@ -158,6 +158,7 @@ const char* FirmwareDate = "26 Apr 2020";
 bool validateFrame(const CProtocol& frame, const char* name);
 void checkDisplayUpdate();
 void checkDebugCommands();
+void manageStopStartMode();
 void manageCyclicMode();
 void manageFrostMode();
 void manageHumidity();
@@ -315,10 +316,10 @@ void checkBlueWireEvents()
     }
 
     // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
-    if(RTC_Store.getCyclicEngaged() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
+    if(RTC_Store.getUserStart() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
       DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
       // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
-      RTC_Store.setCyclicEngaged(false);
+      RTC_Store.setUserStart(false);
     }
 
     pHourMeter->monitor(BlueWireRxData);
@@ -553,8 +554,7 @@ void setup() {
   
   RTC_Store.begin();
   FuelGauge.init(RTC_Store.getFuelGauge());
-//  bCyclicEngaged = RTC_Store.getCyclicEngaged();
-  DebugPort.printf("Previous cyclic active = %d\r\n", RTC_Store.getCyclicEngaged());   // state flag required for cyclic mode to persist properly after a WD reboot :-)
+  DebugPort.printf("Previous user start = %d\r\n", RTC_Store.getUserStart());   // state flag required for cyclic mode to persist properly after a WD reboot :-)
 
   pHourMeter = new CHourMeter(persistentRunTime, persistentGlowTime); // persistent vars passed by reference so they can be valid after SW reboots
   pHourMeter->init(bESP32PowerUpInit || RTC_Store.getBootInit());     // ensure persistent memory variable are reset after powerup, or OTA update
@@ -665,6 +665,7 @@ bool checkTemperatureSensors()
         manageCyclicMode();
         manageFrostMode();
         manageHumidity();
+        manageStopStartMode();
       }
     }
     else {
@@ -679,10 +680,31 @@ bool checkTemperatureSensors()
   return false;
 }
 
+void manageStopStartMode()
+{
+  if(NVstore.getUserSettings().ThermostatMethod == 4 && RTC_Store.getUserStart() ) {
+    float deltaT = getTemperatureSensor() - CDemandManager::getDegC(); 
+    float thresh = NVstore.getUserSettings().ThermostatWindow/2;
+    int heaterState = getHeaterInfo().getRunState();   // native heater state
+    if(deltaT > thresh) {
+      if(heaterState > 0 && heaterState <= 5) {  
+        DebugPort.printf("STOP START MODE: Stopping heater, deltaT > +%.1f\r\n", thresh);
+        heaterOff();    // over temp - request heater stop
+      }
+    }
+    if(deltaT < -thresh) {
+      if(heaterState == 0) {
+        DebugPort.printf("STOP START MODE: Restarting heater, deltaT <%.1f\r\n", thresh);
+        heaterOn();  // under temp, start heater again
+      }
+    }
+  }
+}
+
 void manageCyclicMode()
 {
   const sCyclicThermostat& cyclic = NVstore.getUserSettings().cyclic;
-  if(cyclic.Stop && RTC_Store.getCyclicEngaged()) {   // cyclic mode enabled, and user has started heater
+  if(cyclic.Stop && RTC_Store.getUserStart()) {   // cyclic mode enabled, and user has started heater
     int stopDeltaT = cyclic.Stop + 1;  // bump up by 1 degree - no point invoking at 1 deg over!
     float deltaT = getTemperatureSensor() - CDemandManager::getDegC(); 
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
@@ -725,7 +747,7 @@ void manageFrostMode()
         RTC_Store.setFrostOn(true);        
         DebugPort.printf("FROST MODE: Starting heater, < %d`C\r\n", engage);
         if(NVstore.getUserSettings().FrostRise == 0)
-          RTC_Store.setCyclicEngaged(true);    // enable cyclic mode if user stop
+          RTC_Store.setUserStart(true);    // enable cyclic mode if user stop
         heaterOn();
       }
     }
@@ -735,7 +757,7 @@ void manageFrostMode()
         DebugPort.printf("FROST MODE: Stopping heater, > %d`C\r\n", engage+rise);
         heaterOff();
         RTC_Store.setFrostOn(false);  // cancel active frost mode
-        RTC_Store.setCyclicEngaged(false);   // for cyclic mode
+        RTC_Store.setUserStart(false);   // for cyclic mode
       }
     }
   }
@@ -768,7 +790,7 @@ requestOn()
   }
   bool LVCOK = 2 != SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
   if(hasHtrData() && LVCOK) {
-    RTC_Store.setCyclicEngaged(true);    // for cyclic mode
+    RTC_Store.setUserStart(true);    // for cyclic mode
     RTC_Store.setFrostOn(false);         // cancel frost mode
     // only start if below appropriate temperature threshold, raised for cyclic mode
     // int denied = checkStartTemp();
@@ -795,7 +817,7 @@ void requestOff()
 {
   DebugPort.println("Stop Request!");
   heaterOff();
-  RTC_Store.setCyclicEngaged(false);   // for cyclic mode
+  RTC_Store.setUserStart(false);   // for cyclic mode
   RTC_Store.setFrostOn(false);  // cancel active frost mode
   CTimerManager::cancelActiveTimer();
 }
@@ -1022,9 +1044,9 @@ int getSmartError()
   return SmartError.getError();
 }
 
-bool isCyclicActive()
+bool isCyclicStopStartActive()
 {
-  return RTC_Store.getCyclicEngaged() && NVstore.getUserSettings().cyclic.isEnabled();
+  return RTC_Store.getUserStart() && (NVstore.getUserSettings().cyclic.isEnabled() || NVstore.getUserSettings().ThermostatMethod == 4);
 }
 
 void setupGPIO()

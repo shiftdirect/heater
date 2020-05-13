@@ -21,6 +21,7 @@
  */
 
 #define USE_EMBEDDED_WEBUPDATECODE    
+#define HTTPS_LOGLEVEL 2
 
 #include <Arduino.h>
 #include "BTCWifi.h"
@@ -53,7 +54,7 @@
 #include <WebsocketHandler.hpp>
 #include <FreeRTOS.h>
 #include "../OLED/ScreenManager.h"
-// #include "../Utility/ABpreferences.h"
+#include "esp_task_wdt.h"
 
 // Max clients to be connected to the JSON handler
 #define MAX_CLIENTS 4
@@ -77,6 +78,7 @@ void streamFileCoreSSL(const size_t fileSize, const String & fileName, const Str
 void processWebsocketQueue();
 
 QueueHandle_t webSocketQueue = NULL;
+QueueHandle_t JSONcommandQueue = NULL;
 TaskHandle_t handleWebServerTask;
 #if USE_HTTPS == 1
 SSLCert* pCert;
@@ -121,6 +123,8 @@ void doDefaultWebHandler(HTTPRequest * req, HTTPResponse * res);
 void build404Response(HTTPRequest * req, String& content, String file);
 void build500Response(String& content, String file);
 bool checkAuthentication(HTTPRequest * req, HTTPResponse * res, int credID=0);
+bool addRxJSONcommand(const char* str);
+bool checkRxJSONcommand();
 
 
 // As websockets are more complex, they need a custom class that is derived from WebsocketHandler
@@ -176,14 +180,31 @@ JSONHandler::onMessage(WebsocketInputStreambuf * inbuf) {
 
   bRxWebData = true;
 
-  char cmd[256];
-  memset(cmd, 0, 256);
-  if(msg.length() < 256) {
-    strcpy(cmd, msg.c_str());
-    // TODO: use a queue to hand over message
-    interpretJsonCommand(cmd);  // send to the main heater controller decode routine
+  // use a queue to hand over messages - ensures any commands that affect the I2C bus 
+  // (typ. various RTC operations) are performed in line with all other accesses
+  addRxJSONcommand(msg.c_str());
+}
+
+bool addRxJSONcommand(const char* str)
+{
+  if(JSONcommandQueue) {
+    char *pMsg = new char[strlen(str)+1];
+    strcpy(pMsg, str);
+    xQueueSend(JSONcommandQueue, &pMsg, 0);
+    return true;
   }
-  
+  return false;
+}
+
+bool checkRxJSONcommand() 
+{
+  char* pMsg = NULL;
+  if(xQueueReceive(JSONcommandQueue, &pMsg, 0)) {
+    interpretJsonCommand(pMsg);
+    delete[] pMsg;
+    return true;
+  }
+  return false;
 }
 
 
@@ -470,10 +491,10 @@ void initWebServer(void) {
 
   DebugPort.println("HTTPS started");
 
+  JSONcommandQueue = xQueueCreate(50, sizeof(char*) );
   
   // setup task to handle webserver
   webSocketQueue = xQueueCreate(50, sizeof(char*) );
-
   bStopWebServer = false;
   xTaskCreate(SSLloopTask,
              "Web server task",
@@ -512,6 +533,8 @@ void SSLloopTask(void *) {
 bool doWebServer(void) 
 {
   GetWebContent.manage();
+  BrowserUpload.queueProcess();  // manage data queued from web update
+  checkRxJSONcommand();
   return true;
 }
 
@@ -1061,9 +1084,6 @@ void onWMConfig(HTTPRequest * req, httpsserver::HTTPResponse * res)
   newMode.eraseCreds = false;
   newMode.delay = 500;
   scheduleWMreboot(newMode);
-
-  // delay(500);
-  // wifiEnterConfigPortal(true, false, 10000);
 }
 
 
@@ -1077,8 +1097,6 @@ void onResetWifi(HTTPRequest * req, httpsserver::HTTPResponse * res)
   newMode.eraseCreds = true;
   newMode.delay = 500;
   scheduleWMreboot(newMode);
-  // delay(500);
-  // wifiEnterConfigPortal(true, true, 3000);
 }
 
 
@@ -1118,7 +1136,7 @@ void processWebsocketQueue()
             // DebugPort.println("->");
           }
         }
-        delete pMsg;
+        delete[] pMsg;
       }
     }
   }
@@ -1461,19 +1479,40 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
       }
 
       while (!parser->endOfField()) {
+        
+        // file upload and writing to SPIFFS is not a happy combination as the web server is running at an elevated level here
+        // best to pass the data to the normal Arduino processing task via a queue, but maintain synchronism with the processing
+        // by spinning here until ready.
+        while(!BrowserUpload.Ready()) {
+          taskYIELD();
+        }
+
+        esp_task_wdt_reset();
         upload.currentSize = parser->read(upload.buf, HTTP_UPLOAD_BUFLEN);
-        sts = BrowserUpload.fragment(upload, res);
+
+        BrowserUpload.queueFragment(upload);   // let user task process the fresh data
+
+        while(!BrowserUpload.Ready()) {
+          taskYIELD();
+        }
+        esp_task_wdt_reset();
+
+//        sts = BrowserUpload.fragment(upload, res);
+        sts = BrowserUpload.queueResult();
+
         if(sts < 0) {
           if(pUpdateHandler) {
             sprintf(JSON, "{\"updateProgress\":%d}", sts);
             pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
           }
+          DebugPort.printf("Upload code %d\r\n", sts);
           break;
         }
         else {
           // upload still in progress?
           if(BrowserUpload.bUploadActive) {  // show progress unless a write error has occured
-            DebugPort.print(".");
+            // DebugPort.printf(" p%d ", uxTaskPriorityGet(NULL));
+            // DebugPort.print(".");
             if(upload.totalSize) {
               // feed back bytes received over web socket for progressbar update on browser (via javascript)
               if(pUpdateHandler) {
@@ -1481,13 +1520,14 @@ void onUploadProgression(HTTPRequest * req, httpsserver::HTTPResponse * res)
                 pUpdateHandler->send(JSON, WebsocketHandler::SEND_TYPE_TEXT);
               }
             }
-            // show percentage on OLED
+/*            // show percentage on OLED
             int percent = 0;
             if(_SuppliedFileSize) 
               percent = 100 * upload.totalSize / _SuppliedFileSize;
 #if USE_SSL_LOOP_TASK != 1          
             ShowOTAScreen(percent, eOTAbrowser);  // browser update 
 #endif
+*/
           }
         }
       }

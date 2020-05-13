@@ -41,7 +41,7 @@ void resetJSONSysModerator();
 void resetJSONMQTTmoderator();
 void validateTimer(int ID);
 void doJSONreboot(uint16_t code);
-void sendJSONtext(const char* JSONstr);
+void sendJSONtext(const char* JSONstr, bool report);
 
 template<class T>
 const char* createJSON(const char* name, T value)

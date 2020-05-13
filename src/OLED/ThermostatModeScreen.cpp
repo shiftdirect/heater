@@ -90,6 +90,7 @@ CThermostatModeScreen::show()
       case 1: modeStr = "Deadband"; break;
       case 2: modeStr = "Linear Hz"; break;
       case 3: modeStr = "Ext thermostat"; break;
+      case 4: modeStr = "Stop Start"; break;
     }
     if(modeStr)
       _printMenuText(Column, Line3, modeStr, _rowSel == 4);
@@ -169,6 +170,9 @@ CThermostatModeScreen::animate()
           break;
         case 3:
           pMsg = "                   The heater runs according to GPIO input #2: Open:minimum, Closed:maximum.                    ";
+          break;
+        case 4:
+          pMsg = "                   The heater is stopped then started according to the defined window.                    ";
           break;
       }
       if(pMsg)
@@ -287,7 +291,6 @@ CThermostatModeScreen::keyHandler(uint8_t event)
 void 
 CThermostatModeScreen::_adjust(int dir)
 {
-  int wrap;
   switch(_rowSel) {
     case 1:
       _cyclicMode.Stop += dir;
@@ -304,12 +307,14 @@ CThermostatModeScreen::_adjust(int dir)
     case 4:   // thermostat mode
       _thermoMode += dir;
 #if USE_JTAG == 0
-      wrap = GPIOin.usesExternalThermostat() ? 3 : 2;
+      if(_thermoMode == 3 && !GPIOin.usesExternalThermostat())
+        _thermoMode += dir;
 #else
-      //CANNOT USE GPIO WITH JTAG DEBUG
-      wrap = 2;
+      // CANNOT USE GPIO WITH JTAG DEBUG
+      if(_thermoMode == 3
+        _thermoMode += dir;
 #endif
-      WRAPLIMITS(_thermoMode, 0, wrap);
+      WRAPLIMITS(_thermoMode, 0, 4);
       break;
   }
 }

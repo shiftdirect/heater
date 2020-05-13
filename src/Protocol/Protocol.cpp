@@ -328,7 +328,7 @@ CProtocol::setSystemVoltage(float fVal)
 int CProtocolPackage::getRunStateEx() const
 {
   int runstate = getRunState();
-  if(isCyclicActive()) {
+  if(isCyclicStopStartActive()) {
     // special states for cyclic suspended
     switch(runstate) {
       case 0:  runstate = 10; break;   // standby, awaiting temperature drop
@@ -405,7 +405,7 @@ const char* ErrstatesEx [] PROGMEM = {
   "E-09: Temp sense",      // [10] E-09
   "E-10: Ignition fail",   // [11] E-10  SmartError manufactured state - sensing runstate 2 -> >5
   "E-11: Failed 1st ignite",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
-  "E-12 Excess fuel shutdown", // [13] E-12  SmartError manufactured state - excess fuel consumed
+  "E-12: Excess fuel shutdown", // [13] E-12  SmartError manufactured state - excess fuel consumed
   "Unknown error?"   // mystery code!
 };
 

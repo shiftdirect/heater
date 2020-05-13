@@ -39,6 +39,9 @@
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/TempSense.h"
 #include "../Utility/DemandManager.h"
+#include "../Utility/FuelGauge.h"
+#include "../Utility/BoardDetect.h"
+#include "../Utility/NVStorage.h"
 #include <FreeRTOS.h>
 
 extern void DecodeCmd(const char* cmd, String& payload);
@@ -348,9 +351,15 @@ void updateMQTT()
   pubTopic("InputVoltage", getBatteryVoltage(false));
   pubTopic("GlowVoltage", getGlowVolts());
   pubTopic("GlowCurrent", getGlowCurrent());
-  sGPIO info;
-  getGPIOinfo(info);
-  pubTopic("GPanlg", info.algVal * 100 / 4096); 
+  if(getBoardRevision() != BRD_V2_GPIO_NOALG && getBoardRevision() != BRD_V3_GPIO_NOALG) {          // has GPIO support
+    sGPIO info;
+    getGPIOinfo(info);
+    pubTopic("GPanlg", info.algVal * 100 / 4096); 
+  }
+  pubTopic("FuelUsage", FuelGauge.Used_mL());
+  float fuelRate = getHeaterInfo().getPump_Actual() * NVstore.getHeaterTuning().pumpCal * 60 * 60;
+  pubTopic("FuelRate", fuelRate);
+
 }
 
 void refreshMQTT()
