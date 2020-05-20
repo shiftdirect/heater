@@ -133,8 +133,8 @@
 
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 6;
-const char* FirmwareDate = "12 May 2020";
+const int FirmwareMinorRevision = 0;
+const char* FirmwareDate = "21 May 2020";
 
 /*
  * Macro to check the outputs of TWDT functions and trigger an abort if an
