@@ -372,7 +372,8 @@ CBluetoothHC05::_decodeMACresponse(char* pResponse, int len)
 	}
 	if (deficit < 0) {  // more than 12 digits! - WHOA!
 		strcpy(_MAC, "unknown");
-    _bGotMAC = false;
+    // _bGotMAC = false;
+    _bGotMAC = true;
 	}
 	else {
     // build final colon separated MAC address

@@ -281,7 +281,7 @@ sHeaterTuning::load()
     validatedLoad("lowVolts", lowVolts, 115, u8inBoundsOrZero, 100, 125);
   else
     validatedLoad("lowVolts", lowVolts, 230, u8inBoundsOrZero, 200, 250);
-  validatedLoad("pumpCal", pumpCal, 0.02, 0.001, 1);
+  validatedLoad("pumpCal", pumpCal, 0.022, 0.001, 1);
   validatedLoad("maxFuelUsage", maxFuelUsage, 0, u16inBounds, 0, 10000);
   validatedLoad("warnFuelUsage", warnFuelUsage, 5, u16inBounds, 0, 100);
   validatedLoad("tempOffset0", DS18B20probe[0].offset, 0.0, -10.0, +10.0);

@@ -51,6 +51,7 @@ CBluetoothESP32HC05::_openSerial(int baudrate)
   // Open Serial port on the ESP32
   // best to explicitly specify pins for the pin multiplexer!   
   HC05_SerialPort.begin(baudrate, SERIAL_8N1, _rxPin, _txPin);
+  pinMode(_rxPin, INPUT_PULLUP);  // newer modules seem to be open drian - sort of - need a pullup to work properly anyway
 }
 //                              ^
 //                              |

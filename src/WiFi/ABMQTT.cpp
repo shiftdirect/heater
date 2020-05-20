@@ -134,7 +134,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }
   else if(strcmp(topic, statusTopic) == 0) {  // check if incoming topic is our general status
     if(strcmp(szPayload, "1") == 0) {
-       // BasicMQTTmoderator.reset();
+      BasicMQTTmoderator.reset();
       MQTTclient.publish(statusTopic, NVstore.getMQTTinfo().qos, true, "online");
     }
   }

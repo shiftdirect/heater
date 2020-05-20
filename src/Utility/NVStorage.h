@@ -87,7 +87,7 @@ struct sHeaterTuning : public CESP32_NVStorage {
     sysVoltage = 120;
     fanSensor = 1;
     glowDrive = 5;
-    pumpCal = 0.02;
+    pumpCal = 0.022;
     maxFuelUsage = 0;
     warnFuelUsage = 0;
     lowVolts = 115;
