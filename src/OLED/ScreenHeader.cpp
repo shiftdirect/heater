@@ -77,13 +77,14 @@ CScreenHeader::CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr) : CScreen(
   _hdrDetail = false;
 }
 
-void 
+bool 
 CScreenHeader::onSelect()
 {
   CScreen::onSelect();
 
   _batteryCount = 255;
   _animateCount = 255;
+  return true;
 }
 
 

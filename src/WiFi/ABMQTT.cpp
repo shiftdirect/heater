@@ -35,7 +35,8 @@
 #include "../Utility/DebugPort.h"
 #include "../Utility/NVStorage.h"
 #include "../Utility/Moderator.h"
-#include "../Protocol/Protocol.h"
+// #include "../Protocol/Protocol.h"
+#include "../Protocol/HeaterManager.h"
 #include "../Utility/BTC_JSON.h"
 #include "../Utility/TempSense.h"
 #include "../Utility/DemandManager.h"
@@ -305,9 +306,12 @@ void pubTopic(const char* name, const char* payload)
 
 void updateMQTT()
 {
-  pubTopic("RunState", getHeaterInfo().getRunStateEx());
-  pubTopic("Run", getHeaterInfo().getRunStateEx() ? "1" : "0");
-  pubTopic("RunString", getHeaterInfo().getRunStateStr());
+  pubTopic("RunState", HeaterManager.getRunStateEx());
+  pubTopic("Run", HeaterManager.getRunStateEx() ? "1" : "0");
+  pubTopic("RunString", HeaterManager.getRunStateStr());
+  // pubTopic("RunState", getHeaterInfo().getRunStateEx());
+  // pubTopic("Run", getHeaterInfo().getRunStateEx() ? "1" : "0");
+  // pubTopic("RunString", getHeaterInfo().getRunStateStr());
 
   float tidyTemp;
   if(getTempSensor().getTemperature(0, tidyTemp)) {
@@ -341,12 +345,17 @@ void updateMQTT()
     }
   }
   pubTopic("TempDesired", CDemandManager::getDemand()); 
-  pubTopic("TempBody", getHeaterInfo().getTemperature_HeatExchg()); 
-  pubTopic("ErrorState", getHeaterInfo().getErrState());
-  pubTopic("ErrorString", getHeaterInfo().getErrStateStrEx()); // verbose it up!
+  pubTopic("TempBody", HeaterManager.getBodyTemp()); 
+  pubTopic("ErrorState", HeaterManager.getErrState());
+  pubTopic("ErrorString", HeaterManager.getErrStateStrEx()); // verbose it up!
+  // pubTopic("TempBody", getHeaterInfo().getTemperature_HeatExchg()); 
+  // pubTopic("ErrorState", getHeaterInfo().getErrState());
+  // pubTopic("ErrorString", getHeaterInfo().getErrStateStrEx()); // verbose it up!
   pubTopic("Thermostat", CDemandManager::isThermostat());
-  pubTopic("PumpFixed", getHeaterInfo().getPump_Fixed() );
-  pubTopic("PumpActual", getHeaterInfo().getPump_Actual());
+  pubTopic("PumpFixed", HeaterManager.getPumpDemand() );
+  pubTopic("PumpActual", HeaterManager.getPumpRate());
+  // pubTopic("PumpFixed", getHeaterInfo().getPump_Fixed() );
+  // pubTopic("PumpActual", getHeaterInfo().getPump_Actual());
   pubTopic("FanRPM", getFanSpeed());
   pubTopic("InputVoltage", getBatteryVoltage(false));
   pubTopic("GlowVoltage", getGlowVolts());
@@ -356,9 +365,11 @@ void updateMQTT()
     getGPIOinfo(info);
     pubTopic("GPanlg", info.algVal * 100 / 4096); 
   }
-  pubTopic("FuelUsage", FuelGauge.Used_mL());
-  float fuelRate = getHeaterInfo().getPump_Actual() * NVstore.getHeaterTuning().pumpCal * 60 * 60;
-  pubTopic("FuelRate", fuelRate);
+  if(HeaterManager.getHeaterStyle() == 0) {
+    pubTopic("FuelUsage", FuelGauge.Used_mL());
+    float fuelRate = HeaterManager.getPumpRate() * NVstore.getHeaterTuning().pumpCal * 60 * 60;
+    pubTopic("FuelRate", fuelRate);
+  }
 
 }
 

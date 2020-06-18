@@ -41,7 +41,7 @@ class CSetTimerScreen : public CUIEditScreen {
   void _showConflict(const char* str);
 public:
   CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
-  void onSelect();
+  bool onSelect();
   bool show();
   bool keyHandler(uint8_t event);
 };

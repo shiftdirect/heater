@@ -120,7 +120,8 @@
 #include "RTC/TimerManager.h"
 #include "Utility/GetLine.h"
 #include "Utility/DemandManager.h"
-#include "Protocol/BlueWireTask.h"
+#include "Protocol/HeaterManager.h"
+#include "Protocol/433MHz.h"
 #if USE_TWDT == 1
 #include "esp_task_wdt.h"
 #endif
@@ -131,10 +132,10 @@
 
 // #define RX_DATA_TIMOUT 50
 
-const int FirmwareRevision = 32;
+const int FirmwareRevision = 40;
 const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 0;
-const char* FirmwareDate = "21 May 2020";
+const int FirmwareMinorRevision = 1;
+const char* FirmwareDate = "22 May 2020";
 
 /*
  * Macro to check the outputs of TWDT functions and trigger an abort if an
@@ -165,11 +166,11 @@ void manageHumidity();
 void doStreaming();
 void heaterOn();
 void heaterOff();
-void updateFilteredData(CProtocol& HeaterInfo);
 bool HandleMQTTsetup(char rxVal);
 void showMainmenu();
 bool checkTemperatureSensors();
 void checkBlueWireEvents();
+void checkUHF();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus
@@ -201,8 +202,9 @@ CGPIOalg GPIOalg;
 CMQTTsetup MQTTmenu;
 CSecuritySetup SecurityMenu;
 
-TaskHandle_t handleWatchdogTask;
-TaskHandle_t handleBlueWireTask;
+TaskHandle_t handleWatchdogTask = NULL;
+// TaskHandle_t handleBlueWireTask = NULL;
+// TaskHandle_t handleAltCtrlTask = NULL;
 extern TaskHandle_t handleWebServerTask;
 
 // these variables will persist over a soft reboot.
@@ -217,10 +219,8 @@ bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
 bool bReportRecyleEvents = REPORT_BLUEWIRE_RECYCLES;
 bool bReportOEMresync = REPORT_OEM_RESYNC;
+bool pair433MHz = false;
 
-CProtocol BlueWireRxData;
-CProtocol BlueWireTxData;
-CProtocolPackage BlueWireData;
 
 bool bUpdateDisplay = false;
 bool bHaveWebClient = false;
@@ -282,48 +282,70 @@ CBluetoothAbstract& getBluetoothClient()
   return Bluetooth;
 }
 
-char taskMsg[BLUEWIRE_MSGQUEUESIZE];
+// char taskMsg[BLUEWIRE_MSGQUEUESIZE];
 
 void checkBlueWireEvents()
 {
 // collect and report any debug messages from the blue wire task
-  if(BlueWireMsgQueue && xQueueReceive(BlueWireMsgQueue, taskMsg, 0))
-    DebugPort.print(taskMsg);
+  // if(BlueWireMsgQueue && xQueueReceive(BlueWireMsgQueue, taskMsg, 0))
+  //   DebugPort.print(taskMsg);
 
-  // check for complted data exchange from the blue wire task
-  if(BlueWireSemaphore && xSemaphoreTake(BlueWireSemaphore, 0)) {
+  // if(AltCommsTask.getMsgQueue(taskMsg))
+  //   DebugPort.print(taskMsg);
+  // QueueHandle_t MsgQueue = HeaterManager.getMsgQueue();
+  // if(MsgQueue && xQueueReceive(MsgQueue, taskMsg, 0))
+  //   DebugPort.print(taskMsg);
+  
+  // if(AltControllerMsgQueue && xQueueReceive(AltControllerMsgQueue, taskMsg, 0))
+  //   DebugPort.print(taskMsg);
+
+  // check for completed data exchange from the blue wire task
+  SemaphoreHandle_t handleSemaphore;
+  handleSemaphore = HeaterManager.getSemaphore();
+
+  if(handleSemaphore && xSemaphoreTake(handleSemaphore, 0)) {
     updateJSONclients(bReportJSONData);
     updateMQTT();
     NVstore.doSave();   // now is a good time to store to the NV storage, well away from any blue wire activity
   }
 
-  // collect transmitted heater data from blue wire task
-  if(BlueWireTxQueue && xQueueReceive(BlueWireTxQueue, BlueWireTxData.Data, 0)) {
-  }
+  // // collect transmitted heater data from blue wire task
+  // if(BlueWireTxQueue && xQueueReceive(BlueWireTxQueue, BlueWireTxData.Data, 0)) {
+  // }
 
-  // collect and process received heater data from blue wire task
-  if(BlueWireRxQueue && xQueueReceive(BlueWireRxQueue, BlueWireRxData.Data, 0)) {
-    BlueWireData.set(BlueWireRxData, BlueWireTxData);
-    SmartError.monitor(BlueWireRxData);
+  // // collect and process received heater data from blue wire task
+  // if(BlueWireRxQueue && xQueueReceive(BlueWireRxQueue, BlueWireRxData.Data, 0)) {
+  //   BlueWireData.set(BlueWireRxData, BlueWireTxData);
+  //   SmartError.monitor(BlueWireRxData);
 
-    updateFilteredData(BlueWireRxData);
+  //   updateFilteredData(BlueWireRxData);
 
-    FuelGauge.Integrate(BlueWireRxData.getPump_Actual());
+  //   FuelGauge.Integrate(BlueWireRxData.getPump_Actual());
 
-    if(INBOUNDS(BlueWireRxData.getRunState(), 1, 5)) {  // check for Low Voltage Cutout
-      SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
-      SmartError.checkfuelUsage();
-    }
+  //   if(INBOUNDS(BlueWireRxData.getRunState(), 1, 5)) {  // check for Low Voltage Cutout
+  //     SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+  //     SmartError.checkfuelUsage();
+  //   }
 
-    // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
-    if(RTC_Store.getUserStart() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
-      DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
-      // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
-      RTC_Store.setUserStart(false);
-    }
+  //   // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
+  //   if(RTC_Store.getUserStart() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
+  //     DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+  //     // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+  //     RTC_Store.setUserStart(false);
+  //   }
 
-    pHourMeter->monitor(BlueWireRxData);
-  }
+  //   pHourMeter->monitor(BlueWireRxData);
+  // }
+
+  // int AltHeater;
+  // if(AltRxQueue && xQueueReceive(AltRxQueue, &AltHeater, 0)) {
+  //   decodeAltHeater(AltHeater);
+  // }
+  // isAltActive();
+
+  HeaterManager.checkMsgEvents();
+  HeaterManager.checkTxEvents();
+  HeaterManager.checkRxEvents();
 }
 
 
@@ -593,15 +615,15 @@ void setup() {
   TempSensor.getDS18B20().mapSensor(1, NVstore.getHeaterTuning().DS18B20probe[1].romCode);
   TempSensor.getDS18B20().mapSensor(2, NVstore.getHeaterTuning().DS18B20probe[2].romCode);
 
-  // create task to run blue wire interface
-  xTaskCreate(BlueWireTask,              
-              "BlueWireTask",
-              1600,
-              NULL,
-              TASK_PRIORITY_HEATERCOMMS,
-             &handleBlueWireTask);
+  // create task to run heater comms
+  // HeaterManager.setHeaterStyle(1);  // alternate blue digit LCD
+  // HeaterManager.setHeaterStyle(0);  // conventional blue wire
+  if(HeaterManager.detect())
+    DebugPort.printf("Detected heater type %d\r\r", HeaterManager.getHeaterStyle());
+  else 
+    DebugPort.println("UNABLE TO DETECT HEATER???");
 
-  
+  UHFremote.begin(Rx433MHz_pin, RMT_CHANNEL_4);
 
 
   delay(1000); // just to hold the splash screeen for while
@@ -632,6 +654,8 @@ void loop()
 
   checkBlueWireEvents();
 
+  checkUHF();
+
   vTaskDelay(1);
 }  // loop
 
@@ -645,9 +669,10 @@ bool checkTemperatureSensors()
     if(bReportStack) {
       DebugPort.println("Stack high water marks");
       DebugPort.printf("  Arduino: %d\r\n", uxTaskGetStackHighWaterMark(NULL));
-      DebugPort.printf("  BlueWire: %d\r\n", uxTaskGetStackHighWaterMark(handleBlueWireTask));
-      DebugPort.printf("  Watchdog: %d\r\n", uxTaskGetStackHighWaterMark(handleWatchdogTask));
-      DebugPort.printf("  SSL loop: %d\r\n", uxTaskGetStackHighWaterMark(handleWebServerTask));
+      const TaskHandle_t  handleCommsTask = HeaterManager.getTaskHandle();
+      if(handleCommsTask) DebugPort.printf("  Heater Comms: %d\r\n", uxTaskGetStackHighWaterMark(handleCommsTask));
+      if(handleWatchdogTask) DebugPort.printf("  Watchdog: %d\r\n", uxTaskGetStackHighWaterMark(handleWatchdogTask));
+      if(handleWebServerTask) DebugPort.printf("  SSL loop: %d\r\n", uxTaskGetStackHighWaterMark(handleWebServerTask));
     }
 
     TempSensor.readSensors();
@@ -685,7 +710,8 @@ void manageStopStartMode()
   if(NVstore.getUserSettings().ThermostatMethod == 4 && RTC_Store.getUserStart() ) {
     float deltaT = getTemperatureSensor() - CDemandManager::getDegC(); 
     float thresh = NVstore.getUserSettings().ThermostatWindow/2;
-    int heaterState = getHeaterInfo().getRunState();   // native heater state
+    // int heaterState = getHeaterInfo().getRunState();   // native heater state
+    int heaterState = HeaterManager.getRunState();   // native heater state
     if(deltaT > thresh) {
       if(heaterState > 0 && heaterState <= 5) {  
         DebugPort.printf("STOP START MODE: Stopping heater, deltaT > +%.1f\r\n", thresh);
@@ -710,13 +736,15 @@ void manageCyclicMode()
 //    DebugPort.printf("Cyclic=%d bUserOn=%d deltaT=%d\r\n", cyclic, bUserON, deltaT);
 
     // ensure we cancel user ON mode if heater throws an error
-    int errState = getHeaterInfo().getErrState();
+    // int errState = getHeaterInfo().getErrState();
+    int errState = HeaterManager.getErrState();
     if((errState > 1) && (errState < 12) && (errState != 8)) {
       // excludes errors 0,1(OK), 12(E1-11,Retry) & 8(E-07,Comms Error)
       DebugPort.println("CYCLIC MODE: cancelling user ON status"); 
       requestOff();   // forcibly cancel cyclic operation - pretend user pressed OFF
     }
-    int heaterState = getHeaterInfo().getRunState();
+    // int heaterState = getHeaterInfo().getRunState();
+    int heaterState = HeaterManager.getRunState();
     // check if over temp, turn off heater
     if(deltaT > stopDeltaT) {
       if(heaterState > 0 && heaterState <= 5) {  
@@ -741,7 +769,8 @@ void manageFrostMode()
   uint8_t engage = NVstore.getUserSettings().FrostOn;
   if(engage) {
     float deltaT = getTemperatureSensor() - engage;
-    int heaterState = getHeaterInfo().getRunState();
+    // int heaterState = getHeaterInfo().getRunState();
+    int heaterState = HeaterManager.getRunState();
     if(deltaT < 0) {
       if(heaterState == 0) {
         RTC_Store.setFrostOn(true);        
@@ -782,14 +811,20 @@ void manageHumidity()
 CDemandManager::eStartCode 
 requestOn()
 {
+  bool altHeater = HeaterManager.getHeaterStyle() == 1;
+
+  if(HeaterManager.getRunState())  // already running?
+    return CDemandManager::eStartOK;
+
   DebugPort.println("Start Request!");
-  bool fuelOK = 2 != SmartError.checkfuelUsage();
+
+  bool fuelOK = 2 != SmartError.checkfuelUsage() || altHeater;
   if(!fuelOK) {
     DebugPort.println("Start denied - Low fuel");
     return CDemandManager::eStartLowFuel;
   }
   bool LVCOK = 2 != SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
-  if(hasHtrData() && LVCOK) {
+  if((hasHtrData() || altHeater) && LVCOK) {
     RTC_Store.setUserStart(true);    // for cyclic mode
     RTC_Store.setFrostOn(false);         // cancel frost mode
     // only start if below appropriate temperature threshold, raised for cyclic mode
@@ -815,23 +850,23 @@ requestOn()
 
 void requestOff()
 {
-  DebugPort.println("Stop Request!");
-  heaterOff();
-  RTC_Store.setUserStart(false);   // for cyclic mode
-  RTC_Store.setFrostOn(false);  // cancel active frost mode
-  CTimerManager::cancelActiveTimer();
+  if(HeaterManager.getRunState()) {  // heater running?
+    DebugPort.println("Stop Request!");
+    heaterOff();
+    RTC_Store.setUserStart(false);   // for cyclic mode
+    RTC_Store.setFrostOn(false);  // cancel active frost mode
+    CTimerManager::cancelActiveTimer();
+  }
 }
 
 void heaterOn() 
 {
-  TxManage.queueOnRequest();
-  SmartError.reset();
+  HeaterManager.reqOnOff(true);
 }
 
 void heaterOff()
 {
-  TxManage.queueOffRequest();
-  SmartError.inhibit();
+  HeaterManager.reqOnOff(false);
 }
 
 
@@ -1005,6 +1040,9 @@ void checkDebugCommands()
       }
       else if(rxVal == ('h' & 0x1f)) {   // CTRL-H hourmeter reset
         pHourMeter->resetHard();
+      }
+      else if(rxVal == ('p' & 0x1f)) {   // CTRL-P fuel usage reset 
+        FuelGauge.reset();
       }
       else if(rxVal == ('r' & 0x1f)) {   // CTRL-R reboot
         ESP.restart();            // reset the esp
@@ -1340,21 +1378,12 @@ float getGlowCurrent()
 
 int getFanSpeed()
 {
-#ifdef RAW_SAMPLES
+  return HeaterManager.getFanRPM();
+/*#ifdef RAW_SAMPLES
 	return getHeaterInfo().getFan_Actual();
 #else
   return (int)FilteredSamples.Fan.getValue();
-#endif
-}
-
-void updateFilteredData(CProtocol& HeaterInfo)
-{
-  FilteredSamples.ipVolts.update(HeaterInfo.getVoltage_Supply());
-  FilteredSamples.GlowVolts.update(HeaterInfo.getGlowPlug_Voltage());
-  FilteredSamples.GlowAmps.update(HeaterInfo.getGlowPlug_Current());
-  FilteredSamples.Fan.update(HeaterInfo.getFan_Actual());
-  FilteredSamples.FastipVolts.update(HeaterInfo.getVoltage_Supply());
-  FilteredSamples.FastGlowAmps.update(HeaterInfo.getGlowPlug_Current());
+#endif*/
 }
 
 int sysUptime()
@@ -1465,8 +1494,56 @@ void reqHeaterCalUpdate()
   TxManage.queueSysUpdate();
 }
 
-const CProtocolPackage& getHeaterInfo()
+// const CProtocolPackage& getHeaterInfo()
+// {
+//   return BlueWireData;
+// }
+
+int UHFsubcode(int val)
 {
-  return BlueWireData;
+  val &= 0x03;
+  val = 0x0001 << val;
+  return val;
 }
 
+void checkUHF()
+{
+  if(!pair433MHz) {
+    UHFremote.manage();
+    // unsigned long test = 0xF5F0AC10;
+    // if(UHFremote.available()) {
+    //   unsigned long code;
+    //   UHFremote.read(code);
+    //   DebugPort.printf("UHF remote code = %08lX\r\n", code);
+
+    //   unsigned long ID = (test >> 8) & 0xfffff0;
+    //   if(((code ^ ID) & 0xfffff0) == 0) {
+    //     int subCode = code & 0xf;
+    //     if(test & 0x800) {
+    //       if((UHFsubcode(test >> 6) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF start request!");
+    //         HeaterManager.reqOnOff(true);
+    //       }
+    //     }
+    //     if(test & 0x400) {
+    //       if((UHFsubcode(test >> 4) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF stop request!");
+    //         HeaterManager.reqOnOff(false);
+    //       }
+    //     }
+    //     if(test & 0x200) {
+    //       if((UHFsubcode(test >> 2) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF inc temp request!");
+    //         CDemandManager::deltaDemand(+1);
+    //       }
+    //     }
+    //     if(test & 0x100) {
+    //       if((UHFsubcode(test >> 0) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF dec temp request!");
+    //         CDemandManager::deltaDemand(+1);
+    //       }
+    //     }
+    //   }
+    // }
+  }
+}

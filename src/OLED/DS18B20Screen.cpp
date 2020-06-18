@@ -37,12 +37,14 @@ CDS18B20Screen::CDS18B20Screen(C128x64_OLED& display, CScreenManager& mgr) : CPa
   _initUI();
 }
 
-void 
+bool 
 CDS18B20Screen::onSelect()
 {
   CPasswordScreen::onSelect();
   _nNumSensors = getTempSensor().getDS18B20().getNumSensors();
   _readNV();
+
+  return true;
 }
 
 void

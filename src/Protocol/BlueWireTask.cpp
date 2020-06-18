@@ -33,14 +33,11 @@
 #include "../Utility/macros.h"
 
 // Setup Serial Port Definitions
-#if defined(__arm__)
-// Required for Arduino Due, UARTclass is derived from HardwareSerial
-static UARTClass& BlueWireSerial(Serial1);
-#else
 // for ESP32, Mega
 // HardwareSerial is it for these boards
 static HardwareSerial& BlueWireSerial(Serial1);  
-#endif
+
+CBlueWireCommsTask BlueWireCommsTask;  // AltCommsTaskInfo;
 
 #define RX_DATA_TIMOUT 50
 
@@ -53,7 +50,7 @@ CProtocol HeaterFrame2;              // data packet received from heater in resp
 // CSmartError SmartError;
 CProtocolPackage reportHeaterData;
 CProtocolPackage primaryHeaterData;
-char dbgMsg[BLUEWIRE_MSGQUEUESIZE];
+char dbgMsg[COMMS_MSGQUEUESIZE];
 
 static bool bHasOEMController = false;
 static bool bHasOEMLCDController = false;
@@ -64,36 +61,62 @@ extern bool bReportOEMresync;
 extern bool bReportBlueWireData;
 extern sFilteredData FilteredSamples;
 
-QueueHandle_t BlueWireMsgQueue = NULL;    // cannot use general Serial.print etc from this task without causing conflicts
-QueueHandle_t BlueWireRxQueue = NULL;   // queue to pass down heater receive data
-QueueHandle_t BlueWireTxQueue = NULL;   // queue to pass down heater transmit data
-SemaphoreHandle_t BlueWireSemaphore = NULL;  // flag to indicate completion of heater data exchange
+// QueueHandle_t BlueWireMsgQueue = NULL;    // cannot use general Serial.print etc from this task without causing conflicts
+// QueueHandle_t BlueWireRxQueue = NULL;   // queue to pass down heater receive data
+// QueueHandle_t BlueWireTxQueue = NULL;   // queue to pass down heater transmit data
+// SemaphoreHandle_t BlueWireSemaphore = NULL;  // flag to indicate completion of heater data exchange
 
 bool validateFrame(const CProtocol& frame, const char* name);
 void DebugReportFrame(const char* hdr, const CProtocol& Frame, const char* ftr, char* msg);
 // void updateFilteredData();
 void initBlueWireSerial();
 
-void pushDebugMsg(const char* msg) {
+/*void pushDebugMsg(const char* msg) {
   if(BlueWireMsgQueue)
     xQueueSend(BlueWireMsgQueue, msg, 0);
+}*/
+void pushDebugMsg(const char* msg) {
+  BlueWireCommsTask.putMsgQueue(msg);
 }
 
-void BlueWireTask(void*) {
+
+CBlueWireCommsTask::CBlueWireCommsTask()
+{
+
+}
+
+void 
+CBlueWireCommsTask::commsTask(void* arg) 
+{
   //////////////////////////////////////////////////////////////////////////////////////
   // Blue wire data reception
   //  Reads data from the "blue wire" Serial port, (to/from heater)
   //  If an OEM controller exists we will also see it's data frames
   //  Note that the data is read now, then held for later use in the state machine
   //
+
+  CBlueWireCommsTask* pThis = (CBlueWireCommsTask*)arg;
+
+  pThis->_task();  // loops here until terminated
+
+  vTaskDelete(NULL);   // NEVER fall out from a task!
+  for(;;);
+
+}
+
+void 
+CBlueWireCommsTask::_task() 
+{
   static unsigned long lastRxTime = 0;                     // used to observe inter character delays
   static unsigned long moderator = 50;
   bool isBTCmaster = false;
 
-  BlueWireMsgQueue = xQueueCreate(4, BLUEWIRE_MSGQUEUESIZE);
-  BlueWireRxQueue = xQueueCreate(4, BLUEWIRE_DATAQUEUESIZE);
-  BlueWireTxQueue = xQueueCreate(4, BLUEWIRE_DATAQUEUESIZE);
-  BlueWireSemaphore = xSemaphoreCreateBinary();
+  // create FreeRTOS queues etc
+  create(BLUEWIRE_DATAQUEUESIZE);
+  // BlueWireMsgQueue = xQueueCreate(4, BLUEWIRE_MSGQUEUESIZE);
+  // BlueWireRxQueue = xQueueCreate(4, BLUEWIRE_DATAQUEUESIZE);
+  // BlueWireTxQueue = xQueueCreate(4, BLUEWIRE_DATAQUEUESIZE);
+  // BlueWireSemaphore = xSemaphoreCreateBinary();
 
   TxManage.begin(); // ensure Tx enable pin is setup
 
@@ -107,12 +130,15 @@ void BlueWireTask(void*) {
   DefaultBTCParams.setFan_Max(4500);
   DefaultBTCParams.Controller.FanSensor = 1;
 
-  initBlueWireSerial();
+  _initSerial();
+  // initBlueWireSerial();
 
   CommState.setCallback(pushDebugMsg);
   TxManage.setCallback(pushDebugMsg);
 
-  for(;;) {
+  // for(;;) {
+  _runState = 1;
+  while(_runState == 1) {
 
     sRxData BlueWireRxData;
     unsigned long timenow = millis();
@@ -231,6 +257,8 @@ void BlueWireTask(void*) {
 
         // collect OEM controller frame
         if(BlueWireRxData.available()) {
+        digitalWrite(LED_Pin, LOW);
+        digitalWrite(LED_Pin, HIGH);
           if(CommState.collectData(OEMCtrlFrame, BlueWireRxData.getValue()) ) {
             CommState.set(CommStates::OEMCtrlValidate);  // collected 24 bytes, move on!
           }
@@ -264,6 +292,8 @@ void BlueWireTask(void*) {
 
         // collect heater frame, always in response to an OEM controller frame
         if(BlueWireRxData.available()) {
+        digitalWrite(LED_Pin, LOW);
+        digitalWrite(LED_Pin, HIGH);
           if( CommState.collectData(HeaterFrame1, BlueWireRxData.getValue()) ) {
             CommState.set(CommStates::HeaterValidate1);
           }
@@ -302,7 +332,7 @@ void BlueWireTask(void*) {
 
 
       case CommStates::TxStart:
-        xQueueSend(BlueWireTxQueue, TxManage.getFrame().Data, 0);
+        xQueueSend(_txQueue, TxManage.getFrame().Data, 0);
         TxManage.Start(timenow);
         CommState.set(CommStates::TxInterval);
         break;
@@ -356,7 +386,8 @@ void BlueWireTask(void*) {
 
         // received heater frame (after our control message), report
 
-        xQueueSend(BlueWireRxQueue, HeaterFrame2.Data, 0);
+        xQueueSend(_rxQueue, HeaterFrame2.Data, 0);
+        _online = true;
 
         // do some monitoring of the heater state variables
         // if abnormal transitions, introduce a smart error!
@@ -374,7 +405,7 @@ void BlueWireTask(void*) {
 
 
       case CommStates::ExchangeComplete:
-        xSemaphoreGive(BlueWireSemaphore);
+        xSemaphoreGive(_semaphore);
         CommState.set(CommStates::Idle);
         break;
     }  // switch(CommState)
@@ -382,11 +413,26 @@ void BlueWireTask(void*) {
 #if DBG_FREERTOS == 1
     digitalWrite(GPIOout1_pin, LOW);
 #endif
-    vTaskDelay(1);
+    if (!BlueWireSerial.available()) {
+       vTaskDelay(1);
+    }
 #if DBG_FREERTOS == 1
     digitalWrite(GPIOout1_pin, HIGH);
 #endif
   }
+
+  BlueWireSerial.end();
+
+  // return pins to standard GPIO functions
+  pinMode(Tx1Pin, OUTPUT);  
+  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
+  pinMode(TxEnbPin, OUTPUT);
+  digitalWrite(Tx1Pin, HIGH);
+  digitalWrite(TxEnbPin, LOW);
+
+  _runState = 0;
+ 
+  DebugPort.println("Blue wire task concluded");
 }
 
 
@@ -435,20 +481,16 @@ bool hasHtrData()
   return bHasHtrData;
 }
 
-void initBlueWireSerial()
+void 
+CBlueWireCommsTask::_initSerial()
 {
   // initialize serial port to interact with the "blue wire"
   // 25000 baud, Tx and Rx channels of Chinese heater comms interface:
   // Tx/Rx data to/from heater, 
   // Note special baud rate for Chinese heater controllers
-#if defined(__arm__) || defined(__AVR__)
-  BlueWireSerial.begin(25000);   
-  pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
-#elif ESP32
   // ESP32
   BlueWireSerial.begin(25000, SERIAL_8N1, Rx1Pin, Tx1Pin);  // need to explicitly specify pins for pin multiplexer!
   pinMode(Rx1Pin, INPUT_PULLUP);  // required for MUX to work properly
-#endif
 }
 
 // 0x00 - Normal:  BTC, with heater responding
@@ -479,4 +521,15 @@ void reqPumpPrime(bool on)
   TxManage.reqPrime(on);
 }
 
-
+void
+CBlueWireCommsTask::taskStart()
+{
+  CCommsTask::taskStart();
+  _runState = 0;           
+  xTaskCreate(commsTask,              
+              "BlueWireTask",
+              1600,
+              this,
+              TASK_PRIORITY_HEATERCOMMS,
+              &_taskHandle);
+}

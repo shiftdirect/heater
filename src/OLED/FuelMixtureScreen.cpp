@@ -35,6 +35,7 @@
 #include "../Utility/macros.h"
 #include "../Utility/NVStorage.h"
 #include "../Protocol/Protocol.h"
+#include "../Protocol/HeaterManager.h"
 #include "fonts/Icons.h"
 
 
@@ -43,12 +44,16 @@ CFuelMixtureScreen::CFuelMixtureScreen(C128x64_OLED& display, CScreenManager& mg
   _initUI();
 }
 
-void
+bool
 CFuelMixtureScreen::onSelect()
 {
+  if(HeaterManager.getHeaterStyle() != 0)
+    return false;
+
   CPasswordScreen::onSelect();
   
   _load();
+  return true;
 }
 
 void

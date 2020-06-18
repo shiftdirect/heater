@@ -31,17 +31,17 @@
 // MAXIMUM OF 7 BYTES
 //
 // [0..3] float fuelGauge strokes
-//    [4] uint8_t DesiredTemp (typ. 8-35)
-//    [5] uint8_t DesiredPump (typ. 8-35)
+//    [4] int8_t DesiredTemp (typ. 8-35)
+//    [5] int8_t DesiredPump (typ. 8-35)
 //    [6] uint8_t spare
 //
-//           ____________________________________________________
-//          |    b7         |  b6  | b5 | b4 | b3 | b2 | b1 | b0 |
-//          |---------------|------|-----------------------------|
-// Byte[4]: | CyclicEngaged | bit6 |     Desired Deg Celcius     |
-//          |---------------|------|-----------------------------|
-// Byte[5]: |               |      |      Desired Pump Speed     |
-//           ----------------------------------------------------
+//           _________________________________________________________
+//          |    b7         |    b6     | b5 | b4 | b3 | b2 | b1 | b0 |
+//          |---------------|-----------|-----------------------------|
+// Byte[4]: | CyclicEngaged | BootInit  |     Desired Deg Celcius     |
+//          |---------------|-----------|-----------------------------|
+// Byte[5]: | Spare         | FrostMode |      Desired Pump Speed     |
+//           ---------------------------------------------------------
 
 CRTC_Store::CRTC_Store()
 {
@@ -99,13 +99,13 @@ CRTC_Store::getFuelGauge()
 }
 
 void 
-CRTC_Store::setDesiredTemp(uint8_t val)
+CRTC_Store::setDesiredTemp(int8_t val)
 {
   _demandDegC = val;
   _PackAndSaveByte4();
 }
 
-uint8_t
+int8_t
 CRTC_Store::getDesiredTemp()
 {
   _ReadAndUnpackByte4();
@@ -141,13 +141,13 @@ CRTC_Store::setUserStart(bool active)
 }
 
 void 
-CRTC_Store::setDesiredPump(uint8_t val)
+CRTC_Store::setDesiredPump(int8_t val)
 {
   _demandPump = val;
   _PackAndSaveByte5();
 }
 
-uint8_t
+int8_t
 CRTC_Store::getDesiredPump()
 {
   _ReadAndUnpackByte5();

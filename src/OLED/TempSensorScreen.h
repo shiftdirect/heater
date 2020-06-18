@@ -47,7 +47,7 @@ public:
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);
-  void onSelect();
+  bool onSelect();
   void adjust(int dir);
 };
 

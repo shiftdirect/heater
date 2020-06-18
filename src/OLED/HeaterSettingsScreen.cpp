@@ -27,6 +27,7 @@
 #include "../Utility/macros.h"
 #include "../Utility/NVStorage.h"
 #include "../Protocol/Protocol.h"
+#include "../Protocol/HeaterManager.h"
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -51,14 +52,17 @@ CHeaterSettingsScreen::CHeaterSettingsScreen(C128x64_OLED& display, CScreenManag
   _sysVoltage = 12;
 }
 
-void 
+bool 
 CHeaterSettingsScreen::onSelect()
 {
+  if(HeaterManager.getHeaterStyle() != 0)
+    return false;
   CPasswordScreen::onSelect();
   _initUI();
   _fanSensor = NVstore.getHeaterTuning().fanSensor; 
   _glowDrive = NVstore.getHeaterTuning().glowDrive; 
   _sysVoltage = NVstore.getHeaterTuning().sysVoltage / 10; 
+  return true;
 }
 
 bool 

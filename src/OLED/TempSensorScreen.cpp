@@ -36,7 +36,7 @@ CTempSensorScreen::CTempSensorScreen(C128x64_OLED& display, CScreenManager& mgr)
   _initUI();
 }
 
-void 
+bool 
 CTempSensorScreen::onSelect()
 {
   CPasswordScreen::onSelect();
@@ -45,6 +45,7 @@ CTempSensorScreen::onSelect()
   _nDS18B20 = getTempSensor().getDS18B20().getNumSensors();
   _bPrimary = NVstore.getHeaterTuning().BME280probe.bPrimary;
   _readNV();
+  return true;
 }
 
 void

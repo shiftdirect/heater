@@ -28,10 +28,10 @@
 class CRTC_Store {
   bool _accessed[4];       // [0] - bytes 0..3, [1] byte 4, [2] byte 5, [3] byte 6
   float _fuelgauge;        // Byte0..Byte3 
-  uint8_t _demandDegC;     // Byte4[0..5]
+  int8_t  _demandDegC;     // Byte4[0..5]
   bool    _BootInit;       // Byte4[6]
   bool    _userStart;      // Byte4[7]
-  uint8_t _demandPump;     // Byte5[0..5]
+  int8_t  _demandPump;     // Byte5[0..5]
   bool    _frostOn;        // Byte5[6]
   bool    _spare;          // Byte5[7]
   uint8_t _RunTime;        // Byte6[0..4] 
@@ -46,8 +46,8 @@ public:
   CRTC_Store();
   void begin();
   void setFuelGauge(float val);
-  void setDesiredTemp(uint8_t val);
-  void setDesiredPump(uint8_t val);
+  void setDesiredTemp(int8_t val);
+  void setDesiredPump(int8_t val);
   void resetRunTime();
   void resetGlowTime();
   bool incRunTime();
@@ -55,8 +55,8 @@ public:
   void setUserStart(bool state);
   void setBootInit(bool val = true);
   float getFuelGauge();
-  uint8_t getDesiredTemp();
-  uint8_t getDesiredPump();
+  int8_t getDesiredTemp();
+  int8_t getDesiredPump();
   bool    getUserStart();
   bool    getBootInit();
   int getRunTime();

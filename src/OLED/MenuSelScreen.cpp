@@ -31,13 +31,14 @@ CMenuSelScreen::CMenuSelScreen(C128x64_OLED& display, CScreenManager& mgr) : CPa
   _bReload = false;
 }
 
-void 
+bool 
 CMenuSelScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _menuMode = NVstore.getUserSettings().menuMode;
   _holdPW = NVstore.getUserSettings().holdPassword;
   _scrollChar = 0;
+  return true;
 }
 
 bool 

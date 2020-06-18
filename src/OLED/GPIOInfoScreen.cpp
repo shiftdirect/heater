@@ -45,6 +45,12 @@ CGPIOInfoScreen::CGPIOInfoScreen(C128x64_OLED& display, CScreenManager& mgr) : C
   _keyRepeatCount = -1;
 }
 
+bool
+CGPIOInfoScreen::onSelect()
+{
+  return getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO;     // has GPIO support
+}
+
 void
 CGPIOInfoScreen::_initUI()
 {

@@ -38,8 +38,8 @@ struct sTimer;
 class CDemandManager {
 
 private:
-  static uint8_t _setDegC;
-  static uint8_t _setPumpHz;
+  static int8_t _setDegC;
+  static int8_t _setPumpHz;
 
 public:
   enum eStartCode { eStartOK=0, 
@@ -48,14 +48,14 @@ public:
                     eStartLVC=-3,
                     eStartLowFuel=-4
   };
-  static uint8_t getDegC();          // absolute degC value to use
-  static uint8_t getPumpHz();        // absolute Pump Hz value to use - scaled to fit temp range
-  static uint8_t getDemand();        // can be pump Hz or degC, depending upon thermostat mode
-  static void  setDegC(uint8_t newDegC);     // set and save absolute degC value to use
-  static void  setPumpHz(uint8_t newDemand); // set and save absolute scaled pump Hz value to use 
-  static bool  setDemand(uint8_t newDemand); // set and save demand, according to thermostat mode
+  static int8_t getDegC();          // absolute degC value to use
+  static int8_t getPumpHz();        // absolute Pump Hz value to use - scaled to fit temp range
+  static int8_t getDemand();        // can be pump Hz or degC, depending upon thermostat mode
+  static void  setDegC(int8_t newDegC);     // set and save absolute degC value to use
+  static void  setPumpHz(int8_t newDemand); // set and save absolute scaled pump Hz value to use 
+  static bool  setDemand(int8_t newDemand); // set and save demand, according to thermostat mode
   static bool  deltaDemand(int delta);       // nudge demand
-  static void  setFromTimer(uint8_t newDemand);  // set voltile degC and PumpHz, for timer starts
+  static void  setFromTimer(int8_t newDemand);  // set voltile degC and PumpHz, for timer starts
   static void  reload();                     // reload stored RTC values
   static eStartCode checkStart();            // test if start allowed
   static bool  toggleThermostat();

@@ -34,6 +34,7 @@
 #include "helpers.h"
 #include "../RTC/RTCStore.h"
 #include "../Protocol/Protocol.h"
+#include "../Protocol/HeaterManager.h"
 
 // Concept of timer operation:
 //
@@ -56,26 +57,32 @@
 // The programmed timer temperature is not altered by the user adjusting the running 
 // setting and the same setpoint will recur in the future when that timer runs again.
 
-uint8_t CDemandManager::_setDegC = 22;
-uint8_t CDemandManager::_setPumpHz = 22;
+int8_t CDemandManager::_setDegC = 22;
+int8_t CDemandManager::_setPumpHz = 22;
 
 
-uint8_t
+int8_t
 CDemandManager::getDegC() 
 {
   return _setDegC;
 }
 
-uint8_t
+int8_t
 CDemandManager::getPumpHz() 
 {
-  return _setPumpHz;   // value lies in the typical range of 8-35 - interpolated by heater to real Hz
+  if(HeaterManager.getHeaterStyle() == 0) {
+    return _setPumpHz;   // value lies in the typical range of 8-35 - interpolated by heater to real Hz
+  }
+  else {
+    BOUNDSLIMIT(_setPumpHz, 0, 5);
+    return _setPumpHz;
+  }
 }
 
 
 // set a new temperature setpoint, also saving it to non volatile RTC memory (battery backed RAM)
 void  
-CDemandManager::setDegC(uint8_t newDegC) 
+CDemandManager::setDegC(int8_t newDegC) 
 {
   BOUNDSLIMIT(newDegC, NVstore.getHeaterTuning().Tmin, NVstore.getHeaterTuning().Tmax);
 
@@ -85,19 +92,24 @@ CDemandManager::setDegC(uint8_t newDegC)
 
 // set a new pump setpoint, also saving it to non volatile RTC memory (battery backed RAM)
 void 
-CDemandManager::setPumpHz(uint8_t newDemand)
+CDemandManager::setPumpHz(int8_t newDemand)
 {
-  // Pump demands use the same range as temperature demands :-)
-  BOUNDSLIMIT(newDemand, NVstore.getHeaterTuning().Tmin, NVstore.getHeaterTuning().Tmax);
+  if(HeaterManager.getHeaterStyle() == 0) {
+    // Pump demands use the same range as temperature demands :-)
+    BOUNDSLIMIT(newDemand, NVstore.getHeaterTuning().Tmin, NVstore.getHeaterTuning().Tmax);
+  }
+  else {
+    BOUNDSLIMIT(newDemand, 0, 5);
+  }
 
   _setPumpHz = newDemand;
   RTC_Store.setDesiredPump(newDemand);
 }
 
-// set a transient setpoint for use by prgrammed timer starts
+// set a transient setpoint for use by programmed timer starts
 // setpoints only change if timer temperature is actually defined
 void
-CDemandManager::setFromTimer(uint8_t timerDemand)
+CDemandManager::setFromTimer(int8_t timerDemand)
 {
   if(timerDemand) {
     _setPumpHz = timerDemand;
@@ -154,20 +166,19 @@ CDemandManager::checkStart()
 }
 
 
-// generic method adjust the active heter demand.
+// generic method adjust the active heater demand.
 // thi may be Pump Hz or desired temeperature, dependent upon if thermostat mode is active
 bool 
-CDemandManager::setDemand(uint8_t newDemand)
+CDemandManager::setDemand(int8_t newDemand)
 {
   if(hasOEMcontroller())
     return false;
 
-  // bounds operate over the same range for either mode
-  BOUNDSLIMIT(newDemand, NVstore.getHeaterTuning().Tmin, NVstore.getHeaterTuning().Tmax);
-  
   // set and save the demand to NV storage
   // note that we now maintain fixed Hz and Thermostat set points seperately
   if(isThermostat()) {
+    // bounds operate over the same range for either mode
+    BOUNDSLIMIT(newDemand, NVstore.getHeaterTuning().Tmin, NVstore.getHeaterTuning().Tmax);
     setDegC(newDemand);
   }
   else {
@@ -183,7 +194,7 @@ CDemandManager::deltaDemand(int delta)
   if(hasOEMcontroller())
     return false;
 
-  uint8_t newDemand;
+  int8_t newDemand;
   if(isThermostat()) {
     newDemand = getDegC() + delta;
     setDegC(newDemand);
@@ -239,7 +250,7 @@ CDemandManager::isThermostat()
 }
 
 // generic get demand for Pump Hz or degC, as would be used in the value sent to the heater
-uint8_t
+int8_t
 CDemandManager::getDemand()
 {
   if(hasOEMcontroller()) {

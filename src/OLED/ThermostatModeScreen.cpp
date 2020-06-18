@@ -48,7 +48,7 @@ CThermostatModeScreen::CThermostatModeScreen(C128x64_OLED& display, CScreenManag
   _cyclicMode.init();
 }
 
-void 
+bool 
 CThermostatModeScreen::onSelect()
 {
   CUIEditScreen::onSelect();
@@ -56,6 +56,7 @@ CThermostatModeScreen::onSelect()
   _window = NVstore.getUserSettings().ThermostatWindow;
   _thermoMode = NVstore.getUserSettings().ThermostatMethod;
   _cyclicMode = NVstore.getUserSettings().cyclic;
+  return true;
 }
 
 void

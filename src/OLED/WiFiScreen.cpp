@@ -46,11 +46,12 @@ CWiFiScreen::CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditSc
   _initUI();
 }
 
-void
+bool
 CWiFiScreen::onSelect()
 {
   CScreen::onSelect();
   _initUI();
+  return true;
 }
 
 void

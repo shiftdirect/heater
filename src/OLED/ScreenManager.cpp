@@ -52,6 +52,7 @@
 #include "FrostScreen.h"
 #include "HumidityScreen.h"
 #include "WebPageUpdateScreen.h"
+#include "433MHzScreen.h"
 #include "LVCScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
@@ -358,8 +359,7 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
     menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
     menuloop.push_back(new CPrimingScreen(*_pDisplay, *this));          //  mode / priming
-    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
-      menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
+    menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
     menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
   }
   else if(NVstore.getUserSettings().menuMode == 1) {
@@ -371,8 +371,7 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CMenuTrunkScreen(*_pDisplay, *this));
     menuloop.push_back(new CBasicScreen(*_pDisplay, *this));            //  basic control
     menuloop.push_back(new CClockScreen(*_pDisplay, *this));          //  clock
-    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)            // has GPIO support
-      menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
+    menuloop.push_back(new CGPIOInfoScreen(*_pDisplay, *this));         //  GPIO info
   }
   _Screens.push_back(menuloop);
 
@@ -400,14 +399,11 @@ CScreenManager::_loadScreens()
   if(NVstore.getUserSettings().menuMode == 0) {  // standard heater control menu set
     menuloop.push_back(new CThermostatModeScreen(*_pDisplay, *this)); // thermostat settings screen
     menuloop.push_back(new CFrostScreen(*_pDisplay, *this)); // frost mode screen
-    if(getTempSensor().getBME280().getCount()) {
-      menuloop.push_back(new CHumidityScreen(*_pDisplay, *this)); // humidity settings screen
-    }
+    menuloop.push_back(new CHumidityScreen(*_pDisplay, *this)); // humidity settings screen
     menuloop.push_back(new CHomeMenuSelScreen(*_pDisplay, *this)); // Home menu settings screen
     menuloop.push_back(new CTimeoutsScreen(*_pDisplay, *this)); // Other options screen
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
-    if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
-      menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
+    menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }
   else if(NVstore.getUserSettings().menuMode == 1) {  // "no fiddle" menu set
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
@@ -415,8 +411,6 @@ CScreenManager::_loadScreens()
   else if(NVstore.getUserSettings().menuMode == 2) {  // no heater menu set
     menuloop.push_back(new CNoHeaterHomeMenuSelScreen(*_pDisplay, *this)); // No Heater Home menu settings screen
     menuloop.push_back(new CMenuSelScreen(*_pDisplay, *this)); // Menu mode screen
-    // if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO)   // has GPIO support ?
-    //   menuloop.push_back(new CGPIOSetupScreen(*_pDisplay, *this)); // GPIO settings screen
   }
   _Screens.push_back(menuloop);
 
@@ -432,6 +426,7 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CWiFiSTAScreen(*_pDisplay, *this));
     menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
     menuloop.push_back(new CBTScreen(*_pDisplay, *this));
+    menuloop.push_back(new C433MHzScreen(*_pDisplay, *this));
     if(getTempSensor().getBME280().getCount()) {
       menuloop.push_back(new CTempSensorScreen(*_pDisplay, *this));
       menuloop.push_back(new CBME280Screen(*_pDisplay, *this));
@@ -625,13 +620,16 @@ CScreenManager::refresh()
 		_pDisplay->display();
 }
 
-void 
+bool 
 CScreenManager::_enterScreen()
 {
+  bool retval = true;
   if(_menu >= 0) 
-    _Screens[_menu][_subMenu]->onSelect();
+    retval = _Screens[_menu][_subMenu]->onSelect();
 		
   reqUpdate();
+
+  return retval;
 }
 
 void
@@ -656,12 +654,13 @@ void
 CScreenManager::_changeSubMenu(int dir)
 {
   _leaveScreen();
-  _subMenu += dir;
-  int bounds = _Screens[_menu].size() - 1;
-  WRAPLIMITS(_subMenu, 0, bounds);
-  if(_menu == 0)
-    _rootMenu = _subMenu;  // track the root menu for when we branch then return
-  _enterScreen();
+  do {
+    _subMenu += dir;
+    int bounds = _Screens[_menu].size() - 1;
+    WRAPLIMITS(_subMenu, 0, bounds);
+    if(_menu == 0)
+      _rootMenu = _subMenu;  // track the root menu for when we branch then return
+  } while (!_enterScreen());
 }
 
 void 

@@ -47,13 +47,14 @@ CMQTTScreen::CMQTTScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEditSc
   _initUI();
 }
 
-void
+bool
 CMQTTScreen::onSelect()
 {
   CScreen::onSelect();
   _initUI();
   _IPScrollPos = 0;
   _UsernameScrollPos = 0;
+  return true;
 }
 
 

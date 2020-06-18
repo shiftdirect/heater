@@ -29,7 +29,6 @@
 #include "../Utility/NVStorage.h"
 #include "../Utility/DebugPort.h"
 
-
 // create ONE of the RTClib supported real time clock classes
 #if RTC_USE_DS3231 == 1
 RTC_DS3231Ex rtc;

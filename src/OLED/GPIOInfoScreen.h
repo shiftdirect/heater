@@ -35,6 +35,7 @@ class CGPIOInfoScreen : public CScreen
   void _initUI();
 public:
   CGPIOInfoScreen(C128x64_OLED& display, CScreenManager& mgr);
+  bool onSelect();
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);

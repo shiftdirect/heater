@@ -35,7 +35,7 @@ class CTimerChartScreen : public CUIEditScreen {
 
 public:
   CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr, int instance);
-  void onSelect();
+  bool onSelect();
   bool show();
   bool keyHandler(uint8_t event);
 };

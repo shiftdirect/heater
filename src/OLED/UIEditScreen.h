@@ -42,7 +42,7 @@ protected:
   int  _animateCount;
 public:
   CUIEditScreen(C128x64_OLED& display, CScreenManager& mgr);
-  virtual void onSelect();
+  virtual bool onSelect();
   bool show();
   bool keyHandler(uint8_t event);
   bool animate();

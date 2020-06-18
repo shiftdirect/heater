@@ -31,7 +31,7 @@ CTimeoutsScreen::CTimeoutsScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 {
 }
 
-void 
+bool 
 CTimeoutsScreen::onSelect()
 {
   CUIEditScreen::onSelect();
@@ -39,6 +39,7 @@ CTimeoutsScreen::onSelect()
   _frameRate = NVstore.getUserSettings().FrameRate; 
   _dispTimeout = NVstore.getUserSettings().dimTime; 
   _menuTimeout = NVstore.getUserSettings().menuTimeout; 
+  return true;
 }
 
 bool 

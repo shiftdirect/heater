@@ -45,10 +45,11 @@ CTimerChartScreen::CTimerChartScreen(C128x64_OLED& display, CScreenManager& mgr,
   _instance = instance;
 }
 
-void 
+bool 
 CTimerChartScreen::onSelect()
 {
   CTimerManager::condenseMap(condensed);
+  return true;
 }
 
 bool 

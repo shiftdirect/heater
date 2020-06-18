@@ -39,7 +39,7 @@ CFuelCalScreen::CFuelCalScreen(C128x64_OLED& display, CScreenManager& mgr) : CPa
   _mlPerStroke = 0.02;
 }
 
-void 
+bool 
 CFuelCalScreen::onSelect()
 {
   CPasswordScreen::onSelect();
@@ -47,6 +47,7 @@ CFuelCalScreen::onSelect()
   _mlPerStroke = NVstore.getHeaterTuning().pumpCal;
   _maxUsage = NVstore.getHeaterTuning().maxFuelUsage;
   _warnUsage = NVstore.getHeaterTuning().warnFuelUsage;
+  return true;
 }
 
 bool 

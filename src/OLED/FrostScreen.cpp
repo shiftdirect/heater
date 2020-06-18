@@ -30,13 +30,14 @@ CFrostScreen::CFrostScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEdit
 {
 }
 
-void 
+bool 
 CFrostScreen::onSelect()
 {
   CUIEditScreen::onSelect();
   _frostOn = NVstore.getUserSettings().FrostOn;
   _frostRise = NVstore.getUserSettings().FrostRise;
   _scrollChar = 0;
+  return true;
 }
 
 bool 

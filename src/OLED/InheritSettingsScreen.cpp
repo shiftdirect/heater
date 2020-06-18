@@ -40,12 +40,13 @@ CInheritSettingsScreen::CInheritSettingsScreen(C128x64_OLED& display, CScreenMan
   _initUI();
 }
 
-void 
+bool 
 CInheritSettingsScreen::onSelect()
 {
   // ensure standard entry to screen - especially after a dimming timeout
   CPasswordScreen::onSelect();
   _nAdoptSettings = hasOEMLCDcontroller() ? 1 : 2;
+  return true;
 }
 
 void 

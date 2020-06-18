@@ -30,11 +30,12 @@ CHomeMenuSelScreen::CHomeMenuSelScreen(C128x64_OLED& display, CScreenManager& mg
 {
 }
 
-void 
+bool 
 CHomeMenuSelScreen::onSelect()
 {
   CUIEditScreen::onSelect();
   _action = NVstore.getUserSettings().HomeMenu;
+  return true;
 }
 
 bool 
@@ -199,7 +200,7 @@ CNoHeaterHomeMenuSelScreen::CNoHeaterHomeMenuSelScreen(C128x64_OLED& display, CS
 {
 }
 
-void 
+bool 
 CNoHeaterHomeMenuSelScreen::onSelect()
 {
   CUIEditScreen::onSelect();
@@ -208,6 +209,7 @@ CNoHeaterHomeMenuSelScreen::onSelect()
   _menuTimeout = NVstore.getUserSettings().menuTimeout; 
   if(_action.onTimeout == 0 || _action.onTimeout == 1)
     _action.onTimeout = 2;
+  return true;
 }
 
 bool 

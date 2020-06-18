@@ -30,12 +30,16 @@ CHumidityScreen::CHumidityScreen(C128x64_OLED& display, CScreenManager& mgr) : C
 {
 }
 
-void 
+bool 
 CHumidityScreen::onSelect()
 {
+  if(getTempSensor().getBME280().getCount() == 0) 
+    return false;
+
   CUIEditScreen::onSelect();
   _humidityThresh = NVstore.getUserSettings().humidityStart;
   _scrollChar = 0;
+  return true;
 }
 
 bool 

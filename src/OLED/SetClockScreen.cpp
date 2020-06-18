@@ -41,11 +41,12 @@ CSetClockScreen::CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr) : C
   _initUI();
 }
 
-void
+bool
 CSetClockScreen::onSelect()
 {
   CScreen::onSelect();
   _initUI();
+  return true;
 }
 
 void

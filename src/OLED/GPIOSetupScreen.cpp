@@ -66,13 +66,17 @@ CGPIOSetupScreen::CGPIOSetupScreen(C128x64_OLED& display, CScreenManager& mgr) :
   _ExtHold = 0;
 }
 
-void 
+bool 
 CGPIOSetupScreen::onSelect()
 {
-  CUIEditScreen::onSelect();
-  _GPIOparams = NVstore.getUserSettings().GPIO;
-  _ExtHold = NVstore.getUserSettings().ExtThermoTimeout;
-  _repeatCount = -1;
+  if(getBoardRevision() != 0 && getBoardRevision() != BRD_V2_NOGPIO) {  // has GPIO support ?
+    CUIEditScreen::onSelect();
+    _GPIOparams = NVstore.getUserSettings().GPIO;
+    _ExtHold = NVstore.getUserSettings().ExtThermoTimeout;
+    _repeatCount = -1;
+    return true;
+  }
+  return false;
 }
 
 

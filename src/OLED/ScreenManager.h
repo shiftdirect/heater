@@ -44,7 +44,7 @@ class CScreenManager {
   unsigned long _DimTime_ms;
   unsigned long _MenuTimeout;
   bool _bReqUpdate;
-  void _enterScreen();
+  bool _enterScreen();
   void _leaveScreen();
   void _changeSubMenu(int dir);
   void _dim(bool state);
@@ -56,7 +56,7 @@ public:
   enum eUIRootMenus { DetailedControlUI, BasicControlUI, ClockUI, ModeUI, GPIOInfoUI, TrunkUI };
   enum eUITimerMenus { TimerOverviewUI, Timer1UI, Timer2UI, Timer3UI, Timer4UI, Timer5UI, Timer6UI, Timer7UI,
                        Timer8UI, Timer9UI, Timer10UI, Timer11UI, Timer12UI, Timer13UI, Timer14UI };
-  enum eUITuningMenus { MixtureUI, HeaterSettingsUI, FuelCalUI };
+  enum eUITuningMenus { MixtureUI, HeaterSettingsUI, FuelCalUI, LVCCalUI };
   enum eUIUserSettingsMenus { ExThermostatUI, FrostUI, HomeMenuUI, TimeIntervalsUI, TempSensorUI, GPIOUI };
   enum eUIBranchMenus { SetClockUI, InheritSettingsUI, HtrSettingsUI, DS18B20UI };
   enum eUISystemSettingsMenus { SysVerUI, SysHoursUI, SysWifiUI, SysBTUI };

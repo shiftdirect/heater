@@ -39,12 +39,13 @@ CLVCScreen::CLVCScreen(C128x64_OLED& display, CScreenManager& mgr) : CPasswordSc
   _LVC = 115;
 }
 
-void 
+bool 
 CLVCScreen::onSelect()
 {
   CPasswordScreen::onSelect();
   _initUI();
   _LVC = NVstore.getHeaterTuning().lowVolts;
+  return true;
 }
 
 bool 

@@ -227,6 +227,10 @@ CTimerManager::manageTime(int _hour, int _minute, int _dow)
   int minute = currentTime.minute();
   int dow = currentTime.dayOfTheWeek();
 
+  if(!INBOUNDS(dow, 0, 6)) DebugPort.printf("CTimerManager::manageTime out of bounds dow : %d\r\n", dow);
+  if(!INBOUNDS(minute, 0, 59)) DebugPort.printf("CTimerManager::manageTime out of bounds minute : %d\r\n", minute);
+  if(!INBOUNDS(hour, 0, 23)) DebugPort.printf("CTimerManager::manageTime out of bounds hour : %d\r\n", hour);
+
   int retval = 0;
   int dayMinute = (hour * 60) + minute;
   int newID = _weekMap[dow][dayMinute];

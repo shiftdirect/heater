@@ -25,7 +25,23 @@
 #include "../Utility/helpers.h"
 #include "../cfg/BTCConfig.h"
 #include "../Utility/macros.h"
+#include "BlueWireTask.h"
+#include "SmartError.h"
+#include "../Utility/FuelGauge.h"
+#include "../Utility/DataFilter.h"
+#include "../Utility/HourMeter.h"
+#include "../RTC/RTCStore.h"
 
+CProtocol BlueWireRxData;
+CProtocol BlueWireTxData;
+CProtocolPackage BlueWireData;
+
+void updateFilteredData(CProtocol& HeaterInfo);
+
+const CProtocolPackage& getHeaterInfo()
+{
+  return BlueWireData;
+}
 
 void 
 CProtocol::setCRC()
@@ -233,11 +249,19 @@ CProtocol::getVoltage_Supply() const
 }
 
 void 
-CProtocol::setAltitude(float altitude)
+CProtocol::setAltitude(float altitude, bool valid)
 {
   int16_t alt = (int16_t)altitude;
   Controller.Altitude_MSB = (alt >> 8) & 0xff;
   Controller.Altitude_LSB = (alt >> 0) & 0xff;
+  if(valid) {
+    Controller.Unknown1_MSB = 0xeb;   
+    Controller.Unknown1_LSB = 0x47;   
+  }
+  else {
+    Controller.Unknown1_MSB = 0x01;   // always 0x01
+    Controller.Unknown1_LSB = 0x2c;   // always 0x2c  16bit: "300 secs = max run without burn detected" ??
+  }
 }
 
 int
@@ -342,88 +366,88 @@ int CProtocolPackage::getRunStateEx() const
   return runstate;
 }	
 
-const char* Runstates [] PROGMEM = {
-  " Stopped/Ready ",      // 0
-  "Starting...",          // 1
-  "Igniting...",          // 2
-  "Ignition retry pause", // 3
-  "Ignited",              // 4
-  "Running",              // 5
-  "Stopping",             // 6 
-  "Shutting down",        // 7
-  "Cooling",              // 8
-  "Heating glow plug",    // 9  - interpreted state - actually runstate 2 with no pump action!
-  "Suspended",            // 10 - interpreted state - cyclic mode has suspended heater
-  "Suspending...",        // 11 - interpreted state - cyclic mode is suspending heater
-  "Suspend cooling",      // 12 - interpreted state - cyclic mode is suspending heater
-  "Unknown run state"     
-};
+// const char* Runstates [] PROGMEM = {
+//   " Stopped/Ready ",      // 0
+//   "Starting...",          // 1
+//   "Igniting...",          // 2
+//   "Ignition retry pause", // 3
+//   "Ignited",              // 4
+//   "Running",              // 5
+//   "Stopping",             // 6 
+//   "Shutting down",        // 7
+//   "Cooling",              // 8
+//   "Heating glow plug",    // 9  - interpreted state - actually runstate 2 with no pump action!
+//   "Suspended",            // 10 - interpreted state - cyclic mode has suspended heater
+//   "Suspending...",        // 11 - interpreted state - cyclic mode is suspending heater
+//   "Suspend cooling",      // 12 - interpreted state - cyclic mode is suspending heater
+//   "Unknown run state"     
+// };
 
  
 
-const char* 
-CProtocolPackage::getRunStateStr() const 
-{ 
-  uint8_t runstate = getRunStateEx();
-  UPPERLIMIT(runstate, 13);
-  if(runstate == 2 && getPump_Actual() == 0) {  // split runstate 2 - glow, then fuel
-    runstate = 9;
-  }
-  return Runstates[runstate]; 
-}
+// const char* 
+// CProtocolPackage::getRunStateStr() const 
+// { 
+//   uint8_t runstate = getRunStateEx();
+//   UPPERLIMIT(runstate, 13);
+//   if(runstate == 2 && getPump_Actual() == 0) {  // split runstate 2 - glow, then fuel
+//     runstate = 9;
+//   }
+//   return Runstates[runstate]; 
+// }
 
 
-const char* Errstates [] PROGMEM = {
-  "",                // [0] 
-  "",                // [1] 
-  "Low voltage",     // [2] E-01
-  "High voltage",    // [3] E-02
-  "Glow plug fault", // [4] E-03
-  "Pump fault",      // [5] E-04
-  "Overheat",        // [6] E-05
-  "Motor fault",     // [7] E-06
-  "Comms fault",     // [8] E-07
-  "Flame out",       // [9] E-08
-  "Temp sense",      // [10] E-09
-  "Ignition fail",   // [11] E-10          SmartError manufactured state - sensing runstate 2 -> >5
-  "Failed 1st ignite", // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
-  "Excess fuel usage", // [13] E-12  SmartError manufactured state - excess fuel consumed
-  "Unknown error?"   // mystery code!
-};
+// const char* Errstates [] PROGMEM = {
+//   "",                // [0] 
+//   "",                // [1] 
+//   "Low voltage",     // [2] E-01
+//   "High voltage",    // [3] E-02
+//   "Glow plug fault", // [4] E-03
+//   "Pump fault",      // [5] E-04
+//   "Overheat",        // [6] E-05
+//   "Motor fault",     // [7] E-06
+//   "Comms fault",     // [8] E-07
+//   "Flame out",       // [9] E-08
+//   "Temp sense",      // [10] E-09
+//   "Ignition fail",   // [11] E-10          SmartError manufactured state - sensing runstate 2 -> >5
+//   "Failed 1st ignite", // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
+//   "Excess fuel usage", // [13] E-12  SmartError manufactured state - excess fuel consumed
+//   "Unknown error?"   // mystery code!
+// };
 
-const char* ErrstatesEx [] PROGMEM = {
-  "E-00: OK",              // [0] 
-  "E-00: OK",              // [1]
-  "E-01: Low voltage",     // [2] E-01
-  "E-02: High voltage",    // [3] E-02
-  "E-03: Glow plug fault", // [4] E-03
-  "E-04: Pump fault",      // [5] E-04
-  "E-05: Overheat",        // [6] E-05
-  "E-06: Motor fault",     // [7] E-06
-  "E-07: No heater comms", // [8] E-07
-  "E-08: Flame out",       // [9] E-08
-  "E-09: Temp sense",      // [10] E-09
-  "E-10: Ignition fail",   // [11] E-10  SmartError manufactured state - sensing runstate 2 -> >5
-  "E-11: Failed 1st ignite",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
-  "E-12: Excess fuel shutdown", // [13] E-12  SmartError manufactured state - excess fuel consumed
-  "Unknown error?"   // mystery code!
-};
+// const char* ErrstatesEx [] PROGMEM = {
+//   "E-00: OK",              // [0] 
+//   "E-00: OK",              // [1]
+//   "E-01: Low voltage",     // [2] E-01
+//   "E-02: High voltage",    // [3] E-02
+//   "E-03: Glow plug fault", // [4] E-03
+//   "E-04: Pump fault",      // [5] E-04
+//   "E-05: Overheat",        // [6] E-05
+//   "E-06: Motor fault",     // [7] E-06
+//   "E-07: No heater comms", // [8] E-07
+//   "E-08: Flame out",       // [9] E-08
+//   "E-09: Temp sense",      // [10] E-09
+//   "E-10: Ignition fail",   // [11] E-10  SmartError manufactured state - sensing runstate 2 -> >5
+//   "E-11: Failed 1st ignite",  // [12] E-11  SmartError manufactured state - sensing runstate 2 -> 3
+//   "E-12: Excess fuel shutdown", // [13] E-12  SmartError manufactured state - excess fuel consumed
+//   "Unknown error?"   // mystery code!
+// };
 
-const char* 
-CProtocolPackage::getErrStateStr() const 
-{ 
-  uint8_t errstate = getErrState();
-  UPPERLIMIT(errstate, 13);
-  return Errstates[errstate]; 
-}
+// const char* 
+// CProtocolPackage::getErrStateStr() const 
+// { 
+//   uint8_t errstate = getErrState();
+//   UPPERLIMIT(errstate, 13);
+//   return Errstates[errstate]; 
+// }
 
-const char* 
-CProtocolPackage::getErrStateStrEx() const 
-{ 
-  uint8_t errstate = getErrState();
-  UPPERLIMIT(errstate, 13);
-  return ErrstatesEx[errstate]; 
-}
+// const char* 
+// CProtocolPackage::getErrStateStrEx() const 
+// { 
+//   uint8_t errstate = getErrState();
+//   UPPERLIMIT(errstate, 13);
+//   return ErrstatesEx[errstate]; 
+// }
 
 /*void  
 CProtocolPackage::setRefTime()
@@ -469,5 +493,54 @@ CProtocolPackage::getErrState() const
   else
     return Heater.getErrState(); 
  
+}
+
+
+void checkBlueWireRxEvents()
+{
+  // collect and process received heater data from blue wire task
+  if(BlueWireCommsTask.getRxQueue( BlueWireRxData.Data) ) {
+  // if(BlueWireRxQueue && xQueueReceive(BlueWireRxQueue, BlueWireRxData.Data, 0)) {
+    BlueWireData.set(BlueWireRxData, BlueWireTxData);
+    SmartError.monitor(BlueWireRxData);
+
+    updateFilteredData(BlueWireRxData);
+
+    FuelGauge.Integrate(BlueWireRxData.getPump_Actual());
+
+    if(INBOUNDS(BlueWireRxData.getRunState(), 1, 5)) {  // check for Low Voltage Cutout
+      SmartError.checkVolts(FilteredSamples.FastipVolts.getValue(), FilteredSamples.FastGlowAmps.getValue());
+      SmartError.checkfuelUsage();
+    }
+
+    // trap being in state 0 with a heater error - cancel user on memory to avoid unexpected cyclic restarts
+    if(RTC_Store.getUserStart() && (BlueWireRxData.getRunState() == 0) && (BlueWireRxData.getErrState() > 1)) {
+      DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+      // DebugPort.println("Forcing cyclic cancel due to error induced shutdown");
+      RTC_Store.setUserStart(false);
+    }
+
+    pHourMeter->monitor(BlueWireRxData);
+  }
+}
+
+void checkBlueWireTxEvents()
+{
+  // collect transmitted heater data from blue wire task
+  if(BlueWireCommsTask.getTxQueue(BlueWireTxData.Data) ) {
+
+  }
+  // if(BlueWireTxQueue && xQueueReceive(BlueWireTxQueue, BlueWireTxData.Data, 0)) {
+  // }
+}
+
+void updateFilteredData(CProtocol& HeaterInfo)
+{
+  FilteredSamples.ipVolts.update(HeaterInfo.getVoltage_Supply());
+  FilteredSamples.GlowVolts.update(HeaterInfo.getGlowPlug_Voltage());
+  FilteredSamples.GlowAmps.update(HeaterInfo.getGlowPlug_Current());
+  FilteredSamples.Fan.update(HeaterInfo.getFan_Actual());
+  FilteredSamples.FastipVolts.update(HeaterInfo.getVoltage_Supply());
+  FilteredSamples.FastGlowAmps.update(HeaterInfo.getGlowPlug_Current());
 }
 

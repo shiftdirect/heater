@@ -60,7 +60,7 @@ public:
   CScreenHeader(C128x64_OLED& disp, CScreenManager& mgr); 
   bool show(bool erase);
   bool animate();
-  void onSelect();
+  bool onSelect();
 };
 
 #endif // __SCREEN_HEADER_H__

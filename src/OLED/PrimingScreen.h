@@ -38,7 +38,7 @@ class CPrimingScreen : public CScreenHeader {
   void _initUI();
 public:
   CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void onSelect();
+  bool onSelect();
   void onExit();
   bool show();
   bool keyHandler(uint8_t event);

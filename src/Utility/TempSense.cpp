@@ -423,14 +423,14 @@ CBME280Sensor::getTemperature(float& tempReading, bool filtered)
     return false;
   }
 
-  long tDelta = millis() - _lastSampleTime;
+/*  long tDelta = millis() - _lastSampleTime;
   if(tDelta >= 0) {
     _bme.takeForcedMeasurement();
     float temperature = _bme.readTemperature();
     update(temperature);
     _lastSampleTime = millis() + 1000;
     DebugPort.println("Forced BME sensor reading");
-  }
+  }*/
 
   CSensor::getTemperature(tempReading, filtered);
 //  tempReading += NVstore.getHeaterTuning().BME280probe.offset;;
@@ -461,10 +461,18 @@ CBME280Sensor::getHumidity(float& reading, bool fresh)
 int 
 CBME280Sensor::getAllReadings(bme280_readings& readings) 
 {
+  _bme.takeForcedMeasurement();
   int retval = _bme.readAll(readings);
   _fAltitude = readings.altitude;
   _fHumidity = readings.humidity;
   update(readings.temperature);
+
+/*  _bme.takeForcedMeasurement();
+  readings.temperature = _bme.readTemperature();
+  update(readings.temperature);
+  _fAltitude = readings.altitude = _bme.readAltitude(1013.25);
+  _fHumidity =readings.humidity = _bme.readHumidity();
+  int retval = 0x07; // temperature read OK*/
 
   _lastSampleTime = millis() + 1000;
 

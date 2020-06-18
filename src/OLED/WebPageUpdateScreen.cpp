@@ -33,11 +33,11 @@ CWebPageUpdateScreen::CWebPageUpdateScreen(C128x64_OLED& display, CScreenManager
   _holdoff = 0;
 }
 
-void
+bool
 CWebPageUpdateScreen::onSelect() 
 {
   CScreen::onSelect();
-
+  return true;
 }
 
 

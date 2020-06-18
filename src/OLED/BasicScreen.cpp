@@ -27,7 +27,7 @@
 #include "../Utility/helpers.h"
 #include "../Utility/UtilClasses.h"
 #include "../Utility/NVStorage.h"
-#include "../Protocol/Protocol.h"
+#include "../Protocol/HeaterManager.h"
 #include "../Utility/TempSense.h"
 #include "../RTC/RTCStore.h"
 
@@ -123,7 +123,8 @@ CBasicScreen::show()
 
             if(CDemandManager::isThermostat()) {
               if(CDemandManager::isExtThermostatMode()) {
-                sprintf(msg, "External @ %.1fHz", getHeaterInfo().getPump_Fixed());
+//                sprintf(msg, "External @ %.1fHz", getHeaterInfo().getPump_Fixed());
+                sprintf(msg, "External @ %.1fHz", HeaterManager.getPumpDemand());
               }
               else {
                 float fTemp = CDemandManager::getDegC();
@@ -137,7 +138,8 @@ CBasicScreen::show()
               }
             }
             else {
-              sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
+              sprintf(msg, "Setpoint = %.1fHz", HeaterManager.getPumpDemand());
+              // sprintf(msg, "Setpoint = %.1fHz", getHeaterInfo().getPump_Fixed());
             }
             break;
           case 1:
@@ -288,7 +290,8 @@ CBasicScreen::keyHandler(uint8_t event)
       // hold CENTRE to turn ON or OFF
       if(event & key_Centre) {
         if(NVstore.getUserSettings().menuMode < 2) {
-          int runstate = getHeaterInfo().getRunStateEx();
+          // int runstate = getHeaterInfo().getRunStateEx();
+          int runstate = HeaterManager.getRunStateEx();
           if(runstate && !RTC_Store.getFrostOn()) {   // running, including cyclic mode idle
             if(repeatCount > 5) {
               repeatCount = -1;
@@ -399,8 +402,10 @@ CBasicScreen::showRunState()
   if(NVstore.getUserSettings().menuMode == 2)
     return;
 
-  int runstate = getHeaterInfo().getRunStateEx(); 
-  int errstate = getHeaterInfo().getErrState(); 
+  int runstate = HeaterManager.getRunStateEx(); 
+  int errstate = HeaterManager.getErrState(); 
+  // int runstate = getHeaterInfo().getRunStateEx(); 
+  // int errstate = getHeaterInfo().getErrState(); 
 
   if(errstate) errstate--;  // correct for +1 biased return value
 
@@ -423,11 +428,13 @@ CBasicScreen::showRunState()
     int yPos = _display.height() - 2*_display.textHeight();
     _printMenuText(xPos, yPos, msg, false, eCentreJustify);
 
-    toPrint = getHeaterInfo().getErrStateStr();
+    // toPrint = getHeaterInfo().getErrStateStr();
+    toPrint = HeaterManager.getErrStateStr();
   }
   else {
     if(runstate) {
-      toPrint = getHeaterInfo().getRunStateStr();
+      // toPrint = getHeaterInfo().getRunStateStr();
+      toPrint = HeaterManager.getRunStateStr();
       // simplify starting states
       switch(runstate) {
         case 1:

@@ -63,7 +63,7 @@ protected:
 public:
   CScreen(C128x64_OLED& disp, CScreenManager& mgr); 
   virtual ~CScreen(); 
-  virtual void onSelect();
+  virtual bool onSelect();
   virtual void onExit();
   virtual bool animate();
   virtual bool show();

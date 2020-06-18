@@ -33,6 +33,7 @@
 #include "../Utility/helpers.h"
 #include "../Utility/macros.h"
 #include "../Protocol/Protocol.h"
+#include "../Protocol/HeaterManager.h"
 #include "fonts/Arial.h"
 
 static const int Line3 = 20;       // system voltage
@@ -47,12 +48,13 @@ CSettingsScreen::CSettingsScreen(C128x64_OLED& display, CScreenManager& mgr) : C
   _initUI();
 }
 
-void 
+bool 
 CSettingsScreen::onSelect()
 {
   // ensure standard entry to screen - especially after a dimming timeout
   CPasswordScreen::onSelect();
   _initUI();
+  return true;
 }
 
 bool 
@@ -71,14 +73,22 @@ CSettingsScreen::show()
 
   if(!CPasswordScreen::show()) {
 
-    sprintf(str, "%.0fV", getHeaterInfo().getSystemVoltage());
-    _printMenuText(_display.width(), Line3, str, false, eRightJustify);
+    if(HeaterManager.getHeaterStyle() == 0) {
 
-    sprintf(str, "Min: %.1f/%d", getHeaterInfo().getPump_Min(), getHeaterInfo().getFan_Min());
-    _printMenuText(0, Line3, str);
+      sprintf(str, "%.0fV", getHeaterInfo().getSystemVoltage());
+      _printMenuText(_display.width(), Line3, str, false, eRightJustify);
 
-    sprintf(str, "Max: %.1f/%d", getHeaterInfo().getPump_Max(), getHeaterInfo().getFan_Max());
-    _printMenuText(0, Line2, str);
+      sprintf(str, "Min: %.1f/%d", getHeaterInfo().getPump_Min(), getHeaterInfo().getFan_Min());
+      _printMenuText(0, Line3, str);
+
+      sprintf(str, "Max: %.1f/%d", getHeaterInfo().getPump_Max(), getHeaterInfo().getFan_Max());
+      _printMenuText(0, Line2, str);
+
+    }
+    else {
+      _printMenuText(64, Line3, "Alternate Heater", false, eCentreJustify);
+      _printMenuText(64, Line2, "ECU cannot be tuned", false, eCentreJustify);
+    }
 
     int yPos = 53;
     int xPos = _display.xCentre();
@@ -102,32 +112,33 @@ CSettingsScreen::animate()
     _printMenuText(Column, Line2, "    ");
   }
   else {
-    _animateCount++;
-    WRAPUPPERLIMIT(_animateCount, 9, 0);
+    if(HeaterManager.getHeaterStyle() == 0) {
+      _animateCount++;
+      WRAPUPPERLIMIT(_animateCount, 9, 0);
 
-    int glowDrive = getHeaterInfo().getGlow_Drive();
-    _printMenuText(Column, Line1, "     ");
-    if(_animateCount < 4) {
-      sprintf(msg, "PF-%d", glowDrive);
-      _printMenuText(Column+6, Line1, msg);
-    }
-    else {
-      sprintf(msg, "(%dW)", plugPowers[glowDrive-1]);
-      _printMenuText(Column, Line1, msg);
-    }
+      int glowDrive = getHeaterInfo().getGlow_Drive();
+      _printMenuText(Column, Line1, "     ");
+      if(_animateCount < 4) {
+        sprintf(msg, "PF-%d", glowDrive);
+        _printMenuText(Column+6, Line1, msg);
+      }
+      else {
+        sprintf(msg, "(%dW)", plugPowers[glowDrive-1]);
+        _printMenuText(Column, Line1, msg);
+      }
 
-    int fanSensor = getHeaterInfo().getFan_Sensor();
-    if(_animateCount < 4) {
-      sprintf(msg, "SN-%d", fanSensor);
-      _printMenuText(Column+6, Line2, msg);
+      int fanSensor = getHeaterInfo().getFan_Sensor();
+      if(_animateCount < 4) {
+        sprintf(msg, "SN-%d", fanSensor);
+        _printMenuText(Column+6, Line2, msg);
+      }
+      else {
+        int xPos = Column+6;
+        _printMenuText(xPos, Line2, "    "); // erase
+        sprintf(msg, "(\365%d)", fanSensor);   // \365 is division character
+        _printMenuText(xPos, Line2, msg);
+      }
     }
-    else {
-      int xPos = Column+6;
-      _printMenuText(xPos, Line2, "    "); // erase
-      sprintf(msg, "(\365%d)", fanSensor);   // \365 is division character
-      _printMenuText(xPos, Line2, msg);
-    }
-
   }
   return true;
 }
@@ -137,7 +148,12 @@ CSettingsScreen::keyHandler(uint8_t event)
 {
   if(CPasswordScreen::keyHandler(event)) {  // handles password collection 
     if(_isPasswordOK()) {
-      _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop);
+      if(HeaterManager.getHeaterStyle() == 0) {
+        _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop);
+      }
+      else {
+        _ScreenManager.selectMenu(CScreenManager::TuningMenuLoop, CScreenManager::FuelCalUI);
+      }
     }
     return true;
   }

@@ -30,6 +30,7 @@
 #include "../Utility/FuelGauge.h"
 #include "../RTC/RTCStore.h"
 #include "../Utility/DemandManager.h"
+#include "../Protocol/HeaterManager.h"
 
 
 #define MINIFONT miniFontInfo
@@ -87,8 +88,10 @@ CDetailedScreen::show()
   
   CScreenHeader::show(false);
 
-  int runstate = getHeaterInfo().getRunStateEx();
-  int errstate = getHeaterInfo().getErrState(); 
+  int runstate = HeaterManager.getRunStateEx();
+  int errstate = HeaterManager.getErrState(); 
+  // int runstate = getHeaterInfo().getRunStateEx();
+  // int errstate = getHeaterInfo().getErrState(); 
   if(errstate) errstate--;  // correct for +1 biased return value
   
   long tDelta = millis() - _showTarget;
@@ -103,7 +106,8 @@ CDetailedScreen::show()
       desiredT = CDemandManager::getDemand();
     }
     else {
-      fPump = getHeaterInfo().getPump_Fixed();
+//      fPump = getHeaterInfo().getPump_Fixed();
+      fPump = HeaterManager.getPumpDemand();
       if(NVstore.getUserSettings().cyclic.isEnabled())
         desiredT = CDemandManager::getDegC();
     }
@@ -120,23 +124,37 @@ CDetailedScreen::show()
   bool bGlowActive = false;
 
   if(runstate != 0 && runstate != 10) {  // not idle modes
-    float power = getHeaterInfo().getGlowPlug_Power();
-    if(power > 1) {
+    float power = HeaterManager.getGlowPlugPower();
+    if(power != 0) {
       showGlowPlug(power);
       bGlowActive = true;
     }
-
     if(_showTarget)
-      showFanV(getHeaterInfo().getFan_Voltage());
+      showFanV(HeaterManager.getFanVoltage());
     else
-      showFan(getHeaterInfo().getFan_Actual());
+      showFan(HeaterManager.getFanRPM());
 
-    showFuel(getHeaterInfo().getPump_Actual());
+    showFuel(HeaterManager.getPumpRate());
 
-    showBodyThermometer(getHeaterInfo().getTemperature_HeatExchg());
+    showBodyThermometer(HeaterManager.getBodyTemp());
+
+    // float power = getHeaterInfo().getGlowPlug_Power();
+    // if(power > 1) {
+    //   showGlowPlug(power);
+    //   bGlowActive = true;
+    // }
+
+    // if(_showTarget)
+    //   showFanV(getHeaterInfo().getFan_Voltage());
+    // else
+    //   showFan(getHeaterInfo().getFan_Actual());
+
+    // showFuel(getHeaterInfo().getPump_Actual());
+
+    // showBodyThermometer(getHeaterInfo().getTemperature_HeatExchg());
   }
 
-  if(!bGlowActive) {
+  if(!bGlowActive && HeaterManager.getHeaterStyle() == 0) {
     showBowser(FuelGauge.Used_mL());
   }
   showRunState(runstate, errstate);
@@ -218,7 +236,8 @@ CDetailedScreen::keyHandler(uint8_t event)
       }
 
       if(event & key_Centre) {
-        int runstate = getHeaterInfo().getRunStateEx();
+        // int runstate = getHeaterInfo().getRunStateEx();
+        int runstate = HeaterManager.getRunStateEx();
         if(runstate && !RTC_Store.getFrostOn()) {   // running, including cyclic mode idle
           if(_keyRepeatCount > 5) {
             _keyRepeatCount = -1;        // prevent double handling
@@ -387,6 +406,11 @@ CDetailedScreen::showThermometer(float fDesired, float fActual, float fPump)
 void 
 CDetailedScreen::showBodyThermometer(int actual) 
 {
+  if(HeaterManager.getHeaterStyle() == 1 && HeaterManager.getRunState() > 5 ) {
+    // don't get body temp updates on crappy heater ECUs once shutting down
+    return;
+  }
+
   // draw bulb design
   _drawBitmap(X_BODY_BULB, Y_BULB, BodyThermometerIconInfo);
   // draw mercury
@@ -418,14 +442,16 @@ CDetailedScreen::showGlowPlug(float power)
 {
   _drawBitmap(X_GLOW_ICON, Y_GLOW_ICON, GlowPlugIconInfo);
 //  _animateGlow = true;
-  char msg[16];
-  sprintf(msg, "%.0fW", power);
+  if(power > 0) {
+    char msg[16];
+    sprintf(msg, "%.0fW", power);
 #ifdef MINI_GLOWLABEL  
-  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _printMenuText(X_GLOW_ICON + (GlowPlugIconInfo.width/2), 
-                Y_GLOW_ICON + GlowPlugIconInfo.height + 3,
-                msg, false, eCentreJustify);
+    _printMenuText(X_GLOW_ICON + (GlowPlugIconInfo.width/2), 
+                  Y_GLOW_ICON + GlowPlugIconInfo.height + 3,
+                  msg, false, eCentreJustify);
+  }
 }
 
 void 
@@ -435,12 +461,14 @@ CDetailedScreen::showFan(int RPM)
   _animateRPM = RPM != 0;   // used by animation routine
 
   _display.setTextColor(WHITE);
-  char msg[16];
-  sprintf(msg, "%d", RPM);
+  if(RPM > 0) {
+    char msg[16];
+    sprintf(msg, "%d", RPM);
 #ifdef MINI_FANLABEL  
-  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _printMenuText(X_FAN_ICON + (FanIcon1Info.width/2), Y_BASELINE, msg, false, eCentreJustify);
+    _printMenuText(X_FAN_ICON + (FanIcon1Info.width/2), Y_BASELINE, msg, false, eCentreJustify);
+  }
 }
 
 void 
@@ -450,12 +478,14 @@ CDetailedScreen::showFanV(float volts)
   _animateRPM = volts != 0;   // used by animation routine
 
   _display.setTextColor(WHITE);
-  char msg[16];
-  sprintf(msg, "%.1fV", volts);
+  if(volts > 0) {
+    char msg[16];
+    sprintf(msg, "%.1fV", volts);
 #ifdef MINI_FANLABEL  
-  CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
+    CTransientFont AF(_display, &MINIFONT);  // temporarily use a mini font
 #endif
-  _printMenuText(X_FAN_ICON + (FanIcon1Info.width/2), Y_BASELINE, msg, false, eCentreJustify);
+    _printMenuText(X_FAN_ICON + (FanIcon1Info.width/2), Y_BASELINE, msg, false, eCentreJustify);
+  }
 }
 
 void 
@@ -463,7 +493,7 @@ CDetailedScreen::showFuel(float rate)
 {
   // NOTE: fuel drop animation performed in animateOLED
   _animatePump = rate != 0;    // used by animation routine
-  if(rate) {
+  if(rate > 0) {
     char msg[16];
     sprintf(msg, "%.1f", rate);
 #ifdef MINI_FUELLABEL
@@ -510,11 +540,13 @@ CDetailedScreen::showRunState(int runstate, int errstate)
       _display.printCentreJustified("          ");
     }
     yPos += _display.textHeight();
-    toPrint = getHeaterInfo().getErrStateStr();
+    // toPrint = getHeaterInfo().getErrStateStr();
+    toPrint = HeaterManager.getErrStateStr();
   }
   else {
     // no errors, heater normal
-    toPrint = getHeaterInfo().getRunStateStr();
+//    toPrint = getHeaterInfo().getRunStateStr();
+    toPrint = HeaterManager.getRunStateStr();
   }
   if(toPrint) {
     _printMenuText(_display.xCentre(), yPos, toPrint, false, eCentreJustify);

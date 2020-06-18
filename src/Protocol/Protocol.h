@@ -162,7 +162,7 @@ public:
   int16_t getTemperature_HeatExchg() const; // temperature of heat exchanger
   void setTemperature_HeatExchg(uint16_t degC); // temperature of heat exchanger
   // altitude
-  void setAltitude(float altitude);
+  void setAltitude(float altitude, bool valid);
   int  getAltitude() const;
 
   void DebugReport(const char* hdr, const char* ftr);
@@ -216,6 +216,9 @@ public:
 //  void  setRefTime();
   void  reportFrames(bool isOEM, std::function<void(const char*)> pushMsg);
 };
+
+void checkBlueWireRxEvents();
+void checkBlueWireTxEvents();
 
 extern const CProtocolPackage& getHeaterInfo();
 

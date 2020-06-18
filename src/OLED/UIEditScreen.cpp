@@ -41,11 +41,12 @@ CUIEditScreen::CUIEditScreen(C128x64_OLED& display, CScreenManager& mgr) : CScre
   _initUI();
 }
 
-void
+bool
 CUIEditScreen::onSelect()
 {
   CScreen::onSelect();
   _initUI();
+  return true;
 }
 
 void

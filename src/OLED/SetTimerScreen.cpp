@@ -55,12 +55,13 @@ CSetTimerScreen::CSetTimerScreen(C128x64_OLED& display, CScreenManager& mgr, int
   _timerID = instance;
 }
 
-void 
+bool 
 CSetTimerScreen::onSelect()
 {
   CUIEditScreen::onSelect();
   _initUI();
   NVstore.getTimerInfo(_timerID, _timerInfo);
+  return true;
 }
 
 bool 

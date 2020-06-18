@@ -34,6 +34,7 @@
 #include "../cfg/BTCConfig.h"
 #include "macros.h"
 #include "../Protocol/Protocol.h"
+#include "../Protocol/HeaterManager.h"
 #include <string.h>
 #include "HourMeter.h"
 #include "TempSense.h"
@@ -172,27 +173,41 @@ bool makeJSONString(CModerator& moderator, char* opStr, int len)
   bSend |= moderator.addJson("TempDesired", CDemandManager::getDemand(), root); 
 	bSend |= moderator.addJson("TempMode", NVstore.getUserSettings().degF, root); 
   if(NVstore.getUserSettings().menuMode < 2) {
-    bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
-    bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
-    bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root, 5000); 
-    bSend |= moderator.addJson("RunState", getHeaterInfo().getRunStateEx(), root);
-    bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
-    bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
-    bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!
+    if(HeaterManager.getHeaterStyle() == 0) {
+      bSend |= moderator.addJson("TempMin", getHeaterInfo().getTemperature_Min(), root); 
+      bSend |= moderator.addJson("TempMax", getHeaterInfo().getTemperature_Max(), root); 
+    }
+//    bSend |= moderator.addJson("TempBody", getHeaterInfo().getTemperature_HeatExchg(), root, 5000); 
+    // bSend |= moderator.addJson("RunState", getHeaterInfo().getRunStateEx(), root);
+    // bSend |= moderator.addJson("RunString", getHeaterInfo().getRunStateStr(), root); // verbose it up!
+    // bSend |= moderator.addJson("ErrorState", getHeaterInfo().getErrState(), root );
+    // bSend |= moderator.addJson("ErrorString", getHeaterInfo().getErrStateStrEx(), root); // verbose it up!
+    bSend |= moderator.addJson("TempBody", HeaterManager.getBodyTemp(), root, 5000); 
+    bSend |= moderator.addJson("RunState", HeaterManager.getRunStateEx(), root);
+    bSend |= moderator.addJson("RunString", HeaterManager.getRunStateStr(), root); // verbose it up!
+    bSend |= moderator.addJson("ErrorState", HeaterManager.getErrState(), root );
+    bSend |= moderator.addJson("ErrorString", HeaterManager.getErrStateStrEx(), root); // verbose it up!
     bSend |= moderator.addJson("Thermostat", CDemandManager::isThermostat(), root );
     bSend |= moderator.addJson("PumpFixed", getHeaterInfo().getPump_Fixed(), root );
-    bSend |= moderator.addJson("PumpMin", getHeaterInfo().getPump_Min(), root );
-    bSend |= moderator.addJson("PumpMax", getHeaterInfo().getPump_Max(), root );
-    bSend |= moderator.addJson("PumpActual", getHeaterInfo().getPump_Actual(), root );
-    bSend |= moderator.addJson("FanMin", getHeaterInfo().getFan_Min(), root );
-    bSend |= moderator.addJson("FanMax", getHeaterInfo().getFan_Max(), root );
+    if(HeaterManager.getHeaterStyle() == 0) {
+      bSend |= moderator.addJson("PumpMin", getHeaterInfo().getPump_Min(), root );
+      bSend |= moderator.addJson("PumpMax", getHeaterInfo().getPump_Max(), root );
+      bSend |= moderator.addJson("FanMin", getHeaterInfo().getFan_Min(), root );
+      bSend |= moderator.addJson("FanMax", getHeaterInfo().getFan_Max(), root );
+      bSend |= moderator.addJson("FanVoltage", HeaterManager.getFanVoltage(), root, 2500 );
+      bSend |= moderator.addJson("FanSensor", getHeaterInfo().getFan_Sensor(), root );
+      bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getSystemVoltage(), root );
+      bSend |= moderator.addJson("GlowVoltage", getGlowVolts(), root, 5000 );
+      bSend |= moderator.addJson("GlowCurrent", getGlowCurrent(), root, 5000 );
+    }
+    else {
+      bSend |= moderator.addJson("GlowCurrent", HeaterManager.getGlowPlugPower(), root, 5000 );
+    }
+    // bSend |= moderator.addJson("PumpActual", getHeaterInfo().getPump_Actual(), root );
+    bSend |= moderator.addJson("PumpActual", HeaterManager.getPumpRate(), root );
     bSend |= moderator.addJson("FanRPM", getFanSpeed(), root, 2000 );
-    bSend |= moderator.addJson("FanVoltage", getHeaterInfo().getFan_Voltage(), root, 2500 );
-    bSend |= moderator.addJson("FanSensor", getHeaterInfo().getFan_Sensor(), root );
+    // bSend |= moderator.addJson("FanVoltage", getHeaterInfo().getFan_Voltage(), root, 2500 );
     bSend |= moderator.addJson("InputVoltage", getBatteryVoltage(false), root, 10000 );
-    bSend |= moderator.addJson("SystemVoltage", getHeaterInfo().getSystemVoltage(), root );
-    bSend |= moderator.addJson("GlowVoltage", getGlowVolts(), root, 5000 );
-    bSend |= moderator.addJson("GlowCurrent", getGlowCurrent(), root, 5000 );
     bSend |= moderator.addJson("BluewireStat", getBlueWireStatStr(), root );
   }
 
@@ -251,6 +266,7 @@ bool makeJSONStringEx(CModerator& moderator, char* opStr, int len)
     humidity =  int(humidity * 10 + 0.5) * 0.1f;  // round to 0.1 resolution 
     bSend |= moderator.addJson("Humidity", humidity, root, 30000);     // BME280 ONLY
   }
+  bSend |= moderator.addJson("SystemECUType", HeaterManager.getHeaterStyle(), root);  // system ECU tyoe
 
   if(bSend) {
 		root.printTo(opStr, len);

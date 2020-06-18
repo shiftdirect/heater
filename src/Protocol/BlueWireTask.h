@@ -24,6 +24,7 @@
 
 #include <FreeRTOS.h>
 #include "../Utility/UtilClasses.h"
+#include "CommsTask.h"
 
 extern QueueHandle_t BlueWireMsgQueue;    // cannot use general Serial.print etc from this task without causing conflicts
 extern QueueHandle_t BlueWireRxQueue;   // queue to pass down heater receive data
@@ -33,8 +34,21 @@ extern SemaphoreHandle_t BlueWireSemaphore;  // flag to indicate completion of h
 const int BLUEWIRE_MSGQUEUESIZE = 192;
 const int BLUEWIRE_DATAQUEUESIZE = 24;
 
-extern void BlueWireTask(void*);
+// extern void BlueWireTask(void*);
 extern CommStates CommState;
 
+class CBlueWireCommsTask : public CCommsTask {
+protected:
+  static void commsTask(void* arg);
+  void _initSerial();
+  void _task();
+
+public:
+  CBlueWireCommsTask();
+  void taskStart();
+
+};
+
+extern CBlueWireCommsTask BlueWireCommsTask;  // AltCommsTaskInfo;
 
 #endif

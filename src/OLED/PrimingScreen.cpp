@@ -44,12 +44,13 @@ CPrimingScreen::CPrimingScreen(C128x64_OLED& display, CScreenManager& mgr) : CSc
   _initUI();
 }
 
-void
+bool
 CPrimingScreen::onSelect()
 {
   CScreenHeader::onSelect();
   _stopPump();
   _initUI();
+  return true;
 }
 
 void 

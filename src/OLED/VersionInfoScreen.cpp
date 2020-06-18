@@ -54,11 +54,12 @@ CVersionInfoScreen::CVersionInfoScreen(C128x64_OLED& display, CScreenManager& mg
 {
 }
 
-void 
+bool 
 CVersionInfoScreen::onSelect()
 {
   CUIEditScreen::onSelect();
   checkFOTA();
+  return true;
 }
 
 bool 

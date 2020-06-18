@@ -61,10 +61,11 @@ CScreen::show()
   return false;
 }
 
-void 
+bool 
 CScreen::onSelect()
 {
   _display.clearDisplay();
+  return true;
 }
 
 void

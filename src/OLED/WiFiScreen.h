@@ -31,7 +31,7 @@ class CScreenManager;
 class CWiFiScreen : public CUIEditScreen {
 public:
   CWiFiScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void onSelect();
+  bool onSelect();
   bool show();
   bool animate();
   bool keyHandler(uint8_t event);

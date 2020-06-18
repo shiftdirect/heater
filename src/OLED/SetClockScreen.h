@@ -40,7 +40,7 @@ class CSetClockScreen : public CUIEditScreen {
 
 public:
   CSetClockScreen(C128x64_OLED& display, CScreenManager& mgr);
-  void onSelect();
+  bool onSelect();
   bool show();
   void showTime(int);
   bool keyHandler(uint8_t event);
