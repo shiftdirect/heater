@@ -46,14 +46,13 @@ C433MHzScreen::C433MHzScreen(C128x64_OLED& display, CScreenManager& mgr) : CUIEd
   _initUI();
 }
 
-bool
+void
 C433MHzScreen::onSelect()
 {
   CScreen::onSelect();
   _initUI();
   pair433MHz = true;
   UHFremote.getCodes(_rawCodes);
-  return true;
 }
 
 void 

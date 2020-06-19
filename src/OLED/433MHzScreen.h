@@ -44,7 +44,7 @@ class C433MHzScreen : public CUIEditScreen {
   uint8_t _repeatCount;
 public:
   C433MHzScreen(C128x64_OLED& display, CScreenManager& mgr);
-  bool onSelect();
+  void onSelect();
   void onExit();
   bool show();
   bool animate();

@@ -134,7 +134,7 @@
 
 const int FirmwareRevision = 32;
 const int FirmwareSubRevision = 1;
-const int FirmwareMinorRevision = ;
+const int FirmwareMinorRevision = 1;  // used for beta version - zero for releases
 const char* FirmwareDate = "19 Jun 2020";
 
 /*
@@ -1174,9 +1174,12 @@ bool getGPIOout(int channel)
 #endif
 }
 
-float getVersion()
+float getVersion(bool betarevision)
 {
-  return float(FirmwareRevision) * 0.1f + float(FirmwareSubRevision) * .001f;
+  if(betarevision)
+    return float(FirmwareMinorRevision);
+  else
+    return float(FirmwareRevision) * 0.1f + float(FirmwareSubRevision) * .001f;
 }
 
 const char* getVersionStr(bool beta) {
