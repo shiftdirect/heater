@@ -52,6 +52,7 @@
 #include "FrostScreen.h"
 #include "HumidityScreen.h"
 #include "WebPageUpdateScreen.h"
+#include "433MHzScreen.h"
 #include "LVCScreen.h"
 #include <Wire.h>
 #include "../cfg/pins.h"
@@ -432,6 +433,7 @@ CScreenManager::_loadScreens()
     menuloop.push_back(new CWiFiSTAScreen(*_pDisplay, *this));
     menuloop.push_back(new CMQTTScreen(*_pDisplay, *this));
     menuloop.push_back(new CBTScreen(*_pDisplay, *this));
+    menuloop.push_back(new C433MHzScreen(*_pDisplay, *this));
     if(getTempSensor().getBME280().getCount()) {
       menuloop.push_back(new CTempSensorScreen(*_pDisplay, *this));
       menuloop.push_back(new CBME280Screen(*_pDisplay, *this));

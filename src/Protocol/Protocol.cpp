@@ -233,11 +233,19 @@ CProtocol::getVoltage_Supply() const
 }
 
 void 
-CProtocol::setAltitude(float altitude)
+CProtocol::setAltitude(float altitude, bool valid)
 {
   int16_t alt = (int16_t)altitude;
   Controller.Altitude_MSB = (alt >> 8) & 0xff;
   Controller.Altitude_LSB = (alt >> 0) & 0xff;
+  if(valid) {
+    Controller.Unknown1_MSB = 0xeb;   
+    Controller.Unknown1_LSB = 0x47;   
+  }
+  else {
+    Controller.Unknown1_MSB = 0x01;   // always 0x01
+    Controller.Unknown1_LSB = 0x2c;   // always 0x2c  16bit: "300 secs = max run without burn detected" ??
+  }
 }
 
 int

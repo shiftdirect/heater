@@ -66,7 +66,7 @@ CBME280Screen::show()
       _printMenuText(64, 16, "Sensor not found", false, eCentreJustify);
     }
 
-    _printMenuText(_display.xCentre(), 52, " \021      Exit      \020 ", true, eCentreJustify);
+    _printMenuText(_display.xCentre(), 53, " \021      Exit      \020 ", true, eCentreJustify);
   }
 
   return true;

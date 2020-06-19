@@ -382,7 +382,9 @@ void BlueWireTask(void*) {
 #if DBG_FREERTOS == 1
     digitalWrite(GPIOout1_pin, LOW);
 #endif
-    vTaskDelay(1);
+    if (!BlueWireSerial.available()) {
+      vTaskDelay(1);
+    }
 #if DBG_FREERTOS == 1
     digitalWrite(GPIOout1_pin, HIGH);
 #endif

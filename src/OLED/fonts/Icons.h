@@ -97,11 +97,16 @@ extern const BITMAP_INFO BulbOffIconInfo;
 
 // Bitmap for start
 extern const BITMAP_INFO StartIconInfo;
+extern const BITMAP_INFO medStartIconInfo;
 extern const BITMAP_INFO miniStartIconInfo;
 
 // Bitmap sizes for stop
 extern const BITMAP_INFO StopIconInfo;
+extern const BITMAP_INFO medStopIconInfo;
 extern const BITMAP_INFO miniStopIconInfo;
+
+extern const BITMAP_INFO dnIconInfo;
+extern const BITMAP_INFO upIconInfo;
 
 // Bitmap for displayTimeout
 extern const BITMAP_INFO DisplayTimeoutIconInfo;

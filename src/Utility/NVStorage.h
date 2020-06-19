@@ -326,6 +326,7 @@ struct sUserSettings : public CESP32_NVStorage {
   uint8_t clock12hr;
   uint8_t holdPassword;
   uint8_t humidityStart;
+  uint32_t UHFcode[3];
 
   bool valid() {
     bool retval = true;
@@ -347,7 +348,7 @@ struct sUserSettings : public CESP32_NVStorage {
     retval &= HomeMenu.valid();
     retval &= JSON.valid();
     return retval;  
-  }
+  };
   void init() {
     dimTime = 60000;
     menuTimeout = 60000;
@@ -375,6 +376,9 @@ struct sUserSettings : public CESP32_NVStorage {
     clock12hr = 0;
     holdPassword = 0;
     humidityStart = 0;
+    UHFcode[0] = 0;
+    UHFcode[1] = 0;
+    UHFcode[2] = 0;
   };
   void load();
   void save();
@@ -390,13 +394,7 @@ struct sUserSettings : public CESP32_NVStorage {
     useThermostat = rhs.useThermostat;
     wifiMode = rhs.wifiMode;
     enableOTA = rhs.enableOTA;
-    GPIO.in1Mode = rhs.GPIO.in1Mode;
-    GPIO.in2Mode = rhs.GPIO.in2Mode;
-    GPIO.out1Mode = rhs.GPIO.out1Mode;
-    GPIO.out2Mode = rhs.GPIO.out2Mode;
-    GPIO.algMode = rhs.GPIO.algMode;
-    GPIO.thresh[0] = rhs.GPIO.thresh[0];
-    GPIO.thresh[1] = rhs.GPIO.thresh[1];
+    GPIO = rhs.GPIO;
     FrameRate = rhs.FrameRate;
     cyclic = rhs.cyclic;
     HomeMenu = rhs.HomeMenu;
@@ -405,6 +403,9 @@ struct sUserSettings : public CESP32_NVStorage {
     clock12hr = rhs.clock12hr;
     holdPassword = rhs.holdPassword;
     humidityStart = rhs.humidityStart;
+    UHFcode[0] = rhs.UHFcode[0];
+    UHFcode[1] = rhs.UHFcode[1];
+    UHFcode[2] = rhs.UHFcode[2];
     return *this;
   }
 };
@@ -433,11 +434,12 @@ struct sNVStore {
 
 
 class CHeaterStorage /*: public CESP32_NVStorage*/ {
+  SemaphoreHandle_t _semaphore;
 protected:
   sNVStore _calValues;
 public:
   CHeaterStorage();
-  virtual ~CHeaterStorage() {};
+  virtual ~CHeaterStorage();
 
 // TODO: These are only here to allow building without fully 
 // fleshing out NV storage for Due, Mega etc
@@ -465,6 +467,8 @@ public:
   void setUserSettings(const sUserSettings& info);
   void setHeaterTuning(const sHeaterTuning& info);
   bool setHourMeter(const sHourMeter& info);
+  void takeSemaphore();
+  void giveSemaphore();
 };
 
 

@@ -636,6 +636,18 @@ const uint8_t PROGMEM startIcon[]  =
 };
 const BITMAP_INFO StartIconInfo(5, 9, startIcon);
 
+const uint8_t PROGMEM medStartIcon[]  =
+{
+	0x80, // #    
+	0xC0, // ##   
+	0xE0, // ###  
+	0xF0, // #### 
+	0xE0, // ###  
+	0xC0, // ##   
+	0x80, // #    
+};
+const BITMAP_INFO medStartIconInfo(4, 7, medStartIcon);
+
 const uint8_t PROGMEM miniStartIcon[]  =
 {
 	0x80, // #    
@@ -659,6 +671,33 @@ const uint8_t PROGMEM stopIcon[]  =
 	0x00, //       
 };
 const BITMAP_INFO StopIconInfo(6, 8, stopIcon);
+const uint8_t PROGMEM medStopIcon[]  =
+{
+	0xF8, // #####
+	0xF8, // #####
+	0xF8, // #####
+	0xF8, // #####
+	0xF8, // #####
+};
+const BITMAP_INFO medStopIconInfo(5, 5, medStopIcon);
+
+// 'wifiInIcon, 5x5px
+const uint8_t dnIcon [] PROGMEM = {
+  0xfe,    //   #######
+  0x7c,    //    #####
+  0x38,    //     ###
+  0x10,    //      #
+};
+const BITMAP_INFO dnIconInfo(7, 4, dnIcon);
+
+// 'wifiOutIcon, 5x5px
+const uint8_t upIcon [] PROGMEM = {
+  0x10,    //      #
+  0x38,    //     ###
+  0x7c,    //    #####
+  0xfe,    //   #######
+};
+const BITMAP_INFO upIconInfo(7, 4, upIcon);
 
 const uint8_t PROGMEM miniStopIcon[]  =
 {

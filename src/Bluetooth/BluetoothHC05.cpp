@@ -113,6 +113,12 @@ CBluetoothHC05::begin()
 
     DebugPort.println("HC-05 found");
 
+    Reset(true);  // reset, staying in command mode
+
+    _openSerial(38400);      // open serial port at a std. baud rate
+
+    delay(100);
+
     DebugPort.print("  Setting Name to \"Afterburner\"... ");
     if(!ATCommand("AT+NAME=\"Afterburner\"\r\n")) {
       DebugPort.println("FAILED");
@@ -122,7 +128,8 @@ CBluetoothHC05::begin()
     }
 
     DebugPort.print("  Setting baud rate to 9600N81...");
-    if(!ATCommand("AT+UART=9600,1,0\r\n")) {
+    //if(!ATCommand("AT+UART=9600,1,0\r\n")) {
+    if(!ATCommand("AT+UART=38400,1,0\r\n")) {
       DebugPort.println("FAILED");
     }
     else {
@@ -164,10 +171,11 @@ CBluetoothHC05::begin()
     }*/
     _flush();
     delay(100);  
-    _openSerial(9600); 
+    // _openSerial(9600); 
 
     // leave HC-05 command mode, return to data mode
-    digitalWrite(_keyPin, LOW);  
+    Reset(false);  // reset, shift into data mode6
+    // digitalWrite(_keyPin, LOW);  
 
   }
 
@@ -234,6 +242,16 @@ CBluetoothHC05::ATCommand(const char* cmd)
     }
   }
   return false;
+}
+
+bool
+CBluetoothHC05::Reset(bool keystate)
+{
+  HC05_SerialPort.print("AT+RESET\r\n");
+  digitalWrite(_keyPin, keystate ? HIGH : LOW);  
+  delay(1000);
+  _flush();   
+  return true;
 }
 
 // protected function, to perform Hayes commands with HC-05

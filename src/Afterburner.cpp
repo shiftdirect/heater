@@ -121,6 +121,7 @@
 #include "Utility/GetLine.h"
 #include "Utility/DemandManager.h"
 #include "Protocol/BlueWireTask.h"
+#include "Protocol/433MHz.h"
 #if USE_TWDT == 1
 #include "esp_task_wdt.h"
 #endif
@@ -132,9 +133,9 @@
 // #define RX_DATA_TIMOUT 50
 
 const int FirmwareRevision = 32;
-const int FirmwareSubRevision = 0;
-const int FirmwareMinorRevision = 0;
-const char* FirmwareDate = "21 May 2020";
+const int FirmwareSubRevision = 1;
+const int FirmwareMinorRevision = ;
+const char* FirmwareDate = "19 Jun 2020";
 
 /*
  * Macro to check the outputs of TWDT functions and trigger an abort if an
@@ -170,6 +171,7 @@ bool HandleMQTTsetup(char rxVal);
 void showMainmenu();
 bool checkTemperatureSensors();
 void checkBlueWireEvents();
+void checkUHF();
 
 // DS18B20 temperature sensor support
 // Uses the RMT timeslot driver to operate as a one-wire bus
@@ -217,6 +219,7 @@ bool bReportBlueWireData = REPORT_RAW_DATA;
 bool bReportJSONData = REPORT_JSON_TRANSMIT;
 bool bReportRecyleEvents = REPORT_BLUEWIRE_RECYCLES;
 bool bReportOEMresync = REPORT_OEM_RESYNC;
+bool pair433MHz = false;
 
 CProtocol BlueWireRxData;
 CProtocol BlueWireTxData;
@@ -602,6 +605,7 @@ void setup() {
              &handleBlueWireTask);
 
   
+  UHFremote.begin(Rx433MHz_pin, RMT_CHANNEL_4);
 
 
   delay(1000); // just to hold the splash screeen for while
@@ -631,6 +635,8 @@ void loop()
   checkDisplayUpdate();    
 
   checkBlueWireEvents();
+
+  checkUHF();
 
   vTaskDelay(1);
 }  // loop
@@ -1005,6 +1011,9 @@ void checkDebugCommands()
       }
       else if(rxVal == ('h' & 0x1f)) {   // CTRL-H hourmeter reset
         pHourMeter->resetHard();
+      }
+      else if(rxVal == ('p' & 0x1f)) {   // CTRL-P fuel usage reset 
+        FuelGauge.reset();
       }
       else if(rxVal == ('r' & 0x1f)) {   // CTRL-R reboot
         ESP.restart();            // reset the esp
@@ -1468,5 +1477,54 @@ void reqHeaterCalUpdate()
 const CProtocolPackage& getHeaterInfo()
 {
   return BlueWireData;
+}
+
+// int UHFsubcode(int val)
+// {
+//   val &= 0x03;
+//   val = 0x0001 << val;
+//   return val;
+// }
+
+void checkUHF()
+{
+  if(!pair433MHz) {
+    UHFremote.manage();
+    // unsigned long test = 0xF5F0AC10;
+    // if(UHFremote.available()) {
+    //   unsigned long code;
+    //   UHFremote.read(code);
+    //   DebugPort.printf("UHF remote code = %08lX\r\n", code);
+
+    //   unsigned long ID = (test >> 8) & 0xfffff0;
+    //   if(((code ^ ID) & 0xfffff0) == 0) {
+    //     int subCode = code & 0xf;
+    //     if(test & 0x800) {
+    //       if((UHFsubcode(test >> 6) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF start request!");
+    //         HeaterManager.reqOnOff(true);
+    //       }
+    //     }
+    //     if(test & 0x400) {
+    //       if((UHFsubcode(test >> 4) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF stop request!");
+    //         HeaterManager.reqOnOff(false);
+    //       }
+    //     }
+    //     if(test & 0x200) {
+    //       if((UHFsubcode(test >> 2) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF inc temp request!");
+    //         CDemandManager::deltaDemand(+1);
+    //       }
+    //     }
+    //     if(test & 0x100) {
+    //       if((UHFsubcode(test >> 0) ^ subCode) == 0xf) {
+    //         DebugPort.println("UHF dec temp request!");
+    //         CDemandManager::deltaDemand(+1);
+    //       }
+    //     }
+    //   }
+    // }
+  }
 }
 

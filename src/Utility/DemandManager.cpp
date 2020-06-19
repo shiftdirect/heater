@@ -94,7 +94,7 @@ CDemandManager::setPumpHz(uint8_t newDemand)
   RTC_Store.setDesiredPump(newDemand);
 }
 
-// set a transient setpoint for use by prgrammed timer starts
+// set a transient setpoint for use by programmed timer starts
 // setpoints only change if timer temperature is actually defined
 void
 CDemandManager::setFromTimer(uint8_t timerDemand)
@@ -154,7 +154,7 @@ CDemandManager::checkStart()
 }
 
 
-// generic method adjust the active heter demand.
+// generic method adjust the active heater demand.
 // thi may be Pump Hz or desired temeperature, dependent upon if thermostat mode is active
 bool 
 CDemandManager::setDemand(uint8_t newDemand)

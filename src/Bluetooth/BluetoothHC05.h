@@ -39,6 +39,7 @@ static HardwareSerial& HC05_SerialPort(Serial2);
 class CBluetoothHC05 : public CBluetoothAbstract {
   bool ATCommand(const char* str);
   bool ATResponse(const char* str, const char* respHdr, char* response, int& len);
+  bool Reset(bool keystate);
   int _sensePin, _keyPin;
   CModerator foldbackModerator;
   char _MAC[32];

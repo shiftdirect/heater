@@ -24,6 +24,7 @@
 #include "DebugPort.h"
 #include <driver/adc.h>
 #include <string.h>
+#include "../Protocol/433MHz.h"
 
 bool 
 sNVStore::valid()
@@ -57,7 +58,27 @@ sNVStore::init()
 CHeaterStorage::CHeaterStorage()
 {
   _calValues.init();
+  _semaphore = xSemaphoreCreateBinary();
+  giveSemaphore();
 }
+
+CHeaterStorage::~CHeaterStorage()
+{
+  vSemaphoreDelete(_semaphore);
+}
+
+void 
+CHeaterStorage::takeSemaphore()
+{
+  xSemaphoreTake(_semaphore, portMAX_DELAY);
+}
+
+void 
+CHeaterStorage::giveSemaphore()
+{
+  xSemaphoreGive(_semaphore);
+}
+
 
 float
 sHeaterTuning::getPmin() const
@@ -211,7 +232,7 @@ CHeaterStorage::setHourMeter(const sHourMeter& newVals)
 //
 //#ifdef ESP32
 
-CESP32HeaterStorage::CESP32HeaterStorage()
+CESP32HeaterStorage::CESP32HeaterStorage() : CHeaterStorage()
 {
   init();
 }
@@ -245,6 +266,9 @@ void
 CESP32HeaterStorage::doSave()
 {
   if(_bShouldSave) {
+    takeSemaphore();
+    UHFremote.enableISR(false);  
+    // portENTER_CRITICAL();
     _bShouldSave = false;
     DebugPort.println("Saving to NV storage");
     _calValues.heaterTuning.save();
@@ -255,6 +279,9 @@ CESP32HeaterStorage::doSave()
     _calValues.MQTT.save();
     _calValues.Credentials.save();
     _calValues.hourMeter.save();
+    // portEXIT_CRITICAL();
+    UHFremote.enableISR(true);  
+    giveSemaphore();
   }
 }
 
@@ -514,6 +541,9 @@ sUserSettings::load()
   validatedLoad("Clock12hr", clock12hr, 0, u8inBounds, 0, 1);
   validatedLoad("holdPassword", holdPassword, 0, u8inBounds, 0, 1);
   validatedLoad("humidityStart", humidityStart, 0, u8inBounds, 0, 100);
+  validatedLoad("UHFcode0", UHFcode[0], 0, 0, 0xffffffff);
+  validatedLoad("UHFcode1", UHFcode[1], 0, 0, 0xffffffff);
+  validatedLoad("UHFcode2", UHFcode[2], 0, 0, 0xffffffff);
   preferences.end();    
 }
 
@@ -554,6 +584,9 @@ sUserSettings::save()
   preferences.putUChar("Clock12hr", clock12hr);
   preferences.putUChar("holdPassword", holdPassword);
   preferences.putUChar("humidityStart", humidityStart);
+  preferences.putULong("UHFcode0", UHFcode[0]);
+  preferences.putULong("UHFcode1", UHFcode[1]);
+  preferences.putULong("UHFcode2", UHFcode[2]);
   preferences.end();    
 }
 

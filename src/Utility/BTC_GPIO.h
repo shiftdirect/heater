@@ -210,6 +210,17 @@ struct sGPIOparams {
   CGPIOout2::Modes out2Mode;
   CGPIOalg::Modes algMode;
   int8_t thresh[2];
+
+  sGPIOparams& operator=(const sGPIOparams& rhs) {
+    in1Mode = rhs.in1Mode;
+    in2Mode = rhs.in2Mode;
+    out1Mode = rhs.out1Mode;
+    out2Mode = rhs.out2Mode;
+    algMode = rhs.algMode;
+    thresh[0] = rhs.thresh[0];
+    thresh[1] = rhs.thresh[1];
+    return *this;
+  }
 };
 
 struct sGPIO {

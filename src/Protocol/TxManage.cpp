@@ -173,10 +173,16 @@ CTxManage::PrepareFrame(const CProtocol& basisFrame, bool isBTCmaster)
 
     float altitude;
     if(getTempSensor().getAltitude(altitude)) {  // if a BME280 is fitted
-      m_TxFrame.setAltitude(altitude);
+      // use calculated height
+      // set 0xeb 0x47 in "unknown bytes" 
+      // - 0xeb happens with all pressure quipped units
+      // - 0x47 with all other than coffee pod which sends 0x00?
+      m_TxFrame.setAltitude(altitude, true);  
     }
     else {
-      m_TxFrame.setAltitude(3500);  // default height - yes it is weird, but that's what the simple controllers send!
+      // default height - yes it is weird, but that's what the simple controllers send!
+      // set 0x01 0x2c in "unknown bytes" - all no pressure equipped OEM controlelrs do that
+      m_TxFrame.setAltitude(3500, false);  
     }
 
     m_TxFrame.setPump_Prime(_prime);
