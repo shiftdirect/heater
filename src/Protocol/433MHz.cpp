@@ -29,7 +29,7 @@
 
 C433MHzRemote UHFremote;
 
-static void IRAM_ATTR rmt_driver_isr_default(void *arg);
+// static void IRAM_ATTR rmt_driver_isr_default(void *arg);
 
 
 C433MHzRemote::C433MHzRemote()
