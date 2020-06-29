@@ -1,0 +1,66 @@
+BUG FIX FOR RMT EXCESS TRANSITIONS
+
+Problem
+~~~~~~~
+Using a UHF receiver throws noise into the RMT peripheral.
+Standard IDF function  esp-idf\components\driver\rmt.c reports 
+"RMT RX BUFFER FULL" (line 593) when attempting to pull a 
+noisy capture.
+
+
+A core panic occurs when the system is writing to FLASH memory:
+  FOTA updates
+  SPIFFS updates
+  Preferences updates
+  
+If the RMT interrupt occurs during a flash write a core panic due to 
+accessing non cached memory, being the debug message string.
+
+Commenting out the debug message line allows the code to function OK.
+System does not crash, but we lose the warning. 
+(On the contrary, it is an annoying message anyway).
+
+How to fix it
+~~~~~~~~~~~~~
+Get the ESP-IDF for the ESP32
+Determine the IDF release used by arduino-esp32. This is best achieved
+by examining the results from calling the run time esp_get_idf_version().
+The first part of the SHA of the release is the value following the "g" 
+in the last field:
+  eg:  v3.2.3-14-gd3e562907    =>    d3e562907
+  
+Locate and switch the IDF to that SHA.
+
+Comment out the debug print @ line 593 of esp-idf\components\driver\rmt.c 
+
+Create a copy of the IDF Blink example:
+eg:
+  esp-idf\examples\get-started\blink ->  
+  esp-idf\examples\get-started\arduinobuild
+  
+IMPORTANT:
+Copy the sdkconfig file from the arduino-esp32 build being used to the copy 
+created in the previous step:
+  eg for platformIO 
+  C:\Users\$USER$\.platformio\packages\framework-arduinoespressif32\tools\sdk
+  -> esp-idf\examples\get-started\arduinobuild
+  
+Using an ESP-IDF command prompt, navigate to the project
+  eg:  esp-idf\examples\get-started\arduinobuild
+  
+Execute idf.py fullclean
+Execute idf.py build  
+  
+Copy the libdriver.a file from the build result to the arduino-esp32 lib:
+  esp-idf\examples\get-started\arduinobuild\build\driver ->
+  C:\Users\$USER$\.platformio\packages\framework-arduinoespressif32\tools\sdk\lib
+
+delete the libFrameworkArduino.a file from the PIO build outputs
+  eg .pio\build\esp32dev
+
+Rebuild the PIO project, the Arduino libraries will be relinked, using the new
+libdriver.a
+
+Upload and test new build
+
+PROBLEM SOLVED!
